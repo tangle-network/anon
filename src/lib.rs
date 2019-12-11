@@ -90,6 +90,7 @@ decl_module! {
 			if let Some(leaves) = leaves {
 				Self::add_batch_leaves(ctr, leaves);
 				// TODO: Implement first round merkle root calculation
+				//       if leaves are provided without a root hash
 				if should_update {
 					Self::update_first_root(ctr);
 				}
