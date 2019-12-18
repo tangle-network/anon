@@ -1,2 +1,0 @@
-cargo:rustc-env=TYPENUM_BUILD_OP=/Users/drewstone/code/commonwealth/pure-zk/runtime/target/debug/build/typenum-6d2274dd1fe291e8/out/consts.rs
-cargo:rustc-env=TYPENUM_BUILD_CONSTS=/Users/drewstone/code/commonwealth/pure-zk/runtime/target/debug/build/typenum-6d2274dd1fe291e8/out/op.rs

@@ -1,2 +1,0 @@
-cargo:rustc-env=TYPENUM_BUILD_OP=/Users/drewstone/code/commonwealth/pure-zk/runtime/target/debug/wbuild/target/wasm32-unknown-unknown/debug/build/typenum-fa8c1ca96191c528/out/consts.rs
-cargo:rustc-env=TYPENUM_BUILD_CONSTS=/Users/drewstone/code/commonwealth/pure-zk/runtime/target/debug/wbuild/target/wasm32-unknown-unknown/debug/build/typenum-fa8c1ca96191c528/out/op.rs
