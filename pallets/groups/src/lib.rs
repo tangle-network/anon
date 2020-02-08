@@ -92,7 +92,12 @@ decl_module! {
 			Ok(())
 		}
 
-		pub fn verify_ring_sig(origin) -> dispatch::DispatchResult {
+		pub fn verify_ring_sig(
+			origin,
+			_challenge: keys::RingScalar,
+			_responses: Vec<keys::RingScalar>,
+			_key_images: Vec<keys::RingPublicKey>,
+		) -> dispatch::DispatchResult {
 			// Check it was signed and get the signer. See also: ensure_root and ensure_none
 			let _who = ensure_signed(origin)?;
 			Ok(())

@@ -12,7 +12,8 @@ use curve25519_dalek::scalar::Scalar;
 
 #[derive(Eq, PartialEq, Clone, Default, Debug)]
 pub struct RingPublicKey(pub CompressedRistretto);
-
+#[derive(Eq, PartialEq, Clone, Default, Debug)]
+pub struct RingScalar(pub Scalar);
 
 pub const SIZE: usize = 32;
 
@@ -29,6 +30,23 @@ impl Decode for RingPublicKey {
         match <[u8; SIZE] as Decode>::decode(input).map(CompressedRistretto) {
         	Ok(elt) => Ok(RingPublicKey(elt)),
         	Err(e) => Err(e),
+        }
+    }
+}
+
+impl Encode for RingScalar {
+    fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
+        (self.0).as_bytes().using_encoded(f)
+    }
+}
+
+impl EncodeLike for RingScalar {}
+
+impl Decode for RingScalar {
+    fn decode<I: Input>(input: &mut I) -> Result<Self, codec::Error> {
+        match <[u8; SIZE] as Decode>::decode(input) {
+            Ok(elt) => Ok(RingScalar(Scalar::from_canonical_bytes(elt).unwrap_or(Scalar::zero()))),
+            Err(e) => Err(e),
         }
     }
 }
