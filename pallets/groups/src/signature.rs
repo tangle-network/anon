@@ -232,32 +232,4 @@ mod test {
         pub_keys.remove(pub_keys.len() - 1);
         assert!(sig.optimised_verify(&mut pub_keys).is_err());
     }
-
-    macro_rules! param_bench_verify {
-        ($func_name: ident,$num_keys:expr, $num_decoys :expr) => {
-            fn $func_name(b: &mut Bencher) {
-                let num_keys = $num_keys;
-                let num_decoys = $num_decoys;
-
-                let mut clsag = generate_clsag_with(num_decoys, num_keys);
-                clsag.add_member(generate_signer(num_keys));
-                let sig = clsag.sign().unwrap();
-                let mut pub_keys = clsag.public_keys();
-
-                b.iter(|| sig.optimised_verify(&mut pub_keys));
-            }
-        };
-    }
-
-    param_bench_verify!(bench_verify_2, 2, 2);
-    param_bench_verify!(bench_verify_4, 2, 3);
-    param_bench_verify!(bench_verify_6, 2, 5);
-    param_bench_verify!(bench_verify_8, 2, 7);
-    param_bench_verify!(bench_verify_11, 2, 10);
-    param_bench_verify!(bench_verify_16, 2, 15);
-    param_bench_verify!(bench_verify_32, 2, 31);
-    param_bench_verify!(bench_verify_64, 2, 63);
-    param_bench_verify!(bench_verify_128, 2, 127);
-    param_bench_verify!(bench_verify_256, 2, 255);
-    param_bench_verify!(bench_verify_512, 2, 511);
 }

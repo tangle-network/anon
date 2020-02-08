@@ -10,29 +10,23 @@
 /// For more guidance on Substrate modules, see the example module
 /// https://github.com/paritytech/substrate/blob/master/frame/example/src/lib.rs
 
-#[macro_use]
-extern crate bencher;
-
 pub mod constants;
 pub mod keys;
 pub mod signature;
 pub mod member;
 pub mod transcript;
 pub mod clsag;
+pub mod tests_helper;
 
 #[cfg(test)]
-mod tests_helper;
+pub mod mock;
 
 #[cfg(test)]
-mod mock;
-
-#[cfg(test)]
-mod tests;
+pub mod tests;
 
 use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch};
 use frame_system::{self as system, ensure_signed};
 use sp_std::prelude::*;
-use signature::Signature;
 
 
 /// The pallet's configuration trait.

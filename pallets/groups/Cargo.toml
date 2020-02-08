@@ -71,3 +71,7 @@ std = [
 	"sp-runtime/std",
 	"sp-core/std",
 ]
+
+[[bench]]
+name = "bench"
+harness = false
