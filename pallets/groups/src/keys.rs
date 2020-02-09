@@ -105,13 +105,13 @@ impl PublicSet {
                     continue;
                 } else {
                     if hashable_slice[i] == hashable_slice[j] {
-                        return false;
+                        return true;
                     }
                 }
             }
         }
 
-        return true;
+        return false;
     }
     // Returns the Hash_to_point of the first public key in the set
     // This point is used extensively during the protocol for each member
