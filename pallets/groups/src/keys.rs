@@ -67,6 +67,10 @@ impl RingPublicKey {
         self.as_bytes()
     }
 
+    pub fn to_exact_bytes(&self) -> [u8; 32] {
+        (self.0).0
+    }
+
     // TODO: Make this more robust
     /// Deserialize this public key from 32 bytes
     pub fn from_bytes(bytes: &[u8]) -> Option<RingPublicKey> {

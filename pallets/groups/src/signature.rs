@@ -162,7 +162,7 @@ impl Signature {
         Ok(())
     }
 
-    fn pubkeys_to_bytes(&self, pubkey_matrix: &Vec<Vec<CompressedRistretto>>) -> Vec<u8> {
+    pub fn pubkeys_to_bytes(&self, pubkey_matrix: &Vec<Vec<CompressedRistretto>>) -> Vec<u8> {
         let mut bytes: Vec<u8> =
             Vec::with_capacity(self.key_images.len() * self.responses.len() * 64);
         for i in 0..pubkey_matrix.len() {

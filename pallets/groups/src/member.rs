@@ -146,7 +146,7 @@ impl Member {
         &self,
         challenge: Scalar,
         agg_coeff: &[Scalar],
-    ) -> Result<(Scalar), Error> {
+    ) -> Result<Scalar, Error> {
         let private_set = self.private_set.as_ref().ok_or(Error::NotASigner)?;
         let nonce = self.nonce.as_ref().ok_or(Error::NotASigner)?;
 

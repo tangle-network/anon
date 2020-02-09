@@ -94,7 +94,13 @@ decl_module! {
 
 			// Code to execute when something calls this.
 			// For example: the following line stores the passed in u32 in the storage
-			let mut group = <Groups>::get(group_id).unwrap_or(Vec::new());
+			let mut group = {
+				match Self::groups(group_id) {
+					Some(g) => g,
+					None => vec![],
+				}
+			};
+			// add new member
 			group.push(pub_key.clone());
 			<Groups>::insert(group_id, group);
 
