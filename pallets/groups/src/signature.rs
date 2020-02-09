@@ -1,6 +1,9 @@
+use sp_std::prelude::*;
 use crate::clsag::calc_aggregation_coefficients;
 use crate::constants::BASEPOINT;
+#[cfg(feature="std")]
 use crate::member::compute_challenge_ring;
+
 use crate::transcript::TranscriptProtocol;
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
@@ -8,6 +11,7 @@ use curve25519_dalek::traits::VartimeMultiscalarMul;
 use merlin::Transcript;
 use sha2::Sha512;
 
+#[cfg(feature="std")]
 #[derive(Debug, Clone)]
 pub struct Signature {
     pub(crate) challenge: Scalar,
@@ -15,6 +19,7 @@ pub struct Signature {
     pub(crate) key_images: Vec<CompressedRistretto>,
 }
 
+#[cfg(feature="std")]
 pub enum Error {
     // This error occurs if the signature contains an amount of public keys
     // that does not match the number of public keys
@@ -29,6 +34,7 @@ pub enum Error {
     MemberError(String),
 }
 
+#[cfg(feature="std")]
 impl From<crate::member::Error> for Error {
     fn from(e: crate::member::Error) -> Error {
         let err_string = format!(" underlying member error {:?}", e);
@@ -36,6 +42,7 @@ impl From<crate::member::Error> for Error {
     }
 }
 
+#[cfg(feature="std")]
 impl Signature {
     pub fn verify(&self, public_keys: &mut Vec<Vec<CompressedRistretto>>) -> Result<(), Error> {
         // Skip subgroup check as ristretto points have co-factor 1.
@@ -172,11 +179,7 @@ impl Signature {
 
 #[cfg(test)]
 mod test {
-    use bencher::Bencher;
-
     use crate::tests_helper::*;
-    use rand::seq::SliceRandom;
-    use rand::thread_rng;
 
     #[test]
     fn test_verify() {
@@ -195,20 +198,6 @@ mod test {
         assert!(sig.optimised_verify(&mut pub_keys).is_ok());
     }
 
-    #[test]
-    fn test_verify_fail_shuffle_keys() {
-        let num_keys = 2;
-        let num_decoys = 11;
-
-        let mut clsag = generate_clsag_with(num_decoys, num_keys);
-        clsag.add_member(generate_signer(num_keys));
-        let sig = clsag.sign().unwrap();
-        let mut pub_keys = clsag.public_keys();
-
-        // shuffle public key ordering
-        pub_keys.shuffle(&mut thread_rng());
-        assert!(sig.optimised_verify(&mut pub_keys).is_err());
-    }
     #[test]
     fn test_verify_fail_incorrect_num_keys() {
         let num_keys = 2;

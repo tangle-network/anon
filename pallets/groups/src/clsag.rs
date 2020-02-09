@@ -1,13 +1,17 @@
 use crate::member::Member;
+
+#[cfg(feature="std")]
 use crate::signature::Signature;
+
 use curve25519_dalek::ristretto::CompressedRistretto;
 use curve25519_dalek::scalar::Scalar;
-
+use sp_std::prelude::*;
 use crate::transcript::TranscriptProtocol;
 use merlin::Transcript;
 
 // This module will pull together all of the necessary things
 // Setting up everything we need
+#[cfg(feature="std")]
 #[derive(Debug)]
 pub enum Error {
     // This error occurs when the sign method is called
@@ -25,6 +29,7 @@ pub enum Error {
     UnderlyingErr(String),
 }
 
+#[cfg(feature="std")]
 impl From<crate::member::Error> for crate::clsag::Error {
     fn from(e: crate::member::Error) -> crate::clsag::Error {
         match e {
@@ -37,11 +42,14 @@ impl From<crate::member::Error> for crate::clsag::Error {
         }
     }
 }
+
 // This struct is used to construct the clsag signature
+#[cfg(feature="std")]
 pub struct Clsag {
     members: Vec<Member>,
 }
 
+#[cfg(feature="std")]
 impl Clsag {
     // Creates a new clsag component with a configured basepoint
     pub fn new() -> Self {
@@ -208,6 +216,7 @@ impl Clsag {
         Ok(())
     }
 }
+
 // Calculates the aggregation co-efficients mu_x and [mu_j]
 pub fn calc_aggregation_coefficients(
     pubkey_matrix: &[u8],
@@ -241,8 +250,7 @@ pub fn calc_aggregation_coefficients(
 mod test {
     use super::*;
     use crate::tests_helper::*;
-    use bencher::Bencher;
-
+    
     #[test]
     fn test_check_format() {
         let num_decoys = 10;
@@ -319,16 +327,5 @@ mod test {
         // number of members = number of decoys + signer
         let num_members = num_decoys + 1;
         assert_eq!(num_members, signature.responses.len());
-    }
-
-    fn bench_sign(b: &mut Bencher) {
-        // One time setup code here
-        let num_keys = 2;
-        let num_decoys = 11;
-
-        let mut clsag = generate_clsag_with(num_decoys, num_keys);
-        clsag.add_member(generate_signer(num_keys));
-
-        b.iter(|| clsag.sign());
     }
 }

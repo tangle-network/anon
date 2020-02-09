@@ -136,7 +136,19 @@ fn bench_verify_512(b: &mut Bencher) {
     b.iter(|| sig.optimised_verify(&mut pub_keys));
 }
 
+fn bench_sign(b: &mut Bencher) {
+    // One time setup code here
+    let num_keys = 2;
+    let num_decoys = 11;
+
+    let mut clsag = generate_clsag_with(num_decoys, num_keys);
+    clsag.add_member(generate_signer(num_keys));
+
+    b.iter(|| clsag.sign());
+}
+
 benchmark_group!(benches,
+    bench_sign,
     bench_verify_2,
     bench_verify_4,
     bench_verify_6,

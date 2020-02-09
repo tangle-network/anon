@@ -1,3 +1,6 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
+use sp_std::prelude::*;
 use crate::constants::BASEPOINT;
 use crate::keys::{PrivateSet, PublicSet};
 use crate::transcript::TranscriptProtocol;
@@ -5,7 +8,6 @@ use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_dalek::traits::VartimeMultiscalarMul;
 use merlin::Transcript;
-use rand;
 
 #[derive(Debug)]
 pub enum Error {
@@ -39,6 +41,7 @@ pub struct Member {
     pub(crate) response: Option<Scalar>,
 }
 
+#[cfg(feature="std")]
 impl Member {
     // Creates a member who will be the signer of the ring
     // Protocol explicitly checks if there is one signer per ring
@@ -196,6 +199,7 @@ impl Member {
 // A generic function to calculate the challenge for any member in the ring
 // While signing, this function will be used by the decoys
 // When verifying this function will be used by all members
+#[cfg(feature="std")]
 pub fn compute_challenge_ring(
     public_keys: &[CompressedRistretto],
     challenge: &Scalar,
@@ -237,6 +241,7 @@ pub fn compute_challenge_ring(
     transcript.challenge_scalar(b"")
 }
 
+#[cfg(feature = "std")]
 fn generate_rand_scalar() -> Scalar {
     let mut rng = rand::thread_rng();
     Scalar::random(&mut rng)

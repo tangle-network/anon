@@ -1,7 +1,9 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use crate::constants::BASEPOINT;
 use sha2::Sha512;
+use sp_std::prelude::*;
 use curve25519_dalek::ristretto::RistrettoPoint;
-use codec::alloc::collections::HashSet;
 use codec::{Encode, Decode, Input, EncodeLike};
 use curve25519_dalek::ristretto::{
 	CompressedRistretto,
@@ -97,9 +99,19 @@ impl PublicSet {
         let hashable_slice: Vec<&[u8; 32]> =
             compressed_points.iter().map(|cp| cp.as_bytes()).collect();
 
-        let uniques: HashSet<_> = hashable_slice.iter().collect();
+        for i in 0..hashable_slice.len() {
+            for j in 0..hashable_slice.len() {
+                if i == j {
+                    continue;
+                } else {
+                    if hashable_slice[i] == hashable_slice[j] {
+                        return false;
+                    }
+                }
+            }
+        }
 
-        self.0.len() != uniques.len()
+        return true;
     }
     // Returns the Hash_to_point of the first public key in the set
     // This point is used extensively during the protocol for each member

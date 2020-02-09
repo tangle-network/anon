@@ -18,11 +18,6 @@ default-features = false
 version = "2.0.0"
 git = "https://github.com/paritytech/substrate.git"
 
-[dependencies.sp-core]
-default-features = false
-version = "2.0.0"
-git = "https://github.com/paritytech/substrate.git"
-
 [dependencies.sp-io]
 default-features = false
 version = "2.0.0"
@@ -38,27 +33,31 @@ default-features = false
 version = "2.0.0"
 git = "https://github.com/paritytech/substrate.git"
 
-[dependencies.rand]
-version = "0.7.3"
-
-[dependencies.blake2]
-version = "0.8.1"
-
 [dependencies.sha2]
 version = "0.8"
+default-features = false
 
 [dependencies.merlin]
 version = "2.0.0"
+default-features = false
 
 [dependencies.curve25519-dalek]
 # git = "https://github.com/dalek-cryptography/curve25519-dalek"
 version = "2.0"
 default-features = false
-features = ["u64_backend"]
+features = ["u64_backend", "alloc"]
 
 [dependencies.bencher]
 version = "0.1.5"
 
+[dev-dependencies.sp-core]
+default-features = false
+version = "2.0.0"
+git = "https://github.com/paritytech/substrate.git"
+
+[dependencies.rand]
+version = "0.7.3"
+optional = true
 
 [features]
 default = ["std"]
@@ -69,7 +68,8 @@ std = [
 	"safe-mix/std",
 	"sp-std/std",
 	"sp-runtime/std",
-	"sp-core/std",
+	"sp-io/std",
+	"rand/std",
 ]
 
 [[bench]]

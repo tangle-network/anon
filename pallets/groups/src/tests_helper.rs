@@ -1,4 +1,5 @@
 // helper functions for tests
+use sp_std::prelude::*;
 use crate::clsag::Clsag;
 use crate::keys::PrivateSet;
 use crate::member::Member;
