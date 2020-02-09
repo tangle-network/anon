@@ -8,6 +8,8 @@ The runtime module is located under the name `pallet-groups` in `pallets/groups`
 - [x] Ring signature verification using a substrate runtime function
 - [ ] Ring signature linking using a substrate runtime function
 
+The paper for this implementation is: https://eprint.iacr.org/2019/654.pdf.
+
 ## Build
 
 Install Rust:
