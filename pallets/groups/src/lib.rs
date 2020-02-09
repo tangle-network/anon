@@ -24,10 +24,17 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
-use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch};
+use crate::transcript::TranscriptProtocol;
+use curve25519_dalek::traits::VartimeMultiscalarMul;
+use curve25519_dalek::scalar::Scalar;
+use sha2::Sha512;
+use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, ensure};
 use frame_system::{self as system, ensure_signed};
 use sp_std::prelude::*;
-
+use crate::constants::BASEPOINT;
+use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
+use crate::clsag::calc_aggregation_coefficients;
+use merlin::Transcript;
 
 /// The pallet's configuration trait.
 pub trait Trait: frame_system::Trait {
@@ -58,8 +65,12 @@ decl_error! {
 	pub enum Error for Module<T: Trait> {
 		/// Value was None
 		NoneValue,
-		/// Value reached maximum and cannot be incremented further
-		StorageOverflow,
+		/// 
+		IncorrectNumOfPubKeys,
+		///
+		ChallengeMismatch,
+		///
+		BadPoint,
 	}
 }
 
@@ -88,12 +99,87 @@ decl_module! {
 
 		pub fn verify_ring_sig(
 			origin,
+			group_id: GroupId,
 			_challenge: keys::RingScalar,
 			_responses: Vec<keys::RingScalar>,
 			_key_images: Vec<keys::RingPublicKey>,
 		) -> dispatch::DispatchResult {
 			// Check it was signed and get the signer. See also: ensure_root and ensure_none
 			let _who = ensure_signed(origin)?;
+	        // Skip subgroup check as ristretto points have co-factor 1.
+			let group = <Groups>::get(group_id).unwrap_or(Vec::new());
+			ensure!(group.len() > 0, Error::<T>::NoneValue);
+
+	        let num_responses = _responses.len();
+	        let num_pubkey_sets = group.len();
+	        // Check that we have the correct amount of public keys
+	        ensure!(num_pubkey_sets == num_responses, Error::<T>::IncorrectNumOfPubKeys);
+	        // Calculate all response * BASEPOINT
+	        let response_points: Vec<RistrettoPoint> = _responses
+	        	.iter()
+	            .map(|response| response.0 * BASEPOINT)
+	            .collect();
+
+	        // calculate all response * H(signingKeys)
+	        let response_hashed_points: Vec<RistrettoPoint> = _responses
+	            .iter()
+	            .zip(group.iter())
+	            .map(|(response, pub_keys)| {
+	                let first_pubkey = pub_keys.0;
+	                let hashed_pubkey =
+	                    RistrettoPoint::hash_from_bytes::<Sha512>(first_pubkey.as_bytes());
+
+	                response.0 * hashed_pubkey
+	            })
+	            .collect();
+
+
+	        let pub_key_matrix: Vec<u8> = {
+		        let mut bytes: Vec<u8> = Vec::with_capacity(_key_images.len() * _responses.len() * 64);
+		        for i in 0..group.len() {
+		            let pubkey_bytes: Vec<u8> = group[i].to_bytes().to_vec();
+		            bytes.extend(pubkey_bytes);
+		        }
+		        bytes
+	        };
+
+			// Calculate aggregation co-efficients
+			let k_images: Vec<CompressedRistretto> = _key_images.iter().map(|x| x.0).collect();
+        	let agg_coeffs = calc_aggregation_coefficients(&pub_key_matrix, &k_images);
+
+	        let mut challenge = _challenge.clone();
+
+	        for ((resp_point, resp_hashed_point), pub_key) in response_points
+	            .iter()
+	            .zip(response_hashed_points.iter())
+	            .zip(group.iter())
+	        {
+	            let challenge_agg_coeffs: Vec<Scalar> =
+	                agg_coeffs.iter().map(|ac| ac * &challenge.0).collect();
+
+	            let mut l_i = RistrettoPoint::optional_multiscalar_mul(
+	                &challenge_agg_coeffs,
+	                vec![pub_key].iter().map(|pt| pt.0.decompress()),
+	            )
+	            .ok_or(Error::<T>::BadPoint)?;
+	            l_i = l_i + resp_point;
+
+	            let mut r_i = RistrettoPoint::optional_multiscalar_mul(
+	                &challenge_agg_coeffs,
+	                _key_images.iter().map(|pt| pt.0.decompress()),
+	            )
+	            .ok_or(Error::<T>::BadPoint)?;
+	            r_i = r_i + resp_hashed_point;
+
+	            let mut transcript = Transcript::new(b"clsag");
+	            transcript.append_message(b"", &pub_key_matrix);
+	            transcript.append_point(b"", &l_i);
+	            transcript.append_point(b"", &r_i);
+
+	            challenge = keys::RingScalar(transcript.challenge_scalar(b""));
+	        }
+
+	        ensure!(challenge == _challenge, Error::<T>::ChallengeMismatch);
 			Ok(())
 		}
 	}

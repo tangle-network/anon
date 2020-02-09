@@ -61,6 +61,10 @@ impl RingPublicKey {
         (&self.0.as_bytes()).to_vec()
     }
 
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.as_bytes()
+    }
+
     // TODO: Make this more robust
     /// Deserialize this public key from 32 bytes
     pub fn from_bytes(bytes: &[u8]) -> Option<RingPublicKey> {
