@@ -1,7 +1,5 @@
-use crate::constants::BASEPOINT;
-use sha2::Sha512;
 use sp_std::prelude::*;
-use curve25519_dalek::ristretto::RistrettoPoint;
+
 use codec::{Encode, Decode, Input, EncodeLike};
 use curve25519_dalek::ristretto::{
 	CompressedRistretto,
