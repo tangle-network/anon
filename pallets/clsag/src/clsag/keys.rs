@@ -1,6 +1,4 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
-use crate::constants::BASEPOINT;
+use crate::clsag::constants::BASEPOINT;
 use sha2::Sha512;
 use sp_std::prelude::*;
 use curve25519_dalek::ristretto::RistrettoPoint;
@@ -181,7 +179,7 @@ impl PrivateSet {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::tests_helper::*;
+    use crate::clsag::tests_helper::*;
     // This test is a sanity check for private to public key sets.
     // The iter method is used when converting from a set of private keys
     // to a set of public keys. In the test, we use a for loop and check that both

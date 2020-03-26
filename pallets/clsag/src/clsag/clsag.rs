@@ -1,12 +1,12 @@
-use crate::member::Member;
+use crate::clsag::member::Member;
 
 #[cfg(feature="std")]
-use crate::signature::Signature;
+use crate::clsag::signature::Signature;
 
 use curve25519_dalek::ristretto::CompressedRistretto;
 use curve25519_dalek::scalar::Scalar;
 use sp_std::prelude::*;
-use crate::transcript::TranscriptProtocol;
+use crate::clsag::transcript::TranscriptProtocol;
 use merlin::Transcript;
 
 // This module will pull together all of the necessary things
@@ -30,13 +30,13 @@ pub enum Error {
 }
 
 #[cfg(feature="std")]
-impl From<crate::member::Error> for crate::clsag::Error {
-    fn from(e: crate::member::Error) -> crate::clsag::Error {
+impl From<crate::clsag::member::Error> for crate::clsag::clsag::Error {
+    fn from(e: crate::clsag::member::Error) -> crate::clsag::clsag::Error {
         match e {
-            crate::member::Error::NotASigner => Error::UnderlyingErr(String::from(
+            crate::clsag::member::Error::NotASigner => Error::UnderlyingErr(String::from(
                 "Tried to use a method specific to a signer in the clsag module",
             )),
-            crate::member::Error::NotADecoy => Error::UnderlyingErr(String::from(
+            crate::clsag::member::Error::NotADecoy => Error::UnderlyingErr(String::from(
                 "Tried to use a method specific to a decoy in the clsag module",
             )),
         }
@@ -249,7 +249,7 @@ pub fn calc_aggregation_coefficients(
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::tests_helper::*;
+    use crate::clsag::tests_helper::*;
     
     #[test]
     fn test_check_format() {

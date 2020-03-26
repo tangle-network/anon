@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate bencher;
 
-use pallet_groups::tests_helper::*;
+use pallet_clsag::tests_helper::*;
 use bencher::Bencher;
 
 fn bench_verify_2(b: &mut Bencher) {

@@ -1,8 +1,8 @@
 // helper functions for tests
 use sp_std::prelude::*;
-use crate::clsag::Clsag;
-use crate::keys::PrivateSet;
-use crate::member::Member;
+use crate::clsag::clsag::Clsag;
+use crate::clsag::keys::PrivateSet;
+use crate::clsag::member::Member;
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
 

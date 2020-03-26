@@ -1,9 +1,7 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use sp_std::prelude::*;
-use crate::constants::BASEPOINT;
-use crate::keys::{PrivateSet, PublicSet};
-use crate::transcript::TranscriptProtocol;
+use crate::clsag::constants::BASEPOINT;
+use crate::clsag::keys::{PrivateSet, PublicSet};
+use crate::clsag::transcript::TranscriptProtocol;
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_dalek::traits::VartimeMultiscalarMul;
@@ -250,7 +248,7 @@ fn generate_rand_scalar() -> Scalar {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::tests_helper::generate_rand_scalars;
+    use crate::clsag::tests_helper::generate_rand_scalars;
 
     // Simple tests to check that when the members are instantiated
     // We have the correct number of values

@@ -10,15 +10,7 @@
 /// For more guidance on Substrate modules, see the example module
 /// https://github.com/paritytech/substrate/blob/master/frame/example/src/lib.rs
 
-pub mod constants;
-pub mod keys;
-pub mod signature;
-pub mod member;
-pub mod transcript;
 pub mod clsag;
-
-#[cfg(feature="std")]
-pub mod tests_helper;
 
 #[cfg(test)]
 pub mod mock;
@@ -27,9 +19,9 @@ pub mod mock;
 pub mod tests;
 
 use sha2::Sha512;
-use crate::transcript::TranscriptProtocol;
-use crate::clsag::calc_aggregation_coefficients;
-use crate::constants::BASEPOINT;
+use clsag::transcript::TranscriptProtocol;
+use clsag::clsag::calc_aggregation_coefficients;
+use clsag::constants::BASEPOINT;
 use curve25519_dalek::traits::VartimeMultiscalarMul;
 use curve25519_dalek::scalar::Scalar;
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
@@ -39,7 +31,7 @@ use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch,
 use frame_system::{self as system, ensure_signed};
 use sp_std::prelude::*;
 
-pub type RingPK = keys::RingPublicKey;
+pub type RingPK = clsag::keys::RingPublicKey;
 // pub type RingPK = [u8;32];
 
 /// The pallet's configuration trait.
@@ -112,8 +104,8 @@ decl_module! {
 		pub fn verify_ring_sig(
 			origin,
 			group_id: GroupId,
-			_challenge: keys::RingScalar,
-			_responses: Vec<keys::RingScalar>,
+			_challenge: clsag::keys::RingScalar,
+			_responses: Vec<clsag::keys::RingScalar>,
 			_key_images: Vec<RingPK>,
 		) -> dispatch::DispatchResult {
 			// Check it was signed and get the signer. See also: ensure_root and ensure_none
@@ -188,7 +180,7 @@ decl_module! {
 				transcript.append_point(b"", &l_i);
 				transcript.append_point(b"", &r_i);
 
-				challenge = keys::RingScalar(transcript.challenge_scalar(b""));
+				challenge = clsag::keys::RingScalar(transcript.challenge_scalar(b""));
 			}
 
 			ensure!(challenge == _challenge, Error::<T>::ChallengeMismatch);

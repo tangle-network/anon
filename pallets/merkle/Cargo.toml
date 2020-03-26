@@ -1,7 +1,7 @@
 [package]
 authors = ["drew@commonwealth.im"]
 edition = "2018"
-name = "pallet-groups"
+name = "pallet-clsag"
 version = "2.0.0"
 
 [dependencies]
@@ -32,10 +32,6 @@ git = "https://github.com/paritytech/substrate.git"
 default-features = false
 version = "2.0.0"
 git = "https://github.com/paritytech/substrate.git"
-
-[dependencies.sha2]
-version = "0.8"
-default-features = false
 
 [dependencies.merlin]
 version = "2.0.0"

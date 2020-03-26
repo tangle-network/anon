@@ -38,7 +38,7 @@ pub use frame_support::{
 };
 
 /// Importing a groups pallet
-pub use pallet_groups;
+pub use pallet_clsag;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -234,7 +234,7 @@ impl sudo::Trait for Runtime {
 }
 
 /// Used for the module template in `./template.rs`
-impl pallet_groups::Trait for Runtime {
+impl pallet_clsag::Trait for Runtime {
 	type Event = Event;
 }
 
@@ -253,7 +253,7 @@ construct_runtime!(
 		TransactionPayment: transaction_payment::{Module, Storage},
 		Sudo: sudo,
 		// Used for the module template in `./template.rs`
-		Groups: pallet_groups::{Module, Call, Storage, Event<T>},
+		Clsag: pallet_clsag::{Module, Call, Storage, Event<T>},
 		RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
 	}
 );

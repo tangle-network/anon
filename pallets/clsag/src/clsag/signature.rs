@@ -1,10 +1,10 @@
 use sp_std::prelude::*;
-use crate::clsag::calc_aggregation_coefficients;
-use crate::constants::BASEPOINT;
+use crate::clsag::clsag::calc_aggregation_coefficients;
+use crate::clsag::constants::BASEPOINT;
 #[cfg(feature="std")]
-use crate::member::compute_challenge_ring;
+use crate::clsag::member::compute_challenge_ring;
 
-use crate::transcript::TranscriptProtocol;
+use crate::clsag::transcript::TranscriptProtocol;
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_dalek::traits::VartimeMultiscalarMul;
@@ -35,8 +35,8 @@ pub enum Error {
 }
 
 #[cfg(feature="std")]
-impl From<crate::member::Error> for Error {
-    fn from(e: crate::member::Error) -> Error {
+impl From<crate::clsag::member::Error> for Error {
+    fn from(e: crate::clsag::member::Error) -> Error {
         let err_string = format!(" underlying member error {:?}", e);
         Error::MemberError(err_string)
     }
@@ -179,7 +179,7 @@ impl Signature {
 
 #[cfg(test)]
 mod test {
-    use crate::tests_helper::*;
+    use crate::clsag::tests_helper::*;
 
     #[test]
     fn test_verify() {
