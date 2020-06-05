@@ -49,7 +49,7 @@ impl frame_system::Trait for Test {
 impl Trait for Test {
 	type Event = ();
 }
-pub type Groups = Module<Test>;
+pub type MerkleGroups = Module<Test>;
 
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.

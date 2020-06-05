@@ -7,39 +7,40 @@ version = "2.0.0"
 [dependencies]
 codec = { package = "parity-scale-codec", version = "1.0.0", default-features = false, features = ["derive"] }
 safe-mix = { default-features = false, version = "1.0.0" }
+balances = { version = "2.0.0-rc2", default-features = false, package = "pallet-balances", git = "https://github.com/paritytech/substrate.git" }
 
 [dependencies.frame-support]
 default-features = false
-version = "2.0.0"
+version = "2.0.0-rc2"
 git = "https://github.com/paritytech/substrate.git"
 
 [dependencies.frame-system]
 default-features = false
-version = "2.0.0"
+version = "2.0.0-rc2"
 git = "https://github.com/paritytech/substrate.git"
 
 [dependencies.sp-io]
 default-features = false
-version = "2.0.0"
+version = "2.0.0-rc2"
 git = "https://github.com/paritytech/substrate.git"
 
 [dependencies.sp-runtime]
 default-features = false
-version = "2.0.0"
+version = "2.0.0-rc2"
 git = "https://github.com/paritytech/substrate.git"
 
 [dependencies.sp-std]
 default-features = false
-version = "2.0.0"
+version = "2.0.0-rc2"
 git = "https://github.com/paritytech/substrate.git"
 
 [dependencies.merlin]
-version = "2.0.0"
+version = "2.0.0-rc2"
 default-features = false
 
 [dependencies.curve25519-dalek]
 # git = "https://github.com/dalek-cryptography/curve25519-dalek"
-version = "2.0"
+version = "2.1.0"
 default-features = false
 features = ["u64_backend", "alloc"]
 
@@ -48,7 +49,7 @@ version = "0.1.5"
 
 [dev-dependencies.sp-core]
 default-features = false
-version = "2.0.0"
+version = "2.0.0-rc2"
 git = "https://github.com/paritytech/substrate.git"
 
 [dependencies.rand]
@@ -61,6 +62,7 @@ std = [
 	"codec/std",
 	"frame-support/std",
 	"frame-system/std",
+	"balances/std",
 	"safe-mix/std",
 	"sp-std/std",
 	"sp-runtime/std",

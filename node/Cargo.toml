@@ -1,0 +1,45 @@
+[package]
+name = "node-template"
+version = "2.0.0-rc2"
+authors = ["Anonymous"]
+description = "Substrate Node template"
+edition = "2018"
+license = "Unlicense"
+build = "build.rs"
+homepage = "https://substrate.dev"
+repository = "https://github.com/paritytech/substrate/"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[[bin]]
+name = "node-template"
+
+[dependencies]
+futures = "0.3.4"
+log = "0.4.8"
+structopt = "0.3.8"
+parking_lot = "0.10.0"
+
+sc-cli = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sp-core = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sc-executor = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sc-service = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sp-inherents = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sc-transaction-pool = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sp-transaction-pool = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sc-network = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sc-consensus-aura = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sp-consensus-aura = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sp-consensus = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sc-consensus = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sc-finality-grandpa = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sp-finality-grandpa = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sc-client-api = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sp-runtime = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+sc-basic-authorship = { git = "https://github.com/paritytech/substrate.git", version = "0.8.0-rc2"}
+
+node-template-runtime = { version = "2.0.0-rc2", path = "../runtime" }
+
+[build-dependencies]
+substrate-build-script-utils = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }

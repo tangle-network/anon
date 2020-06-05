@@ -13,8 +13,8 @@ fn can_add_member_and_get_member() {
 		let key = PublicKey::new(bytes);
 		// Just a dummy test for the dummy funtion `do_something`
 		// calling the `do_something` function with a value 42
-		assert_ok!(Groups::add_member(Origin::signed(1), 1, key.clone()));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 1, key.clone()));
 		// asserting that the stored value is equal to what we stored
-		assert_eq!(Groups::get_members(1), Some(vec![key.clone()]));
+		assert_eq!(MerkleGroups::get_members(1), Some(vec![key.clone()]));
 	});
 }

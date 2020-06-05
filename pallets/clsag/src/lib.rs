@@ -46,8 +46,8 @@ type GroupId = u32;
 
 // This pallet's storage items.
 decl_storage! {
-	trait Store for Module<T: Trait> as Groups {
-		Groups get(fn groups): map hasher(blake2_256) GroupId => Option<Vec<RingPK>>;
+	trait Store for Module<T: Trait> as CLSAGGroups {
+		Groups get(fn groups): map hasher(blake2_128_concat) GroupId => Option<Vec<RingPK>>;
 	}
 }
 
@@ -80,6 +80,7 @@ decl_module! {
 
 		fn deposit_event() = default;
 
+		#[weight = 0]
 		pub fn add_member(origin, group_id: u32, pub_key: RingPK) -> dispatch::DispatchResult {
 			// Check it was signed and get the signer. See also: ensure_root and ensure_none
 			let who = ensure_signed(origin)?;
@@ -101,6 +102,7 @@ decl_module! {
 			Ok(())
 		}
 
+		#[weight = 0]
 		pub fn verify_ring_sig(
 			origin,
 			group_id: GroupId,

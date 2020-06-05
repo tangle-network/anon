@@ -15,9 +15,9 @@ fn can_add_member_and_get_member() {
 		let key = RingPublicKey::new(bytes);
 		// Just a dummy test for the dummy funtion `do_something`
 		// calling the `do_something` function with a value 42
-		assert_ok!(Groups::add_member(Origin::signed(1), 1, key.clone()));
+		assert_ok!(CLSAGGroups::add_member(Origin::signed(1), 1, key.clone()));
 		// asserting that the stored value is equal to what we stored
-		assert_eq!(Groups::get_members(1), Some(vec![key.clone()]));
+		assert_eq!(CLSAGGroups::get_members(1), Some(vec![key.clone()]));
 	});
 }
 
@@ -28,9 +28,9 @@ fn can_verify_ring_signature() {
 		let key = RingPublicKey::new(bytes);
 		// Just a dummy test for the dummy funtion `do_something`
 		// calling the `do_something` function with a value 42
-		assert_ok!(Groups::add_member(Origin::signed(1), 1, key.clone()));
+		assert_ok!(CLSAGGroups::add_member(Origin::signed(1), 1, key.clone()));
 		// asserting that the stored value is equal to what we stored
-		assert_eq!(Groups::get_members(1), Some(vec![key.clone()]));
+		assert_eq!(CLSAGGroups::get_members(1), Some(vec![key.clone()]));
 	});
 }
 
@@ -49,7 +49,7 @@ fn test_runtime_verify() {
 		let mut keys = vec![];
 		for i in 0..pub_keys.len() {
 			let k = RingPublicKey::new(pub_keys[i][0].0);
-			assert_ok!(Groups::add_member(Origin::signed(origins[i]), 1, k.clone()));
+			assert_ok!(CLSAGGroups::add_member(Origin::signed(origins[i]), 1, k.clone()));
 			keys.push(RingPublicKey(pub_keys[i][0]));
 		}
 
@@ -62,8 +62,8 @@ fn test_runtime_verify() {
 		let _challenge: RingScalar = RingScalar(sig.challenge);
 		let _responses: Vec<RingScalar> = sig.responses.iter().map(|x| RingScalar(*x)).collect();
 		let _key_images: Vec<RingPublicKey> = sig.key_images.iter().map(|x| RingPublicKey(*x)).collect();
-		assert_eq!(Groups::get_members(1), Some(keys.clone()));
-		assert_ok!(Groups::verify_ring_sig(
+		assert_eq!(CLSAGGroups::get_members(1), Some(keys.clone()));
+		assert_ok!(CLSAGGroups::verify_ring_sig(
 			Origin::signed(1),
 			1, // group ID
 			_challenge,

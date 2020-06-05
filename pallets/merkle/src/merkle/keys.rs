@@ -3,7 +3,7 @@ use sp_std::prelude::*;
 use codec::{Encode, Decode, Input, EncodeLike};
 use curve25519_dalek::ristretto::{
 	CompressedRistretto,
-	// RistrettoPoint
+	RistrettoPoint
 };
 use curve25519_dalek::scalar::Scalar;
 
@@ -77,5 +77,9 @@ impl PublicKey {
         arr.copy_from_slice(bytes);
         let c = CompressedRistretto(arr);
         Some(PublicKey(c))
+    }
+
+    pub fn from_ristretto(pt: RistrettoPoint) -> Self {
+        PublicKey(pt.compress())
     }
 }
