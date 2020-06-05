@@ -38,8 +38,8 @@ type GroupId = u32;
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Encode, Decode, PartialEq)]
 pub struct GroupTree<T: Trait> {
-    pub fee: T::Balance,
-    pub depth: u32,
+	pub fee: T::Balance,
+	pub depth: u32,
 	pub leaf_count: u32,
 	pub members: Vec<MerkleLeaf>,
 }
@@ -163,62 +163,62 @@ impl<T: Trait> Module<T> {
 		return MerkleLeaf::from_ristretto(left.0.decompress().unwrap() + right.0.decompress().unwrap());
 	}
 
-    pub fn get_unique_node(leaf: MerkleLeaf, index: usize) -> MerkleLeaf {
-        if leaf != MerkleLeaf::new(ZERO) {
-            return leaf;
-        } else {
-            return MerkleLeaf::new(ZERO);
-        }
-    }
+	pub fn get_unique_node(leaf: MerkleLeaf, index: usize) -> MerkleLeaf {
+		if leaf != MerkleLeaf::new(ZERO) {
+			return leaf;
+		} else {
+			return MerkleLeaf::new(ZERO);
+		}
+	}
 
-    pub fn add_leaf(group_id: GroupId, leaf: MerkleLeaf) {
-        let mut tree = <Groups<T>>::get(group_id).ok_or("Group doesn't exist").unwrap();
-        // Add element
-        let leaf_index = tree.leaf_count;
-        tree.leaf_count += 1;
-        if let Some(mut mt_level) = <MerkleTreeLevels>::get((group_id, tree.depth - 1)) {
-            mt_level.push(leaf);
-            <MerkleTreeLevels>::insert((group_id, tree.depth - 1), mt_level);
-        }
+	pub fn add_leaf(group_id: GroupId, leaf: MerkleLeaf) {
+		let mut tree = <Groups<T>>::get(group_id).ok_or("Group doesn't exist").unwrap();
+		// Add element
+		let leaf_index = tree.leaf_count;
+		tree.leaf_count += 1;
+		if let Some(mut mt_level) = <MerkleTreeLevels>::get((group_id, tree.depth - 1)) {
+			mt_level.push(leaf);
+			<MerkleTreeLevels>::insert((group_id, tree.depth - 1), mt_level);
+		}
 
-        let mut curr_index = leaf_index as usize;
-        // Update the tree
-        for i in 0..(tree.depth - 1) {
-            let mut left: MerkleLeaf;
-            let mut right: MerkleLeaf;
-            let next_index = curr_index / 2;
-            let level = <MerkleTreeLevels>::get((group_id, tree.depth - i - 1)).unwrap();
-            if curr_index % 2 == 0 {
-                left = level.clone()[curr_index].clone();
-                // Get leaf if exists or use precomputed hash
-                right = {
-                    let mut temp = MerkleLeaf::new(ZERO);
-                    if level.len() >= curr_index + 2 {
-                        temp = level.clone()[curr_index + 1].clone()
-                    }
-                    // returns precompute for an index or the node
-                    Self::get_unique_node(temp, i as usize)
-                };
-            } else {
-                left = Self::get_unique_node(level.clone()[curr_index - 1].clone(), i as usize);
-                right = level.clone()[curr_index].clone();
-            }
+		let mut curr_index = leaf_index as usize;
+		// Update the tree
+		for i in 0..(tree.depth - 1) {
+			let mut left: MerkleLeaf;
+			let mut right: MerkleLeaf;
+			let next_index = curr_index / 2;
+			let level = <MerkleTreeLevels>::get((group_id, tree.depth - i - 1)).unwrap();
+			if curr_index % 2 == 0 {
+				left = level.clone()[curr_index].clone();
+				// Get leaf if exists or use precomputed hash
+				right = {
+					let mut temp = MerkleLeaf::new(ZERO);
+					if level.len() >= curr_index + 2 {
+						temp = level.clone()[curr_index + 1].clone()
+					}
+					// returns precompute for an index or the node
+					Self::get_unique_node(temp, i as usize)
+				};
+			} else {
+				left = Self::get_unique_node(level.clone()[curr_index - 1].clone(), i as usize);
+				right = level.clone()[curr_index].clone();
+			}
 
-            if let Some(mut next_level) = <MerkleTreeLevels>::get((group_id, tree.depth - i - 2)) {
-                // println!("Next level {:?}", tree.depth - i - 2);
-                let new_node = Self::hash_leaves(left, right);
-                // println!("{:?}", new_node);
-                if next_level.len() >= next_index + 1 {
-                    next_level[next_index] = new_node;
-                } else {
-                    next_level.push(new_node);
-                }
-                // println!("{:?}", next_level);
+			if let Some(mut next_level) = <MerkleTreeLevels>::get((group_id, tree.depth - i - 2)) {
+				// println!("Next level {:?}", tree.depth - i - 2);
+				let new_node = Self::hash_leaves(left, right);
+				// println!("{:?}", new_node);
+				if next_level.len() >= next_index + 1 {
+					next_level[next_index] = new_node;
+				} else {
+					next_level.push(new_node);
+				}
+				// println!("{:?}", next_level);
 
-                <MerkleTreeLevels>::insert((group_id, tree.depth - i - 2), next_level);
-            }
+				<MerkleTreeLevels>::insert((group_id, tree.depth - i - 2), next_level);
+			}
 
-            curr_index = next_index;
+			curr_index = next_index;
 		}
 	}
 }
