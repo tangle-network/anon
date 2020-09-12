@@ -7,14 +7,19 @@ use crate::merkle::keys::{PublicKey};
 
 
 #[test]
-fn can_add_member_and_get_member() {
+fn can_create_group() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(Origin::signed(1), Some(10), Some(3), None));
+	});
+}
+
+#[test]
+fn can_add_member() {
 	new_test_ext().execute_with(|| {
 		let bytes: [u8; 32] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1];
 		let key = PublicKey::new(bytes);
-		// Just a dummy test for the dummy funtion `do_something`
-		// calling the `do_something` function with a value 42
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 1, key.clone()));
-		// asserting that the stored value is equal to what we stored
-		assert_eq!(MerkleGroups::get_members(1), Some(vec![key.clone()]));
-	});
+
+		assert_ok!(MerkleGroups::create_group(Origin::signed(1), Some(10), Some(3), None));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key.clone()));
+	});	
 }

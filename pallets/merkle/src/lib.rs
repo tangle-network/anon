@@ -20,7 +20,7 @@ pub mod tests;
 
 use codec::{Encode, Decode};
 use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, ensure};
-use frame_system::{self as system, ensure_signed};
+use frame_system::{ensure_signed};
 use sp_std::prelude::*;
 use sp_runtime::traits::{Zero};
 
@@ -132,6 +132,7 @@ decl_module! {
 			let ctr = Self::number_of_trees();
 			let empty: Vec<MerkleLeaf> = vec![];
 			for i in 0..depth {
+				println!("{:?}", i);
 				<MerkleTreeLevels>::insert((ctr, i), empty.clone());
 			}
 
@@ -163,7 +164,8 @@ impl<T: Trait> Module<T> {
 		return MerkleLeaf::from_ristretto(left.0.decompress().unwrap() + right.0.decompress().unwrap());
 	}
 
-	pub fn get_unique_node(leaf: MerkleLeaf, index: usize) -> MerkleLeaf {
+	// TODO: Implement pre-computed hash values for Sparse Merkle Tree
+	pub fn get_unique_node(leaf: MerkleLeaf, _index: usize) -> MerkleLeaf {
 		if leaf != MerkleLeaf::new(ZERO) {
 			return leaf;
 		} else {
@@ -184,8 +186,8 @@ impl<T: Trait> Module<T> {
 		let mut curr_index = leaf_index as usize;
 		// Update the tree
 		for i in 0..(tree.depth - 1) {
-			let mut left: MerkleLeaf;
-			let mut right: MerkleLeaf;
+			let left: MerkleLeaf;
+			let right: MerkleLeaf;
 			let next_index = curr_index / 2;
 			let level = <MerkleTreeLevels>::get((group_id, tree.depth - i - 1)).unwrap();
 			if curr_index % 2 == 0 {

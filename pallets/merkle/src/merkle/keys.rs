@@ -1,3 +1,4 @@
+use sha2::Sha512;
 use sp_std::prelude::*;
 
 use codec::{Encode, Decode, Input, EncodeLike};
@@ -52,7 +53,8 @@ impl Decode for PrivateKey {
 impl PublicKey {
 	/// Constructor from bytes
 	pub fn new(bytes: [u8; 32]) -> Self {
-		PublicKey(CompressedRistretto(bytes))
+        let point: RistrettoPoint = RistrettoPoint::hash_from_bytes::<Sha512>(&bytes[..]);
+		PublicKey(point.compress())
 	}
     /// Serialize this public key to 32 bytes
     pub fn as_bytes(&self) -> Vec<u8> {
