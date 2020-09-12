@@ -67,6 +67,7 @@ decl_storage! {
 		pub NumberOfTrees get(fn number_of_trees): GroupId;
 		pub MerkleTreeLevels get(fn merkle_tree_level): map hasher(blake2_128_concat) (GroupId, u32) => Option<Vec<MerkleLeaf>>;
 		pub UsedNullifiers get(fn used_nullifiers): map hasher(blake2_128_concat) MerkleNullifier => bool;
+		pub PrecomputedHashes get(fn precomputed_hashes): Option<Vec<MerkleLeaf>>;
 	}
 }
 
@@ -132,7 +133,6 @@ decl_module! {
 			let ctr = Self::number_of_trees();
 			let empty: Vec<MerkleLeaf> = vec![];
 			for i in 0..depth {
-				println!("{:?}", i);
 				<MerkleTreeLevels>::insert((ctr, i), empty.clone());
 			}
 
@@ -152,7 +152,26 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-	
+	pub fn precompute() {
+		if !<PrecomputedHashes>::get().is_none() { return };
+		let precomputed_hashes = {
+			let mut v = vec![];
+			for i in 0..32 {
+				let last = if i == 0 {
+					MerkleLeaf::new(&ZERO)
+				} else {
+					v[v.len() - 1]
+				};
+
+				v.push(last);
+			}
+			
+			v
+		};
+
+		<PrecomputedHashes>::set(Some(precomputed_hashes));
+	}
+
 	pub fn get_members(group_id: u32) -> Option<Vec<MerkleLeaf>> {
 		match <Groups<T>>::get(group_id) {
 			Some(g) => Some(g.members),
@@ -165,11 +184,12 @@ impl<T: Trait> Module<T> {
 	}
 
 	// TODO: Implement pre-computed hash values for Sparse Merkle Tree
-	pub fn get_unique_node(leaf: MerkleLeaf, _index: usize) -> MerkleLeaf {
-		if leaf != MerkleLeaf::new(ZERO) {
+	pub fn get_unique_node(leaf: MerkleLeaf, index: usize) -> MerkleLeaf {
+		Self::precompute();
+		if leaf != MerkleLeaf::new(&ZERO) {
 			return leaf;
 		} else {
-			return MerkleLeaf::new(ZERO);
+			return *<PrecomputedHashes>::get().unwrap().get(index).unwrap();
 		}
 	}
 
@@ -194,7 +214,7 @@ impl<T: Trait> Module<T> {
 				left = level.clone()[curr_index].clone();
 				// Get leaf if exists or use precomputed hash
 				right = {
-					let mut temp = MerkleLeaf::new(ZERO);
+					let mut temp = MerkleLeaf::new(&ZERO);
 					if level.len() >= curr_index + 2 {
 						temp = level.clone()[curr_index + 1].clone()
 					}

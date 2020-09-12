@@ -28,7 +28,7 @@ use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use merlin::Transcript;
 
 use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, ensure};
-use frame_system::{self as system, ensure_signed};
+use frame_system::{ensure_signed};
 use sp_std::prelude::*;
 
 pub type RingPK = clsag::keys::RingPublicKey;

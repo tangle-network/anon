@@ -9,9 +9,9 @@ use curve25519_dalek::ristretto::{
 use curve25519_dalek::scalar::Scalar;
 
 
-#[derive(Eq, PartialEq, Clone, Default, Debug)]
+#[derive(Eq, PartialEq, Clone, Default, Debug, Copy)]
 pub struct PublicKey(pub CompressedRistretto);
-#[derive(Eq, PartialEq, Clone, Default, Debug)]
+#[derive(Eq, PartialEq, Clone, Default, Debug, Copy)]
 pub struct PrivateKey(pub Scalar);
 
 pub const SIZE: usize = 32;
@@ -52,8 +52,8 @@ impl Decode for PrivateKey {
 
 impl PublicKey {
 	/// Constructor from bytes
-	pub fn new(bytes: [u8; 32]) -> Self {
-        let point: RistrettoPoint = RistrettoPoint::hash_from_bytes::<Sha512>(&bytes[..]);
+	pub fn new(bytes: &[u8]) -> Self {
+        let point: RistrettoPoint = RistrettoPoint::hash_from_bytes::<Sha512>(bytes);
 		PublicKey(point.compress())
 	}
     /// Serialize this public key to 32 bytes
@@ -83,5 +83,10 @@ impl PublicKey {
 
     pub fn from_ristretto(pt: RistrettoPoint) -> Self {
         PublicKey(pt.compress())
+    }
+
+    pub fn hash_points(a: Self, b: Self) -> Self {
+        Self::new(&[&a.0.to_bytes()[..], &b.0.to_bytes()[..]].concat()[..])
+
     }
 }

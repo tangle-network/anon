@@ -1,3 +1,4 @@
+
 use crate::{Module, Trait};
 use sp_core::H256;
 use frame_support::{impl_outer_origin, parameter_types, weights::Weight};
@@ -72,5 +73,14 @@ pub type MerkleGroups = Module<Test>;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
+	let mut t = system::GenesisConfig::default().build_storage::<Test>().unwrap().into();
+	balances::GenesisConfig::<Test> {
+		balances: vec![
+			(1, 100),
+			(2, 100),
+			(3, 100),
+			(4, 100),
+		],
+	}.assimilate_storage(&mut t).unwrap();
+	t.into()
 }
