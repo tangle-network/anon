@@ -158,9 +158,9 @@ impl<T: Trait> Module<T> {
 			let mut v = vec![];
 			for i in 0..32 {
 				let last = if i == 0 {
-					MerkleLeaf::new(&ZERO)
+					MerkleLeaf::hash_points(MerkleLeaf::new(&ZERO), MerkleLeaf::new(&ZERO))
 				} else {
-					v[v.len() - 1]
+					MerkleLeaf::hash_points(v[v.len() - 1], v[v.len() - 1])
 				};
 
 				v.push(last);
