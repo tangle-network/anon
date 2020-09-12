@@ -1,0 +1,7 @@
+[workspace]
+members = [
+	"node",
+	"runtime",
+	"pallets/clsag",
+	"pallets/merkle",
+]

@@ -1,8 +1,8 @@
 [package]
 name = "node-template"
-version = "2.0.0-rc2"
+version = "2.0.0-rc6"
 authors = ["Anonymous"]
-description = "Substrate Node template"
+description = "A new FRAME-based Substrate node, ready for hacking."
 edition = "2018"
 license = "Unlicense"
 build = "build.rs"
@@ -16,30 +16,36 @@ targets = ["x86_64-unknown-linux-gnu"]
 name = "node-template"
 
 [dependencies]
-futures = "0.3.4"
-log = "0.4.8"
 structopt = "0.3.8"
-parking_lot = "0.10.0"
 
-sc-cli = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sp-core = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sc-executor = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sc-service = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sp-inherents = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sc-transaction-pool = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sp-transaction-pool = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sc-network = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sc-consensus-aura = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sp-consensus-aura = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sp-consensus = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sc-consensus = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sc-finality-grandpa = { version = "0.8.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sp-finality-grandpa = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sc-client-api = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sp-runtime = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
-sc-basic-authorship = { git = "https://github.com/paritytech/substrate.git", version = "0.8.0-rc2"}
+sc-cli = { version = "0.8.0-rc6", git = "https://github.com/paritytech/substrate" }
+sp-core = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
+sc-executor = { version = "0.8.0-rc6", git = "https://github.com/paritytech/substrate" }
+sc-service = { version = "0.8.0-rc6", git = "https://github.com/paritytech/substrate" }
+sp-inherents = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
+sc-transaction-pool = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
+sp-transaction-pool = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
+sc-consensus-aura = { version = "0.8.0-rc6", git = "https://github.com/paritytech/substrate" }
+sp-consensus-aura = { version = "0.8.0-rc6", git = "https://github.com/paritytech/substrate" }
+sp-consensus = { version = "0.8.0-rc6", git = "https://github.com/paritytech/substrate" }
+sc-consensus = { version = "0.8.0-rc6", git = "https://github.com/paritytech/substrate" }
+sc-finality-grandpa = { version = "0.8.0-rc6", git = "https://github.com/paritytech/substrate" }
+sp-finality-grandpa = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
+sc-client-api = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
+sp-runtime = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
 
-node-template-runtime = { version = "2.0.0-rc2", path = "../runtime" }
+# These dependencies are used for the node template's RPCs
+jsonrpc-core = "14.0.3"
+sc-rpc = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
+sp-api = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
+sc-rpc-api = { version = "0.8.0-rc6", git = "https://github.com/paritytech/substrate" }
+sp-blockchain = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
+sp-block-builder = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
+sc-basic-authorship = { version = "0.8.0-rc6", git = "https://github.com/paritytech/substrate" }
+substrate-frame-rpc-system = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
+pallet-transaction-payment-rpc = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
+
+node-template-runtime = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
 
 [build-dependencies]
-substrate-build-script-utils = { version = "2.0.0-rc2", git = "https://github.com/paritytech/substrate.git" }
+substrate-build-script-utils = { version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate" }
