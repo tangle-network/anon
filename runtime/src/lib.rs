@@ -43,6 +43,8 @@ pub use frame_support::{
 
 /// Importing a groups pallet
 pub use clsag;
+/// Importing a groups pallet
+pub use merkle;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -241,6 +243,7 @@ impl pallet_balances::Trait for Runtime {
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
 	type WeightInfo = ();
+	type MaxLocks = ();
 }
 
 parameter_types! {
@@ -264,6 +267,10 @@ impl clsag::Trait for Runtime {
 	type Event = Event;
 }
 
+impl merkle::Trait for Runtime {
+	type Event = Event;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -280,6 +287,7 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment::{Module, Storage},
 		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
 		CLSAG: clsag::{Module, Call, Storage, Event<T>},
+		Merkle: merkle::{Module, Call, Storage, Event<T>},
 	}
 );
 

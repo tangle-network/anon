@@ -183,7 +183,6 @@ impl<T: Trait> Module<T> {
 		return MerkleLeaf::from_ristretto(left.0.decompress().unwrap() + right.0.decompress().unwrap());
 	}
 
-	// TODO: Implement pre-computed hash values for Sparse Merkle Tree
 	pub fn get_unique_node(leaf: MerkleLeaf, index: usize) -> MerkleLeaf {
 		Self::precompute();
 		if leaf != MerkleLeaf::new(&ZERO) {
@@ -206,8 +205,7 @@ impl<T: Trait> Module<T> {
 		let mut curr_index = leaf_index as usize;
 		// Update the tree
 		for i in 0..(tree.depth - 1) {
-			let left: MerkleLeaf;
-			let right: MerkleLeaf;
+			let (left, right): (MerkleLeaf, MerkleLeaf);
 			let next_index = curr_index / 2;
 			let level = <MerkleTreeLevels>::get((group_id, tree.depth - i - 1)).unwrap();
 			if curr_index % 2 == 0 {
