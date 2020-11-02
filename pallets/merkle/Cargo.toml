@@ -7,13 +7,13 @@ version = "2.0.0"
 [dependencies]
 codec = { package = "parity-scale-codec", version = "1.0.0", default-features = false, features = ["derive"] }
 safe-mix = { default-features = false, version = "1.0.0" }
-balances = { version = "2.0.0-rc6", default-features = false, package = "pallet-balances", git = "https://github.com/paritytech/substrate.git" }
-frame-support = { default-features = false, version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate.git" }
-frame-system = { default-features = false, version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate.git" }
-sp-io = { default-features = false, version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate.git" }
-sp-runtime = { default-features = false, version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate.git" }
-sp-std = { default-features = false, version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate.git" }
-merlin = { version = "2.0.0-rc6", default-features = false }
+balances = { version = "2.0.0", default-features = false, package = "pallet-balances", git = "https://github.com/paritytech/substrate.git" }
+frame-support = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
+frame-system = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-io = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-runtime = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-std = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
+merlin = { version = "2.0.0", default-features = false }
 rand = { version = "0.7.3", optional = true }
 sha2 = { version = "0.9.1", default-features = false }
 
@@ -28,7 +28,7 @@ features = ["u64_backend", "alloc"]
 version = "0.1.5"
 
 [dev-dependencies]
-sp-core = { default-features = false, version = "2.0.0-rc6", git = "https://github.com/paritytech/substrate.git" }
+sp-core = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
 
 [features]
 default = ["std"]

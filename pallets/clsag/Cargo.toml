@@ -10,27 +10,27 @@ safe-mix = { default-features = false, version = "1.0.0" }
 
 [dependencies.frame-support]
 default-features = false
-version = "2.0.0-rc2"
+version = "2.0.0"
 git = "https://github.com/paritytech/substrate.git"
 
 [dependencies.frame-system]
 default-features = false
-version = "2.0.0-rc2"
+version = "2.0.0"
 git = "https://github.com/paritytech/substrate.git"
 
 [dependencies.sp-io]
 default-features = false
-version = "2.0.0-rc2"
+version = "2.0.0"
 git = "https://github.com/paritytech/substrate.git"
 
 [dependencies.sp-runtime]
 default-features = false
-version = "2.0.0-rc2"
+version = "2.0.0"
 git = "https://github.com/paritytech/substrate.git"
 
 [dependencies.sp-std]
 default-features = false
-version = "2.0.0-rc2"
+version = "2.0.0"
 git = "https://github.com/paritytech/substrate.git"
 
 [dependencies.sha2]
@@ -38,7 +38,7 @@ version = "0.8"
 default-features = false
 
 [dependencies.merlin]
-version = "2.0.0-rc2"
+version = "2.0.0"
 default-features = false
 
 [dependencies.curve25519-dalek]
@@ -52,7 +52,7 @@ version = "0.1.5"
 
 [dev-dependencies.sp-core]
 default-features = false
-version = "2.0.0-rc2"
+version = "2.0.0"
 git = "https://github.com/paritytech/substrate.git"
 
 [dependencies.rand]
