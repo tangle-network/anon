@@ -78,7 +78,7 @@ impl Clsag {
             .collect()
     }
     // sign produces a clsag signature
-    pub fn sign(&self) -> Result<Signature, Error> {
+    pub fn sign(&self, msg: &[u8]) -> Result<Signature, Error> {
         self.check_format()?;
 
         let num_members = self.members.len();
@@ -95,7 +95,7 @@ impl Clsag {
         let key_images = signer.compute_key_images()?;
 
         // Calculate aggrgation co-efficients
-        let aggregation_cooeff = calc_aggregation_coefficients(&pubkey_matrix, &key_images);
+        let aggregation_cooeff = calc_aggregation_coefficients(&pubkey_matrix, &key_images, msg);
 
         // Calculate first challenge
         let mut challenge = signer.compute_challenge_commitment(&pubkey_matrix)?;
@@ -221,6 +221,7 @@ impl Clsag {
 pub fn calc_aggregation_coefficients(
     pubkey_matrix: &[u8],
     key_images: &[CompressedRistretto],
+    message: &[u8],
 ) -> Vec<Scalar> {
     // precompute (pubkey_matrix || keyimages)
     let key_images_bytes: Vec<u8> = key_images
@@ -235,6 +236,7 @@ pub fn calc_aggregation_coefficients(
 
     for i in 0..num_keys_per_user {
         let mut transcript = Transcript::new(b"clsag");
+        transcript.append_message(b"msg", message);
 
         transcript.append_u64(b"", i as u64);
         transcript.append_message(b"", pubkey_matrix);
@@ -258,7 +260,7 @@ mod test {
         let mut clsag = generate_clsag_with(num_decoys, num_keys);
 
         // No signer in the ring
-        match clsag.sign() {
+        match clsag.sign(b"hello world") {
             Ok(_) => panic!("expected an error as there is no signer in the ring"),
             Err(Error::NoSigner) => {}
             Err(_) => panic!("got an error, however we expected no signer error"),
@@ -270,7 +272,7 @@ mod test {
         clsag.add_member(generate_signer(num_keys));
 
         // More than one signer in the ring
-        match clsag.sign() {
+        match clsag.sign(b"hello world") {
             Ok(_) => panic!("expected an error as there are too many signers in the ring"),
             Err(Error::MoreThanOneSigner) => {}
             Err(_) => panic!("got an error, however we expected a more than one signer error"),
@@ -284,7 +286,7 @@ mod test {
         clsag.add_member(generate_signer(num_keys));
 
         // One member has a different number of keys
-        match clsag.sign() {
+        match clsag.sign(b"hello") {
             Ok(_) => {
                 panic!("expected an error as one member has more keys than another in the ring")
             }
@@ -301,7 +303,7 @@ mod test {
         let first_member_last_element = &mut first_member.public_set.0.last().unwrap();
         first_member.public_set.0[0] = first_member_last_element.clone();
 
-        match clsag.sign() {
+        match clsag.sign(b"hello world") {
             Ok(_) => panic!("expected an error as one member has a duplicate key"),
             Err(Error::DuplicateKeysExist) => {}
             Err(_) => panic!("got an error, however we expected a `duplicate keys` error"),
@@ -318,7 +320,7 @@ mod test {
         clsag.add_member(generate_signer(num_keys));
 
         // Should produce no error
-        let signature = clsag.sign().unwrap();
+        let signature = clsag.sign(b"hello world").unwrap();
 
         // number of key images should equal number of keys
         assert_eq!(num_keys, signature.key_images.len());

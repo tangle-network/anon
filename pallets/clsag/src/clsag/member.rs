@@ -54,13 +54,9 @@ impl Member {
 
         Member {
             nonce: Some(nonce),
-
             public_set: public_set,
-
             hashed_pubkey_basepoint: hashed_pubkey,
-
             private_set: Some(private_set),
-
             response: None,
         }
     }

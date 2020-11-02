@@ -37,12 +37,12 @@ fn can_verify_ring_signature() {
 #[test]
 fn test_runtime_verify() {
 	new_test_ext().execute_with(|| {
-		let num_keys = 1;
+		let num_keys = 2;
 		let num_decoys = 1;
-
+		let msg = b"hello world world world world wo";
 		let mut clsag = generate_clsag_with(num_decoys, num_keys);
 		clsag.add_member(generate_signer(num_keys));
-		let sig = clsag.sign().unwrap();
+		let sig = clsag.sign(msg).unwrap();
 		let mut pub_keys = clsag.public_keys();
 
 		let origins = [1, 2];
@@ -57,7 +57,7 @@ fn test_runtime_verify() {
 		let have_pubkey_bytes = sig.pubkeys_to_bytes(&pub_keys);
 
 		assert_eq!(expected_pubkey_bytes, have_pubkey_bytes);
-		assert!(sig.optimised_verify(&mut pub_keys).is_ok());
+		assert!(sig.optimised_verify(&mut pub_keys, msg).is_ok());
 
 		let _challenge: RingScalar = RingScalar(sig.challenge);
 		let _responses: Vec<RingScalar> = sig.responses.iter().map(|x| RingScalar(*x)).collect();
@@ -68,7 +68,49 @@ fn test_runtime_verify() {
 			1, // group ID
 			_challenge,
 			_responses,
-			_key_images
+			_key_images,
+			None,
+		));
+	});
+}
+
+#[test]
+fn test_linking_signatures() {
+	new_test_ext().execute_with(|| {
+        let num_decoys = 9;
+        let num_keys = 1;
+        let mut clsag = generate_clsag_with(num_decoys, num_keys);
+		let msg = b"hello world world world world wo";
+		clsag.add_member(generate_signer(num_keys));
+		let sig = clsag.sign(msg).unwrap();
+		
+		let mut pub_keys = clsag.public_keys();
+		let origins = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+		let mut keys = vec![];
+		for i in 0..pub_keys.len() {
+			let k = RingPublicKey::new(pub_keys[i][0].0);
+			assert_ok!(CLSAGGroups::add_member(Origin::signed(origins[i]), 1, k.clone()));
+			keys.push(RingPublicKey(pub_keys[i][0]));
+		}
+
+		let expected_pubkey_bytes = clsag.public_keys_bytes();
+		let have_pubkey_bytes = sig.pubkeys_to_bytes(&pub_keys);
+
+		assert_eq!(expected_pubkey_bytes, have_pubkey_bytes);
+		assert!(sig.optimised_verify(&mut pub_keys, msg).is_ok());
+
+		let _challenge: RingScalar = RingScalar(sig.challenge);
+		let _responses: Vec<RingScalar> = sig.responses.iter().map(|x| RingScalar(*x)).collect();
+		let _key_images: Vec<RingPublicKey> = sig.key_images.iter().map(|x| RingPublicKey(*x)).collect();
+		println!("{:?}", _challenge);
+		assert_eq!(CLSAGGroups::get_members(1), Some(keys.clone()));
+		assert_ok!(CLSAGGroups::verify_ring_sig(
+			Origin::signed(1),
+			1, // group ID
+			_challenge,
+			_responses,
+			_key_images,
+			Some(*msg),
 		));
 	});
 }

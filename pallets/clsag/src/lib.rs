@@ -109,6 +109,7 @@ decl_module! {
 			_challenge: clsag::keys::RingScalar,
 			_responses: Vec<clsag::keys::RingScalar>,
 			_key_images: Vec<RingPK>,
+			_msg: Option<[u8; 32]>,
 		) -> dispatch::DispatchResult {
 			// Check it was signed and get the signer. See also: ensure_root and ensure_none
 			let _who = ensure_signed(origin)?;
@@ -149,9 +150,10 @@ decl_module! {
 				bytes
 			};
 
+			let msg = _msg.unwrap_or(*b"hello world world world world wo");
 			// Calculate aggregation co-efficients
 			let k_images: Vec<CompressedRistretto> = _key_images.iter().map(|x| x.0).collect();
-			let agg_coeffs = calc_aggregation_coefficients(&pub_key_matrix, &k_images);
+			let agg_coeffs = calc_aggregation_coefficients(&pub_key_matrix, &k_images, &msg);
 
 			let mut challenge = _challenge.clone();
 
