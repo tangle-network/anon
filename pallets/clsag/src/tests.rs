@@ -37,7 +37,7 @@ fn can_verify_ring_signature() {
 #[test]
 fn test_runtime_verify() {
 	new_test_ext().execute_with(|| {
-		let num_keys = 2;
+		let num_keys = 1;
 		let num_decoys = 1;
 		let msg = b"hello world world world world wo";
 		let mut clsag = generate_clsag_with(num_decoys, num_keys);
