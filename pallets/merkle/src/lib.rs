@@ -131,6 +131,23 @@ decl_module! {
 		}
 
 		#[weight = 0]
+		pub fn verify(origin, group_id: u32, pub_key: MerkleLeaf, path: Vec<(bool, MerkleLeaf)>) -> dispatch::DispatchResult {
+			let tree = <Groups<T>>::get(group_id).ok_or("Group doesn't exist").unwrap();
+			ensure!(tree.edge_nodes.len() == path.len(), "Invalid path length.");
+
+			let mut hash = pub_key;
+			for (is_right, node) in path {
+				hash = match is_right {
+					true => Self::hash_leaves(hash, node),
+					false => Self::hash_leaves(node, hash),
+				}
+			}
+
+			ensure!(hash == tree.root_hash, "Invalid proof.");
+			Ok(())
+		}
+
+		#[weight = 0]
 		pub fn create_group(origin, group_id: GroupId, _fee: Option<T::Balance>, _depth: Option<u32>) -> dispatch::DispatchResult {
 			let _sender = ensure_signed(origin)?;
 			ensure!(!<Groups<T>>::contains_key(group_id), "Group already exists.");
@@ -155,8 +172,6 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
 	pub fn hash_leaves(left: MerkleLeaf, right: MerkleLeaf) -> MerkleLeaf {
-		return MerkleLeaf::from_ristretto(
-			left.0.decompress().unwrap() + right.0.decompress().unwrap(),
-		);
+		MerkleLeaf::hash_points(left, right)
 	}
 }
