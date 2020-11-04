@@ -32,7 +32,7 @@ pub trait Trait: balances::Trait {
 }
 
 type GroupId = u32;
-const MAX_DEPTH: u32 = 31;
+const MAX_DEPTH: u32 = 32;
 const ZERO: [u8; 32] = [
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 ];
@@ -53,8 +53,8 @@ impl<T: Trait> GroupTree<T> {
 			fee,
 			root_hash: MerkleLeaf::new(&ZERO),
 			leaf_count: 0,
-			max_leaves: 1 << depth - 1,
-			edge_nodes: vec![MerkleLeaf::new(&ZERO); (depth - 1) as usize],
+			max_leaves: u32::MAX >> (32 - depth),
+			edge_nodes: vec![MerkleLeaf::new(&ZERO); depth as usize],
 		}
 	}
 }
@@ -161,6 +161,8 @@ decl_module! {
 				Some(d) => d,
 				None => MAX_DEPTH
 			};
+
+			ensure!(depth <= MAX_DEPTH && depth > 0, "Invalid tree depth.");
 
 			let mtree = GroupTree::<T>::new(fee, depth);
 			<Groups<T>>::insert(group_id, mtree);

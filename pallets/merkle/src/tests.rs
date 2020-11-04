@@ -40,23 +40,54 @@ fn can_add_member() {
 }
 
 #[test]
-fn should_reach_max_depth() {
+fn should_not_have_0_depth() {
 	new_test_ext().execute_with(|| {
-		let key0 = PublicKey::new(&key_bytes(0));
+		assert_err!(
+			MerkleGroups::create_group(Origin::signed(1), 0, Some(10), Some(0),),
+			"Invalid tree depth."
+		);
+	});
+}
+
+#[test]
+fn should_have_min_depth() {
+	new_test_ext().execute_with(|| {
+		let key = PublicKey::new(&key_bytes(1));
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			0,
+			Some(10),
+			Some(1),
+		));
+
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key.clone()));
+		assert_err!(
+			MerkleGroups::add_member(Origin::signed(1), 0, key.clone()),
+			"Exceeded maximum tree depth."
+		);
+	});
+}
+
+#[test]
+fn should_have_max_depth() {
+	new_test_ext().execute_with(|| {
+		let key = PublicKey::new(&key_bytes(0));
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
 			0,
 			Some(10),
-			Some(3),
+			Some(32),
 		));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key0.clone()));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key0.clone()));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key0.clone()));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key0.clone()));
+	});
+}
+
+#[test]
+fn should_not_have_more_than_max_depth() {
+	new_test_ext().execute_with(|| {
 		assert_err!(
-			MerkleGroups::add_member(Origin::signed(1), 0, key0.clone()),
-			"Exceeded maximum tree depth."
+			MerkleGroups::create_group(Origin::signed(1), 0, Some(10), Some(33),),
+			"Invalid tree depth."
 		);
 	});
 }
@@ -83,13 +114,12 @@ fn should_have_correct_root_hash_after_insertion() {
 		let key0 = PublicKey::new(&key_bytes(0));
 		let key1 = PublicKey::new(&key_bytes(1));
 		let key2 = PublicKey::new(&key_bytes(2));
-		let key3 = PublicKey::new(&key_bytes(3));
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
 			0,
 			Some(10),
-			Some(3),
+			Some(2),
 		));
 		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key0.clone()));
 
@@ -118,16 +148,6 @@ fn should_have_correct_root_hash_after_insertion() {
 		let tree = MerkleGroups::groups(0).unwrap();
 
 		assert_eq!(tree.root_hash, keyh3, "Invalid root hash");
-
-		assert_ok!(MerkleGroups::add_member(Origin::signed(4), 0, key3.clone()));
-
-		let keyh1 = MerkleGroups::hash_leaves(key0, key1);
-		let keyh2 = MerkleGroups::hash_leaves(key2, key3);
-		let keyh3 = MerkleGroups::hash_leaves(keyh1, keyh2);
-
-		let tree = MerkleGroups::groups(0).unwrap();
-
-		assert_eq!(tree.root_hash, keyh3, "Invalid root hash");
 	});
 }
 
@@ -135,7 +155,7 @@ fn should_have_correct_root_hash_after_insertion() {
 fn should_have_correct_root_hash() {
 	new_test_ext().execute_with(|| {
 		let mut keys = Vec::new();
-		for i in 0..16 {
+		for i in 0..15 {
 			keys.push(PublicKey::new(&key_bytes(i as u8)))
 		}
 
@@ -143,10 +163,10 @@ fn should_have_correct_root_hash() {
 			Origin::signed(1),
 			0,
 			Some(10),
-			Some(5),
+			Some(4),
 		));
 
-		for i in 0..16 {
+		for i in 0..15 {
 			assert_ok!(MerkleGroups::add_member(
 				Origin::signed(i),
 				0,
@@ -161,7 +181,7 @@ fn should_have_correct_root_hash() {
 		let key1_5 = MerkleGroups::hash_leaves(keys[8], keys[9]);
 		let key1_6 = MerkleGroups::hash_leaves(keys[10], keys[11]);
 		let key1_7 = MerkleGroups::hash_leaves(keys[12], keys[13]);
-		let key1_8 = MerkleGroups::hash_leaves(keys[14], keys[15]);
+		let key1_8 = MerkleGroups::hash_leaves(keys[14], keys[14]);
 
 		let key2_1 = MerkleGroups::hash_leaves(key1_1, key1_2);
 		let key2_2 = MerkleGroups::hash_leaves(key1_3, key1_4);
@@ -174,6 +194,7 @@ fn should_have_correct_root_hash() {
 		let root_hash = MerkleGroups::hash_leaves(key3_1, key3_2);
 
 		let tree = MerkleGroups::groups(0).unwrap();
+
 		assert_eq!(tree.root_hash, root_hash, "Invalid root hash");
 	});
 }
@@ -188,7 +209,7 @@ fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 			Origin::signed(1),
 			0,
 			Some(10),
-			Some(3),
+			Some(2),
 		));
 		assert_ok!(MerkleGroups::add_member(Origin::signed(0), 0, key0.clone()));
 		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key1.clone()));
@@ -214,21 +235,19 @@ fn should_not_verify_invalid_proof() {
 		let key0 = PublicKey::new(&key_bytes(0));
 		let key1 = PublicKey::new(&key_bytes(1));
 		let key2 = PublicKey::new(&key_bytes(2));
-		let key3 = PublicKey::new(&key_bytes(3));
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
 			0,
 			Some(10),
-			Some(3),
+			Some(2),
 		));
 		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key0.clone()));
 		assert_ok!(MerkleGroups::add_member(Origin::signed(2), 0, key1.clone()));
 		assert_ok!(MerkleGroups::add_member(Origin::signed(3), 0, key2.clone()));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(4), 0, key3.clone()));
 
 		let keyh1 = MerkleGroups::hash_leaves(key0, key1);
-		let keyh2 = MerkleGroups::hash_leaves(key2, key3);
+		let keyh2 = MerkleGroups::hash_leaves(key2, key2);
 		let _root_hash = MerkleGroups::hash_leaves(keyh1, keyh2);
 
 		let path = vec![(false, key1), (true, keyh2)];
@@ -258,7 +277,7 @@ fn should_not_verify_invalid_proof() {
 fn should_verify_proof_of_membership() {
 	new_test_ext().execute_with(|| {
 		let mut keys = Vec::new();
-		for i in 0..16 {
+		for i in 0..15 {
 			keys.push(PublicKey::new(&key_bytes(i as u8)))
 		}
 
@@ -266,10 +285,10 @@ fn should_verify_proof_of_membership() {
 			Origin::signed(1),
 			0,
 			Some(10),
-			Some(5),
+			Some(4),
 		));
 
-		for i in 0..16 {
+		for i in 0..15 {
 			assert_ok!(MerkleGroups::add_member(
 				Origin::signed(i),
 				0,
@@ -284,7 +303,7 @@ fn should_verify_proof_of_membership() {
 		let key1_5 = MerkleGroups::hash_leaves(keys[8], keys[9]);
 		let key1_6 = MerkleGroups::hash_leaves(keys[10], keys[11]);
 		let key1_7 = MerkleGroups::hash_leaves(keys[12], keys[13]);
-		let key1_8 = MerkleGroups::hash_leaves(keys[14], keys[15]);
+		let key1_8 = MerkleGroups::hash_leaves(keys[14], keys[14]);
 
 		let key2_1 = MerkleGroups::hash_leaves(key1_1, key1_2);
 		let key2_2 = MerkleGroups::hash_leaves(key1_3, key1_4);
@@ -330,6 +349,6 @@ fn should_verify_proof_of_membership() {
 			(false, key3_1),
 		];
 
-		assert_ok!(MerkleGroups::verify(Origin::signed(2), 0, keys[15], path));
+		assert_ok!(MerkleGroups::verify(Origin::signed(2), 0, keys[14], path));
 	});
 }
