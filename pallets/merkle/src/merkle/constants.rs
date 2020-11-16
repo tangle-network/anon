@@ -3,7 +3,7 @@ use curve25519_dalek::ristretto::RistrettoPoint;
 
 pub const BASEPOINT: RistrettoPoint = RISTRETTO_BASEPOINT_POINT;
 
-pub const MIMC_ROUNDS: usize = 322;
+pub const MIMC_ROUNDS: usize = 10;
 
 pub const MIMC_CONSTANTS: [[u8; 32]; 10] = [
 	[

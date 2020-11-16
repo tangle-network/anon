@@ -1,9 +1,12 @@
 // Tests to be written here
 
-use crate::mock::*;
-use frame_support::{assert_err, assert_ok};
-
 use crate::merkle::keys::PublicKey;
+use crate::mock::*;
+use bulletproofs::r1cs::{ConstraintSystem, Prover};
+use bulletproofs::{BulletproofGens, PedersenGens};
+use curve25519_dalek::scalar::Scalar;
+use frame_support::{assert_err, assert_ok};
+use merlin::Transcript;
 
 fn key_bytes(x: u8) -> [u8; 32] {
 	[
@@ -123,8 +126,8 @@ fn should_have_correct_root_hash_after_insertion() {
 		));
 		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key0.clone()));
 
-		let keyh1 = MerkleGroups::hash_leaves(key0, key0);
-		let keyh2 = MerkleGroups::hash_leaves(keyh1, keyh1);
+		let keyh1 = PublicKey::hash_points(key0, key0);
+		let keyh2 = PublicKey::hash_points(keyh1, keyh1);
 
 		let tree = MerkleGroups::groups(0).unwrap();
 
@@ -132,8 +135,8 @@ fn should_have_correct_root_hash_after_insertion() {
 
 		assert_ok!(MerkleGroups::add_member(Origin::signed(2), 0, key1.clone()));
 
-		let keyh1 = MerkleGroups::hash_leaves(key0, key1);
-		let keyh2 = MerkleGroups::hash_leaves(keyh1, keyh1);
+		let keyh1 = PublicKey::hash_points(key0, key1);
+		let keyh2 = PublicKey::hash_points(keyh1, keyh1);
 
 		let tree = MerkleGroups::groups(0).unwrap();
 
@@ -141,9 +144,9 @@ fn should_have_correct_root_hash_after_insertion() {
 
 		assert_ok!(MerkleGroups::add_member(Origin::signed(3), 0, key2.clone()));
 
-		let keyh1 = MerkleGroups::hash_leaves(key0, key1);
-		let keyh2 = MerkleGroups::hash_leaves(key2, key2);
-		let keyh3 = MerkleGroups::hash_leaves(keyh1, keyh2);
+		let keyh1 = PublicKey::hash_points(key0, key1);
+		let keyh2 = PublicKey::hash_points(key2, key2);
+		let keyh3 = PublicKey::hash_points(keyh1, keyh2);
 
 		let tree = MerkleGroups::groups(0).unwrap();
 
@@ -174,24 +177,24 @@ fn should_have_correct_root_hash() {
 			));
 		}
 
-		let key1_1 = MerkleGroups::hash_leaves(keys[0], keys[1]);
-		let key1_2 = MerkleGroups::hash_leaves(keys[2], keys[3]);
-		let key1_3 = MerkleGroups::hash_leaves(keys[4], keys[5]);
-		let key1_4 = MerkleGroups::hash_leaves(keys[6], keys[7]);
-		let key1_5 = MerkleGroups::hash_leaves(keys[8], keys[9]);
-		let key1_6 = MerkleGroups::hash_leaves(keys[10], keys[11]);
-		let key1_7 = MerkleGroups::hash_leaves(keys[12], keys[13]);
-		let key1_8 = MerkleGroups::hash_leaves(keys[14], keys[14]);
+		let key1_1 = PublicKey::hash_points(keys[0], keys[1]);
+		let key1_2 = PublicKey::hash_points(keys[2], keys[3]);
+		let key1_3 = PublicKey::hash_points(keys[4], keys[5]);
+		let key1_4 = PublicKey::hash_points(keys[6], keys[7]);
+		let key1_5 = PublicKey::hash_points(keys[8], keys[9]);
+		let key1_6 = PublicKey::hash_points(keys[10], keys[11]);
+		let key1_7 = PublicKey::hash_points(keys[12], keys[13]);
+		let key1_8 = PublicKey::hash_points(keys[14], keys[14]);
 
-		let key2_1 = MerkleGroups::hash_leaves(key1_1, key1_2);
-		let key2_2 = MerkleGroups::hash_leaves(key1_3, key1_4);
-		let key2_3 = MerkleGroups::hash_leaves(key1_5, key1_6);
-		let key2_4 = MerkleGroups::hash_leaves(key1_7, key1_8);
+		let key2_1 = PublicKey::hash_points(key1_1, key1_2);
+		let key2_2 = PublicKey::hash_points(key1_3, key1_4);
+		let key2_3 = PublicKey::hash_points(key1_5, key1_6);
+		let key2_4 = PublicKey::hash_points(key1_7, key1_8);
 
-		let key3_1 = MerkleGroups::hash_leaves(key2_1, key2_2);
-		let key3_2 = MerkleGroups::hash_leaves(key2_3, key2_4);
+		let key3_1 = PublicKey::hash_points(key2_1, key2_2);
+		let key3_2 = PublicKey::hash_points(key2_3, key2_4);
 
-		let root_hash = MerkleGroups::hash_leaves(key3_1, key3_2);
+		let root_hash = PublicKey::hash_points(key3_1, key3_2);
 
 		let tree = MerkleGroups::groups(0).unwrap();
 
@@ -246,9 +249,9 @@ fn should_not_verify_invalid_proof() {
 		assert_ok!(MerkleGroups::add_member(Origin::signed(2), 0, key1.clone()));
 		assert_ok!(MerkleGroups::add_member(Origin::signed(3), 0, key2.clone()));
 
-		let keyh1 = MerkleGroups::hash_leaves(key0, key1);
-		let keyh2 = MerkleGroups::hash_leaves(key2, key2);
-		let _root_hash = MerkleGroups::hash_leaves(keyh1, keyh2);
+		let keyh1 = PublicKey::hash_points(key0, key1);
+		let keyh2 = PublicKey::hash_points(key2, key2);
+		let _root_hash = PublicKey::hash_points(keyh1, keyh2);
 
 		let path = vec![(false, key1), (true, keyh2)];
 
@@ -296,24 +299,24 @@ fn should_verify_proof_of_membership() {
 			));
 		}
 
-		let key1_1 = MerkleGroups::hash_leaves(keys[0], keys[1]);
-		let key1_2 = MerkleGroups::hash_leaves(keys[2], keys[3]);
-		let key1_3 = MerkleGroups::hash_leaves(keys[4], keys[5]);
-		let key1_4 = MerkleGroups::hash_leaves(keys[6], keys[7]);
-		let key1_5 = MerkleGroups::hash_leaves(keys[8], keys[9]);
-		let key1_6 = MerkleGroups::hash_leaves(keys[10], keys[11]);
-		let key1_7 = MerkleGroups::hash_leaves(keys[12], keys[13]);
-		let key1_8 = MerkleGroups::hash_leaves(keys[14], keys[14]);
+		let key1_1 = PublicKey::hash_points(keys[0], keys[1]);
+		let key1_2 = PublicKey::hash_points(keys[2], keys[3]);
+		let key1_3 = PublicKey::hash_points(keys[4], keys[5]);
+		let key1_4 = PublicKey::hash_points(keys[6], keys[7]);
+		let key1_5 = PublicKey::hash_points(keys[8], keys[9]);
+		let key1_6 = PublicKey::hash_points(keys[10], keys[11]);
+		let key1_7 = PublicKey::hash_points(keys[12], keys[13]);
+		let key1_8 = PublicKey::hash_points(keys[14], keys[14]);
 
-		let key2_1 = MerkleGroups::hash_leaves(key1_1, key1_2);
-		let key2_2 = MerkleGroups::hash_leaves(key1_3, key1_4);
-		let key2_3 = MerkleGroups::hash_leaves(key1_5, key1_6);
-		let key2_4 = MerkleGroups::hash_leaves(key1_7, key1_8);
+		let key2_1 = PublicKey::hash_points(key1_1, key1_2);
+		let key2_2 = PublicKey::hash_points(key1_3, key1_4);
+		let key2_3 = PublicKey::hash_points(key1_5, key1_6);
+		let key2_4 = PublicKey::hash_points(key1_7, key1_8);
 
-		let key3_1 = MerkleGroups::hash_leaves(key2_1, key2_2);
-		let key3_2 = MerkleGroups::hash_leaves(key2_3, key2_4);
+		let key3_1 = PublicKey::hash_points(key2_1, key2_2);
+		let key3_2 = PublicKey::hash_points(key2_3, key2_4);
 
-		let _root_hash = MerkleGroups::hash_leaves(key3_1, key3_2);
+		let _root_hash = PublicKey::hash_points(key3_1, key3_2);
 
 		let path = vec![
 			(true, keys[1]),
@@ -350,5 +353,59 @@ fn should_verify_proof_of_membership() {
 		];
 
 		assert_ok!(MerkleGroups::verify(Origin::signed(2), 0, keys[14], path));
+	});
+}
+
+#[test]
+fn should_verify_zk_proof_of_membership() {
+	new_test_ext().execute_with(|| {
+		let key0 = PublicKey::new(&key_bytes(0));
+		let key1 = PublicKey::new(&key_bytes(1));
+		let key0_scalar = Scalar::from_bytes_mod_order(key0.0.to_bytes());
+		let key1_scalar = Scalar::from_bytes_mod_order(key1.0.to_bytes());
+
+		let pc_gens = PedersenGens::default();
+		let bp_gens = BulletproofGens::new(2048, 1);
+
+		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
+		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
+
+		let mut test_rng = rand::thread_rng();
+
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			0,
+			Some(10),
+			Some(2),
+		));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key0.clone()));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(2), 0, key1.clone()));
+
+		let keyh1 = PublicKey::hash_points_mimc(key0, key1);
+		let keyh1_scalar = Scalar::from_bytes_mod_order(keyh1.0.to_bytes());
+		let root_hash = PublicKey::hash_points_mimc(keyh1, keyh1);
+		let root_hash_scalar = Scalar::from_bytes_mod_order(root_hash.0.to_bytes());
+
+		let (com_key0, var_key0) = prover.commit(key0_scalar, Scalar::random(&mut test_rng));
+		let (com_key1, var_key1) = prover.commit(key1_scalar, Scalar::random(&mut test_rng));
+		let (com_keyh1, var_keyh1) = prover.commit(keyh1_scalar, Scalar::random(&mut test_rng));
+
+		let out1 = PublicKey::constrain_points_mimc(&mut prover, var_key0.into(), var_key1.into());
+		let con_root = PublicKey::constrain_points_mimc(&mut prover, var_keyh1.into(), out1);
+
+		prover.constrain(con_root - root_hash_scalar);
+
+		let proof = prover.prove(&bp_gens).unwrap();
+		let proof = proof.to_bytes();
+
+		let path = vec![(true, PublicKey(com_key1)), (false, PublicKey(com_keyh1))];
+
+		assert_ok!(MerkleGroups::verify_zk_membership_proof(
+			Origin::signed(1),
+			0,
+			PublicKey(com_key0),
+			path,
+			proof
+		));
 	});
 }

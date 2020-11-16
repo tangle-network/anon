@@ -16,9 +16,13 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Verifier};
+use bulletproofs::{BulletproofGens, PedersenGens};
 use codec::{Decode, Encode};
+use curve25519_dalek::scalar::Scalar;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
 use frame_system::ensure_signed;
+use merlin::Transcript;
 use sp_runtime::traits::Zero;
 use sp_std::prelude::*;
 
@@ -115,7 +119,7 @@ decl_module! {
 				}
 
 				let hash = tree.edge_nodes[i];
-				pair_hash = Self::hash_leaves(hash, pair_hash);
+				pair_hash = MerkleLeaf::hash_points_mimc(hash, pair_hash);
 
 				edge_index /= 2;
 			}
@@ -138,12 +142,45 @@ decl_module! {
 			let mut hash = pub_key;
 			for (is_right, node) in path {
 				hash = match is_right {
-					true => Self::hash_leaves(hash, node),
-					false => Self::hash_leaves(node, hash),
+					true => MerkleLeaf::hash_points_mimc(hash, node),
+					false => MerkleLeaf::hash_points_mimc(node, hash),
 				}
 			}
 
 			ensure!(hash == tree.root_hash, "Invalid proof.");
+			Ok(())
+		}
+
+		#[weight = 0]
+		pub fn verify_zk_membership_proof(origin, group_id: u32, pub_key: MerkleLeaf, path: Vec<(bool, MerkleLeaf)>, proof_bytes: Vec<u8>) -> dispatch::DispatchResult {
+			let tree = <Groups<T>>::get(group_id).ok_or("Group doesn't exist").unwrap();
+			ensure!(tree.edge_nodes.len() == path.len(), "Invalid path length.");
+
+			let pc_gens = PedersenGens::default();
+			let bp_gens = BulletproofGens::new(2048, 1);
+
+			let mut verifier_transcript = Transcript::new(b"zk_membership_proof");
+			let mut verifier = Verifier::new(&mut verifier_transcript);
+
+			let var_pub_key = verifier.commit(pub_key.0);
+			let mut lc_pub_key: LinearCombination = var_pub_key.into();
+
+			for (is_right, node) in path {
+				let var_node = verifier.commit(node.0);
+				lc_pub_key = match is_right {
+					true => MerkleLeaf::constrain_points_mimc(&mut verifier, lc_pub_key, var_node.into()),
+					false => MerkleLeaf::constrain_points_mimc(&mut verifier, var_node.into(), lc_pub_key),
+				}
+			}
+
+			let root_scalar = Scalar::from_bytes_mod_order(tree.root_hash.0.to_bytes());
+			verifier.constrain(lc_pub_key - root_scalar);
+
+			let proof = R1CSProof::from_bytes(&proof_bytes).unwrap();
+			let res = verifier.verify(&proof, &pc_gens, &bp_gens);
+
+			ensure!(res.is_ok(), "Invalid proof.");
+
 			Ok(())
 		}
 
@@ -169,11 +206,5 @@ decl_module! {
 
 			Ok(())
 		}
-	}
-}
-
-impl<T: Trait> Module<T> {
-	pub fn hash_leaves(left: MerkleLeaf, right: MerkleLeaf) -> MerkleLeaf {
-		MerkleLeaf::hash_points(left, right)
 	}
 }

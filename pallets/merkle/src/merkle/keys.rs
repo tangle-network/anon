@@ -1,7 +1,8 @@
 use sha2::Sha512;
 use sp_std::prelude::*;
 
-use super::mimc::mimc;
+use super::mimc::{mimc, mimc_constraints};
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination};
 use codec::{Decode, Encode, EncodeLike, Input};
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
@@ -89,9 +90,18 @@ impl PublicKey {
 	}
 
 	pub fn hash_points_mimc(xl: Self, xr: Self) -> Self {
-		let xl_scalar = Scalar::from_canonical_bytes(xl.0.to_bytes()).unwrap();
-		let xr_scalar = Scalar::from_canonical_bytes(xr.0.to_bytes()).unwrap();
+		// not sure if we could convert RistrettoPoint to a Scalar this way
+		let xl_scalar = Scalar::from_bytes_mod_order(xl.0.to_bytes());
+		let xr_scalar = Scalar::from_bytes_mod_order(xr.0.to_bytes());
 		let res = mimc(xl_scalar, xr_scalar);
 		PublicKey(CompressedRistretto::from_slice(res.as_bytes()))
+	}
+
+	pub fn constrain_points_mimc<CS: ConstraintSystem>(
+		cs: &mut CS,
+		xl: LinearCombination,
+		xr: LinearCombination,
+	) -> LinearCombination {
+		mimc_constraints(cs, xl, xr)
 	}
 }

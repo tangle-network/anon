@@ -21,17 +21,16 @@ pub fn mimc(xl: Scalar, xr: Scalar) -> Scalar {
 
 pub fn mimc_constraints<CS: ConstraintSystem>(
 	cs: &mut CS,
-	xl: &LinearCombination,
-	xr: &LinearCombination,
-	constants: &[Scalar],
+	xl: LinearCombination,
+	xr: LinearCombination,
 ) -> LinearCombination {
-	assert_eq!(constants.len(), MIMC_ROUNDS);
+	assert_eq!(MIMC_CONSTANTS.len(), MIMC_ROUNDS);
 
 	let mut xl = xl.clone();
 	let mut xr = xr.clone();
 
 	for i in 0..MIMC_ROUNDS {
-		let tmp1 = xl.clone() + constants[i];
+		let tmp1 = xl.clone() + Scalar::from_canonical_bytes(MIMC_CONSTANTS[i]).unwrap();
 		let (_, _, tmp2_m) = cs.multiply(tmp1.clone(), tmp1.clone());
 		let (_, _, tmp2) = cs.multiply(tmp2_m.into(), tmp1);
 		let tmp2 = tmp2 + xr;
