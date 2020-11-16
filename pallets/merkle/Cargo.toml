@@ -16,6 +16,7 @@ sp-std = { default-features = false, version = "2.0.0", git = "https://github.co
 merlin = { version = "2.0.0", default-features = false }
 rand = { version = "0.7.3", optional = true }
 sha2 = { version = "0.9.1", default-features = false }
+bulletproofs = { version = "2.0.0", branch = "build-update", git = "https://github.com/edgeware-builders/bulletproofs"}
 
 
 [dependencies.curve25519-dalek]

@@ -1,6 +1,7 @@
 use sha2::Sha512;
 use sp_std::prelude::*;
 
+use super::mimc::mimc;
 use codec::{Decode, Encode, EncodeLike, Input};
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
@@ -85,5 +86,12 @@ impl PublicKey {
 
 	pub fn hash_points(a: Self, b: Self) -> Self {
 		Self::new(&[&a.0.to_bytes()[..], &b.0.to_bytes()[..]].concat()[..])
+	}
+
+	pub fn hash_points_mimc(xl: Self, xr: Self) -> Self {
+		let xl_scalar = Scalar::from_canonical_bytes(xl.0.to_bytes()).unwrap();
+		let xr_scalar = Scalar::from_canonical_bytes(xr.0.to_bytes()).unwrap();
+		let res = mimc(xl_scalar, xr_scalar);
+		PublicKey(CompressedRistretto::from_slice(res.as_bytes()))
 	}
 }
