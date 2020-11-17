@@ -9,7 +9,7 @@ pub fn mimc(xl: Scalar, xr: Scalar) -> Scalar {
 	let mut xr = xr.clone();
 
 	for i in 0..MIMC_ROUNDS {
-		let tmp1 = xl + Scalar::from_canonical_bytes(MIMC_CONSTANTS[i]).unwrap();
+		let tmp1 = xl + Scalar::from_bytes_mod_order(MIMC_CONSTANTS[i]);
 		let mut tmp2 = (tmp1 * tmp1) * tmp1;
 		tmp2 += xr;
 		xr = xl;
@@ -30,7 +30,7 @@ pub fn mimc_constraints<CS: ConstraintSystem>(
 	let mut xr = xr.clone();
 
 	for i in 0..MIMC_ROUNDS {
-		let tmp1 = xl.clone() + Scalar::from_canonical_bytes(MIMC_CONSTANTS[i]).unwrap();
+		let tmp1 = xl.clone() + Scalar::from_bytes_mod_order(MIMC_CONSTANTS[i]);
 		let (_, _, tmp2_m) = cs.multiply(tmp1.clone(), tmp1.clone());
 		let (_, _, tmp2) = cs.multiply(tmp2_m.into(), tmp1);
 		let tmp2 = tmp2 + xr;
