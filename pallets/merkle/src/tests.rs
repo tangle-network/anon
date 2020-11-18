@@ -1,9 +1,10 @@
 // Tests to be written here
 
-use crate::merkle::keys::Data;
+use crate::merkle::keys::{Commitment, Data};
 use crate::mock::*;
 use bulletproofs::r1cs::{ConstraintSystem, Prover};
 use bulletproofs::{BulletproofGens, PedersenGens};
+use curve25519_dalek::ristretto::CompressedRistretto;
 use curve25519_dalek::scalar::Scalar;
 use frame_support::{assert_err, assert_ok};
 use merlin::Transcript;
@@ -359,9 +360,49 @@ fn should_verify_proof_of_membership() {
 #[test]
 fn should_verify_simple_zk_proof_of_membership() {
 	new_test_ext().execute_with(|| {
-		let a = Data::zero();
-		println!("{:?}", a);
-		// panic!("");
+		let pc_gens = PedersenGens::default();
+		let bp_gens = BulletproofGens::new(2048, 1);
+
+		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
+		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
+
+		let mut test_rng = rand::thread_rng();
+		let s = Scalar::random(&mut test_rng);
+		let nullifier = Scalar::random(&mut test_rng);
+		let leaf = Data::hash_mimc(Data(s), Data(nullifier));
+
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			0,
+			Some(10),
+			Some(1),
+		));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf));
+
+		let (leaf_com1, leaf_var1) = prover.commit(leaf.0, Scalar::random(&mut test_rng));
+		let (s_com, s_var) = prover.commit(s, Scalar::random(&mut test_rng));
+		let leaf_com = Data::constrain_mimc(&mut prover, s_var.into(), nullifier.into());
+		prover.constrain(leaf_com - leaf_var1);
+
+		let root = Data::hash_mimc(leaf, leaf);
+		let (leaf_com2, leaf_var2) = prover.commit(leaf.0, Scalar::random(&mut test_rng));
+		let root_con = Data::constrain_mimc(&mut prover, leaf_var1.into(), leaf_var2.into());
+		prover.constrain(root_con - root.0);
+
+		let proof = prover.prove(&bp_gens).unwrap();
+
+		let path = vec![(true, Commitment(leaf_com2))];
+
+		MerkleGroups::verify_zk_membership_proof(
+			Origin::signed(1),
+			0,
+			Commitment(leaf_com1),
+			path,
+			Commitment(s_com),
+			Data(nullifier),
+			proof.to_bytes(),
+		)
+		.unwrap();
 	});
 }
 

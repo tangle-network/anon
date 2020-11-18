@@ -16,13 +16,13 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
-use bulletproofs::r1cs::{ConstraintSystem, R1CSProof, Verifier};
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Verifier};
 use bulletproofs::{BulletproofGens, PedersenGens};
 use codec::{Decode, Encode};
 use curve25519_dalek::ristretto::CompressedRistretto;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
 use frame_system::ensure_signed;
-use merkle::keys::{Data, PublicKey};
+use merkle::keys::{Commitment, Data};
 use merlin::Transcript;
 use sp_runtime::traits::Zero;
 use sp_std::prelude::*;
@@ -138,7 +138,15 @@ decl_module! {
 				.ok_or("Invalid group id.")
 				.unwrap();
 			ensure!(tree.edge_nodes.len() == path.len(), "Invalid path length.");
-			ensure!(Self::verify_proof(tree.root_hash, leaf, path), "Invalid proof of membership.");
+			let mut hash = leaf;
+			for (is_right, node) in path {
+				hash = match is_right {
+					true => Data::hash_mimc(hash, node),
+					false => Data::hash_mimc(node, hash),
+				}
+			}
+
+			ensure!(hash == tree.root_hash, "Invalid proof of membership.");
 			Ok(())
 		}
 
@@ -146,9 +154,9 @@ decl_module! {
 		pub fn verify_zk_membership_proof(
 			origin,
 			group_id: u32,
-			leaf: Data,
-			path: Vec<(bool, Data)>,
-			leaf_proof: PublicKey,
+			leaf_com: Commitment,
+			path: Vec<(bool, Commitment)>,
+			s_com: Commitment,
 			nullifier: Data,
 			proof_bytes: Vec<u8>
 		) -> dispatch::DispatchResult {
@@ -157,7 +165,6 @@ decl_module! {
 				.ok_or("Invalid group id.")
 				.unwrap();
 			ensure!(tree.edge_nodes.len() == path.len(), "Invalid path length.");
-			ensure!(Self::verify_proof(tree.root_hash, leaf, path), "Invalid proof of membership.");
 
 			let pc_gens = PedersenGens::default();
 			let bp_gens = BulletproofGens::new(2048, 1);
@@ -165,16 +172,29 @@ decl_module! {
 			let mut verifier_transcript = Transcript::new(b"zk_membership_proof");
 			let mut verifier = Verifier::new(&mut verifier_transcript);
 
-			let var_leaf0 = verifier.commit(leaf_proof.0);
-			let leaf_lc = Data::constrain_mimc(&mut verifier, var_leaf0.into(), nullifier.0.into());
-			verifier.constrain(leaf_lc - leaf.0);
+			let var_leaf = verifier.commit(leaf_com.0);
+
+			let var_s = verifier.commit(s_com.0);
+			let leaf_lc = Data::constrain_mimc(&mut verifier, var_s.into(), nullifier.0.into());
+			verifier.constrain(leaf_lc - var_leaf);
+
+			let mut hash: LinearCombination = var_leaf.into();
+			for (is_right, node) in path {
+				let var_node = verifier.commit(node.0);
+				hash = match is_right {
+					true => Data::constrain_mimc(&mut verifier, hash, var_node.into()),
+					false => Data::constrain_mimc(&mut verifier, var_node.into(), hash),
+				}
+			}
+
+			verifier.constrain(hash - tree.root_hash.0);
 
 			let proof = R1CSProof::from_bytes(&proof_bytes);
 			ensure!(proof.is_ok(), "Invalid proof bytes.");
 			let proof = proof.unwrap();
 
 			let res = verifier.verify(&proof, &pc_gens, &bp_gens);
-			ensure!(res.is_ok(), "Invalid leaf proof.");
+			ensure!(res.is_ok(), "Invalid membership or leaf creation proof.");
 
 			UsedNullifiers::insert(nullifier, true);
 
@@ -203,19 +223,5 @@ decl_module! {
 
 			Ok(())
 		}
-	}
-}
-
-impl<T: Trait> Module<T> {
-	pub fn verify_proof(root_hash: Data, leaf: Data, path: Vec<(bool, Data)>) -> bool {
-		let mut hash = leaf;
-		for (is_right, node) in path {
-			hash = match is_right {
-				true => Data::hash_mimc(hash, node),
-				false => Data::hash_mimc(node, hash),
-			}
-		}
-
-		hash == root_hash
 	}
 }
