@@ -16,18 +16,16 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
-use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Verifier};
+use bulletproofs::r1cs::{ConstraintSystem, R1CSProof, Verifier};
 use bulletproofs::{BulletproofGens, PedersenGens};
 use codec::{Decode, Encode};
-use curve25519_dalek::scalar::Scalar;
+use curve25519_dalek::ristretto::CompressedRistretto;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
 use frame_system::ensure_signed;
+use merkle::keys::{Data, PublicKey};
 use merlin::Transcript;
 use sp_runtime::traits::Zero;
 use sp_std::prelude::*;
-
-pub type MerkleLeaf = crate::merkle::keys::PublicKey;
-pub type MerkleNullifier = crate::merkle::keys::PrivateKey;
 
 /// The pallet's configuration trait.
 pub trait Trait: balances::Trait {
@@ -47,18 +45,18 @@ pub struct GroupTree<T: Trait> {
 	pub fee: T::Balance,
 	pub leaf_count: u32,
 	pub max_leaves: u32,
-	pub root_hash: MerkleLeaf,
-	pub edge_nodes: Vec<MerkleLeaf>,
+	pub root_hash: Data,
+	pub edge_nodes: Vec<Data>,
 }
 
 impl<T: Trait> GroupTree<T> {
 	pub fn new(fee: T::Balance, depth: u32) -> Self {
 		Self {
 			fee,
-			root_hash: MerkleLeaf::new(&ZERO),
+			root_hash: Data::zero(),
 			leaf_count: 0,
 			max_leaves: u32::MAX >> (32 - depth),
-			edge_nodes: vec![MerkleLeaf::new(&ZERO); depth as usize],
+			edge_nodes: vec![Data::zero(); depth as usize],
 		}
 	}
 }
@@ -67,7 +65,7 @@ impl<T: Trait> GroupTree<T> {
 decl_storage! {
 	trait Store for Module<T: Trait> as MerkleGroups {
 		pub Groups get(fn groups): map hasher(blake2_128_concat) GroupId => Option<GroupTree<T>>;
-		pub UsedNullifiers get(fn used_nullifiers): map hasher(blake2_128_concat) MerkleNullifier => bool;
+		pub UsedNullifiers get(fn used_nullifiers): map hasher(blake2_128_concat) Data => bool;
 	}
 }
 
@@ -77,7 +75,7 @@ decl_event!(
 	where
 		AccountId = <T as frame_system::Trait>::AccountId,
 	{
-		NewMember(u32, AccountId, MerkleLeaf),
+		NewMember(u32, AccountId, Data),
 	}
 );
 
@@ -104,14 +102,14 @@ decl_module! {
 		fn deposit_event() = default;
 
 		#[weight = 0]
-		pub fn add_member(origin, group_id: u32, pub_key: MerkleLeaf) -> dispatch::DispatchResult {
+		pub fn add_member(origin, group_id: u32, data: Data) -> dispatch::DispatchResult {
 			// Check it was signed and get the signer. See also: ensure_root and ensure_none
 			let who = ensure_signed(origin)?;
 			let mut tree = <Groups<T>>::get(group_id).ok_or("Group doesn't exist").unwrap();
 			ensure!(tree.leaf_count < tree.max_leaves, "Exceeded maximum tree depth.");
 
 			let mut edge_index = tree.leaf_count;
-			let mut pair_hash = pub_key;
+			let mut pair_hash = data;
 			// Update the tree
 			for i in 0..tree.edge_nodes.len() {
 				if edge_index % 2 == 0 {
@@ -119,7 +117,7 @@ decl_module! {
 				}
 
 				let hash = tree.edge_nodes[i];
-				pair_hash = MerkleLeaf::hash_points_mimc(hash, pair_hash);
+				pair_hash = Data::hash_mimc(hash, pair_hash);
 
 				edge_index /= 2;
 			}
@@ -130,31 +128,36 @@ decl_module! {
 			<Groups<T>>::insert(group_id, tree);
 
 			// Raising the New Member event for the client to build a tree locally
-			Self::deposit_event(RawEvent::NewMember(group_id, who, pub_key));
+			Self::deposit_event(RawEvent::NewMember(group_id, who, data));
 			Ok(())
 		}
 
 		#[weight = 0]
-		pub fn verify(origin, group_id: u32, pub_key: MerkleLeaf, path: Vec<(bool, MerkleLeaf)>) -> dispatch::DispatchResult {
-			let tree = <Groups<T>>::get(group_id).ok_or("Group doesn't exist").unwrap();
+		pub fn verify(origin, group_id: u32, leaf: Data, path: Vec<(bool, Data)>) -> dispatch::DispatchResult {
+			let tree = <Groups<T>>::get(group_id)
+				.ok_or("Invalid group id.")
+				.unwrap();
 			ensure!(tree.edge_nodes.len() == path.len(), "Invalid path length.");
-
-			let mut hash = pub_key;
-			for (is_right, node) in path {
-				hash = match is_right {
-					true => MerkleLeaf::hash_points_mimc(hash, node),
-					false => MerkleLeaf::hash_points_mimc(node, hash),
-				}
-			}
-
-			ensure!(hash == tree.root_hash, "Invalid proof.");
+			ensure!(Self::verify_proof(tree.root_hash, leaf, path), "Invalid proof of membership.");
 			Ok(())
 		}
 
 		#[weight = 0]
-		pub fn verify_zk_membership_proof(origin, group_id: u32, pub_key: MerkleLeaf, path: Vec<(bool, MerkleLeaf)>, proof_bytes: Vec<u8>) -> dispatch::DispatchResult {
-			let tree = <Groups<T>>::get(group_id).ok_or("Group doesn't exist").unwrap();
+		pub fn verify_zk_membership_proof(
+			origin,
+			group_id: u32,
+			leaf: Data,
+			path: Vec<(bool, Data)>,
+			leaf_proof: PublicKey,
+			nullifier: Data,
+			proof_bytes: Vec<u8>
+		) -> dispatch::DispatchResult {
+			ensure!(!UsedNullifiers::get(nullifier), "Nullifier already used.");
+			let tree = <Groups<T>>::get(group_id)
+				.ok_or("Invalid group id.")
+				.unwrap();
 			ensure!(tree.edge_nodes.len() == path.len(), "Invalid path length.");
+			ensure!(Self::verify_proof(tree.root_hash, leaf, path), "Invalid proof of membership.");
 
 			let pc_gens = PedersenGens::default();
 			let bp_gens = BulletproofGens::new(2048, 1);
@@ -162,24 +165,18 @@ decl_module! {
 			let mut verifier_transcript = Transcript::new(b"zk_membership_proof");
 			let mut verifier = Verifier::new(&mut verifier_transcript);
 
-			let var_pub_key = verifier.commit(pub_key.0);
-			let mut lc_pub_key: LinearCombination = var_pub_key.into();
+			let var_leaf0 = verifier.commit(leaf_proof.0);
+			let leaf_lc = Data::constrain_mimc(&mut verifier, var_leaf0.into(), nullifier.0.into());
+			verifier.constrain(leaf_lc - leaf.0);
 
-			for (is_right, node) in path {
-				let var_node = verifier.commit(node.0);
-				lc_pub_key = match is_right {
-					true => MerkleLeaf::constrain_points_mimc(&mut verifier, lc_pub_key, var_node.into()),
-					false => MerkleLeaf::constrain_points_mimc(&mut verifier, var_node.into(), lc_pub_key),
-				}
-			}
+			let proof = R1CSProof::from_bytes(&proof_bytes);
+			ensure!(proof.is_ok(), "Invalid proof bytes.");
+			let proof = proof.unwrap();
 
-			let root_scalar = Scalar::from_bytes_mod_order(tree.root_hash.0.to_bytes());
-			verifier.constrain(lc_pub_key - root_scalar);
-
-			let proof = R1CSProof::from_bytes(&proof_bytes).unwrap();
 			let res = verifier.verify(&proof, &pc_gens, &bp_gens);
+			ensure!(res.is_ok(), "Invalid leaf proof.");
 
-			ensure!(res.is_ok(), "Invalid proof.");
+			UsedNullifiers::insert(nullifier, true);
 
 			Ok(())
 		}
@@ -206,5 +203,19 @@ decl_module! {
 
 			Ok(())
 		}
+	}
+}
+
+impl<T: Trait> Module<T> {
+	pub fn verify_proof(root_hash: Data, leaf: Data, path: Vec<(bool, Data)>) -> bool {
+		let mut hash = leaf;
+		for (is_right, node) in path {
+			hash = match is_right {
+				true => Data::hash_mimc(hash, node),
+				false => Data::hash_mimc(node, hash),
+			}
+		}
+
+		hash == root_hash
 	}
 }

@@ -26,17 +26,17 @@ pub fn mimc_constraints<CS: ConstraintSystem>(
 ) -> LinearCombination {
 	assert_eq!(MIMC_CONSTANTS.len(), MIMC_ROUNDS);
 
-	let mut xl = xl.clone();
-	let mut xr = xr.clone();
+	let mut xln = xl.clone();
+	let mut xrn = xr.clone();
 
 	for i in 0..MIMC_ROUNDS {
-		let tmp1 = xl.clone() + Scalar::from_bytes_mod_order(MIMC_CONSTANTS[i]);
+		let tmp1 = xln.clone() + Scalar::from_bytes_mod_order(MIMC_CONSTANTS[i]);
 		let (_, _, tmp2_m) = cs.multiply(tmp1.clone(), tmp1.clone());
 		let (_, _, tmp2) = cs.multiply(tmp2_m.into(), tmp1);
-		let tmp2 = tmp2 + xr;
-		xr = xl;
-		xl = tmp2;
+		let tmp2 = tmp2 + xrn;
+		xrn = xln;
+		xln = tmp2;
 	}
 
-	xl
+	xln
 }
