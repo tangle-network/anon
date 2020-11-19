@@ -43,15 +43,23 @@ fn commit_path_level(
 	prover: &mut Prover,
 	leaf: Data,
 	pair: LinearCombination,
-	is_right: bool,
-) -> (CompressedRistretto, LinearCombination) {
+	bit: u8,
+) -> (CompressedRistretto, CompressedRistretto, LinearCombination) {
+	let (bit_com, bit_var) = prover.commit(Scalar::from(bit), Scalar::random(rng));
 	let (node_com, node_var) = prover.commit(leaf.0, Scalar::random(rng));
-	let node_con = if is_right {
-		Data::constrain_mimc(prover, pair, node_var.into())
-	} else {
-		Data::constrain_mimc(prover, node_var.into(), pair)
-	};
-	(node_com, node_con)
+
+	let side: LinearCombination = Variable::One() - bit_var;
+
+	let (_, _, left1) = prover.multiply(bit_var.into(), pair.clone());
+	let (_, _, left2) = prover.multiply(side.clone(), node_var.into());
+	let left = left1 + left2;
+
+	let (_, _, right1) = prover.multiply(side, pair);
+	let (_, _, right2) = prover.multiply(bit_var.into(), node_var.into());
+	let right = right1 + right2;
+
+	let node_con = Data::constrain_mimc(prover, left, right);
+	(bit_com, node_com, node_con)
 }
 
 #[test]
@@ -417,13 +425,13 @@ fn should_verify_simple_zk_proof_of_membership() {
 			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier);
 
 		let root = Data::hash_mimc(leaf, leaf);
-		let (leaf_com2, root_con) =
-			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), true);
+		let (bit_com, leaf_com2, root_con) =
+			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), 1);
 		prover.constrain(root_con - root.0);
 
 		let proof = prover.prove(&bp_gens).unwrap();
 
-		let path = vec![(true, Commitment(leaf_com2))];
+		let path = vec![(Commitment(bit_com), Commitment(leaf_com2))];
 
 		assert_ok!(MerkleGroups::verify_zk_membership_proof(
 			Origin::signed(1),
@@ -461,13 +469,13 @@ fn should_not_use_nullifier_more_than_once() {
 			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier);
 
 		let root = Data::hash_mimc(leaf, leaf);
-		let (leaf_com2, root_con) =
-			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), true);
+		let (bit_com, leaf_com2, root_con) =
+			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), 1);
 		prover.constrain(root_con - root.0);
 
 		let proof = prover.prove(&bp_gens).unwrap();
 
-		let path = vec![(true, Commitment(leaf_com2))];
+		let path = vec![(Commitment(bit_com), Commitment(leaf_com2))];
 
 		assert_ok!(MerkleGroups::verify_zk_membership_proof(
 			Origin::signed(1),
@@ -515,12 +523,12 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 
 		let (_, leaf_com1, leaf_var1) = commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier);
 		let root = Data::hash_mimc(leaf, leaf);
-		let (leaf_com2, root_con) =
-			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), true);
+		let (bit_com, leaf_com2, root_con) =
+			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), 1);
 		prover.constrain(root_con - root.0);
 
 		let proof = prover.prove(&bp_gens).unwrap();
-		let path = vec![(true, Commitment(leaf_com2))];
+		let path = vec![(Commitment(bit_com), Commitment(leaf_com2))];
 
 		let invalid_s_com = RistrettoPoint::random(&mut test_rng).compress();
 
@@ -562,11 +570,12 @@ fn should_not_verify_invalid_commitments_for_membership() {
 		let (s_com, leaf_com1, leaf_var1) =
 			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier);
 
-		let _ = commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), true);
+		let _ = commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), 1);
 
 		let proof = prover.prove(&bp_gens).unwrap();
 		let invalid_path_com = RistrettoPoint::random(&mut test_rng).compress();
-		let path = vec![(true, Commitment(invalid_path_com))];
+		let invalid_bit_com = RistrettoPoint::random(&mut test_rng).compress();
+		let path = vec![(Commitment(invalid_bit_com), Commitment(invalid_path_com))];
 
 		assert_err!(
 			MerkleGroups::verify_zk_membership_proof(
@@ -607,12 +616,12 @@ fn should_not_verify_invalid_transcript() {
 			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier);
 
 		let root = Data::hash_mimc(leaf, leaf);
-		let (leaf_com2, root_con) =
-			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), true);
+		let (bit_com, leaf_com2, root_con) =
+			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), 1);
 		prover.constrain(root_con - root.0);
 
 		let proof = prover.prove(&bp_gens).unwrap();
-		let path = vec![(true, Commitment(leaf_com2))];
+		let path = vec![(Commitment(bit_com), Commitment(leaf_com2))];
 
 		assert_err!(
 			MerkleGroups::verify_zk_membership_proof(
@@ -674,20 +683,20 @@ fn should_verify_zk_proof_of_membership() {
 
 		let root = Data::hash_mimc(node1_0, node1_1);
 
-		let (node_com0, node_con0) =
-			commit_path_level(&mut test_rng, &mut prover, leaf4, leaf_var5.into(), false);
-		let (node_com1, node_con1) =
-			commit_path_level(&mut test_rng, &mut prover, node0_3, node_con0, true);
-		let (node_com2, node_con2) =
-			commit_path_level(&mut test_rng, &mut prover, node1_0, node_con1, false);
+		let (bit_com0, node_com0, node_con0) =
+			commit_path_level(&mut test_rng, &mut prover, leaf4, leaf_var5.into(), 0);
+		let (bit_com1, node_com1, node_con1) =
+			commit_path_level(&mut test_rng, &mut prover, node0_3, node_con0, 1);
+		let (bit_com2, node_com2, node_con2) =
+			commit_path_level(&mut test_rng, &mut prover, node1_0, node_con1, 0);
 		prover.constrain(node_con2 - root.0);
 
 		let proof = prover.prove(&bp_gens).unwrap();
 
 		let path = vec![
-			(false, Commitment(node_com0)),
-			(true, Commitment(node_com1)),
-			(false, Commitment(node_com2)),
+			(Commitment(bit_com0), Commitment(node_com0)),
+			(Commitment(bit_com1), Commitment(node_com1)),
+			(Commitment(bit_com2), Commitment(node_com2)),
 		];
 
 		assert_ok!(MerkleGroups::verify_zk_membership_proof(

@@ -16,7 +16,7 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
-use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Verifier};
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Variable, Verifier};
 use bulletproofs::{BulletproofGens, PedersenGens};
 use codec::{Decode, Encode};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
@@ -151,7 +151,7 @@ decl_module! {
 			origin,
 			group_id: u32,
 			leaf_com: Commitment,
-			path: Vec<(bool, Commitment)>,
+			path: Vec<(Commitment, Commitment)>,
 			s_com: Commitment,
 			nullifier: Data,
 			proof_bytes: Vec<u8>
@@ -177,12 +177,21 @@ decl_module! {
 
 			// Check of path proof is correct
 			let mut hash: LinearCombination = var_leaf.into();
-			for (is_right, node) in path {
+			for (bit, node) in path {
+				let var_bit = verifier.commit(bit.0);
 				let var_node = verifier.commit(node.0);
-				hash = match is_right {
-					true => Data::constrain_mimc(&mut verifier, hash, var_node.into()),
-					false => Data::constrain_mimc(&mut verifier, var_node.into(), hash),
-				}
+
+				let side: LinearCombination = Variable::One() - var_bit;
+
+				let (_, _, left1) = verifier.multiply(var_bit.into(), hash.clone());
+				let (_, _, left2) = verifier.multiply(side.clone(), var_node.into());
+				let left = left1 + left2;
+
+				let (_, _, right1) = verifier.multiply(side, hash);
+				let (_, _, right2) = verifier.multiply(var_bit.into(), var_node.into());
+				let right = right1 + right2;
+
+				hash = Data::constrain_mimc(&mut verifier, left, right);
 			}
 			// Commited path evaluate to correct root
 			verifier.constrain(hash - tree.root_hash.0);
