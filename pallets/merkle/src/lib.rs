@@ -194,7 +194,7 @@ decl_module! {
 			let proof = proof.unwrap();
 
 			let res = verifier.verify(&proof, &pc_gens, &bp_gens);
-			ensure!(res.is_ok(), "Invalid membership or leaf creation proof.");
+			ensure!(res.is_ok(), "Invalid proof of membership or leaf creation.");
 
 			UsedNullifiers::insert(nullifier, true);
 

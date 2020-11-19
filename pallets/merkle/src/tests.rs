@@ -2,18 +2,56 @@
 
 use crate::merkle::keys::{Commitment, Data};
 use crate::mock::*;
-use bulletproofs::r1cs::{ConstraintSystem, Prover};
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Prover, Variable};
 use bulletproofs::{BulletproofGens, PedersenGens};
-use curve25519_dalek::ristretto::CompressedRistretto;
+use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
 use frame_support::{assert_err, assert_ok};
 use merlin::Transcript;
+use rand::rngs::ThreadRng;
 
 fn key_bytes(x: u8) -> [u8; 32] {
 	[
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, x,
 	]
+}
+
+fn leaf_data(rng: &mut ThreadRng) -> (Scalar, Scalar, Data) {
+	let s = Scalar::random(rng);
+	let nullifier = Scalar::random(rng);
+	let leaf = Data::hash_mimc(Data(s), Data(nullifier));
+	(s, nullifier, leaf)
+}
+
+fn commit_leaf(
+	rng: &mut ThreadRng,
+	prover: &mut Prover,
+	leaf: Data,
+	s: Scalar,
+	nullifier: Scalar,
+) -> (CompressedRistretto, CompressedRistretto, Variable) {
+	let (leaf_com1, leaf_var1) = prover.commit(leaf.0, Scalar::random(rng));
+	let (s_com, s_var) = prover.commit(s, Scalar::random(rng));
+	let leaf_com = Data::constrain_mimc(prover, s_var.into(), nullifier.into());
+	prover.constrain(leaf_com - leaf_var1);
+	(s_com, leaf_com1, leaf_var1)
+}
+
+fn commit_path_level(
+	rng: &mut ThreadRng,
+	prover: &mut Prover,
+	leaf: Data,
+	pair: LinearCombination,
+	is_right: bool,
+) -> (CompressedRistretto, LinearCombination) {
+	let (node_com, node_var) = prover.commit(leaf.0, Scalar::random(rng));
+	let node_con = if is_right {
+		Data::constrain_mimc(prover, pair, node_var.into())
+	} else {
+		Data::constrain_mimc(prover, node_var.into(), pair)
+	};
+	(node_com, node_con)
 }
 
 #[test]
@@ -75,8 +113,6 @@ fn should_have_min_depth() {
 #[test]
 fn should_have_max_depth() {
 	new_test_ext().execute_with(|| {
-		let key = Data::new(key_bytes(0));
-
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
 			0,
@@ -367,9 +403,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 		let mut test_rng = rand::thread_rng();
-		let s = Scalar::random(&mut test_rng);
-		let nullifier = Scalar::random(&mut test_rng);
-		let leaf = Data::hash_mimc(Data(s), Data(nullifier));
+		let (s, nullifier, leaf) = leaf_data(&mut test_rng);
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
@@ -379,21 +413,19 @@ fn should_verify_simple_zk_proof_of_membership() {
 		));
 		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf));
 
-		let (leaf_com1, leaf_var1) = prover.commit(leaf.0, Scalar::random(&mut test_rng));
-		let (s_com, s_var) = prover.commit(s, Scalar::random(&mut test_rng));
-		let leaf_com = Data::constrain_mimc(&mut prover, s_var.into(), nullifier.into());
-		prover.constrain(leaf_com - leaf_var1);
+		let (s_com, leaf_com1, leaf_var1) =
+			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier);
 
 		let root = Data::hash_mimc(leaf, leaf);
-		let (leaf_com2, leaf_var2) = prover.commit(leaf.0, Scalar::random(&mut test_rng));
-		let root_con = Data::constrain_mimc(&mut prover, leaf_var1.into(), leaf_var2.into());
+		let (leaf_com2, root_con) =
+			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), true);
 		prover.constrain(root_con - root.0);
 
 		let proof = prover.prove(&bp_gens).unwrap();
 
 		let path = vec![(true, Commitment(leaf_com2))];
 
-		MerkleGroups::verify_zk_membership_proof(
+		assert_ok!(MerkleGroups::verify_zk_membership_proof(
 			Origin::signed(1),
 			0,
 			Commitment(leaf_com1),
@@ -401,27 +433,215 @@ fn should_verify_simple_zk_proof_of_membership() {
 			Commitment(s_com),
 			Data(nullifier),
 			proof.to_bytes(),
-		)
-		.unwrap();
+		));
 	});
 }
 
 #[test]
-fn should_not_verify_invalid_commitments() {
-	new_test_ext().execute_with(|| {});
+fn should_not_verify_invalid_commitments_for_leaf_creation() {
+	new_test_ext().execute_with(|| {
+		let pc_gens = PedersenGens::default();
+		let bp_gens = BulletproofGens::new(2048, 1);
+
+		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
+		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
+
+		let mut test_rng = rand::thread_rng();
+		let (s, nullifier, leaf) = leaf_data(&mut test_rng);
+
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			0,
+			Some(10),
+			Some(1),
+		));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf));
+
+		let (_, leaf_com1, leaf_var1) = commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier);
+		let root = Data::hash_mimc(leaf, leaf);
+		let (leaf_com2, root_con) =
+			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), true);
+		prover.constrain(root_con - root.0);
+
+		let proof = prover.prove(&bp_gens).unwrap();
+		let path = vec![(true, Commitment(leaf_com2))];
+
+		let invalid_s_com = RistrettoPoint::random(&mut test_rng).compress();
+
+		assert_err!(
+			MerkleGroups::verify_zk_membership_proof(
+				Origin::signed(1),
+				0,
+				Commitment(leaf_com1),
+				path,
+				Commitment(invalid_s_com),
+				Data(nullifier),
+				proof.to_bytes(),
+			),
+			"Invalid proof of membership or leaf creation."
+		);
+	});
 }
 
 #[test]
-fn should_not_verify_invalid_constraints() {
-	new_test_ext().execute_with(|| {});
+fn should_not_verify_invalid_commitments_for_membership() {
+	new_test_ext().execute_with(|| {
+		let pc_gens = PedersenGens::default();
+		let bp_gens = BulletproofGens::new(2048, 1);
+
+		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
+		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
+
+		let mut test_rng = rand::thread_rng();
+		let (s, nullifier, leaf) = leaf_data(&mut test_rng);
+
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			0,
+			Some(10),
+			Some(1),
+		));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf));
+
+		let (s_com, leaf_com1, leaf_var1) =
+			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier);
+
+		let _ = commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), true);
+
+		let proof = prover.prove(&bp_gens).unwrap();
+		let invalid_path_com = RistrettoPoint::random(&mut test_rng).compress();
+		let path = vec![(true, Commitment(invalid_path_com))];
+
+		assert_err!(
+			MerkleGroups::verify_zk_membership_proof(
+				Origin::signed(1),
+				0,
+				Commitment(leaf_com1),
+				path,
+				Commitment(s_com),
+				Data(nullifier),
+				proof.to_bytes(),
+			),
+			"Invalid proof of membership or leaf creation."
+		);
+	});
 }
 
 #[test]
 fn should_not_verify_invalid_transcript() {
-	new_test_ext().execute_with(|| {});
+	new_test_ext().execute_with(|| {
+		let pc_gens = PedersenGens::default();
+		let bp_gens = BulletproofGens::new(2048, 1);
+
+		let mut prover_transcript = Transcript::new(b"invalid transcript");
+		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
+
+		let mut test_rng = rand::thread_rng();
+		let (s, nullifier, leaf) = leaf_data(&mut test_rng);
+
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			0,
+			Some(10),
+			Some(1),
+		));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf));
+
+		let (s_com, leaf_com1, leaf_var1) =
+			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier);
+
+		let root = Data::hash_mimc(leaf, leaf);
+		let (leaf_com2, root_con) =
+			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), true);
+		prover.constrain(root_con - root.0);
+
+		let proof = prover.prove(&bp_gens).unwrap();
+		let path = vec![(true, Commitment(leaf_com2))];
+
+		assert_err!(
+			MerkleGroups::verify_zk_membership_proof(
+				Origin::signed(1),
+				0,
+				Commitment(leaf_com1),
+				path,
+				Commitment(s_com),
+				Data(nullifier),
+				proof.to_bytes(),
+			),
+			"Invalid proof of membership or leaf creation."
+		);
+	});
 }
 
 #[test]
 fn should_verify_zk_proof_of_membership() {
-	new_test_ext().execute_with(|| {});
+	new_test_ext().execute_with(|| {
+		let pc_gens = PedersenGens::default();
+		let bp_gens = BulletproofGens::new(2048, 1);
+
+		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
+		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
+
+		let mut test_rng = rand::thread_rng();
+		let (_, _, leaf0) = leaf_data(&mut test_rng);
+		let (_, _, leaf1) = leaf_data(&mut test_rng);
+		let (_, _, leaf2) = leaf_data(&mut test_rng);
+		let (_, _, leaf3) = leaf_data(&mut test_rng);
+		let (_, _, leaf4) = leaf_data(&mut test_rng);
+		let (s, nullifier, leaf5) = leaf_data(&mut test_rng);
+		let (_, _, leaf6) = leaf_data(&mut test_rng);
+
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			0,
+			Some(10),
+			Some(3),
+		));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf0));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf1));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf2));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf3));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf4));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf5));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf6));
+
+		let (s_com, leaf_com5, leaf_var5) =
+			commit_leaf(&mut test_rng, &mut prover, leaf5, s, nullifier);
+
+		let node0_0 = Data::hash_mimc(leaf0, leaf1);
+		let node0_1 = Data::hash_mimc(leaf2, leaf3);
+		let node0_2 = Data::hash_mimc(leaf4, leaf5);
+		let node0_3 = Data::hash_mimc(leaf6, leaf6);
+
+		let node1_0 = Data::hash_mimc(node0_0, node0_1);
+		let node1_1 = Data::hash_mimc(node0_2, node0_3);
+
+		let root = Data::hash_mimc(node1_0, node1_1);
+
+		let (node_com0, node_con0) =
+			commit_path_level(&mut test_rng, &mut prover, leaf4, leaf_var5.into(), false);
+		let (node_com1, node_con1) =
+			commit_path_level(&mut test_rng, &mut prover, node0_3, node_con0, true);
+		let (node_com2, node_con2) =
+			commit_path_level(&mut test_rng, &mut prover, node1_0, node_con1, false);
+		prover.constrain(node_con2 - root.0);
+
+		let proof = prover.prove(&bp_gens).unwrap();
+
+		let path = vec![
+			(false, Commitment(node_com0)),
+			(true, Commitment(node_com1)),
+			(false, Commitment(node_com2)),
+		];
+
+		assert_ok!(MerkleGroups::verify_zk_membership_proof(
+			Origin::signed(1),
+			0,
+			Commitment(leaf_com5),
+			path,
+			Commitment(s_com),
+			Data(nullifier),
+			proof.to_bytes(),
+		));
+	});
 }
