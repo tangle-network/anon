@@ -19,7 +19,6 @@ pub mod tests;
 use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Verifier};
 use bulletproofs::{BulletproofGens, PedersenGens};
 use codec::{Decode, Encode};
-use curve25519_dalek::ristretto::CompressedRistretto;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
 use frame_system::ensure_signed;
 use merkle::keys::{Commitment, Data};
@@ -35,9 +34,6 @@ pub trait Trait: balances::Trait {
 
 type GroupId = u32;
 const MAX_DEPTH: u32 = 32;
-const ZERO: [u8; 32] = [
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-];
 
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Encode, Decode, PartialEq)]
@@ -55,7 +51,7 @@ impl<T: Trait> GroupTree<T> {
 			fee,
 			root_hash: Data::zero(),
 			leaf_count: 0,
-			max_leaves: u32::MAX >> (32 - depth),
+			max_leaves: u32::MAX >> (MAX_DEPTH - depth),
 			edge_nodes: vec![Data::zero(); depth as usize],
 		}
 	}
@@ -160,6 +156,7 @@ decl_module! {
 			nullifier: Data,
 			proof_bytes: Vec<u8>
 		) -> dispatch::DispatchResult {
+			// Ensure that nullifier is not used
 			ensure!(!UsedNullifiers::get(nullifier), "Nullifier already used.");
 			let tree = <Groups<T>>::get(group_id)
 				.ok_or("Invalid group id.")
@@ -173,11 +170,12 @@ decl_module! {
 			let mut verifier = Verifier::new(&mut verifier_transcript);
 
 			let var_leaf = verifier.commit(leaf_com.0);
-
 			let var_s = verifier.commit(s_com.0);
 			let leaf_lc = Data::constrain_mimc(&mut verifier, var_s.into(), nullifier.0.into());
+			// Commited leaf value should be the same as calculated
 			verifier.constrain(leaf_lc - var_leaf);
 
+			// Check of path proof is correct
 			let mut hash: LinearCombination = var_leaf.into();
 			for (is_right, node) in path {
 				let var_node = verifier.commit(node.0);
@@ -186,16 +184,18 @@ decl_module! {
 					false => Data::constrain_mimc(&mut verifier, var_node.into(), hash),
 				}
 			}
-
+			// Commited path evaluate to correct root
 			verifier.constrain(hash - tree.root_hash.0);
 
 			let proof = R1CSProof::from_bytes(&proof_bytes);
 			ensure!(proof.is_ok(), "Invalid proof bytes.");
 			let proof = proof.unwrap();
 
+			// Final verification
 			let res = verifier.verify(&proof, &pc_gens, &bp_gens);
 			ensure!(res.is_ok(), "Invalid proof of membership or leaf creation.");
 
+			// Set nullifier as used
 			UsedNullifiers::insert(nullifier, true);
 
 			Ok(())

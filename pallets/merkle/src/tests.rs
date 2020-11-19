@@ -438,6 +438,62 @@ fn should_verify_simple_zk_proof_of_membership() {
 }
 
 #[test]
+fn should_not_use_nullifier_more_than_once() {
+	new_test_ext().execute_with(|| {
+		let pc_gens = PedersenGens::default();
+		let bp_gens = BulletproofGens::new(2048, 1);
+
+		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
+		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
+
+		let mut test_rng = rand::thread_rng();
+		let (s, nullifier, leaf) = leaf_data(&mut test_rng);
+
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			0,
+			Some(10),
+			Some(1),
+		));
+		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf));
+
+		let (s_com, leaf_com1, leaf_var1) =
+			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier);
+
+		let root = Data::hash_mimc(leaf, leaf);
+		let (leaf_com2, root_con) =
+			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), true);
+		prover.constrain(root_con - root.0);
+
+		let proof = prover.prove(&bp_gens).unwrap();
+
+		let path = vec![(true, Commitment(leaf_com2))];
+
+		assert_ok!(MerkleGroups::verify_zk_membership_proof(
+			Origin::signed(1),
+			0,
+			Commitment(leaf_com1),
+			path.clone(),
+			Commitment(s_com),
+			Data(nullifier),
+			proof.to_bytes(),
+		));
+		assert_err!(
+			MerkleGroups::verify_zk_membership_proof(
+				Origin::signed(1),
+				0,
+				Commitment(leaf_com1),
+				path,
+				Commitment(s_com),
+				Data(nullifier),
+				proof.to_bytes(),
+			),
+			"Nullifier already used."
+		);
+	});
+}
+
+#[test]
 fn should_not_verify_invalid_commitments_for_leaf_creation() {
 	new_test_ext().execute_with(|| {
 		let pc_gens = PedersenGens::default();
