@@ -177,18 +177,27 @@ decl_module! {
 
 			// Check of path proof is correct
 			let mut hash: LinearCombination = var_leaf.into();
-			for (bit, node) in path {
+			for (bit, pair) in path {
+				// e.g. If bit is 0 that means pair is on the left side
+				// var_bit = 0
 				let var_bit = verifier.commit(bit.0);
-				let var_node = verifier.commit(node.0);
+				let var_pair = verifier.commit(pair.0);
 
+				// side = 1 - 0 = 1
 				let side: LinearCombination = Variable::One() - var_bit;
 
+				// left1 = 0 * hash = 0
 				let (_, _, left1) = verifier.multiply(var_bit.into(), hash.clone());
-				let (_, _, left2) = verifier.multiply(side.clone(), var_node.into());
+				// left2 = 1 * pair = pair
+				let (_, _, left2) = verifier.multiply(side.clone(), var_pair.into());
+				// left = 0 + pair = pair
 				let left = left1 + left2;
 
+				// right1 = 1 * hash = hash
 				let (_, _, right1) = verifier.multiply(side, hash);
-				let (_, _, right2) = verifier.multiply(var_bit.into(), var_node.into());
+				// right2 = 0 * pair = 0
+				let (_, _, right2) = verifier.multiply(var_bit.into(), var_pair.into());
+				// right = hash + 0 = hash
 				let right = right1 + right2;
 
 				hash = Data::constrain_mimc(&mut verifier, left, right);
