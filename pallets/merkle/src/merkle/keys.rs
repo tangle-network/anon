@@ -1,29 +1,33 @@
 use sha2::Sha512;
 use sp_std::prelude::*;
 
+use super::mimc::{mimc, mimc_constraints};
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination};
 use codec::{Decode, Encode, EncodeLike, Input};
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
 
 #[derive(Eq, PartialEq, Clone, Default, Debug, Copy)]
-pub struct PublicKey(pub CompressedRistretto);
+pub struct Commitment(pub CompressedRistretto);
 #[derive(Eq, PartialEq, Clone, Default, Debug, Copy)]
 pub struct PrivateKey(pub Scalar);
+#[derive(Eq, PartialEq, Clone, Default, Debug, Copy)]
+pub struct Data(pub Scalar);
 
 pub const SIZE: usize = 32;
 
-impl Encode for PublicKey {
+impl Encode for Commitment {
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		(self.0).0.using_encoded(f)
 	}
 }
 
-impl EncodeLike for PublicKey {}
+impl EncodeLike for Commitment {}
 
-impl Decode for PublicKey {
+impl Decode for Commitment {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, codec::Error> {
 		match <[u8; SIZE] as Decode>::decode(input).map(CompressedRistretto) {
-			Ok(elt) => Ok(PublicKey(elt)),
+			Ok(elt) => Ok(Commitment(elt)),
 			Err(e) => Err(e),
 		}
 	}
@@ -48,11 +52,11 @@ impl Decode for PrivateKey {
 	}
 }
 
-impl PublicKey {
+impl Commitment {
 	/// Constructor from bytes
 	pub fn new(bytes: &[u8]) -> Self {
 		let point: RistrettoPoint = RistrettoPoint::hash_from_bytes::<Sha512>(bytes);
-		PublicKey(point.compress())
+		Commitment(point.compress())
 	}
 	/// Serialize this public key to 32 bytes
 	pub fn as_bytes(&self) -> Vec<u8> {
@@ -69,21 +73,61 @@ impl PublicKey {
 
 	// TODO: Make this more robust
 	/// Deserialize this public key from 32 bytes
-	pub fn from_bytes(bytes: &[u8]) -> Option<PublicKey> {
+	pub fn from_bytes(bytes: &[u8]) -> Option<Commitment> {
 		if bytes.len() != 32 {
 			return None;
 		}
 		let mut arr = [0u8; 32];
 		arr.copy_from_slice(bytes);
 		let c = CompressedRistretto(arr);
-		Some(PublicKey(c))
+		Some(Commitment(c))
 	}
 
 	pub fn from_ristretto(pt: RistrettoPoint) -> Self {
-		PublicKey(pt.compress())
+		Commitment(pt.compress())
 	}
 
 	pub fn hash_points(a: Self, b: Self) -> Self {
 		Self::new(&[&a.0.to_bytes()[..], &b.0.to_bytes()[..]].concat()[..])
+	}
+}
+
+impl Encode for Data {
+	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
+		(self.0).as_bytes().using_encoded(f)
+	}
+}
+
+impl EncodeLike for Data {}
+
+impl Decode for Data {
+	fn decode<I: Input>(input: &mut I) -> Result<Self, codec::Error> {
+		match <[u8; SIZE] as Decode>::decode(input) {
+			Ok(elt) => Ok(Data(
+				Scalar::from_canonical_bytes(elt).unwrap_or(Scalar::zero()),
+			)),
+			Err(e) => Err(e),
+		}
+	}
+}
+
+impl Data {
+	pub fn new(b: [u8; 32]) -> Self {
+		Data(Scalar::from_bytes_mod_order(b))
+	}
+
+	pub fn zero() -> Self {
+		Data(Scalar::zero())
+	}
+	pub fn hash_mimc(xl: Self, xr: Self) -> Self {
+		Data(mimc(xl.0, xr.0))
+	}
+
+	pub fn constrain_mimc<CS: ConstraintSystem>(
+		cs: &mut CS,
+		xl: LinearCombination,
+		xr: LinearCombination,
+	) -> LinearCombination {
+		mimc_constraints(cs, xl, xr)
 	}
 }
