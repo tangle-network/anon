@@ -1,6 +1,7 @@
 use super::constants::{MDS_ENTRIES, ROUND_CONSTS};
 use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Variable};
 use curve25519_dalek::scalar::Scalar;
+use sp_std::prelude::*;
 
 #[derive(Clone)]
 pub struct Poseidon {
@@ -104,7 +105,7 @@ impl Poseidon {
 		let partial_rounds = self.partial_rounds;
 		let full_rounds_end = self.full_rounds_end;
 
-		let mut current_state = input.to_owned();
+		let mut current_state = input.to_vec();
 		let mut current_state_temp = vec![Scalar::zero(); width];
 
 		let mut round_keys_offset = 0;
@@ -240,7 +241,7 @@ impl Poseidon {
 			}
 
 			for i in 0..width {
-				input_vars[i] = next_input_vars.remove(0).simplify();
+				input_vars[i] = next_input_vars.remove(0);
 			}
 		}
 
@@ -282,7 +283,7 @@ impl Poseidon {
 		inputs: Vec<LinearCombination>,
 	) -> LinearCombination {
 		let permutation_output = self.permute_constraints::<CS>(cs, inputs);
-		permutation_output[1].to_owned()
+		permutation_output[1].clone()
 	}
 
 	pub fn hash_2(&self, xl: Scalar, xr: Scalar) -> Scalar {
