@@ -13,4 +13,4 @@ jobs:
       - checkout
       - run: ~/anon/scripts/init.sh
       - run: source ~/.cargo/env && ~/anon/scripts/test.sh
-      - run: ~/anon/scripts/build.sh
+      - run: source ~/.cargo/env && ~/anon/scripts/build.sh
