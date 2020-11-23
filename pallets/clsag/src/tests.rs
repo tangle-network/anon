@@ -1,17 +1,19 @@
 // Tests to be written here
 
-use crate::clsag::tests_helper::generate_signer;
 use crate::clsag::tests_helper::generate_clsag_with;
+use crate::clsag::tests_helper::generate_signer;
 use crate::mock::*;
-use frame_support::{assert_ok};
+use frame_support::assert_ok;
 
 use crate::clsag::keys::{RingPublicKey, RingScalar};
-
 
 #[test]
 fn can_add_member_and_get_member() {
 	new_test_ext().execute_with(|| {
-		let bytes: [u8; 32] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1];
+		let bytes: [u8; 32] = [
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 1,
+		];
 		let key = RingPublicKey::new(bytes);
 		// Just a dummy test for the dummy funtion `do_something`
 		// calling the `do_something` function with a value 42
@@ -24,7 +26,10 @@ fn can_add_member_and_get_member() {
 #[test]
 fn can_verify_ring_signature() {
 	new_test_ext().execute_with(|| {
-		let bytes: [u8; 32] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1];
+		let bytes: [u8; 32] = [
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			0, 0, 1,
+		];
 		let key = RingPublicKey::new(bytes);
 		// Just a dummy test for the dummy funtion `do_something`
 		// calling the `do_something` function with a value 42
@@ -37,7 +42,7 @@ fn can_verify_ring_signature() {
 #[test]
 fn test_runtime_verify() {
 	new_test_ext().execute_with(|| {
-		let num_keys = 2;
+		let num_keys = 1;
 		let num_decoys = 1;
 		let msg = b"hello world world world world wo";
 		let mut clsag = generate_clsag_with(num_decoys, num_keys);
@@ -49,7 +54,11 @@ fn test_runtime_verify() {
 		let mut keys = vec![];
 		for i in 0..pub_keys.len() {
 			let k = RingPublicKey::new(pub_keys[i][0].0);
-			assert_ok!(CLSAGGroups::add_member(Origin::signed(origins[i]), 1, k.clone()));
+			assert_ok!(CLSAGGroups::add_member(
+				Origin::signed(origins[i]),
+				1,
+				k.clone()
+			));
 			keys.push(RingPublicKey(pub_keys[i][0]));
 		}
 
@@ -61,7 +70,8 @@ fn test_runtime_verify() {
 
 		let _challenge: RingScalar = RingScalar(sig.challenge);
 		let _responses: Vec<RingScalar> = sig.responses.iter().map(|x| RingScalar(*x)).collect();
-		let _key_images: Vec<RingPublicKey> = sig.key_images.iter().map(|x| RingPublicKey(*x)).collect();
+		let _key_images: Vec<RingPublicKey> =
+			sig.key_images.iter().map(|x| RingPublicKey(*x)).collect();
 		assert_eq!(CLSAGGroups::get_members(1), Some(keys.clone()));
 		assert_ok!(CLSAGGroups::verify_ring_sig(
 			Origin::signed(1),
@@ -77,19 +87,22 @@ fn test_runtime_verify() {
 #[test]
 fn test_linking_signatures() {
 	new_test_ext().execute_with(|| {
-        let num_decoys = 9;
-        let num_keys = 1;
-        let mut clsag = generate_clsag_with(num_decoys, num_keys);
+		let num_decoys = 9;
+		let num_keys = 1;
+		let mut clsag = generate_clsag_with(num_decoys, num_keys);
 		let msg = b"hello world world world world wo";
 		clsag.add_member(generate_signer(num_keys));
 		let sig = clsag.sign(msg).unwrap();
-		
 		let mut pub_keys = clsag.public_keys();
 		let origins = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 		let mut keys = vec![];
 		for i in 0..pub_keys.len() {
 			let k = RingPublicKey::new(pub_keys[i][0].0);
-			assert_ok!(CLSAGGroups::add_member(Origin::signed(origins[i]), 1, k.clone()));
+			assert_ok!(CLSAGGroups::add_member(
+				Origin::signed(origins[i]),
+				1,
+				k.clone()
+			));
 			keys.push(RingPublicKey(pub_keys[i][0]));
 		}
 
@@ -101,7 +114,8 @@ fn test_linking_signatures() {
 
 		let _challenge: RingScalar = RingScalar(sig.challenge);
 		let _responses: Vec<RingScalar> = sig.responses.iter().map(|x| RingScalar(*x)).collect();
-		let _key_images: Vec<RingPublicKey> = sig.key_images.iter().map(|x| RingPublicKey(*x)).collect();
+		let _key_images: Vec<RingPublicKey> =
+			sig.key_images.iter().map(|x| RingPublicKey(*x)).collect();
 		println!("{:?}", _challenge);
 		assert_eq!(CLSAGGroups::get_members(1), Some(keys.clone()));
 		assert_ok!(CLSAGGroups::verify_ring_sig(
