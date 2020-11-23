@@ -12,5 +12,5 @@ jobs:
     steps:
       - checkout
       - run: ~/anon/scripts/init.sh
-      - run: ~/anon/scripts/test.sh
+      - run: source ~/.cargo/env && ~/anon/scripts/test.sh
       - run: ~/anon/scripts/build.sh
