@@ -1,26 +1,24 @@
 [package]
-authors = ["drew@commonwealth.im"]
-edition = "2018"
-name = "pallet-merkle"
-version = "2.0.0"
+authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
+description = 'FRAME pallet template for defining custom runtime logic.'
+edition = '2018'
+homepage = 'https://substrate.dev'
+license = 'Unlicense'
+name = 'pallet-merkle'
+repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
+version = '2.0.0'
 
-[dependencies]
-codec = { package = "parity-scale-codec", version = "1.0.0", default-features = false, features = ["derive"] }
-safe-mix = { default-features = false, version = "1.0.0" }
-balances = { version = "2.0.0", default-features = false, package = "pallet-balances", git = "https://github.com/paritytech/substrate.git" }
-frame-support = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
-frame-system = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
-sp-io = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
-sp-runtime = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
-sp-std = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
-merlin = { version = "2.0.0", default-features = false }
-rand = { version = "0.7.3", optional = true }
-sha2 = { version = "0.9.1", default-features = false }
-bulletproofs = { version = "2.0.0", branch = "build-update", git = "https://github.com/edgeware-builders/bulletproofs"}
+[package.metadata.docs.rs]
+targets = ['x86_64-unknown-linux-gnu']
 
+# alias "parity-scale-code" to "codec"
+[dependencies.codec]
+default-features = false
+features = ['derive']
+package = 'parity-scale-codec'
+version = '1.3.4'
 
 [dependencies.curve25519-dalek]
-# git = "https://github.com/dalek-cryptography/curve25519-dalek"
 version = "3.0.0"
 default-features = false
 features = ["u64_backend", "alloc"]
@@ -28,23 +26,28 @@ features = ["u64_backend", "alloc"]
 [dependencies.bencher]
 version = "0.1.5"
 
+[dependencies]
+balances = { version = "2.0.0", default-features = false, package = "pallet-balances" }
+frame-support = { default-features = false, version = '2.0.0' }
+frame-system = { default-features = false, version = '2.0.0' }
+sp-std = { default-features = false, version = "2.0.0" }
+merlin = { version = "2.0.0", default-features = false }
+sha2 = { version = "0.9.1", default-features = false }
+sp-runtime = { default-features = false, version = '2.0.0' }
+rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
+bulletproofs = { version = "2.0.0", rev = "8ca89f7", git = "https://github.com/edgeware-builders/bulletproofs", default-features = false, features = ["yoloproofs"] }
+rand = { version = "0.7", optional = true }
+
 [dev-dependencies]
-sp-core = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-core = { default-features = false, version = '2.0.0' }
+sp-io = { default-features = false, version = '2.0.0' }
 
 [features]
-default = ["std"]
+default = ['std']
 std = [
-	"codec/std",
-	"frame-support/std",
-	"frame-system/std",
-	"balances/std",
-	"safe-mix/std",
-	"sp-std/std",
-	"sp-runtime/std",
-	"sp-io/std",
-	"rand/std",
+    'codec/std',
+    'frame-support/std',
+    'frame-system/std',
+    "rand/std",
+    "rand"
 ]
-
-[[bench]]
-name = "bench"
-harness = false
