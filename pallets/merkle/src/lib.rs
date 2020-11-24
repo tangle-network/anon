@@ -23,6 +23,7 @@ use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch,
 use frame_system::ensure_signed;
 use merkle::keys::{Commitment, Data};
 use merlin::Transcript;
+use rand_core::OsRng;
 use sp_runtime::traits::Zero;
 use sp_std::prelude::*;
 
@@ -209,8 +210,9 @@ decl_module! {
 			ensure!(proof.is_ok(), "Invalid proof bytes.");
 			let proof = proof.unwrap();
 
+			let mut rng = OsRng {};
 			// Final verification
-			let res = verifier.verify(&proof, &pc_gens, &bp_gens);
+			let res = verifier.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut rng);
 			ensure!(res.is_ok(), "Invalid proof of membership or leaf creation.");
 
 			// Set nullifier as used

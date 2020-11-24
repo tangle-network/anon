@@ -429,7 +429,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), 1);
 		prover.constrain(root_con - root.0);
 
-		let proof = prover.prove(&bp_gens).unwrap();
+		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
 
 		let path = vec![(Commitment(bit_com), Commitment(leaf_com2))];
 
@@ -473,7 +473,7 @@ fn should_not_use_nullifier_more_than_once() {
 			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), 1);
 		prover.constrain(root_con - root.0);
 
-		let proof = prover.prove(&bp_gens).unwrap();
+		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
 
 		let path = vec![(Commitment(bit_com), Commitment(leaf_com2))];
 
@@ -527,7 +527,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), 1);
 		prover.constrain(root_con - root.0);
 
-		let proof = prover.prove(&bp_gens).unwrap();
+		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
 		let path = vec![(Commitment(bit_com), Commitment(leaf_com2))];
 
 		let invalid_s_com = RistrettoPoint::random(&mut test_rng).compress();
@@ -572,7 +572,7 @@ fn should_not_verify_invalid_commitments_for_membership() {
 
 		let _ = commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), 1);
 
-		let proof = prover.prove(&bp_gens).unwrap();
+		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
 		let invalid_path_com = RistrettoPoint::random(&mut test_rng).compress();
 		let invalid_bit_com = RistrettoPoint::random(&mut test_rng).compress();
 		let path = vec![(Commitment(invalid_bit_com), Commitment(invalid_path_com))];
@@ -620,7 +620,7 @@ fn should_not_verify_invalid_transcript() {
 			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), 1);
 		prover.constrain(root_con - root.0);
 
-		let proof = prover.prove(&bp_gens).unwrap();
+		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
 		let path = vec![(Commitment(bit_com), Commitment(leaf_com2))];
 
 		assert_err!(
@@ -691,7 +691,7 @@ fn should_verify_zk_proof_of_membership() {
 			commit_path_level(&mut test_rng, &mut prover, node1_0, node_con1, 0);
 		prover.constrain(node_con2 - root.0);
 
-		let proof = prover.prove(&bp_gens).unwrap();
+		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
 
 		let path = vec![
 			(Commitment(bit_com0), Commitment(node_com0)),

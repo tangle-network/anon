@@ -75,14 +75,8 @@ pub type MerkleGroups = Module<Test>;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	let mut t = system::GenesisConfig::default()
+	system::GenesisConfig::default()
 		.build_storage::<Test>()
 		.unwrap()
-		.into();
-	balances::GenesisConfig::<Test> {
-		balances: vec![(1, 100), (2, 100), (3, 100), (4, 100)],
-	}
-	.assimilate_storage(&mut t)
-	.unwrap();
-	t.into()
+		.into()
 }

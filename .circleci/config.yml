@@ -1,0 +1,16 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: phusion/baseimage:0.11
+        environment:
+          DEBUG_BUILD: true
+          DEBIAN_FRONTEND: noninteractive
+
+    working_directory: ~/anon
+
+    steps:
+      - checkout
+      - run: ~/anon/scripts/init.sh
+      - run: source ~/.cargo/env && ~/anon/scripts/test.sh
+      - run: source ~/.cargo/env && ~/anon/scripts/build.sh
