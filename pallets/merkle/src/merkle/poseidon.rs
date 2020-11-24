@@ -1,7 +1,24 @@
 use super::constants::{MDS_ENTRIES, ROUND_CONSTS};
 use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Variable};
 use curve25519_dalek::scalar::Scalar;
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
+
+pub fn simplify(lc: LinearCombination) -> LinearCombination {
+	// Build hashmap to hold unique variables with their values.
+	let mut vars: BTreeMap<Variable, Scalar> = BTreeMap::new();
+
+	let terms: Vec<(Variable, Scalar)> = lc.get_terms().to_vec();
+	for (var, val) in terms {
+		*vars.entry(var).or_insert(Scalar::zero()) += val;
+	}
+
+	let mut new_lc_terms = vec![];
+	for (var, val) in vars {
+		new_lc_terms.push((var, val));
+	}
+	new_lc_terms.iter().collect()
+}
 
 #[derive(Clone)]
 pub struct Poseidon {
@@ -40,7 +57,6 @@ impl Poseidon {
 		}
 	}
 
-	// TODO: Write logic to generate correct round keys.
 	fn gen_round_keys(width: usize, total_rounds: usize) -> Vec<Scalar> {
 		let cap = total_rounds * width;
 		if ROUND_CONSTS.len() < cap {
@@ -52,14 +68,12 @@ impl Poseidon {
 		}
 		let mut rc = vec![];
 		for i in 0..cap {
-			// TODO: Remove unwrap, handle error
 			let c = get_scalar_from_hex(ROUND_CONSTS[i]);
 			rc.push(c);
 		}
 		rc
 	}
 
-	// TODO: Write logic to generate correct MDS matrix. Currently loading hardcoded constants.
 	fn gen_mds_matrix(width: usize) -> Vec<Vec<Scalar>> {
 		if MDS_ENTRIES.len() != width {
 			panic!("Incorrect width, only width {} is supported now", width);
@@ -70,7 +84,6 @@ impl Poseidon {
 				panic!("Incorrect width, only width {} is supported now", width);
 			}
 			for j in 0..width {
-				// TODO: Remove unwrap, handle error
 				mds[i][j] = get_scalar_from_hex(MDS_ENTRIES[i][j]);
 			}
 		}
@@ -85,10 +98,8 @@ impl Poseidon {
 		&self,
 		cs: &mut CS,
 		input_var: LinearCombination,
-		round_key: Scalar,
 	) -> Variable {
-		let inp_plus_const: LinearCombination = input_var + round_key;
-		let (i, _, sqr) = cs.multiply(inp_plus_const.clone(), inp_plus_const);
+		let (i, _, sqr) = cs.multiply(input_var.clone(), input_var);
 		let (_, _, cube) = cs.multiply(sqr.into(), i.into());
 		cube
 	}
@@ -175,106 +186,83 @@ impl Poseidon {
 	pub fn permute_constraints<CS: ConstraintSystem>(
 		&self,
 		cs: &mut CS,
-		input: Vec<LinearCombination>,
+		inputs: Vec<LinearCombination>,
 	) -> Vec<LinearCombination> {
 		let width = self.width;
-		assert_eq!(input.len(), width);
-		let mut input_vars: Vec<LinearCombination> = input;
-
+		assert_eq!(inputs.len(), width);
 		let mut round_keys_offset = 0;
 
 		let full_rounds_beginning = self.full_rounds_beginning;
 		let partial_rounds = self.partial_rounds;
 		let full_rounds_end = self.full_rounds_end;
 
-		for _ in 0..full_rounds_beginning {
-			let mut sbox_outputs: Vec<LinearCombination> =
-				vec![LinearCombination::default(); width];
+		let mut current_state = inputs.clone();
+		let mut current_state_temp = vec![LinearCombination::default(); width];
 
+		for _ in 0..full_rounds_beginning {
 			for i in 0..width {
-				let round_key = self.round_keys[round_keys_offset];
-				sbox_outputs[i] = self
-					.synthesize_sbox(cs, input_vars[i].clone(), round_key)
-					.into();
+				let inp = current_state[i].clone() + self.round_keys[round_keys_offset];
+				current_state[i] = self.synthesize_sbox(cs, inp).into();
 
 				round_keys_offset += 1;
 			}
 
-			let mut next_input_vars: Vec<LinearCombination> =
-				vec![LinearCombination::default(); width];
-
 			for j in 0..width {
 				for i in 0..width {
-					next_input_vars[i] = next_input_vars[i].clone()
-						+ sbox_outputs[j].clone() * self.mds_matrix[i][j];
+					current_state_temp[i] = current_state_temp[i].clone()
+						+ current_state[j].clone() * self.mds_matrix[i][j];
 				}
 			}
 			for i in 0..width {
-				input_vars[i] = next_input_vars.remove(0);
+				current_state[i] = simplify(current_state_temp[i].clone());
+				current_state_temp[i] = LinearCombination::default();
 			}
 		}
 
 		for _ in full_rounds_beginning..(full_rounds_beginning + partial_rounds) {
-			let mut sbox_outputs: Vec<LinearCombination> =
-				vec![LinearCombination::default(); width];
 			for i in 0..width {
-				let round_key = self.round_keys[round_keys_offset];
-				if i == width - 1 {
-					sbox_outputs[i] = self
-						.synthesize_sbox(cs, input_vars[i].clone(), round_key)
-						.into();
-				} else {
-					sbox_outputs[i] = input_vars[i].clone() + LinearCombination::from(round_key);
-				}
-
+				current_state[i] = current_state[i].clone() + self.round_keys[round_keys_offset];
 				round_keys_offset += 1;
 			}
-
-			let mut next_input_vars: Vec<LinearCombination> =
-				vec![LinearCombination::default(); width];
+			current_state[width - 1] = self
+				.synthesize_sbox(cs, current_state[width - 1].clone())
+				.into();
 
 			for j in 0..width {
 				for i in 0..width {
-					next_input_vars[i] = next_input_vars[i].clone()
-						+ sbox_outputs[j].clone() * self.mds_matrix[i][j];
+					current_state_temp[i] = current_state_temp[i].clone()
+						+ current_state[j].clone() * self.mds_matrix[i][j];
 				}
 			}
 
 			for i in 0..width {
-				input_vars[i] = next_input_vars.remove(0);
+				current_state[i] = simplify(current_state_temp[i].clone());
+				current_state_temp[i] = LinearCombination::default();
 			}
 		}
 
 		for _ in (full_rounds_beginning + partial_rounds)
 			..(full_rounds_beginning + partial_rounds + full_rounds_end)
 		{
-			let mut sbox_outputs: Vec<LinearCombination> =
-				vec![LinearCombination::default(); width];
 			for i in 0..width {
-				let round_key = self.round_keys[round_keys_offset];
-				sbox_outputs[i] = self
-					.synthesize_sbox(cs, input_vars[i].clone(), round_key)
-					.into();
-
+				let inp = current_state[i].clone() + self.round_keys[round_keys_offset];
+				current_state[i] = self.synthesize_sbox(cs, inp).into();
 				round_keys_offset += 1;
 			}
 
-			let mut next_input_vars: Vec<LinearCombination> =
-				vec![LinearCombination::default(); width];
-
 			for j in 0..width {
 				for i in 0..width {
-					next_input_vars[i] = next_input_vars[i].clone()
-						+ sbox_outputs[j].clone() * self.mds_matrix[i][j];
+					current_state[i] = current_state[i].clone()
+						+ current_state_temp[j].clone() * self.mds_matrix[i][j];
 				}
 			}
 
 			for i in 0..width {
-				input_vars[i] = next_input_vars.remove(0);
+				current_state[i] = simplify(current_state[i].clone());
 			}
 		}
 
-		input_vars
+		current_state
 	}
 
 	pub fn constrain<CS: ConstraintSystem>(
@@ -298,13 +286,13 @@ impl Poseidon {
 		self.permute(&input)[1]
 	}
 
-	pub fn hash_4(&self, inputs: [Scalar; 4]) -> Scalar {
+	pub fn hash_4(&self, x1: Scalar, x2: Scalar, x3: Scalar, x4: Scalar) -> Scalar {
 		let input = vec![
 			Scalar::from(ZERO_CONST),
-			inputs[0],
-			inputs[1],
-			inputs[2],
-			inputs[3],
+			x1,
+			x2,
+			x3,
+			x4,
 			Scalar::from(PADDING_CONST),
 		];
 
@@ -313,24 +301,13 @@ impl Poseidon {
 }
 
 pub fn decode_hex(s: &str) -> Vec<u8> {
-	let s = if s[0..2] == *"0x" || s[0..2] == *"0X" {
-		match s.char_indices().skip(2).next() {
-			Some((pos, _)) => &s[pos..],
-			None => "",
-		}
-	} else {
-		s
-	};
-	if s.len() % 2 != 0 {
-		panic!("Odd length");
-	} else {
-		let vec: Vec<u8> = (0..s.len())
-			.step_by(2)
-			.map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
-			.collect();
+	let s = &s[2..];
+	let vec: Vec<u8> = (0..s.len())
+		.step_by(2)
+		.map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
+		.collect();
 
-		vec
-	}
+	vec
 }
 
 pub fn get_scalar_from_hex(hex_str: &str) -> Scalar {

@@ -1,6 +1,7 @@
 // Tests to be written here
 
 use crate::merkle::keys::{Commitment, Data};
+use crate::merkle::poseidon::Poseidon;
 use crate::mock::*;
 use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Prover, Variable};
 use bulletproofs::{BulletproofGens, PedersenGens};
@@ -17,10 +18,17 @@ fn key_bytes(x: u8) -> [u8; 32] {
 	]
 }
 
-fn leaf_data(rng: &mut ThreadRng) -> (Scalar, Scalar, Data) {
+fn leaf_data_mimc(rng: &mut ThreadRng) -> (Scalar, Scalar, Data) {
 	let s = Scalar::random(rng);
 	let nullifier = Scalar::random(rng);
 	let leaf = Data::hash_mimc(Data(s), Data(nullifier));
+	(s, nullifier, leaf)
+}
+
+fn leaf_data_poseidon(rng: &mut ThreadRng, p: &Poseidon) -> (Scalar, Scalar, Data) {
+	let s = Scalar::random(rng);
+	let nullifier = Scalar::random(rng);
+	let leaf = Data::hash_poseidon(Data(s), Data(nullifier), p);
 	(s, nullifier, leaf)
 }
 
@@ -34,6 +42,21 @@ fn commit_leaf(
 	let (leaf_com1, leaf_var1) = prover.commit(leaf.0, Scalar::random(rng));
 	let (s_com, s_var) = prover.commit(s, Scalar::random(rng));
 	let leaf_com = Data::constrain_mimc(prover, s_var.into(), nullifier.into());
+	prover.constrain(leaf_com - leaf_var1);
+	(s_com, leaf_com1, leaf_var1)
+}
+
+fn commit_leaf_poseidon(
+	rng: &mut ThreadRng,
+	prover: &mut Prover,
+	leaf: Data,
+	s: Scalar,
+	nullifier: Scalar,
+	p: &Poseidon,
+) -> (CompressedRistretto, CompressedRistretto, Variable) {
+	let (leaf_com1, leaf_var1) = prover.commit(leaf.0, Scalar::random(rng));
+	let (s_com, s_var) = prover.commit(s, Scalar::random(rng));
+	let leaf_com = Data::constrain_poseidon_prover(prover, s_var.into(), nullifier.into(), p);
 	prover.constrain(leaf_com - leaf_var1);
 	(s_com, leaf_com1, leaf_var1)
 }
@@ -59,6 +82,31 @@ fn commit_path_level(
 	let right = right1 + right2;
 
 	let node_con = Data::constrain_mimc(prover, left, right);
+	(bit_com, node_com, node_con)
+}
+
+fn commit_path_level_poseidon(
+	rng: &mut ThreadRng,
+	prover: &mut Prover,
+	leaf: Data,
+	pair: LinearCombination,
+	bit: u8,
+	p: &Poseidon,
+) -> (CompressedRistretto, CompressedRistretto, LinearCombination) {
+	let (bit_com, bit_var) = prover.commit(Scalar::from(bit), Scalar::random(rng));
+	let (node_com, node_var) = prover.commit(leaf.0, Scalar::random(rng));
+
+	let side: LinearCombination = Variable::One() - bit_var;
+
+	let (_, _, left1) = prover.multiply(bit_var.into(), pair.clone());
+	let (_, _, left2) = prover.multiply(side.clone(), node_var.into());
+	let left = left1 + left2;
+
+	let (_, _, right1) = prover.multiply(side, pair);
+	let (_, _, right2) = prover.multiply(bit_var.into(), node_var.into());
+	let right = right1 + right2;
+
+	let node_con = Data::constrain_poseidon_prover(prover, left, right, p);
 	(bit_com, node_com, node_con)
 }
 
@@ -411,7 +459,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 		let mut test_rng = rand::thread_rng();
-		let (s, nullifier, leaf) = leaf_data(&mut test_rng);
+		let (s, nullifier, leaf) = leaf_data_mimc(&mut test_rng);
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
@@ -455,7 +503,7 @@ fn should_not_use_nullifier_more_than_once() {
 		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 		let mut test_rng = rand::thread_rng();
-		let (s, nullifier, leaf) = leaf_data(&mut test_rng);
+		let (s, nullifier, leaf) = leaf_data_mimc(&mut test_rng);
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
@@ -511,7 +559,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 		let mut test_rng = rand::thread_rng();
-		let (s, nullifier, leaf) = leaf_data(&mut test_rng);
+		let (s, nullifier, leaf) = leaf_data_mimc(&mut test_rng);
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
@@ -557,7 +605,7 @@ fn should_not_verify_invalid_commitments_for_membership() {
 		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 		let mut test_rng = rand::thread_rng();
-		let (s, nullifier, leaf) = leaf_data(&mut test_rng);
+		let (s, nullifier, leaf) = leaf_data_mimc(&mut test_rng);
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
@@ -602,7 +650,7 @@ fn should_not_verify_invalid_transcript() {
 		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 		let mut test_rng = rand::thread_rng();
-		let (s, nullifier, leaf) = leaf_data(&mut test_rng);
+		let (s, nullifier, leaf) = leaf_data_mimc(&mut test_rng);
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
@@ -648,13 +696,13 @@ fn should_verify_zk_proof_of_membership() {
 		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 		let mut test_rng = rand::thread_rng();
-		let (_, _, leaf0) = leaf_data(&mut test_rng);
-		let (_, _, leaf1) = leaf_data(&mut test_rng);
-		let (_, _, leaf2) = leaf_data(&mut test_rng);
-		let (_, _, leaf3) = leaf_data(&mut test_rng);
-		let (_, _, leaf4) = leaf_data(&mut test_rng);
-		let (s, nullifier, leaf5) = leaf_data(&mut test_rng);
-		let (_, _, leaf6) = leaf_data(&mut test_rng);
+		let (_, _, leaf0) = leaf_data_mimc(&mut test_rng);
+		let (_, _, leaf1) = leaf_data_mimc(&mut test_rng);
+		let (_, _, leaf2) = leaf_data_mimc(&mut test_rng);
+		let (_, _, leaf3) = leaf_data_mimc(&mut test_rng);
+		let (_, _, leaf4) = leaf_data_mimc(&mut test_rng);
+		let (s, nullifier, leaf5) = leaf_data_mimc(&mut test_rng);
+		let (_, _, leaf6) = leaf_data_mimc(&mut test_rng);
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
@@ -708,5 +756,17 @@ fn should_verify_zk_proof_of_membership() {
 			Data(nullifier),
 			proof.to_bytes(),
 		));
+	});
+}
+
+#[test]
+fn should_verify_simple_with_poseidon() {
+	new_test_ext().execute_with(|| {
+		let poseidon = Poseidon::new(6, 4, 4, 10);
+		let pc_gens = PedersenGens::default();
+		let bp_gens = BulletproofGens::new(2048, 1);
+
+		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
+		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 	});
 }
