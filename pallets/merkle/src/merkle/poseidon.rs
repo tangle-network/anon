@@ -1,5 +1,7 @@
 use super::constants::{MDS_ENTRIES, ROUND_CONSTS};
-use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Variable};
+use super::hasher::Hasher;
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Prover, Variable, Verifier};
+use bulletproofs::PedersenGens;
 use curve25519_dalek::scalar::Scalar;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
@@ -20,7 +22,7 @@ pub fn simplify(lc: LinearCombination) -> LinearCombination {
 	new_lc_terms.iter().collect()
 }
 
-#[derive(Clone)]
+#[derive(Eq, PartialEq, Clone, Default, Debug)]
 pub struct Poseidon {
 	pub width: usize,
 	// Number of full SBox rounds in beginning
@@ -298,6 +300,40 @@ impl Poseidon {
 
 		self.permute(&input)[1]
 	}
+
+	pub fn prover_constrain_inputs(
+		prover: &mut Prover,
+		xl: LinearCombination,
+		xr: LinearCombination,
+	) -> Vec<LinearCombination> {
+		let (_, var1) = prover.commit(Scalar::from(ZERO_CONST), Scalar::zero());
+		let (_, var4) = prover.commit(Scalar::from(PADDING_CONST), Scalar::zero());
+		let (_, var5) = prover.commit(Scalar::from(ZERO_CONST), Scalar::zero());
+		let (_, var6) = prover.commit(Scalar::from(ZERO_CONST), Scalar::zero());
+		let inputs = vec![var1.into(), xl, xr, var4.into(), var5.into(), var6.into()];
+		inputs
+	}
+
+	pub fn verifier_constrain_inputs(
+		verifier: &mut Verifier,
+		pc_gens: &PedersenGens,
+		xl: LinearCombination,
+		xr: LinearCombination,
+	) -> Vec<LinearCombination> {
+		// TODO use passed commitments instead odd committing again in runtime
+		let com_zero = pc_gens
+			.commit(Scalar::from(ZERO_CONST), Scalar::zero())
+			.compress();
+		let com_pad = pc_gens
+			.commit(Scalar::from(PADDING_CONST), Scalar::zero())
+			.compress();
+		let var1 = verifier.commit(com_zero);
+		let var4 = verifier.commit(com_pad);
+		let var5 = verifier.commit(com_zero);
+		let var6 = verifier.commit(com_zero);
+		let inputs = vec![var1.into(), xl, xr, var4.into(), var5.into(), var6.into()];
+		inputs
+	}
 }
 
 pub fn decode_hex(s: &str) -> Vec<u8> {
@@ -315,4 +351,31 @@ pub fn get_scalar_from_hex(hex_str: &str) -> Scalar {
 	let mut result: [u8; 32] = [0; 32];
 	result.copy_from_slice(&bytes);
 	Scalar::from_bytes_mod_order(result)
+}
+
+impl Hasher for Poseidon {
+	fn hash(&self, xl: Scalar, xr: Scalar) -> Scalar {
+		self.hash_2(xl, xr)
+	}
+
+	fn constrain_prover(
+		&self,
+		prover: &mut Prover,
+		xl: LinearCombination,
+		xr: LinearCombination,
+	) -> LinearCombination {
+		let inputs = Poseidon::prover_constrain_inputs(prover, xl, xr);
+		self.constrain(prover, inputs)
+	}
+
+	fn constrain_verifier(
+		&self,
+		verifier: &mut Verifier,
+		pc_gens: &PedersenGens,
+		xl: LinearCombination,
+		xr: LinearCombination,
+	) -> LinearCombination {
+		let inputs = Poseidon::verifier_constrain_inputs(verifier, pc_gens, xl, xr);
+		self.constrain(verifier, inputs)
+	}
 }
