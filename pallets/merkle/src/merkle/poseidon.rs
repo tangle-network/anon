@@ -125,8 +125,8 @@ impl Poseidon {
 
 		for _ in 0..full_rounds_beginning {
 			for i in 0..width {
-				current_state[i] += self.round_keys[round_keys_offset];
-				current_state[i] = self.apply_sbox(&current_state[i]);
+				let tmp = current_state[i] + self.round_keys[round_keys_offset];
+				current_state[i] = self.apply_sbox(&tmp);
 				round_keys_offset += 1;
 			}
 
@@ -165,8 +165,8 @@ impl Poseidon {
 			..(full_rounds_beginning + partial_rounds + full_rounds_end)
 		{
 			for i in 0..width {
-				current_state[i] += self.round_keys[round_keys_offset];
-				current_state[i] = self.apply_sbox(&current_state[i]);
+				let tmp = current_state[i] + self.round_keys[round_keys_offset];
+				current_state[i] = self.apply_sbox(&tmp);
 				round_keys_offset += 1;
 			}
 
@@ -199,7 +199,7 @@ impl Poseidon {
 		let full_rounds_end = self.full_rounds_end;
 
 		let mut current_state = inputs.clone();
-		let mut current_state_temp = vec![LinearCombination::default(); width];
+		let mut current_state_temp: Vec<LinearCombination> = vec![Scalar::zero().into(); width];
 
 		for _ in 0..full_rounds_beginning {
 			for i in 0..width {
@@ -211,13 +211,14 @@ impl Poseidon {
 
 			for j in 0..width {
 				for i in 0..width {
-					current_state_temp[i] = current_state_temp[i].clone()
-						+ current_state[j].clone() * self.mds_matrix[i][j];
+					let (_, _, tmp) =
+						cs.multiply(current_state[j].clone(), self.mds_matrix[i][j].into());
+					current_state_temp[i] = current_state_temp[i].clone() + tmp;
 				}
 			}
 			for i in 0..width {
 				current_state[i] = simplify(current_state_temp[i].clone());
-				current_state_temp[i] = LinearCombination::default();
+				current_state_temp[i] = Scalar::zero().into();
 			}
 		}
 
@@ -232,14 +233,15 @@ impl Poseidon {
 
 			for j in 0..width {
 				for i in 0..width {
-					current_state_temp[i] = current_state_temp[i].clone()
-						+ current_state[j].clone() * self.mds_matrix[i][j];
+					let (_, _, tmp) =
+						cs.multiply(current_state[j].clone(), self.mds_matrix[i][j].into());
+					current_state_temp[i] = current_state_temp[i].clone() + tmp;
 				}
 			}
 
 			for i in 0..width {
 				current_state[i] = simplify(current_state_temp[i].clone());
-				current_state_temp[i] = LinearCombination::default();
+				current_state_temp[i] = Scalar::zero().into();
 			}
 		}
 
@@ -254,13 +256,15 @@ impl Poseidon {
 
 			for j in 0..width {
 				for i in 0..width {
-					current_state[i] = current_state[i].clone()
-						+ current_state_temp[j].clone() * self.mds_matrix[i][j];
+					let (_, _, tmp) =
+						cs.multiply(current_state[j].clone(), self.mds_matrix[i][j].into());
+					current_state_temp[i] = current_state_temp[i].clone() + tmp;
 				}
 			}
 
 			for i in 0..width {
-				current_state[i] = simplify(current_state[i].clone());
+				current_state[i] = simplify(current_state_temp[i].clone());
+				current_state_temp[i] = Scalar::zero().into();
 			}
 		}
 
