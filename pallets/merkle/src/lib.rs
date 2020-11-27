@@ -41,7 +41,8 @@ const MAX_DEPTH: u32 = 32;
 
 // TODO find better way to have default hasher without saving it inside storage
 fn default_hasher() -> impl Hasher {
-	Poseidon::new(6, 4, 4, 10)
+	Poseidon::new(6)
+	// Mimc::new(70)
 }
 
 #[cfg_attr(feature = "std", derive(Debug))]
@@ -182,7 +183,7 @@ decl_module! {
 
 			let pc_gens = PedersenGens::default();
 			// TODO: should be able to pass number of generators
-			let bp_gens = BulletproofGens::new(8192, 1);
+			let bp_gens = BulletproofGens::new(2048, 1);
 			let h = default_hasher();
 
 			let mut verifier_transcript = Transcript::new(b"zk_membership_proof");

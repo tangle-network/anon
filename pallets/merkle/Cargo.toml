@@ -51,3 +51,7 @@ std = [
     "rand/std",
     "rand"
 ]
+
+[[bench]]
+name = "bench"
+harness = false

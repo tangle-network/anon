@@ -1,4 +1,4 @@
-use super::constants::{MDS_ENTRIES, ROUND_CONSTS};
+use super::constants::{MDS_ENTRIES, POSEIDON_FULL_ROUNDS, POSEIDON_PARTIAL_ROUNDS, ROUND_CONSTS};
 use super::hasher::Hasher;
 use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Prover, Variable, Verifier};
 use bulletproofs::PedersenGens;
@@ -22,14 +22,35 @@ pub fn simplify(lc: LinearCombination) -> LinearCombination {
 	new_lc_terms.iter().collect()
 }
 
+fn mat_mul(lhs: &Vec<Vec<Scalar>>, rhs: &Vec<Scalar>) -> Vec<Scalar> {
+	lhs.iter()
+		.zip(rhs.iter())
+		.map(|(row, val)| {
+			row.iter()
+				.fold(Scalar::zero(), |sum, row_i| sum + val * row_i)
+		})
+		.collect()
+}
+
+fn mat_mul_lc(lhs: &Vec<Vec<Scalar>>, rhs: Vec<LinearCombination>) -> Vec<LinearCombination> {
+	lhs.into_iter()
+		.zip(rhs.into_iter())
+		.map(|(row, val)| {
+			let new_val = simplify(val);
+			row.into_iter()
+				.fold(LinearCombination::default(), |sum, row_i| {
+					sum + new_val.clone() * row_i.clone()
+				})
+		})
+		.collect()
+}
+
 #[derive(Eq, PartialEq, Clone, Default, Debug)]
 pub struct Poseidon {
 	pub width: usize,
-	// Number of full SBox rounds in beginning
-	pub full_rounds_beginning: usize,
-	// Number of full SBox rounds in end
-	pub full_rounds_end: usize,
-	// Number of partial SBox rounds in beginning
+	// Number of full SBox rounds
+	pub full_rounds: usize,
+	// Number of partial SBox rounds
 	pub partial_rounds: usize,
 	pub round_keys: Vec<Scalar>,
 	pub mds_matrix: Vec<Vec<Scalar>>,
@@ -40,19 +61,15 @@ pub const PADDING_CONST: u64 = 101;
 pub const ZERO_CONST: u64 = 0;
 
 impl Poseidon {
-	pub fn new(
-		width: usize,
-		full_rounds_beginning: usize,
-		full_rounds_end: usize,
-		partial_rounds: usize,
-	) -> Self {
-		let total_rounds = full_rounds_beginning + partial_rounds + full_rounds_end;
+	pub fn new(width: usize) -> Self {
+		let full_rounds = POSEIDON_FULL_ROUNDS;
+		let partial_rounds = POSEIDON_PARTIAL_ROUNDS;
+		let total_rounds = full_rounds + partial_rounds;
 		let round_keys = Self::gen_round_keys(width, total_rounds);
 		let matrix_2 = Self::gen_mds_matrix(width);
 		Self {
 			width,
-			full_rounds_beginning,
-			full_rounds_end,
+			full_rounds,
 			partial_rounds,
 			round_keys,
 			mds_matrix: matrix_2,
@@ -100,89 +117,35 @@ impl Poseidon {
 		&self,
 		cs: &mut CS,
 		input_var: LinearCombination,
-	) -> Variable {
+	) -> LinearCombination {
 		let (i, _, sqr) = cs.multiply(input_var.clone(), input_var);
 		let (_, _, cube) = cs.multiply(sqr.into(), i.into());
-		cube
+		cube.into()
 	}
 
-	pub fn get_total_rounds(&self) -> usize {
-		self.full_rounds_beginning + self.partial_rounds + self.full_rounds_end
-	}
+	pub fn permute(&self, inputs: &[Scalar]) -> Vec<Scalar> {
+		assert_eq!(inputs.len(), self.width);
 
-	pub fn permute(&self, input: &[Scalar]) -> Vec<Scalar> {
-		let width = self.width;
-		assert_eq!(input.len(), width);
-
-		let full_rounds_beginning = self.full_rounds_beginning;
-		let partial_rounds = self.partial_rounds;
-		let full_rounds_end = self.full_rounds_end;
-
-		let mut current_state = input.to_vec();
-		let mut current_state_temp = vec![Scalar::zero(); width];
-
-		let mut round_keys_offset = 0;
-
-		for _ in 0..full_rounds_beginning {
-			for i in 0..width {
-				let tmp = current_state[i] + self.round_keys[round_keys_offset];
-				current_state[i] = self.apply_sbox(&tmp);
-				round_keys_offset += 1;
+		let rounds = self.full_rounds + self.partial_rounds;
+		assert!(
+			self.full_rounds % 2 == 0,
+			"asymmetric permutation configuration"
+		);
+		let full_rounds_per_side = self.full_rounds / 2;
+		let mut current = inputs.to_vec();
+		for round in 0..rounds {
+			// Sub words layer.
+			let full = round < full_rounds_per_side || round >= rounds - full_rounds_per_side;
+			if full {
+				current = current.iter().map(|exp| self.apply_sbox(exp)).collect();
+			} else {
+				current[0] = self.apply_sbox(&current[0]);
 			}
 
-			for j in 0..width {
-				for i in 0..width {
-					current_state_temp[i] += current_state[j] * self.mds_matrix[i][j];
-				}
-			}
-
-			for i in 0..width {
-				current_state[i] = current_state_temp[i];
-				current_state_temp[i] = Scalar::zero();
-			}
+			// Mix layer.
+			current = mat_mul(&self.mds_matrix, &current);
 		}
-
-		for _ in full_rounds_beginning..(full_rounds_beginning + partial_rounds) {
-			for i in 0..width {
-				current_state[i] += &self.round_keys[round_keys_offset];
-				round_keys_offset += 1;
-			}
-			current_state[width - 1] = self.apply_sbox(&current_state[width - 1]);
-
-			for j in 0..width {
-				for i in 0..width {
-					current_state_temp[i] += current_state[j] * self.mds_matrix[i][j];
-				}
-			}
-
-			for i in 0..width {
-				current_state[i] = current_state_temp[i];
-				current_state_temp[i] = Scalar::zero();
-			}
-		}
-
-		for _ in full_rounds_beginning + partial_rounds
-			..(full_rounds_beginning + partial_rounds + full_rounds_end)
-		{
-			for i in 0..width {
-				let tmp = current_state[i] + self.round_keys[round_keys_offset];
-				current_state[i] = self.apply_sbox(&tmp);
-				round_keys_offset += 1;
-			}
-
-			for j in 0..width {
-				for i in 0..width {
-					current_state_temp[i] += current_state[j] * self.mds_matrix[i][j];
-				}
-			}
-
-			for i in 0..width {
-				current_state[i] = current_state_temp[i];
-				current_state_temp[i] = Scalar::zero();
-			}
-		}
-
-		current_state
+		current
 	}
 
 	pub fn permute_constraints<CS: ConstraintSystem>(
@@ -190,85 +153,31 @@ impl Poseidon {
 		cs: &mut CS,
 		inputs: Vec<LinearCombination>,
 	) -> Vec<LinearCombination> {
-		let width = self.width;
-		assert_eq!(inputs.len(), width);
-		let mut round_keys_offset = 0;
+		assert_eq!(inputs.len(), self.width);
 
-		let full_rounds_beginning = self.full_rounds_beginning;
-		let partial_rounds = self.partial_rounds;
-		let full_rounds_end = self.full_rounds_end;
-
-		let mut current_state = inputs.clone();
-		let mut current_state_temp: Vec<LinearCombination> = vec![Scalar::zero().into(); width];
-
-		for _ in 0..full_rounds_beginning {
-			for i in 0..width {
-				let inp = current_state[i].clone() + self.round_keys[round_keys_offset];
-				current_state[i] = self.synthesize_sbox(cs, inp).into();
-
-				round_keys_offset += 1;
+		let rounds = self.full_rounds + self.partial_rounds;
+		assert!(
+			self.full_rounds % 2 == 0,
+			"asymmetric permutation configuration"
+		);
+		let full_rounds_per_side = self.full_rounds / 2;
+		let mut current = inputs.to_vec();
+		for round in 0..rounds {
+			// Sub words layer.
+			let full = round < full_rounds_per_side || round >= rounds - full_rounds_per_side;
+			if full {
+				current = current
+					.into_iter()
+					.map(|exp| self.synthesize_sbox(cs, exp))
+					.collect();
+			} else {
+				current[0] = self.synthesize_sbox(cs, current[0].clone().into());
 			}
 
-			for j in 0..width {
-				for i in 0..width {
-					let (_, _, tmp) =
-						cs.multiply(current_state[j].clone(), self.mds_matrix[i][j].into());
-					current_state_temp[i] = current_state_temp[i].clone() + tmp;
-				}
-			}
-			for i in 0..width {
-				current_state[i] = simplify(current_state_temp[i].clone());
-				current_state_temp[i] = Scalar::zero().into();
-			}
+			// Mix layer.
+			current = mat_mul_lc(&self.mds_matrix, current);
 		}
-
-		for _ in full_rounds_beginning..(full_rounds_beginning + partial_rounds) {
-			for i in 0..width {
-				current_state[i] = current_state[i].clone() + self.round_keys[round_keys_offset];
-				round_keys_offset += 1;
-			}
-			current_state[width - 1] = self
-				.synthesize_sbox(cs, current_state[width - 1].clone())
-				.into();
-
-			for j in 0..width {
-				for i in 0..width {
-					let (_, _, tmp) =
-						cs.multiply(current_state[j].clone(), self.mds_matrix[i][j].into());
-					current_state_temp[i] = current_state_temp[i].clone() + tmp;
-				}
-			}
-
-			for i in 0..width {
-				current_state[i] = simplify(current_state_temp[i].clone());
-				current_state_temp[i] = Scalar::zero().into();
-			}
-		}
-
-		for _ in (full_rounds_beginning + partial_rounds)
-			..(full_rounds_beginning + partial_rounds + full_rounds_end)
-		{
-			for i in 0..width {
-				let inp = current_state[i].clone() + self.round_keys[round_keys_offset];
-				current_state[i] = self.synthesize_sbox(cs, inp).into();
-				round_keys_offset += 1;
-			}
-
-			for j in 0..width {
-				for i in 0..width {
-					let (_, _, tmp) =
-						cs.multiply(current_state[j].clone(), self.mds_matrix[i][j].into());
-					current_state_temp[i] = current_state_temp[i].clone() + tmp;
-				}
-			}
-
-			for i in 0..width {
-				current_state[i] = simplify(current_state_temp[i].clone());
-				current_state_temp[i] = Scalar::zero().into();
-			}
-		}
-
-		current_state
+		current
 	}
 
 	pub fn constrain<CS: ConstraintSystem>(
