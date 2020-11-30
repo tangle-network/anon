@@ -41,7 +41,7 @@ const MAX_DEPTH: u32 = 32;
 
 // TODO find better way to have default hasher without saving it inside storage
 fn default_hasher() -> impl Hasher {
-	Poseidon::new(6)
+	Poseidon::new(4)
 	// Mimc::new(70)
 }
 
@@ -183,7 +183,7 @@ decl_module! {
 
 			let pc_gens = PedersenGens::default();
 			// TODO: should be able to pass number of generators
-			let bp_gens = BulletproofGens::new(2048, 1);
+			let bp_gens = BulletproofGens::new(4096, 1);
 			let h = default_hasher();
 
 			let mut verifier_transcript = Transcript::new(b"zk_membership_proof");
@@ -197,29 +197,21 @@ decl_module! {
 			verifier.constrain(leaf_lc - var_leaf);
 
 			// Check of path proof is correct
+			// hash = 5
 			let mut hash: LinearCombination = var_leaf.into();
 			for (bit, pair) in path {
 				// e.g. If bit is 0 that means pair is on the left side
-				// var_bit = 0
+				// var_bit = 1
 				let var_bit = verifier.commit(bit.0);
+				// pair = 3
 				let var_pair = verifier.commit(pair.0);
 
-				// side = 1 - 0 = 1
-				let side: LinearCombination = Variable::One() - var_bit;
-
-				// left1 = 0 * hash = 0
-				let (_, _, left1) = verifier.multiply(var_bit.into(), hash.clone());
-				// left2 = 1 * pair = pair
-				let (_, _, left2) = verifier.multiply(side.clone(), var_pair.into());
-				// left = 0 + pair = pair
-				let left = left1 + left2;
-
-				// right1 = 1 * hash = hash
-				let (_, _, right1) = verifier.multiply(side, hash);
-				// right2 = 0 * pair = 0
-				let (_, _, right2) = verifier.multiply(var_bit.into(), var_pair.into());
-				// right = hash + 0 = hash
-				let right = right1 + right2;
+				// temp = 1 * 3 - 5 = -2
+				let (_, _, var_temp) = verifier.multiply(var_bit.into(), var_pair - hash.clone());
+				// left = 5 - 2 = 3
+				let left = hash.clone() + var_temp;
+				// right = 3 + 5 - 3 = 5
+				let right = var_pair + hash - left.clone();
 
 				hash = Data::constrain_verifier(&mut verifier, &pc_gens, left, right, &h);
 			}

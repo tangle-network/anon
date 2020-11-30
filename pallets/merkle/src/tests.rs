@@ -19,7 +19,7 @@ fn key_bytes(x: u8) -> [u8; 32] {
 }
 
 fn default_hasher() -> impl Hasher {
-	Poseidon::new(6)
+	Poseidon::new(4)
 	// Mimc::new(70)
 }
 
@@ -276,13 +276,12 @@ fn should_not_verify_invalid_proof() {
 			"Invalid proof of membership."
 		);
 
-		// TODO: figure out why this doesn't fail
-		// let path = vec![(true, key2), (true, keyh1)];
+		let path = vec![(true, key2), (true, keyh1)];
 
-		// assert_err!(
-		// 	MerkleGroups::verify(Origin::signed(2), 0, key0, path),
-		// 	"Invalid proof of membership."
-		// );
+		assert_err!(
+			MerkleGroups::verify(Origin::signed(2), 0, key0, path),
+			"Invalid proof of membership."
+		);
 	});
 }
 
@@ -657,11 +656,11 @@ fn should_verify_zk_proof_of_membership() {
 		let root = Data::hash(node1_0, node1_1, &h);
 
 		let (bit_com0, node_com0, node_con0) =
-			commit_path_level(&mut test_rng, &mut prover, leaf4, leaf_var5.into(), 0, &h);
+			commit_path_level(&mut test_rng, &mut prover, leaf4, leaf_var5.into(), 1, &h);
 		let (bit_com1, node_com1, node_con1) =
-			commit_path_level(&mut test_rng, &mut prover, node0_3, node_con0, 1, &h);
+			commit_path_level(&mut test_rng, &mut prover, node0_3, node_con0, 0, &h);
 		let (bit_com2, node_com2, node_con2) =
-			commit_path_level(&mut test_rng, &mut prover, node1_0, node_con1, 0, &h);
+			commit_path_level(&mut test_rng, &mut prover, node1_0, node_con1, 1, &h);
 		prover.constrain(node_con2 - root.0);
 
 		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
@@ -689,7 +688,7 @@ fn should_verify_large_zk_proof_of_membership() {
 	new_test_ext().execute_with(|| {
 		let h = default_hasher();
 		let pc_gens = PedersenGens::default();
-		let bp_gens = BulletproofGens::new(2048, 1);
+		let bp_gens = BulletproofGens::new(4096, 1);
 
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
@@ -701,7 +700,7 @@ fn should_verify_large_zk_proof_of_membership() {
 			Origin::signed(1),
 			0,
 			Some(10),
-			Some(16),
+			Some(32),
 		));
 		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf));
 
@@ -711,7 +710,7 @@ fn should_verify_large_zk_proof_of_membership() {
 		let mut lh = leaf;
 		let mut lh_lc: LinearCombination = leaf_var1.into();
 		let mut path = Vec::new();
-		for _ in 0..16 {
+		for _ in 0..32 {
 			let (bit_com, leaf_com, node_con) =
 				commit_path_level(&mut test_rng, &mut prover, lh, lh_lc, 1, &h);
 			lh_lc = node_con;

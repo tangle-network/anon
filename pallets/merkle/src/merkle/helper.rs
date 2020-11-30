@@ -35,26 +35,20 @@ pub fn commit_leaf<H: Hasher, C: CryptoRng + RngCore>(
 pub fn commit_path_level<H: Hasher, C: CryptoRng + RngCore>(
 	rng: &mut C,
 	prover: &mut Prover,
-	leaf: Data,
-	pair: LinearCombination,
+	pair: Data,
+	hash: LinearCombination,
 	bit: u8,
 	h: &H,
 ) -> (CompressedRistretto, CompressedRistretto, LinearCombination) {
-	let (bit_com, bit_var) = prover.commit(Scalar::from(bit), Scalar::random(rng));
-	let (node_com, node_var) = prover.commit(leaf.0, Scalar::random(rng));
+	let (com_bit, var_bit) = prover.commit(Scalar::from(bit), Scalar::random(rng));
+	let (com_pair, var_pair) = prover.commit(pair.0, Scalar::random(rng));
 
-	let side: LinearCombination = Variable::One() - bit_var;
+	let (_, _, var_temp) = prover.multiply(var_bit.into(), var_pair - hash.clone());
+	let left = hash.clone() + var_temp;
+	let right = var_pair + hash - left.clone();
 
-	let (_, _, left1) = prover.multiply(bit_var.into(), pair.clone());
-	let (_, _, left2) = prover.multiply(side.clone(), node_var.into());
-	let left = left1 + left2;
-
-	let (_, _, right1) = prover.multiply(side, pair);
-	let (_, _, right2) = prover.multiply(bit_var.into(), node_var.into());
-	let right = right1 + right2;
-
-	let node_con = Data::constrain_prover(prover, left, right, h);
-	(bit_com, node_com, node_con)
+	let hash_con = Data::constrain_prover(prover, left, right, h);
+	(com_bit, com_pair, hash_con)
 }
 
 pub fn prove<H: Hasher>(
@@ -68,7 +62,7 @@ pub fn prove<H: Hasher>(
 	Vec<u8>,
 ) {
 	let pc_gens = PedersenGens::default();
-	let bp_gens = BulletproofGens::new(2048, 1);
+	let bp_gens = BulletproofGens::new(4096, 1);
 
 	let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 	let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
@@ -82,7 +76,7 @@ pub fn prove<H: Hasher>(
 	let mut lh = leaf;
 	let mut lh_lc: LinearCombination = leaf_var1.into();
 	let mut path = Vec::new();
-	for _ in 0..16 {
+	for _ in 0..32 {
 		let (bit_com, leaf_com, node_con) =
 			commit_path_level(&mut test_rng, &mut prover, lh, lh_lc, 1, h);
 		lh_lc = node_con;
@@ -113,7 +107,7 @@ pub fn verify<H: Hasher>(
 	proof_bytes: &Vec<u8>,
 ) {
 	let pc_gens = PedersenGens::default();
-	let bp_gens = BulletproofGens::new(2048, 1);
+	let bp_gens = BulletproofGens::new(4096, 1);
 
 	let mut verifier_transcript = Transcript::new(b"zk_membership_proof");
 	let mut verifier = Verifier::new(&mut verifier_transcript);
@@ -129,15 +123,9 @@ pub fn verify<H: Hasher>(
 		let var_bit = verifier.commit(bit.0);
 		let var_pair = verifier.commit(pair.0);
 
-		let side: LinearCombination = Variable::One() - var_bit;
-
-		let (_, _, left1) = verifier.multiply(var_bit.into(), hash.clone());
-		let (_, _, left2) = verifier.multiply(side.clone(), var_pair.into());
-		let left = left1 + left2;
-
-		let (_, _, right1) = verifier.multiply(side, hash);
-		let (_, _, right2) = verifier.multiply(var_bit.into(), var_pair.into());
-		let right = right1 + right2;
+		let (_, _, var_temp) = verifier.multiply(var_bit.into(), var_pair - hash.clone());
+		let left = hash.clone() + var_temp;
+		let right = var_pair + hash - left.clone();
 
 		hash = Data::constrain_verifier(&mut verifier, &pc_gens, left, right, h);
 	}

@@ -22,27 +22,32 @@ pub fn simplify(lc: LinearCombination) -> LinearCombination {
 	new_lc_terms.iter().collect()
 }
 
-fn mat_mul(lhs: &Vec<Vec<Scalar>>, rhs: &Vec<Scalar>) -> Vec<Scalar> {
-	lhs.iter()
-		.zip(rhs.iter())
-		.map(|(row, val)| {
-			row.iter()
-				.fold(Scalar::zero(), |sum, row_i| sum + val * row_i)
-		})
-		.collect()
+pub fn mix(m: &Vec<Vec<Scalar>>, state: &Vec<Scalar>) -> Vec<Scalar> {
+	let mut new_state: Vec<Scalar> = Vec::new();
+	for i in 0..state.len() {
+		new_state.push(Scalar::zero());
+		for j in 0..state.len() {
+			let mij = m[j][i];
+			new_state[i] += mij * state[j];
+		}
+	}
+	new_state
 }
 
-fn mat_mul_lc(lhs: &Vec<Vec<Scalar>>, rhs: Vec<LinearCombination>) -> Vec<LinearCombination> {
-	lhs.into_iter()
-		.zip(rhs.into_iter())
-		.map(|(row, val)| {
-			let new_val = simplify(val);
-			row.into_iter()
-				.fold(LinearCombination::default(), |sum, row_i| {
-					sum + new_val.clone() * row_i.clone()
-				})
-		})
-		.collect()
+pub fn mix_lc(m: &Vec<Vec<Scalar>>, state: &Vec<LinearCombination>) -> Vec<LinearCombination> {
+	let mut new_state: Vec<LinearCombination> = Vec::new();
+	let mut simp_state: Vec<LinearCombination> = Vec::new();
+	for i in 0..state.len() {
+		simp_state.push(simplify(state[i].clone()));
+	}
+	for i in 0..state.len() {
+		new_state.push(LinearCombination::default());
+		for j in 0..state.len() {
+			let mij = m[j][i];
+			new_state[i] = new_state[i].clone() + (simp_state[j].clone() * mij);
+		}
+	}
+	new_state
 }
 
 #[derive(Eq, PartialEq, Clone, Default, Debug)]
@@ -94,14 +99,8 @@ impl Poseidon {
 	}
 
 	fn gen_mds_matrix(width: usize) -> Vec<Vec<Scalar>> {
-		if MDS_ENTRIES.len() != width {
-			panic!("Incorrect width, only width {} is supported now", width);
-		}
 		let mut mds: Vec<Vec<Scalar>> = vec![vec![Scalar::zero(); width]; width];
 		for i in 0..width {
-			if MDS_ENTRIES[i].len() != width {
-				panic!("Incorrect width, only width {} is supported now", width);
-			}
 			for j in 0..width {
 				mds[i][j] = get_scalar_from_hex(MDS_ENTRIES[i][j]);
 			}
@@ -109,7 +108,7 @@ impl Poseidon {
 		mds
 	}
 
-	pub fn apply_sbox(&self, elem: &Scalar) -> Scalar {
+	pub fn apply_sbox(&self, elem: Scalar) -> Scalar {
 		(elem * elem) * elem
 	}
 
@@ -137,13 +136,20 @@ impl Poseidon {
 			// Sub words layer.
 			let full = round < full_rounds_per_side || round >= rounds - full_rounds_per_side;
 			if full {
-				current = current.iter().map(|exp| self.apply_sbox(exp)).collect();
+				current = current
+					.iter()
+					.map(|exp| self.apply_sbox(exp + self.round_keys[round]))
+					.collect();
 			} else {
-				current[0] = self.apply_sbox(&current[0]);
+				current = current
+					.into_iter()
+					.map(|exp| exp + self.round_keys[round])
+					.collect();
+				current[0] = self.apply_sbox(current[0]);
 			}
 
 			// Mix layer.
-			current = mat_mul(&self.mds_matrix, &current);
+			current = mix(&self.mds_matrix, &current);
 		}
 		current
 	}
@@ -168,14 +174,18 @@ impl Poseidon {
 			if full {
 				current = current
 					.into_iter()
-					.map(|exp| self.synthesize_sbox(cs, exp))
+					.map(|exp| self.synthesize_sbox(cs, exp + self.round_keys[round]))
 					.collect();
 			} else {
+				current = current
+					.into_iter()
+					.map(|exp| exp + self.round_keys[round])
+					.collect();
 				current[0] = self.synthesize_sbox(cs, current[0].clone().into());
 			}
 
 			// Mix layer.
-			current = mat_mul_lc(&self.mds_matrix, current);
+			current = mix_lc(&self.mds_matrix, &current);
 		}
 		current
 	}
@@ -195,10 +205,9 @@ impl Poseidon {
 			xl,
 			xr,
 			Scalar::from(PADDING_CONST),
-			Scalar::from(ZERO_CONST),
-			Scalar::from(ZERO_CONST),
 		];
-		self.permute(&input)[1]
+		let res = self.permute(&input);
+		res[1]
 	}
 
 	pub fn hash_4(&self, x1: Scalar, x2: Scalar, x3: Scalar, x4: Scalar) -> Scalar {
@@ -221,9 +230,7 @@ impl Poseidon {
 	) -> Vec<LinearCombination> {
 		let (_, var1) = prover.commit(Scalar::from(ZERO_CONST), Scalar::zero());
 		let (_, var4) = prover.commit(Scalar::from(PADDING_CONST), Scalar::zero());
-		let (_, var5) = prover.commit(Scalar::from(ZERO_CONST), Scalar::zero());
-		let (_, var6) = prover.commit(Scalar::from(ZERO_CONST), Scalar::zero());
-		let inputs = vec![var1.into(), xl, xr, var4.into(), var5.into(), var6.into()];
+		let inputs = vec![var1.into(), xl, xr, var4.into()];
 		inputs
 	}
 
@@ -242,9 +249,7 @@ impl Poseidon {
 			.compress();
 		let var1 = verifier.commit(com_zero);
 		let var4 = verifier.commit(com_pad);
-		let var5 = verifier.commit(com_zero);
-		let var6 = verifier.commit(com_zero);
-		let inputs = vec![var1.into(), xl, xr, var4.into(), var5.into(), var6.into()];
+		let inputs = vec![var1.into(), xl, xr, var4.into()];
 		inputs
 	}
 }
