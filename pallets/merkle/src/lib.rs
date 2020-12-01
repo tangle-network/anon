@@ -200,7 +200,7 @@ decl_module! {
 			// hash = 5
 			let mut hash: LinearCombination = var_leaf.into();
 			for (bit, pair) in path {
-				// e.g. If bit is 0 that means pair is on the left side
+				// e.g. If bit is 1 that means pair is on the right side
 				// var_bit = 1
 				let var_bit = verifier.commit(bit.0);
 				// pair = 3
