@@ -16,7 +16,7 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
-use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Variable, Verifier};
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Verifier};
 use bulletproofs::{BulletproofGens, PedersenGens};
 use codec::{Decode, Encode};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
@@ -81,7 +81,7 @@ decl_event!(
 	where
 		AccountId = <T as frame_system::Trait>::AccountId,
 	{
-		NewMember(u32, AccountId, Data),
+		NewMember(u32, AccountId, Vec<Data>),
 	}
 );
 
@@ -108,40 +108,27 @@ decl_module! {
 		fn deposit_event() = default;
 
 		#[weight = 0]
-		pub fn add_member(origin, group_id: u32, data: Data) -> dispatch::DispatchResult {
+		pub fn add_members(origin, group_id: u32, data_points: Vec<Data>) -> dispatch::DispatchResult {
 			// Check it was signed and get the signer. See also: ensure_root and ensure_none
 			let who = ensure_signed(origin)?;
 
 			let mut tree = <Groups<T>>::get(group_id)
 				.ok_or("Group doesn't exist")
 				.unwrap();
+			let num_points = data_points.len() as u32;
 			ensure!(
-				tree.leaf_count < tree.max_leaves,
+				tree.leaf_count + num_points <= tree.max_leaves,
 				"Exceeded maximum tree depth."
 			);
 
 			let h = default_hasher();
-
-			let mut edge_index = tree.leaf_count;
-			let mut pair_hash = data;
-			// Update the tree
-			for i in 0..tree.edge_nodes.len() {
-				if edge_index % 2 == 0 {
-					tree.edge_nodes[i] = pair_hash;
-				}
-
-				let hash = tree.edge_nodes[i];
-				pair_hash = Data::hash(hash, pair_hash, &h);
-
-				edge_index /= 2;
+			for data in &data_points {
+				Self::add_leaf(&mut tree, *data, &h);
 			}
-
-			tree.leaf_count += 1;
-			tree.root_hash = pair_hash;
-
 			<Groups<T>>::insert(group_id, tree);
+
 			// Raising the New Member event for the client to build a tree locally
-			Self::deposit_event(RawEvent::NewMember(group_id, who, data));
+			Self::deposit_event(RawEvent::NewMember(group_id, who, data_points));
 			Ok(())
 		}
 
@@ -255,5 +242,26 @@ decl_module! {
 
 			Ok(())
 		}
+	}
+}
+
+impl<T: Trait> Module<T> {
+	pub fn add_leaf<H: Hasher>(tree: &mut GroupTree<T>, data: Data, h: &H) {
+		let mut edge_index = tree.leaf_count;
+		let mut pair_hash = data;
+		// Update the tree
+		for i in 0..tree.edge_nodes.len() {
+			if edge_index % 2 == 0 {
+				tree.edge_nodes[i] = pair_hash;
+			}
+
+			let hash = tree.edge_nodes[i];
+			pair_hash = Data::hash(hash, pair_hash, h);
+
+			edge_index /= 2;
+		}
+
+		tree.leaf_count += 1;
+		tree.root_hash = pair_hash;
 	}
 }

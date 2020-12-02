@@ -46,7 +46,11 @@ fn can_add_member() {
 			Some(10),
 			Some(3),
 		));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key.clone()));
+		assert_ok!(MerkleGroups::add_members(
+			Origin::signed(1),
+			0,
+			vec![key.clone()]
+		));
 	});
 }
 
@@ -71,9 +75,13 @@ fn should_have_min_depth() {
 			Some(1),
 		));
 
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key.clone()));
+		assert_ok!(MerkleGroups::add_members(
+			Origin::signed(1),
+			0,
+			vec![key.clone()]
+		));
 		assert_err!(
-			MerkleGroups::add_member(Origin::signed(1), 0, key.clone()),
+			MerkleGroups::add_members(Origin::signed(1), 0, vec![key.clone()]),
 			"Exceeded maximum tree depth."
 		);
 	});
@@ -131,7 +139,11 @@ fn should_have_correct_root_hash_after_insertion() {
 			Some(10),
 			Some(2),
 		));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key0.clone()));
+		assert_ok!(MerkleGroups::add_members(
+			Origin::signed(1),
+			0,
+			vec![key0.clone()]
+		));
 
 		let keyh1 = Data::hash(key0, key0, &h);
 		let keyh2 = Data::hash(keyh1, keyh1, &h);
@@ -140,7 +152,11 @@ fn should_have_correct_root_hash_after_insertion() {
 
 		assert_eq!(tree.root_hash, keyh2, "Invalid root hash");
 
-		assert_ok!(MerkleGroups::add_member(Origin::signed(2), 0, key1.clone()));
+		assert_ok!(MerkleGroups::add_members(
+			Origin::signed(2),
+			0,
+			vec![key1.clone()]
+		));
 
 		let keyh1 = Data::hash(key0, key1, &h);
 		let keyh2 = Data::hash(keyh1, keyh1, &h);
@@ -149,7 +165,11 @@ fn should_have_correct_root_hash_after_insertion() {
 
 		assert_eq!(tree.root_hash, keyh2, "Invalid root hash");
 
-		assert_ok!(MerkleGroups::add_member(Origin::signed(3), 0, key2.clone()));
+		assert_ok!(MerkleGroups::add_members(
+			Origin::signed(3),
+			0,
+			vec![key2.clone()]
+		));
 
 		let keyh1 = Data::hash(key0, key1, &h);
 		let keyh2 = Data::hash(key2, key2, &h);
@@ -177,13 +197,11 @@ fn should_have_correct_root_hash() {
 			Some(4),
 		));
 
-		for i in 0..15 {
-			assert_ok!(MerkleGroups::add_member(
-				Origin::signed(i),
-				0,
-				keys[i as usize]
-			));
-		}
+		assert_ok!(MerkleGroups::add_members(
+			Origin::signed(0),
+			0,
+			keys.clone()
+		));
 
 		let key1_1 = Data::hash(keys[0], keys[1], &h);
 		let key1_2 = Data::hash(keys[2], keys[3], &h);
@@ -222,9 +240,11 @@ fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 			Some(10),
 			Some(2),
 		));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(0), 0, key0.clone()));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key1.clone()));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(2), 0, key2.clone()));
+		assert_ok!(MerkleGroups::add_members(
+			Origin::signed(0),
+			0,
+			vec![key0.clone(), key1.clone(), key2.clone()]
+		));
 
 		let path = vec![(true, key0)];
 		assert_err!(
@@ -254,9 +274,11 @@ fn should_not_verify_invalid_proof() {
 			Some(10),
 			Some(2),
 		));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, key0.clone()));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(2), 0, key1.clone()));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(3), 0, key2.clone()));
+		assert_ok!(MerkleGroups::add_members(
+			Origin::signed(1),
+			0,
+			vec![key0.clone(), key1.clone(), key2.clone()]
+		));
 
 		let keyh1 = Data::hash(key0, key1, &h);
 		let keyh2 = Data::hash(key2, key2, &h);
@@ -301,13 +323,11 @@ fn should_verify_proof_of_membership() {
 			Some(4),
 		));
 
-		for i in 0..15 {
-			assert_ok!(MerkleGroups::add_member(
-				Origin::signed(i),
-				0,
-				keys[i as usize]
-			));
-		}
+		assert_ok!(MerkleGroups::add_members(
+			Origin::signed(0),
+			0,
+			keys.clone()
+		));
 
 		let key1_1 = Data::hash(keys[0], keys[1], &h);
 		let key1_2 = Data::hash(keys[2], keys[3], &h);
@@ -385,7 +405,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 			Some(10),
 			Some(1),
 		));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf));
+		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
 
 		let (s_com, leaf_com1, leaf_var1) =
 			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, &h);
@@ -430,7 +450,7 @@ fn should_not_use_nullifier_more_than_once() {
 			Some(10),
 			Some(1),
 		));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf));
+		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
 
 		let (s_com, leaf_com1, leaf_var1) =
 			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, &h);
@@ -487,7 +507,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 			Some(10),
 			Some(1),
 		));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf));
+		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
 
 		let (_, leaf_com1, leaf_var1) =
 			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, &h);
@@ -535,7 +555,7 @@ fn should_not_verify_invalid_commitments_for_membership() {
 			Some(10),
 			Some(1),
 		));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf));
+		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
 
 		let (s_com, leaf_com1, leaf_var1) =
 			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, &h);
@@ -581,7 +601,7 @@ fn should_not_verify_invalid_transcript() {
 			Some(10),
 			Some(1),
 		));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf));
+		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
 
 		let (s_com, leaf_com1, leaf_var1) =
 			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, &h);
@@ -634,13 +654,11 @@ fn should_verify_zk_proof_of_membership() {
 			Some(10),
 			Some(3),
 		));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf0));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf1));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf2));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf3));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf4));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf5));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf6));
+		assert_ok!(MerkleGroups::add_members(
+			Origin::signed(1),
+			0,
+			vec![leaf0, leaf1, leaf2, leaf3, leaf4, leaf5, leaf6]
+		));
 
 		let (s_com, leaf_com5, leaf_var5) =
 			commit_leaf(&mut test_rng, &mut prover, leaf5, s, nullifier, &h);
@@ -702,7 +720,7 @@ fn should_verify_large_zk_proof_of_membership() {
 			Some(10),
 			Some(32),
 		));
-		assert_ok!(MerkleGroups::add_member(Origin::signed(1), 0, leaf));
+		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
 
 		let (s_com, leaf_com1, leaf_var1) =
 			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, &h);

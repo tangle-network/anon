@@ -55,6 +55,7 @@ pub fn prove<H: Hasher>(
 	h: &H,
 ) -> (
 	Data,
+	Data,
 	Commitment,
 	Vec<(Commitment, Commitment)>,
 	Commitment,
@@ -88,6 +89,7 @@ pub fn prove<H: Hasher>(
 	let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
 
 	(
+		leaf,
 		lh,
 		Commitment(leaf_com1),
 		path,
