@@ -71,7 +71,7 @@ impl<T: Trait> GroupTree<T> {
 decl_storage! {
 	trait Store for Module<T: Trait> as MerkleGroups {
 		pub Groups get(fn groups): map hasher(blake2_128_concat) GroupId => Option<GroupTree<T>>;
-		pub UsedNullifiers get(fn used_nullifiers): map hasher(blake2_128_concat) Data => bool;
+		pub UsedNullifiers get(fn used_nullifiers): map hasher(blake2_128_concat) (GroupId, Data) => bool;
 	}
 }
 
@@ -154,7 +154,7 @@ decl_module! {
 		#[weight = 0]
 		pub fn verify_zk_membership_proof(
 			origin,
-			group_id: u32,
+			group_id: GroupId,
 			leaf_com: Commitment,
 			path: Vec<(Commitment, Commitment)>,
 			s_com: Commitment,
@@ -162,7 +162,7 @@ decl_module! {
 			proof_bytes: Vec<u8>
 		) -> dispatch::DispatchResult {
 			// Ensure that nullifier is not used
-			ensure!(!UsedNullifiers::get(nullifier), "Nullifier already used.");
+			ensure!(!UsedNullifiers::get((group_id, nullifier)), "Nullifier already used.");
 			let tree = <Groups<T>>::get(group_id)
 				.ok_or("Invalid group id.")
 				.unwrap();
@@ -215,7 +215,7 @@ decl_module! {
 			ensure!(res.is_ok(), "Invalid proof of membership or leaf creation.");
 
 			// Set nullifier as used
-			UsedNullifiers::insert(nullifier, true);
+			UsedNullifiers::insert((group_id, nullifier), true);
 
 			Ok(())
 		}
