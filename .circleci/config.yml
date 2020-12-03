@@ -15,3 +15,4 @@ jobs:
       - run: source ~/.cargo/env && ~/anon/scripts/test.sh
       - run: source ~/.cargo/env && ~/anon/scripts/bench.sh
       - run: source ~/.cargo/env && ~/anon/scripts/build.sh
+      - run: source ~/.cargo/env && ~/anon/scripts/start.sh >/dev/null 2>&1 & ~/anon/scripts/client.sh
