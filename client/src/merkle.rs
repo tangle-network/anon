@@ -9,7 +9,9 @@ use substrate_subxt::{Call, Store};
 type GroupId = u32;
 
 #[module]
-pub trait Merkle: Balances + System {}
+pub trait Merkle: Balances + System {
+	type Data: Encode + Decode + PartialEq + Eq + Default + Send + Sync + 'static;
+}
 
 #[derive(Clone, Encode, Decode)]
 pub struct GroupTree<T: Merkle> {
@@ -29,8 +31,8 @@ pub struct CreateGroupCall<T: Merkle> {
 
 #[derive(Clone, Debug, PartialEq, Call, Encode)]
 pub struct AddMembersCall<T: Merkle> {
-	group_id: GroupId,
-	data_points: Vec<Data>,
+	pub group_id: GroupId,
+	pub data_points: Vec<Data>,
 	pub _runtime: PhantomData<T>,
 }
 
@@ -52,10 +54,9 @@ pub struct GroupsStore<T: Merkle> {
 	pub _runtime: PhantomData<T>,
 }
 
-/// Transfer event.
 #[derive(Clone, Debug, Eq, PartialEq, Event, Decode)]
 pub struct NewMemberEvent<T: Merkle> {
 	pub group_id: GroupId,
 	pub sender: T::AccountId,
-	pub members: Vec<Data>,
+	pub members: Data,
 }
