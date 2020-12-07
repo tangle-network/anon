@@ -16,12 +16,15 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
-use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Variable, Verifier};
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Verifier};
 use bulletproofs::{BulletproofGens, PedersenGens};
 use codec::{Decode, Encode};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
 use frame_system::ensure_signed;
+use merkle::hasher::Hasher;
 use merkle::keys::{Commitment, Data};
+use merkle::mimc::Mimc;
+use merkle::poseidon::Poseidon;
 use merlin::Transcript;
 use rand_core::OsRng;
 use sp_runtime::traits::Zero;
@@ -35,6 +38,12 @@ pub trait Trait: balances::Trait {
 
 type GroupId = u32;
 const MAX_DEPTH: u32 = 32;
+
+// TODO find better way to have default hasher without saving it inside storage
+fn default_hasher() -> impl Hasher {
+	Poseidon::new(4)
+	// Mimc::new(70)
+}
 
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Encode, Decode, PartialEq)]
@@ -62,7 +71,7 @@ impl<T: Trait> GroupTree<T> {
 decl_storage! {
 	trait Store for Module<T: Trait> as MerkleGroups {
 		pub Groups get(fn groups): map hasher(blake2_128_concat) GroupId => Option<GroupTree<T>>;
-		pub UsedNullifiers get(fn used_nullifiers): map hasher(blake2_128_concat) Data => bool;
+		pub UsedNullifiers get(fn used_nullifiers): map hasher(blake2_128_concat) (GroupId, Data) => bool;
 	}
 }
 
@@ -72,7 +81,7 @@ decl_event!(
 	where
 		AccountId = <T as frame_system::Trait>::AccountId,
 	{
-		NewMember(u32, AccountId, Data),
+		NewMember(u32, AccountId, Vec<Data>),
 	}
 );
 
@@ -99,33 +108,27 @@ decl_module! {
 		fn deposit_event() = default;
 
 		#[weight = 0]
-		pub fn add_member(origin, group_id: u32, data: Data) -> dispatch::DispatchResult {
+		pub fn add_members(origin, group_id: u32, data_points: Vec<Data>) -> dispatch::DispatchResult {
 			// Check it was signed and get the signer. See also: ensure_root and ensure_none
 			let who = ensure_signed(origin)?;
-			let mut tree = <Groups<T>>::get(group_id).ok_or("Group doesn't exist").unwrap();
-			ensure!(tree.leaf_count < tree.max_leaves, "Exceeded maximum tree depth.");
 
-			let mut edge_index = tree.leaf_count;
-			let mut pair_hash = data;
-			// Update the tree
-			for i in 0..tree.edge_nodes.len() {
-				if edge_index % 2 == 0 {
-					tree.edge_nodes[i] = pair_hash;
-				}
+			let mut tree = <Groups<T>>::get(group_id)
+				.ok_or("Group doesn't exist")
+				.unwrap();
+			let num_points = data_points.len() as u32;
+			ensure!(
+				tree.leaf_count + num_points <= tree.max_leaves,
+				"Exceeded maximum tree depth."
+			);
 
-				let hash = tree.edge_nodes[i];
-				pair_hash = Data::hash_mimc(hash, pair_hash);
-
-				edge_index /= 2;
+			let h = default_hasher();
+			for data in &data_points {
+				Self::add_leaf(&mut tree, *data, &h);
 			}
-
-			tree.leaf_count += 1;
-			tree.root_hash = pair_hash;
-
 			<Groups<T>>::insert(group_id, tree);
 
 			// Raising the New Member event for the client to build a tree locally
-			Self::deposit_event(RawEvent::NewMember(group_id, who, data));
+			Self::deposit_event(RawEvent::NewMember(group_id, who, data_points));
 			Ok(())
 		}
 
@@ -135,11 +138,12 @@ decl_module! {
 				.ok_or("Invalid group id.")
 				.unwrap();
 			ensure!(tree.edge_nodes.len() == path.len(), "Invalid path length.");
+			let h = default_hasher();
 			let mut hash = leaf;
 			for (is_right, node) in path {
 				hash = match is_right {
-					true => Data::hash_mimc(hash, node),
-					false => Data::hash_mimc(node, hash),
+					true => Data::hash(hash, node, &h),
+					false => Data::hash(node, hash, &h),
 				}
 			}
 
@@ -150,7 +154,7 @@ decl_module! {
 		#[weight = 0]
 		pub fn verify_zk_membership_proof(
 			origin,
-			group_id: u32,
+			group_id: GroupId,
 			leaf_com: Commitment,
 			path: Vec<(Commitment, Commitment)>,
 			s_com: Commitment,
@@ -158,50 +162,45 @@ decl_module! {
 			proof_bytes: Vec<u8>
 		) -> dispatch::DispatchResult {
 			// Ensure that nullifier is not used
-			ensure!(!UsedNullifiers::get(nullifier), "Nullifier already used.");
+			ensure!(!UsedNullifiers::get((group_id, nullifier)), "Nullifier already used.");
 			let tree = <Groups<T>>::get(group_id)
 				.ok_or("Invalid group id.")
 				.unwrap();
 			ensure!(tree.edge_nodes.len() == path.len(), "Invalid path length.");
 
 			let pc_gens = PedersenGens::default();
-			let bp_gens = BulletproofGens::new(2048, 1);
+			// TODO: should be able to pass number of generators
+			let bp_gens = BulletproofGens::new(4096, 1);
+			let h = default_hasher();
 
 			let mut verifier_transcript = Transcript::new(b"zk_membership_proof");
 			let mut verifier = Verifier::new(&mut verifier_transcript);
 
 			let var_leaf = verifier.commit(leaf_com.0);
 			let var_s = verifier.commit(s_com.0);
-			let leaf_lc = Data::constrain_mimc(&mut verifier, var_s.into(), nullifier.0.into());
+			let leaf_lc =
+				Data::constrain_verifier(&mut verifier, &pc_gens, var_s.into(), nullifier.0.into(), &h);
 			// Commited leaf value should be the same as calculated
 			verifier.constrain(leaf_lc - var_leaf);
 
 			// Check of path proof is correct
+			// hash = 5
 			let mut hash: LinearCombination = var_leaf.into();
 			for (bit, pair) in path {
-				// e.g. If bit is 0 that means pair is on the left side
-				// var_bit = 0
+				// e.g. If bit is 1 that means pair is on the right side
+				// var_bit = 1
 				let var_bit = verifier.commit(bit.0);
+				// pair = 3
 				let var_pair = verifier.commit(pair.0);
 
-				// side = 1 - 0 = 1
-				let side: LinearCombination = Variable::One() - var_bit;
+				// temp = 1 * 3 - 5 = -2
+				let (_, _, var_temp) = verifier.multiply(var_bit.into(), var_pair - hash.clone());
+				// left = 5 - 2 = 3
+				let left = hash.clone() + var_temp;
+				// right = 3 + 5 - 3 = 5
+				let right = var_pair + hash - left.clone();
 
-				// left1 = 0 * hash = 0
-				let (_, _, left1) = verifier.multiply(var_bit.into(), hash.clone());
-				// left2 = 1 * pair = pair
-				let (_, _, left2) = verifier.multiply(side.clone(), var_pair.into());
-				// left = 0 + pair = pair
-				let left = left1 + left2;
-
-				// right1 = 1 * hash = hash
-				let (_, _, right1) = verifier.multiply(side, hash);
-				// right2 = 0 * pair = 0
-				let (_, _, right2) = verifier.multiply(var_bit.into(), var_pair.into());
-				// right = hash + 0 = hash
-				let right = right1 + right2;
-
-				hash = Data::constrain_mimc(&mut verifier, left, right);
+				hash = Data::constrain_verifier(&mut verifier, &pc_gens, left, right, &h);
 			}
 			// Commited path evaluate to correct root
 			verifier.constrain(hash - tree.root_hash.0);
@@ -216,7 +215,7 @@ decl_module! {
 			ensure!(res.is_ok(), "Invalid proof of membership or leaf creation.");
 
 			// Set nullifier as used
-			UsedNullifiers::insert(nullifier, true);
+			UsedNullifiers::insert((group_id, nullifier), true);
 
 			Ok(())
 		}
@@ -243,5 +242,26 @@ decl_module! {
 
 			Ok(())
 		}
+	}
+}
+
+impl<T: Trait> Module<T> {
+	pub fn add_leaf<H: Hasher>(tree: &mut GroupTree<T>, data: Data, h: &H) {
+		let mut edge_index = tree.leaf_count;
+		let mut pair_hash = data;
+		// Update the tree
+		for i in 0..tree.edge_nodes.len() {
+			if edge_index % 2 == 0 {
+				tree.edge_nodes[i] = pair_hash;
+			}
+
+			let hash = tree.edge_nodes[i];
+			pair_hash = Data::hash(hash, pair_hash, h);
+
+			edge_index /= 2;
+		}
+
+		tree.leaf_count += 1;
+		tree.root_hash = pair_hash;
 	}
 }

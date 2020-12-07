@@ -1,15 +1,61 @@
-use super::constants::{MDS_ENTRIES, ROUND_CONSTS};
-use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Variable};
+use super::constants::{MDS_ENTRIES, POSEIDON_FULL_ROUNDS, POSEIDON_PARTIAL_ROUNDS, ROUND_CONSTS};
+use super::hasher::Hasher;
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Prover, Variable, Verifier};
+use bulletproofs::PedersenGens;
 use curve25519_dalek::scalar::Scalar;
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::prelude::*;
 
-#[derive(Clone)]
+pub fn simplify(lc: LinearCombination) -> LinearCombination {
+	// Build hashmap to hold unique variables with their values.
+	let mut vars: BTreeMap<Variable, Scalar> = BTreeMap::new();
+
+	let terms: Vec<(Variable, Scalar)> = lc.get_terms().to_vec();
+	for (var, val) in terms {
+		*vars.entry(var).or_insert(Scalar::zero()) += val;
+	}
+
+	let mut new_lc_terms = vec![];
+	for (var, val) in vars {
+		new_lc_terms.push((var, val));
+	}
+	new_lc_terms.iter().collect()
+}
+
+pub fn mix(m: &Vec<Vec<Scalar>>, state: &Vec<Scalar>) -> Vec<Scalar> {
+	let mut new_state: Vec<Scalar> = Vec::new();
+	for i in 0..state.len() {
+		new_state.push(Scalar::zero());
+		for j in 0..state.len() {
+			let mij = m[j][i];
+			new_state[i] += mij * state[j];
+		}
+	}
+	new_state
+}
+
+pub fn mix_lc(m: &Vec<Vec<Scalar>>, state: &Vec<LinearCombination>) -> Vec<LinearCombination> {
+	let mut new_state: Vec<LinearCombination> = Vec::new();
+	let mut simp_state: Vec<LinearCombination> = Vec::new();
+	for i in 0..state.len() {
+		simp_state.push(simplify(state[i].clone()));
+	}
+	for i in 0..state.len() {
+		new_state.push(LinearCombination::default());
+		for j in 0..state.len() {
+			let mij = m[j][i];
+			new_state[i] = new_state[i].clone() + (simp_state[j].clone() * mij);
+		}
+	}
+	new_state
+}
+
+#[derive(Eq, PartialEq, Clone, Default, Debug)]
 pub struct Poseidon {
 	pub width: usize,
-	// Number of full SBox rounds in beginning
-	pub full_rounds_beginning: usize,
-	// Number of full SBox rounds in end
-	pub full_rounds_end: usize,
-	// Number of partial SBox rounds in beginning
+	// Number of full SBox rounds
+	pub full_rounds: usize,
+	// Number of partial SBox rounds
 	pub partial_rounds: usize,
 	pub round_keys: Vec<Scalar>,
 	pub mds_matrix: Vec<Vec<Scalar>>,
@@ -20,26 +66,21 @@ pub const PADDING_CONST: u64 = 101;
 pub const ZERO_CONST: u64 = 0;
 
 impl Poseidon {
-	pub fn new(
-		width: usize,
-		full_rounds_beginning: usize,
-		full_rounds_end: usize,
-		partial_rounds: usize,
-	) -> Self {
-		let total_rounds = full_rounds_beginning + partial_rounds + full_rounds_end;
+	pub fn new(width: usize) -> Self {
+		let full_rounds = POSEIDON_FULL_ROUNDS;
+		let partial_rounds = POSEIDON_PARTIAL_ROUNDS;
+		let total_rounds = full_rounds + partial_rounds;
 		let round_keys = Self::gen_round_keys(width, total_rounds);
 		let matrix_2 = Self::gen_mds_matrix(width);
 		Self {
 			width,
-			full_rounds_beginning,
-			full_rounds_end,
+			full_rounds,
 			partial_rounds,
 			round_keys,
 			mds_matrix: matrix_2,
 		}
 	}
 
-	// TODO: Write logic to generate correct round keys.
 	fn gen_round_keys(width: usize, total_rounds: usize) -> Vec<Scalar> {
 		let cap = total_rounds * width;
 		if ROUND_CONSTS.len() < cap {
@@ -51,32 +92,23 @@ impl Poseidon {
 		}
 		let mut rc = vec![];
 		for i in 0..cap {
-			// TODO: Remove unwrap, handle error
 			let c = get_scalar_from_hex(ROUND_CONSTS[i]);
 			rc.push(c);
 		}
 		rc
 	}
 
-	// TODO: Write logic to generate correct MDS matrix. Currently loading hardcoded constants.
 	fn gen_mds_matrix(width: usize) -> Vec<Vec<Scalar>> {
-		if MDS_ENTRIES.len() != width {
-			panic!("Incorrect width, only width {} is supported now", width);
-		}
 		let mut mds: Vec<Vec<Scalar>> = vec![vec![Scalar::zero(); width]; width];
 		for i in 0..width {
-			if MDS_ENTRIES[i].len() != width {
-				panic!("Incorrect width, only width {} is supported now", width);
-			}
 			for j in 0..width {
-				// TODO: Remove unwrap, handle error
 				mds[i][j] = get_scalar_from_hex(MDS_ENTRIES[i][j]);
 			}
 		}
 		mds
 	}
 
-	pub fn apply_sbox(&self, elem: &Scalar) -> Scalar {
+	pub fn apply_sbox(&self, elem: Scalar) -> Scalar {
 		(elem * elem) * elem
 	}
 
@@ -84,196 +116,78 @@ impl Poseidon {
 		&self,
 		cs: &mut CS,
 		input_var: LinearCombination,
-		round_key: Scalar,
-	) -> Variable {
-		let inp_plus_const: LinearCombination = input_var + round_key;
-		let (i, _, sqr) = cs.multiply(inp_plus_const.clone(), inp_plus_const);
+	) -> LinearCombination {
+		let (i, _, sqr) = cs.multiply(input_var.clone(), input_var);
 		let (_, _, cube) = cs.multiply(sqr.into(), i.into());
-		cube
+		cube.into()
 	}
 
-	pub fn get_total_rounds(&self) -> usize {
-		self.full_rounds_beginning + self.partial_rounds + self.full_rounds_end
-	}
+	pub fn permute(&self, inputs: &[Scalar]) -> Vec<Scalar> {
+		assert_eq!(inputs.len(), self.width);
 
-	pub fn permute(&self, input: &[Scalar]) -> Vec<Scalar> {
-		let width = self.width;
-		assert_eq!(input.len(), width);
-
-		let full_rounds_beginning = self.full_rounds_beginning;
-		let partial_rounds = self.partial_rounds;
-		let full_rounds_end = self.full_rounds_end;
-
-		let mut current_state = input.to_owned();
-		let mut current_state_temp = vec![Scalar::zero(); width];
-
-		let mut round_keys_offset = 0;
-
-		for _ in 0..full_rounds_beginning {
-			for i in 0..width {
-				current_state[i] += self.round_keys[round_keys_offset];
-				current_state[i] = self.apply_sbox(&current_state[i]);
-				round_keys_offset += 1;
+		let rounds = self.full_rounds + self.partial_rounds;
+		assert!(
+			self.full_rounds % 2 == 0,
+			"asymmetric permutation configuration"
+		);
+		let full_rounds_per_side = self.full_rounds / 2;
+		let mut current = inputs.to_vec();
+		for round in 0..rounds {
+			// Sub words layer.
+			let full = round < full_rounds_per_side || round >= rounds - full_rounds_per_side;
+			if full {
+				current = current
+					.iter()
+					.map(|exp| self.apply_sbox(exp + self.round_keys[round]))
+					.collect();
+			} else {
+				current = current
+					.into_iter()
+					.map(|exp| exp + self.round_keys[round])
+					.collect();
+				current[0] = self.apply_sbox(current[0]);
 			}
 
-			for j in 0..width {
-				for i in 0..width {
-					current_state_temp[i] += current_state[j] * self.mds_matrix[i][j];
-				}
-			}
-
-			for i in 0..width {
-				current_state[i] = current_state_temp[i];
-				current_state_temp[i] = Scalar::zero();
-			}
+			// Mix layer.
+			current = mix(&self.mds_matrix, &current);
 		}
-
-		for _ in full_rounds_beginning..(full_rounds_beginning + partial_rounds) {
-			for i in 0..width {
-				current_state[i] += &self.round_keys[round_keys_offset];
-				round_keys_offset += 1;
-			}
-			current_state[width - 1] = self.apply_sbox(&current_state[width - 1]);
-
-			for j in 0..width {
-				for i in 0..width {
-					current_state_temp[i] += current_state[j] * self.mds_matrix[i][j];
-				}
-			}
-
-			for i in 0..width {
-				current_state[i] = current_state_temp[i];
-				current_state_temp[i] = Scalar::zero();
-			}
-		}
-
-		for _ in full_rounds_beginning + partial_rounds
-			..(full_rounds_beginning + partial_rounds + full_rounds_end)
-		{
-			for i in 0..width {
-				current_state[i] += self.round_keys[round_keys_offset];
-				current_state[i] = self.apply_sbox(&current_state[i]);
-				round_keys_offset += 1;
-			}
-
-			for j in 0..width {
-				for i in 0..width {
-					current_state_temp[i] += current_state[j] * self.mds_matrix[i][j];
-				}
-			}
-
-			for i in 0..width {
-				current_state[i] = current_state_temp[i];
-				current_state_temp[i] = Scalar::zero();
-			}
-		}
-
-		current_state
+		current
 	}
 
 	pub fn permute_constraints<CS: ConstraintSystem>(
 		&self,
 		cs: &mut CS,
-		input: Vec<LinearCombination>,
+		inputs: Vec<LinearCombination>,
 	) -> Vec<LinearCombination> {
-		let width = self.width;
-		assert_eq!(input.len(), width);
-		let mut input_vars: Vec<LinearCombination> = input;
+		assert_eq!(inputs.len(), self.width);
 
-		let mut round_keys_offset = 0;
-
-		let full_rounds_beginning = self.full_rounds_beginning;
-		let partial_rounds = self.partial_rounds;
-		let full_rounds_end = self.full_rounds_end;
-
-		for _ in 0..full_rounds_beginning {
-			let mut sbox_outputs: Vec<LinearCombination> =
-				vec![LinearCombination::default(); width];
-
-			for i in 0..width {
-				let round_key = self.round_keys[round_keys_offset];
-				sbox_outputs[i] = self
-					.synthesize_sbox(cs, input_vars[i].clone(), round_key)
-					.into();
-
-				round_keys_offset += 1;
+		let rounds = self.full_rounds + self.partial_rounds;
+		assert!(
+			self.full_rounds % 2 == 0,
+			"asymmetric permutation configuration"
+		);
+		let full_rounds_per_side = self.full_rounds / 2;
+		let mut current = inputs.to_vec();
+		for round in 0..rounds {
+			// Sub words layer.
+			let full = round < full_rounds_per_side || round >= rounds - full_rounds_per_side;
+			if full {
+				current = current
+					.into_iter()
+					.map(|exp| self.synthesize_sbox(cs, exp + self.round_keys[round]))
+					.collect();
+			} else {
+				current = current
+					.into_iter()
+					.map(|exp| exp + self.round_keys[round])
+					.collect();
+				current[0] = self.synthesize_sbox(cs, current[0].clone().into());
 			}
 
-			let mut next_input_vars: Vec<LinearCombination> =
-				vec![LinearCombination::default(); width];
-
-			for j in 0..width {
-				for i in 0..width {
-					next_input_vars[i] = next_input_vars[i].clone()
-						+ sbox_outputs[j].clone() * self.mds_matrix[i][j];
-				}
-			}
-			for i in 0..width {
-				input_vars[i] = next_input_vars.remove(0);
-			}
+			// Mix layer.
+			current = mix_lc(&self.mds_matrix, &current);
 		}
-
-		for _ in full_rounds_beginning..(full_rounds_beginning + partial_rounds) {
-			let mut sbox_outputs: Vec<LinearCombination> =
-				vec![LinearCombination::default(); width];
-			for i in 0..width {
-				let round_key = self.round_keys[round_keys_offset];
-				if i == width - 1 {
-					sbox_outputs[i] = self
-						.synthesize_sbox(cs, input_vars[i].clone(), round_key)
-						.into();
-				} else {
-					sbox_outputs[i] = input_vars[i].clone() + LinearCombination::from(round_key);
-				}
-
-				round_keys_offset += 1;
-			}
-
-			let mut next_input_vars: Vec<LinearCombination> =
-				vec![LinearCombination::default(); width];
-
-			for j in 0..width {
-				for i in 0..width {
-					next_input_vars[i] = next_input_vars[i].clone()
-						+ sbox_outputs[j].clone() * self.mds_matrix[i][j];
-				}
-			}
-
-			for i in 0..width {
-				input_vars[i] = next_input_vars.remove(0).simplify();
-			}
-		}
-
-		for _ in (full_rounds_beginning + partial_rounds)
-			..(full_rounds_beginning + partial_rounds + full_rounds_end)
-		{
-			let mut sbox_outputs: Vec<LinearCombination> =
-				vec![LinearCombination::default(); width];
-			for i in 0..width {
-				let round_key = self.round_keys[round_keys_offset];
-				sbox_outputs[i] = self
-					.synthesize_sbox(cs, input_vars[i].clone(), round_key)
-					.into();
-
-				round_keys_offset += 1;
-			}
-
-			let mut next_input_vars: Vec<LinearCombination> =
-				vec![LinearCombination::default(); width];
-
-			for j in 0..width {
-				for i in 0..width {
-					next_input_vars[i] = next_input_vars[i].clone()
-						+ sbox_outputs[j].clone() * self.mds_matrix[i][j];
-				}
-			}
-
-			for i in 0..width {
-				input_vars[i] = next_input_vars.remove(0);
-			}
-		}
-
-		input_vars
+		current
 	}
 
 	pub fn constrain<CS: ConstraintSystem>(
@@ -282,7 +196,7 @@ impl Poseidon {
 		inputs: Vec<LinearCombination>,
 	) -> LinearCombination {
 		let permutation_output = self.permute_constraints::<CS>(cs, inputs);
-		permutation_output[1].to_owned()
+		permutation_output[1].clone()
 	}
 
 	pub fn hash_2(&self, xl: Scalar, xr: Scalar) -> Scalar {
@@ -291,45 +205,63 @@ impl Poseidon {
 			xl,
 			xr,
 			Scalar::from(PADDING_CONST),
-			Scalar::from(ZERO_CONST),
-			Scalar::from(ZERO_CONST),
 		];
-		self.permute(&input)[1]
+		let res = self.permute(&input);
+		res[1]
 	}
 
-	pub fn hash_4(&self, inputs: [Scalar; 4]) -> Scalar {
+	pub fn hash_4(&self, x1: Scalar, x2: Scalar, x3: Scalar, x4: Scalar) -> Scalar {
 		let input = vec![
 			Scalar::from(ZERO_CONST),
-			inputs[0],
-			inputs[1],
-			inputs[2],
-			inputs[3],
+			x1,
+			x2,
+			x3,
+			x4,
 			Scalar::from(PADDING_CONST),
 		];
 
 		self.permute(&input)[1]
 	}
+
+	pub fn prover_constrain_inputs(
+		prover: &mut Prover,
+		xl: LinearCombination,
+		xr: LinearCombination,
+	) -> Vec<LinearCombination> {
+		let (_, var1) = prover.commit(Scalar::from(ZERO_CONST), Scalar::zero());
+		let (_, var4) = prover.commit(Scalar::from(PADDING_CONST), Scalar::zero());
+		let inputs = vec![var1.into(), xl, xr, var4.into()];
+		inputs
+	}
+
+	pub fn verifier_constrain_inputs(
+		verifier: &mut Verifier,
+		pc_gens: &PedersenGens,
+		xl: LinearCombination,
+		xr: LinearCombination,
+	) -> Vec<LinearCombination> {
+		// TODO use passed commitments instead odd committing again in runtime
+		let com_zero = pc_gens
+			.commit(Scalar::from(ZERO_CONST), Scalar::zero())
+			.compress();
+		let com_pad = pc_gens
+			.commit(Scalar::from(PADDING_CONST), Scalar::zero())
+			.compress();
+		let var1 = verifier.commit(com_zero);
+		let var4 = verifier.commit(com_pad);
+		let inputs = vec![var1.into(), xl, xr, var4.into()];
+		inputs
+	}
 }
 
 pub fn decode_hex(s: &str) -> Vec<u8> {
-	let s = if s[0..2] == *"0x" || s[0..2] == *"0X" {
-		match s.char_indices().skip(2).next() {
-			Some((pos, _)) => &s[pos..],
-			None => "",
-		}
-	} else {
-		s
-	};
-	if s.len() % 2 != 0 {
-		panic!("Odd length");
-	} else {
-		let vec: Vec<u8> = (0..s.len())
-			.step_by(2)
-			.map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
-			.collect();
+	let s = &s[2..];
+	let vec: Vec<u8> = (0..s.len())
+		.step_by(2)
+		.map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
+		.collect();
 
-		vec
-	}
+	vec
 }
 
 pub fn get_scalar_from_hex(hex_str: &str) -> Scalar {
@@ -337,4 +269,31 @@ pub fn get_scalar_from_hex(hex_str: &str) -> Scalar {
 	let mut result: [u8; 32] = [0; 32];
 	result.copy_from_slice(&bytes);
 	Scalar::from_bytes_mod_order(result)
+}
+
+impl Hasher for Poseidon {
+	fn hash(&self, xl: Scalar, xr: Scalar) -> Scalar {
+		self.hash_2(xl, xr)
+	}
+
+	fn constrain_prover(
+		&self,
+		prover: &mut Prover,
+		xl: LinearCombination,
+		xr: LinearCombination,
+	) -> LinearCombination {
+		let inputs = Poseidon::prover_constrain_inputs(prover, xl, xr);
+		self.constrain(prover, inputs)
+	}
+
+	fn constrain_verifier(
+		&self,
+		verifier: &mut Verifier,
+		pc_gens: &PedersenGens,
+		xl: LinearCombination,
+		xr: LinearCombination,
+	) -> LinearCombination {
+		let inputs = Poseidon::verifier_constrain_inputs(verifier, pc_gens, xl, xr);
+		self.constrain(verifier, inputs)
+	}
 }

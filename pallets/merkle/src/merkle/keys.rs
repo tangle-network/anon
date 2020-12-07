@@ -1,8 +1,9 @@
 use sha2::Sha512;
 use sp_std::prelude::*;
 
-use super::mimc::{mimc, mimc_constraints};
-use bulletproofs::r1cs::{ConstraintSystem, LinearCombination};
+use super::hasher::Hasher;
+use bulletproofs::r1cs::{LinearCombination, Prover, Verifier};
+use bulletproofs::PedersenGens;
 use codec::{Decode, Encode, EncodeLike, Input};
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
@@ -112,22 +113,34 @@ impl Decode for Data {
 }
 
 impl Data {
-	pub fn new(b: [u8; 32]) -> Self {
+	pub fn from(b: [u8; 32]) -> Self {
 		Data(Scalar::from_bytes_mod_order(b))
 	}
 
 	pub fn zero() -> Self {
 		Data(Scalar::zero())
 	}
-	pub fn hash_mimc(xl: Self, xr: Self) -> Self {
-		Data(mimc(xl.0, xr.0))
+
+	pub fn hash<H: Hasher>(xl: Self, xr: Self, h: &H) -> Self {
+		Data(h.hash(xl.0, xr.0))
 	}
 
-	pub fn constrain_mimc<CS: ConstraintSystem>(
-		cs: &mut CS,
+	pub fn constrain_prover<H: Hasher>(
+		cs: &mut Prover,
 		xl: LinearCombination,
 		xr: LinearCombination,
+		h: &H,
 	) -> LinearCombination {
-		mimc_constraints(cs, xl, xr)
+		h.constrain_prover(cs, xl, xr)
+	}
+
+	pub fn constrain_verifier<H: Hasher>(
+		cs: &mut Verifier,
+		pc_gens: &PedersenGens,
+		xl: LinearCombination,
+		xr: LinearCombination,
+		h: &H,
+	) -> LinearCombination {
+		h.constrain_verifier(cs, pc_gens, xl, xr)
 	}
 }
