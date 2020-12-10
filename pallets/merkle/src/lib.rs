@@ -16,6 +16,10 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
+use sp_runtime::traits::One;
+use frame_support::traits::Get;
+use sp_runtime::traits::AtLeast32Bit;
+use frame_support::Parameter;
 use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Verifier};
 use bulletproofs::{BulletproofGens, PedersenGens};
 use codec::{Decode, Encode};
@@ -23,7 +27,7 @@ use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch,
 use frame_system::ensure_signed;
 use merkle::hasher::Hasher;
 use merkle::keys::{Commitment, Data};
-use merkle::mimc::Mimc;
+
 use merkle::poseidon::Poseidon;
 use merlin::Transcript;
 use rand_core::OsRng;
@@ -34,10 +38,13 @@ use sp_std::prelude::*;
 pub trait Trait: balances::Trait {
 	/// The overarching event type.
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+	/// The overarching group ID type
+	type GroupId: Parameter + AtLeast32Bit + Default + Copy;
+	/// The max depth of trees
+	type MaxTreeDepth: Get<u8>;
+	/// The amount of blocks to cache roots over
+	type CacheBlockLength: Get<Self::BlockNumber>;
 }
-
-type GroupId = u32;
-const MAX_DEPTH: u32 = 32;
 
 // TODO find better way to have default hasher without saving it inside storage
 fn default_hasher() -> impl Hasher {
@@ -56,12 +63,12 @@ pub struct GroupTree<T: Trait> {
 }
 
 impl<T: Trait> GroupTree<T> {
-	pub fn new(fee: T::Balance, depth: u32) -> Self {
+	pub fn new(fee: T::Balance, depth: u8) -> Self {
 		Self {
 			fee,
 			root_hash: Data::zero(),
 			leaf_count: 0,
-			max_leaves: u32::MAX >> (MAX_DEPTH - depth),
+			max_leaves: u32::MAX >> (T::MaxTreeDepth::get() - depth),
 			edge_nodes: vec![Data::zero(); depth as usize],
 		}
 	}
@@ -70,8 +77,17 @@ impl<T: Trait> GroupTree<T> {
 // This pallet's storage items.
 decl_storage! {
 	trait Store for Module<T: Trait> as MerkleGroups {
-		pub Groups get(fn groups): map hasher(blake2_128_concat) GroupId => Option<GroupTree<T>>;
-		pub UsedNullifiers get(fn used_nullifiers): map hasher(blake2_128_concat) (GroupId, Data) => bool;
+		/// The next group identifier up for grabs
+		pub NextGroupId get(fn next_group_id): T::GroupId;
+		/// The map of groups to their metadata
+		pub Groups get(fn groups): map hasher(blake2_128_concat) T::GroupId => Option<GroupTree<T>>;
+		/// Map of cached/past merkle roots at each blocknumber and group. There can be more than one root update in a single block.
+		/// Allows for easy pruning since we can remove all keys of first map past a certain point.
+		pub CachedRoots get(fn cached_roots): double_map hasher(blake2_128_concat) T::BlockNumber, hasher(blake2_128_concat) T::GroupId => Vec<Data>;
+		pub LowestCachedBlock get(fn lowest_cached_block): T::BlockNumber;
+		pub HighestCachedBlock get(fn highest_cached_block): T::BlockNumber;
+		/// Map of used nullifiers (Data) for each tree.
+		pub UsedNullifiers get(fn used_nullifiers): map hasher(blake2_128_concat) (T::GroupId, Data) => bool;
 	}
 }
 
@@ -80,8 +96,9 @@ decl_event!(
 	pub enum Event<T>
 	where
 		AccountId = <T as frame_system::Trait>::AccountId,
+		GroupId = <T as Trait>::GroupId,
 	{
-		NewMember(u32, AccountId, Vec<Data>),
+		NewMember(GroupId, AccountId, Vec<Data>),
 	}
 );
 
@@ -96,6 +113,22 @@ decl_error! {
 		ChallengeMismatch,
 		///
 		BadPoint,
+		///
+		ExceedsMaxDepth,
+		///
+		GroupDoesntExist,
+		///
+		InvalidMembershipProof,
+		///
+		InvalidPathLength,
+		///
+		AlreadyUsedNullifier,
+		///
+		ZkVericationFailed,
+		///
+		InvalidZkProof,
+		///
+		InvalidTreeDepth,
 	}
 }
 
@@ -108,24 +141,23 @@ decl_module! {
 		fn deposit_event() = default;
 
 		#[weight = 0]
-		pub fn add_members(origin, group_id: u32, data_points: Vec<Data>) -> dispatch::DispatchResult {
+		pub fn add_members(origin, group_id: T::GroupId, data_points: Vec<Data>) -> dispatch::DispatchResult {
 			// Check it was signed and get the signer. See also: ensure_root and ensure_none
 			let who = ensure_signed(origin)?;
 
 			let mut tree = <Groups<T>>::get(group_id)
-				.ok_or("Group doesn't exist")
+				.ok_or(Error::<T>::GroupDoesntExist)
 				.unwrap();
 			let num_points = data_points.len() as u32;
-			ensure!(
-				tree.leaf_count + num_points <= tree.max_leaves,
-				"Exceeded maximum tree depth."
-			);
+			ensure!(tree.leaf_count + num_points <= tree.max_leaves, Error::<T>::ExceedsMaxDepth);
 
 			let h = default_hasher();
 			for data in &data_points {
 				Self::add_leaf(&mut tree, *data, &h);
 			}
-			<Groups<T>>::insert(group_id, tree);
+			let block_number: T::BlockNumber = <frame_system::Module<T>>::block_number();
+			CachedRoots::<T>::append(block_number, group_id, tree.root_hash);
+			Groups::<T>::insert(group_id, tree);
 
 			// Raising the New Member event for the client to build a tree locally
 			Self::deposit_event(RawEvent::NewMember(group_id, who, data_points));
@@ -133,11 +165,11 @@ decl_module! {
 		}
 
 		#[weight = 0]
-		pub fn verify(origin, group_id: u32, leaf: Data, path: Vec<(bool, Data)>) -> dispatch::DispatchResult {
+		pub fn verify(origin, group_id: T::GroupId, leaf: Data, path: Vec<(bool, Data)>) -> dispatch::DispatchResult {
 			let tree = <Groups<T>>::get(group_id)
-				.ok_or("Invalid group id.")
+				.ok_or(Error::<T>::GroupDoesntExist)
 				.unwrap();
-			ensure!(tree.edge_nodes.len() == path.len(), "Invalid path length.");
+			ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
 			let h = default_hasher();
 			let mut hash = leaf;
 			for (is_right, node) in path {
@@ -147,14 +179,14 @@ decl_module! {
 				}
 			}
 
-			ensure!(hash == tree.root_hash, "Invalid proof of membership.");
+			ensure!(hash == tree.root_hash, Error::<T>::InvalidMembershipProof);
 			Ok(())
 		}
 
 		#[weight = 0]
 		pub fn verify_zk_membership_proof(
 			origin,
-			group_id: GroupId,
+			group_id: T::GroupId,
 			leaf_com: Commitment,
 			path: Vec<(Commitment, Commitment)>,
 			s_com: Commitment,
@@ -162,11 +194,11 @@ decl_module! {
 			proof_bytes: Vec<u8>
 		) -> dispatch::DispatchResult {
 			// Ensure that nullifier is not used
-			ensure!(!UsedNullifiers::get((group_id, nullifier)), "Nullifier already used.");
+			ensure!(!UsedNullifiers::<T>::get((group_id, nullifier)), Error::<T>::AlreadyUsedNullifier);
 			let tree = <Groups<T>>::get(group_id)
-				.ok_or("Invalid group id.")
+				.ok_or(Error::<T>::GroupDoesntExist)
 				.unwrap();
-			ensure!(tree.edge_nodes.len() == path.len(), "Invalid path length.");
+			ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
 
 			let pc_gens = PedersenGens::default();
 			// TODO: should be able to pass number of generators
@@ -206,24 +238,25 @@ decl_module! {
 			verifier.constrain(hash - tree.root_hash.0);
 
 			let proof = R1CSProof::from_bytes(&proof_bytes);
-			ensure!(proof.is_ok(), "Invalid proof bytes.");
+			ensure!(proof.is_ok(), Error::<T>::InvalidZkProof);
 			let proof = proof.unwrap();
 
 			let mut rng = OsRng {};
 			// Final verification
 			let res = verifier.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut rng);
-			ensure!(res.is_ok(), "Invalid proof of membership or leaf creation.");
+			ensure!(res.is_ok(), Error::<T>::ZkVericationFailed);
 
 			// Set nullifier as used
-			UsedNullifiers::insert((group_id, nullifier), true);
+			UsedNullifiers::<T>::insert((group_id, nullifier), true);
 
 			Ok(())
 		}
 
 		#[weight = 0]
-		pub fn create_group(origin, group_id: GroupId, _fee: Option<T::Balance>, _depth: Option<u32>) -> dispatch::DispatchResult {
+		pub fn create_group(origin, _fee: Option<T::Balance>, _depth: Option<u8>) -> dispatch::DispatchResult {
 			let _sender = ensure_signed(origin)?;
-			ensure!(!<Groups<T>>::contains_key(group_id), "Group already exists.");
+			let group_id = Self::next_group_id();
+			NextGroupId::<T>::mutate(|id| *id += One::one());
 
 			let fee = match _fee {
 				Some(f) => f,
@@ -232,15 +265,33 @@ decl_module! {
 
 			let depth = match _depth {
 				Some(d) => d,
-				None => MAX_DEPTH
+				None => T::MaxTreeDepth::get()
 			};
 
-			ensure!(depth <= MAX_DEPTH && depth > 0, "Invalid tree depth.");
+			ensure!(depth <= T::MaxTreeDepth::get() && depth > 0, Error::<T>::InvalidTreeDepth);
 
 			let mtree = GroupTree::<T>::new(fee, depth);
 			<Groups<T>>::insert(group_id, mtree);
 
 			Ok(())
+		}
+
+		fn on_finalize(_n: T::BlockNumber) {
+			// update highest block in cache
+			if HighestCachedBlock::<T>::get() < _n {
+				HighestCachedBlock::<T>::set(_n);
+			}
+
+			// initialise lowest block in cache if not already
+			if LowestCachedBlock::<T>::get() <= One::one() {
+				LowestCachedBlock::<T>::set(_n);
+			}
+
+			// update and prune database if pruning length has been hit
+			if HighestCachedBlock::<T>::get() - T::CacheBlockLength::get() > LowestCachedBlock::<T>::get() {
+				CachedRoots::<T>::remove_prefix(LowestCachedBlock::<T>::get());
+				LowestCachedBlock::<T>::set(LowestCachedBlock::<T>::get() + One::one());
+			}
 		}
 	}
 }

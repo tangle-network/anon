@@ -45,19 +45,21 @@ impl frame_system::Trait for Test {
 	type MaximumBlockLength = MaximumBlockLength;
 	type Version = ();
 	type PalletInfo = ();
-	type AccountData = balances::AccountData<u128>;
+	type AccountData = balances::AccountData<Balance>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: u128 = 0;
+	pub const ExistentialDeposit: Balance = 0;
 	pub const MaxLocks: u32 = 50;
+	pub const MaxTreeDepth: u8 = 32;
+	pub const CacheBlockLength: u64 = 100;
 }
 
 impl balances::Trait for Test {
-	type Balance = u128;
+	type Balance = Balance;
 	type Event = ();
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
@@ -68,6 +70,9 @@ impl balances::Trait for Test {
 
 impl Trait for Test {
 	type Event = ();
+	type GroupId = u32;
+	type MaxTreeDepth = MaxTreeDepth;
+	type CacheBlockLength = CacheBlockLength;
 }
 
 pub type System = system::Module<Test>;
