@@ -1,5 +1,5 @@
 // Tests to be written here
-
+use super::*;
 use crate::merkle::hasher::Hasher;
 use crate::merkle::helper::{commit_leaf, commit_path_level, leaf_data};
 use crate::merkle::keys::{Commitment, Data};
@@ -57,7 +57,7 @@ fn should_not_have_0_depth() {
 	new_test_ext().execute_with(|| {
 		assert_err!(
 			MerkleGroups::create_group(Origin::signed(1), Some(10), Some(0)),
-			"Invalid tree depth."
+			Error::<Test>::InvalidTreeDepth,
 		);
 	});
 }
@@ -79,7 +79,7 @@ fn should_have_min_depth() {
 		));
 		assert_err!(
 			MerkleGroups::add_members(Origin::signed(1), 0, vec![key.clone()]),
-			"Exceeded maximum tree depth."
+			Error::<Test>::ExceedsMaxDepth,
 		);
 	});
 }
@@ -100,22 +100,7 @@ fn should_not_have_more_than_max_depth() {
 	new_test_ext().execute_with(|| {
 		assert_err!(
 			MerkleGroups::create_group(Origin::signed(1), Some(10), Some(33),),
-			"Invalid tree depth."
-		);
-	});
-}
-
-#[test]
-fn should_not_use_existing_group_id() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleGroups::create_group(
-			Origin::signed(1),
-			Some(10),
-			Some(3),
-		));
-		assert_err!(
-			MerkleGroups::create_group(Origin::signed(1), Some(10), Some(3),),
-			"Group already exists."
+			Error::<Test>::InvalidTreeDepth,
 		);
 	});
 }
@@ -241,13 +226,13 @@ fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 		let path = vec![(true, key0)];
 		assert_err!(
 			MerkleGroups::verify(Origin::signed(2), 0, key0, path),
-			"Invalid path length."
+			Error::<Test>::InvalidPathLength,
 		);
 
 		let path = vec![(true, key0), (false, key1), (true, key2)];
 		assert_err!(
 			MerkleGroups::verify(Origin::signed(2), 0, key0, path),
-			"Invalid path length."
+			Error::<Test>::InvalidPathLength,
 		);
 	});
 }
@@ -279,21 +264,21 @@ fn should_not_verify_invalid_proof() {
 
 		assert_err!(
 			MerkleGroups::verify(Origin::signed(2), 0, key0, path),
-			"Invalid proof of membership."
+			Error::<Test>::InvalidMembershipProof,
 		);
 
 		let path = vec![(true, key1), (false, keyh2)];
 
 		assert_err!(
 			MerkleGroups::verify(Origin::signed(2), 0, key0, path),
-			"Invalid proof of membership."
+			Error::<Test>::InvalidMembershipProof,
 		);
 
 		let path = vec![(true, key2), (true, keyh1)];
 
 		assert_err!(
 			MerkleGroups::verify(Origin::signed(2), 0, key0, path),
-			"Invalid proof of membership."
+			Error::<Test>::InvalidMembershipProof,
 		);
 	});
 }
@@ -471,7 +456,7 @@ fn should_not_use_nullifier_more_than_once() {
 				Data(nullifier),
 				proof.to_bytes(),
 			),
-			"Nullifier already used."
+			Error::<Test>::AlreadyUsedNullifier,
 		);
 	});
 }
@@ -518,7 +503,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 				Data(nullifier),
 				proof.to_bytes(),
 			),
-			"Invalid proof of membership or leaf creation."
+			Error::<Test>::ZkVericationFailed,
 		);
 	});
 }
@@ -563,7 +548,7 @@ fn should_not_verify_invalid_commitments_for_membership() {
 				Data(nullifier),
 				proof.to_bytes(),
 			),
-			"Invalid proof of membership or leaf creation."
+			Error::<Test>::ZkVericationFailed,
 		);
 	});
 }
@@ -609,7 +594,7 @@ fn should_not_verify_invalid_transcript() {
 				Data(nullifier),
 				proof.to_bytes(),
 			),
-			"Invalid proof of membership or leaf creation."
+			Error::<Test>::ZkVericationFailed,
 		);
 	});
 }
