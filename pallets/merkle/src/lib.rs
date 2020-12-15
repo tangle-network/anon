@@ -44,6 +44,8 @@ pub trait Trait: balances::Trait {
 	type MaxTreeDepth: Get<u8>;
 	/// The amount of blocks to cache roots over
 	type CacheBlockLength: Get<Self::BlockNumber>;
+	/// The minimum deposit length required for redeeming rewards
+	type MinimumDepositLength: Get<Self::BlockNumber>;
 }
 
 // TODO find better way to have default hasher without saving it inside storage
@@ -129,6 +131,10 @@ decl_error! {
 		InvalidZkProof,
 		///
 		InvalidTreeDepth,
+		///
+		InvalidMerkleRoot,
+		///
+		DepositLengthTooSmall,
 	}
 }
 
@@ -203,52 +209,60 @@ decl_module! {
 			let pc_gens = PedersenGens::default();
 			// TODO: should be able to pass number of generators
 			let bp_gens = BulletproofGens::new(4096, 1);
-			let h = default_hasher();
-
-			let mut verifier_transcript = Transcript::new(b"zk_membership_proof");
-			let mut verifier = Verifier::new(&mut verifier_transcript);
-
-			let var_leaf = verifier.commit(leaf_com.0);
-			let var_s = verifier.commit(s_com.0);
-			let leaf_lc =
-				Data::constrain_verifier(&mut verifier, &pc_gens, var_s.into(), nullifier.0.into(), &h);
-			// Commited leaf value should be the same as calculated
-			verifier.constrain(leaf_lc - var_leaf);
-
-			// Check of path proof is correct
-			// hash = 5
-			let mut hash: LinearCombination = var_leaf.into();
-			for (bit, pair) in path {
-				// e.g. If bit is 1 that means pair is on the right side
-				// var_bit = 1
-				let var_bit = verifier.commit(bit.0);
-				// pair = 3
-				let var_pair = verifier.commit(pair.0);
-
-				// temp = 1 * 3 - 5 = -2
-				let (_, _, var_temp) = verifier.multiply(var_bit.into(), var_pair - hash.clone());
-				// left = 5 - 2 = 3
-				let left = hash.clone() + var_temp;
-				// right = 3 + 5 - 3 = 5
-				let right = var_pair + hash - left.clone();
-
-				hash = Data::constrain_verifier(&mut verifier, &pc_gens, left, right, &h);
-			}
-			// Commited path evaluate to correct root
-			verifier.constrain(hash - tree.root_hash.0);
-
-			let proof = R1CSProof::from_bytes(&proof_bytes);
-			ensure!(proof.is_ok(), Error::<T>::InvalidZkProof);
-			let proof = proof.unwrap();
-
-			let mut rng = OsRng {};
-			// Final verification
-			let res = verifier.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut rng);
-			ensure!(res.is_ok(), Error::<T>::ZkVericationFailed);
-
+			Self::verify_zk_proof(
+				pc_gens,
+				bp_gens,
+				tree.root_hash,
+				leaf_com,
+				path,
+				s_com,
+				nullifier,
+				proof_bytes,
+			)?;
 			// Set nullifier as used
 			UsedNullifiers::<T>::insert((group_id, nullifier), true);
+			Ok(())
+		}
 
+		#[weight = 0]
+		pub fn verify_zk_membership_proof_with_reward(
+			origin,
+			old_block: T::BlockNumber,
+			old_root: Data,
+			group_id: T::GroupId,
+			leaf_com: Commitment,
+			path: Vec<(Commitment, Commitment)>,
+			s_com: Commitment,
+			nullifier: Data,
+			proof_bytes: Vec<u8>
+		) -> dispatch::DispatchResult {
+			let block_number: T::BlockNumber = <frame_system::Module<T>>::block_number();
+			ensure!(T::MinimumDepositLength::get() <= block_number - old_block, Error::<T>::DepositLengthTooSmall);
+			// Ensure that nullifier is not used
+			ensure!(!UsedNullifiers::<T>::get((group_id, nullifier)), Error::<T>::AlreadyUsedNullifier);
+			let tree = <Groups<T>>::get(group_id)
+				.ok_or(Error::<T>::GroupDoesntExist)
+				.unwrap();
+			ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
+			let old_roots = Self::cached_roots(old_block, group_id);
+			ensure!(old_roots.iter().any(|r| *r == old_root), Error::<T>::InvalidMerkleRoot);
+
+			let pc_gens = PedersenGens::default();
+			// TODO: should be able to pass number of generators
+			let bp_gens = BulletproofGens::new(4096, 1);
+			Self::verify_zk_proof(
+				pc_gens,
+				bp_gens,
+				tree.root_hash,
+				leaf_com,
+				path,
+				s_com,
+				nullifier,
+				proof_bytes,
+			)?;
+			// Set nullifier as used
+			UsedNullifiers::<T>::insert((group_id, nullifier), true);
+			// TODO: Compute reward
 			Ok(())
 		}
 
@@ -314,5 +328,62 @@ impl<T: Trait> Module<T> {
 
 		tree.leaf_count += 1;
 		tree.root_hash = pair_hash;
+	}
+
+	fn verify_zk_proof(
+		pc_gens: PedersenGens,
+		bp_gens: BulletproofGens,
+		m_root: Data,
+		leaf_com: Commitment,
+		path: Vec<(Commitment, Commitment)>,
+		s_com: Commitment,
+		nullifier: Data,
+		proof_bytes: Vec<u8>
+	) -> Result<(), Error<T>>{
+		let h = default_hasher();
+		let mut verifier_transcript = Transcript::new(b"zk_membership_proof");
+		let mut verifier = Verifier::new(&mut verifier_transcript);
+
+		let var_leaf = verifier.commit(leaf_com.0);
+		let var_s = verifier.commit(s_com.0);
+		let leaf_lc =
+			Data::constrain_verifier(&mut verifier, &pc_gens, var_s.into(), nullifier.0.into(), &h);
+		// Commited leaf value should be the same as calculated
+		verifier.constrain(leaf_lc - var_leaf);
+
+		// Check of path proof is correct
+		// hash = 5
+		let mut hash: LinearCombination = var_leaf.into();
+		for (bit, pair) in path {
+			// e.g. If bit is 1 that means pair is on the right side
+			// var_bit = 1
+			let var_bit = verifier.commit(bit.0);
+			// pair = 3
+			let var_pair = verifier.commit(pair.0);
+
+			// temp = 1 * 3 - 5 = -2
+			let (_, _, var_temp) = verifier.multiply(var_bit.into(), var_pair - hash.clone());
+			// left = 5 - 2 = 3
+			let left = hash.clone() + var_temp;
+			// right = 3 + 5 - 3 = 5
+			let right = var_pair + hash - left.clone();
+
+			hash = Data::constrain_verifier(&mut verifier, &pc_gens, left, right, &h);
+		}
+		// Commited path evaluate to correct root
+		verifier.constrain(hash - m_root.0);
+
+		let proof = R1CSProof::from_bytes(&proof_bytes);
+		ensure!(proof.is_ok(), Error::<T>::InvalidZkProof);
+		let proof = proof.unwrap();
+
+		let mut rng = OsRng {};
+		// Final verification
+		let res = verifier.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut rng);
+		if res.is_ok() {
+			Ok(())
+		} else {
+			Err(Error::<T>::ZkVericationFailed)
+		}
 	}
 }

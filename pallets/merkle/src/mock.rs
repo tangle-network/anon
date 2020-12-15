@@ -56,6 +56,7 @@ parameter_types! {
 	pub const MaxLocks: u32 = 50;
 	pub const MaxTreeDepth: u8 = 32;
 	pub const CacheBlockLength: u64 = 100;
+	pub const MinimumDepositLength: u64 = 10;
 }
 
 impl balances::Trait for Test {
@@ -73,6 +74,7 @@ impl Trait for Test {
 	type GroupId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
 	type CacheBlockLength = CacheBlockLength;
+	type MinimumDepositLength = MinimumDepositLength;
 }
 
 pub type System = system::Module<Test>;
