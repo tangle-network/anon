@@ -74,7 +74,6 @@ impl Trait for Test {
 	type GroupId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
 	type CacheBlockLength = CacheBlockLength;
-	type MinimumDepositLength = MinimumDepositLength;
 }
 
 pub type System = system::Module<Test>;
