@@ -35,6 +35,91 @@ fn can_create_group() {
 }
 
 #[test]
+fn can_update_manager_when_required() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			true,
+			Some(3),
+		));
+
+		assert_ok!(MerkleGroups::set_manager(
+			Origin::signed(1),
+			0,
+			2,
+		));
+	});
+}
+
+#[test]
+fn can_update_manager_when_not_required() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			false,
+			Some(3),
+		));
+
+		assert_ok!(MerkleGroups::set_manager(
+			Origin::signed(1),
+			0,
+			2,
+		));
+	});
+}
+
+#[test]
+fn cannot_update_manager_as_not_manager() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			false,
+			Some(3),
+		));
+
+		assert_err!(MerkleGroups::set_manager(
+			Origin::signed(2),
+			0,
+			2,
+		), Error::<Test>::ManagerIsRequired);
+	});
+}
+
+#[test]
+fn can_update_manager_required_manager() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			false,
+			Some(3),
+		));
+
+		assert_ok!(MerkleGroups::set_manager_required(
+			Origin::signed(1),
+			0,
+			true,
+		));
+	});
+}
+
+#[test]
+fn cannot_update_manager_required_as_not_manager() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			false,
+			Some(3),
+		));
+
+		assert_err!(MerkleGroups::set_manager_required(
+			Origin::signed(2),
+			0,
+			true,
+		), Error::<Test>::ManagerIsRequired);
+	});
+}
+
+#[test]
 fn can_add_member() {
 	new_test_ext().execute_with(|| {
 		let key = Data::from(key_bytes(1));

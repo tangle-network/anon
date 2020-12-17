@@ -148,8 +148,36 @@ decl_module! {
 		fn deposit_event() = default;
 
 		#[weight = 0]
+		pub fn set_manager_required(origin, group_id: T::GroupId, manager_required: bool) -> dispatch::DispatchResult {
+			let sender = ensure_signed(origin)?;
+
+			let mut tree = <Groups<T>>::get(group_id)
+				.ok_or(Error::<T>::GroupDoesntExist)
+				.unwrap();
+			// Changing manager required should always require an extrinsic from the manager even
+			// if the group doesn't explicitly require managers for other calls.
+			ensure!(sender == tree.manager, Error::<T>::ManagerIsRequired);
+			tree.requires_is_manager = manager_required;
+			Ok(())
+		}
+
+		#[weight = 0]
+		pub fn set_manager(origin, group_id: T::GroupId, new_manager: T::AccountId) -> dispatch::DispatchResult {
+			let sender = ensure_signed(origin)?;
+
+			let mut tree = <Groups<T>>::get(group_id)
+				.ok_or(Error::<T>::GroupDoesntExist)
+				.unwrap();
+			// Changing manager should always require an extrinsic from the manager even
+			// if the group doesn't explicitly require managers for other calls.
+			ensure!(sender == tree.manager, Error::<T>::ManagerIsRequired);
+			
+			tree.manager = new_manager;
+			Ok(())
+		}
+
+		#[weight = 0]
 		pub fn add_members(origin, group_id: T::GroupId, data_points: Vec<Data>) -> dispatch::DispatchResult {
-			// Check it was signed and get the signer. See also: ensure_root and ensure_none
 			let sender = ensure_signed(origin)?;
 
 			let mut tree = <Groups<T>>::get(group_id)
