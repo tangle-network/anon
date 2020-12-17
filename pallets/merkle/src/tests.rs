@@ -53,6 +53,42 @@ fn can_add_member() {
 }
 
 #[test]
+fn can_add_member_as_manager() {
+	new_test_ext().execute_with(|| {
+		let key = Data::from(key_bytes(1));
+
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			true,
+			Some(3),
+		));
+		assert_ok!(MerkleGroups::add_members(
+			Origin::signed(1),
+			0,
+			vec![key.clone()]
+		));
+	});
+}
+
+#[test]
+fn cannot_add_member_as_not_manager() {
+	new_test_ext().execute_with(|| {
+		let key = Data::from(key_bytes(1));
+
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			true,
+			Some(3),
+		));
+		assert_err!(MerkleGroups::add_members(
+			Origin::signed(2),
+			0,
+			vec![key.clone()]
+		), Error::<Test>::ManagerIsRequired);
+	});
+}
+
+#[test]
 fn should_not_have_0_depth() {
 	new_test_ext().execute_with(|| {
 		assert_err!(

@@ -155,6 +155,8 @@ decl_module! {
 			let mut tree = <Groups<T>>::get(group_id)
 				.ok_or(Error::<T>::GroupDoesntExist)
 				.unwrap();
+			// Check if the tree requires extrinsics to be called from a manager
+			ensure!(Self::is_manager_required(sender.clone(), &tree), Error::<T>::ManagerIsRequired);
 			let num_points = data_points.len() as u32;
 			ensure!(tree.leaf_count + num_points <= tree.max_leaves, Error::<T>::ExceedsMaxDepth);
 
