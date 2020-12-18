@@ -4,5 +4,6 @@ members = [
 	"runtime",
 	"pallets/clsag",
 	"pallets/merkle",
+	"pallets/mixer",
 	"client"
 ]

@@ -46,11 +46,6 @@ std = [
     'codec/std',
     'frame-support/std',
     'frame-system/std',
-    "merkle/std",
     "rand/std",
     "rand"
 ]
-
-[[bench]]
-name = "bench"
-harness = false
