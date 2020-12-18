@@ -1,5 +1,5 @@
 function Index() {
-	import("../wasm-utils/pkg").then(module => module.greet());
+	import("../wasm-utils").then(module => module.greet());
 	return "hello there";
 }
 
