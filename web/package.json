@@ -7,7 +7,7 @@
 		"wasm-build": "cd wasm-utils/ && wasm-pack build",
 		"dev": "npm run wasm-build && next dev",
 		"build": "next build",
-		"export": "next build && next export",
+		"export": "npm run wasm-build && npm run build && next export",
 		"start": "next start"
 	},
 	"author": "",
