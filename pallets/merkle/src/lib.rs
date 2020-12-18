@@ -206,7 +206,6 @@ decl_module! {
 		/// modules should use the module functions to verify and execute further
 		/// logic.
 		#[weight = 0]
-		#[cfg(feature="verify")]
 		pub fn verify(origin, group_id: T::GroupId, leaf: Data, path: Vec<(bool, Data)>) -> dispatch::DispatchResult {
 			let tree = <Groups<T>>::get(group_id)
 				.ok_or(Error::<T>::GroupDoesntExist)
@@ -249,7 +248,6 @@ decl_module! {
 		/// modules should use the module functions to verify and execute further
 		/// logic.
 		#[weight = 0]
-		#[cfg(feature="verify")]
 		pub fn verify_zk_membership_proof(
 			origin,
 			group_id: T::GroupId,
@@ -279,7 +277,6 @@ decl_module! {
 		/// modules should use the module functions to verify and execute further
 		/// logic.
 		#[weight = 0]
-		#[cfg(feature="verify")]
 		pub fn verify_zk_membership_proof_with_cache(
 			origin,
 			old_block: T::BlockNumber,
