@@ -1,4 +1,8 @@
-Having an IPFS-cli installed on your machine is a requirement: https://docs.ipfs.io/install/command-line/#package-managers
+Requirements:
+- IPFS cli: https://docs.ipfs.io/install/command-line/#package-managers
+- Rust: https://www.rust-lang.org/tools/install
+- wasm-pack: https://rustwasm.github.io/wasm-pack/installer/
+- Node.js: https://nodejs.org/en/download/
 
 Start development server with live code reloaing:
 ```
