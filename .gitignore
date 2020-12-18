@@ -4,3 +4,6 @@ runtime/target
 **/*.rs.bk
 Cargo.lock
 /*/**/target
+**/node_modules
+**/.next
+**/out
