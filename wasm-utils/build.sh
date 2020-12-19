@@ -1,0 +1,1 @@
+wasm-pack build && mv ./pcg ../web/wasm-utils

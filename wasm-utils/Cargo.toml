@@ -9,7 +9,6 @@ edition = "2018"
 [dependencies]
 wasm-bindgen = {version = "0.2.69", features = ["serde-serialize"]}
 curve25519-dalek = "3.0.0"
-sp-std = { version = "2.0.0", default-features = false }
 pallet-merkle = { path = "../pallets/merkle" }
 
 [lib]
