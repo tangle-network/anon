@@ -70,10 +70,10 @@ pub fn prove<H: Hasher>(
 	let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 	let mut test_rng = OsRng;
-	let (s, nullifier, leaf) = leaf_data(&mut test_rng, h);
+	let (r, nullifier, leaf) = leaf_data(&mut test_rng, h);
 
 	let (r_com, leaf_com1, leaf_var1) =
-		commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, h);
+		commit_leaf(&mut test_rng, &mut prover, leaf, r, nullifier, h);
 
 	let mut lh = leaf;
 	let mut lh_lc: LinearCombination = leaf_var1.into();
