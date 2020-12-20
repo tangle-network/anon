@@ -10,26 +10,27 @@ use merlin::Transcript;
 use rand_core::{CryptoRng, OsRng, RngCore};
 use sp_std::prelude::*;
 
+/// A leaf in our system represents a commitment to a random number `r` and a random number `nullifier`
 pub fn leaf_data<H: Hasher, C: CryptoRng + RngCore>(rng: &mut C, h: &H) -> (Scalar, Scalar, Data) {
-	let s = Scalar::random(rng);
+	let r = Scalar::random(rng);
 	let nullifier = Scalar::random(rng);
-	let leaf = Data::hash(Data(s), Data(nullifier), h);
-	(s, nullifier, leaf)
+	let leaf = Data::hash(Data(r), Data(nullifier), h);
+	(r, nullifier, leaf)
 }
 
 pub fn commit_leaf<H: Hasher, C: CryptoRng + RngCore>(
 	rng: &mut C,
 	prover: &mut Prover,
 	leaf: Data,
-	s: Scalar,
+	r: Scalar,
 	nullifier: Scalar,
 	h: &H,
 ) -> (CompressedRistretto, CompressedRistretto, Variable) {
 	let (leaf_com1, leaf_var1) = prover.commit(leaf.0, Scalar::random(rng));
-	let (s_com, s_var) = prover.commit(s, Scalar::random(rng));
-	let leaf_com = Data::constrain_prover(prover, s_var.into(), nullifier.into(), h);
+	let (r_com, r_var) = prover.commit(r, Scalar::random(rng));
+	let leaf_com = Data::constrain_prover(prover, r_var.into(), nullifier.into(), h);
 	prover.constrain(leaf_com - leaf_var1);
-	(s_com, leaf_com1, leaf_var1)
+	(r_com, leaf_com1, leaf_var1)
 }
 
 pub fn commit_path_level<H: Hasher, C: CryptoRng + RngCore>(
@@ -71,7 +72,7 @@ pub fn prove<H: Hasher>(
 	let mut test_rng = OsRng;
 	let (s, nullifier, leaf) = leaf_data(&mut test_rng, h);
 
-	let (s_com, leaf_com1, leaf_var1) =
+	let (r_com, leaf_com1, leaf_var1) =
 		commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, h);
 
 	let mut lh = leaf;
@@ -93,7 +94,7 @@ pub fn prove<H: Hasher>(
 		lh,
 		Commitment(leaf_com1),
 		path,
-		Commitment(s_com),
+		Commitment(r_com),
 		Data(nullifier),
 		proof.to_bytes(),
 	)
@@ -104,7 +105,7 @@ pub fn verify<H: Hasher>(
 	root_hash: Data,
 	leaf_com: Commitment,
 	path: &Vec<(Commitment, Commitment)>,
-	s_com: Commitment,
+	r_com: Commitment,
 	nullifier: Data,
 	proof_bytes: &Vec<u8>,
 ) {
@@ -115,7 +116,7 @@ pub fn verify<H: Hasher>(
 	let mut verifier = Verifier::new(&mut verifier_transcript);
 
 	let var_leaf = verifier.commit(leaf_com.0);
-	let var_s = verifier.commit(s_com.0);
+	let var_s = verifier.commit(r_com.0);
 	let leaf_lc =
 		Data::constrain_verifier(&mut verifier, &pc_gens, var_s.into(), nullifier.0.into(), h);
 	verifier.constrain(leaf_lc - var_leaf);
