@@ -269,8 +269,16 @@ impl clsag::Trait for Runtime {
 	type Event = Event;
 }
 
+parameter_types! {
+	pub const MaxTreeDepth: u8 = 32;
+	pub const CacheBlockLength: BlockNumber = 100;
+}
+
 impl merkle::Trait for Runtime {
 	type Event = Event;
+	type GroupId = u32;
+	type MaxTreeDepth = MaxTreeDepth;
+	type CacheBlockLength = CacheBlockLength;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

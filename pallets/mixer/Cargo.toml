@@ -1,0 +1,51 @@
+[package]
+authors = ['Drew Stone <drew@commonwealth.im>, Filip Lazovic']
+description = 'Pallet for mixing native assets in a zero-knowledge mixer'
+edition = '2018'
+homepage = 'https://substrate.dev'
+license = 'Unlicense'
+name = 'pallet-mixer'
+repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
+version = '2.0.0'
+
+[package.metadata.docs.rs]
+targets = ['x86_64-unknown-linux-gnu']
+
+# alias "parity-scale-code" to "codec"
+[dependencies.codec]
+default-features = false
+features = ['derive']
+package = 'parity-scale-codec'
+version = '1.3.4'
+
+[dependencies.curve25519-dalek]
+version = "3.0.0"
+default-features = false
+features = ["u64_backend", "alloc"]
+
+[dependencies.bencher]
+version = "0.1.5"
+
+[dependencies]
+balances = { version = "2.0.0", default-features = false, package = "pallet-balances" }
+frame-support = { default-features = false, version = '2.0.0' }
+frame-system = { default-features = false, version = '2.0.0' }
+sp-std = { default-features = false, version = "2.0.0" }
+sp-runtime = { default-features = false, version = '2.0.0' }
+pallet-merkle = { path = "../merkle", default-features = false}
+
+rand = { version = "0.7", optional = true }
+
+[dev-dependencies]
+sp-core = { default-features = false, version = '2.0.0' }
+sp-io = { default-features = false, version = '2.0.0' }
+
+[features]
+default = ['std']
+std = [
+    'codec/std',
+    'frame-support/std',
+    'frame-system/std',
+    "rand/std",
+    "rand"
+]

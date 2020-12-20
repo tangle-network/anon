@@ -1,5 +1,5 @@
 // Tests to be written here
-
+use super::*;
 use crate::merkle::hasher::Hasher;
 use crate::merkle::helper::{commit_leaf, commit_path_level, leaf_data};
 use crate::merkle::keys::{Commitment, Data};
@@ -28,10 +28,94 @@ fn can_create_group() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(3),
 		));
+	});
+}
+
+#[test]
+fn can_update_manager_when_required() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			true,
+			Some(3),
+		));
+
+		assert_ok!(MerkleGroups::set_manager(
+			Origin::signed(1),
+			0,
+			2,
+		));
+	});
+}
+
+#[test]
+fn can_update_manager_when_not_required() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			false,
+			Some(3),
+		));
+
+		assert_ok!(MerkleGroups::set_manager(
+			Origin::signed(1),
+			0,
+			2,
+		));
+	});
+}
+
+#[test]
+fn cannot_update_manager_as_not_manager() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			false,
+			Some(3),
+		));
+
+		assert_err!(MerkleGroups::set_manager(
+			Origin::signed(2),
+			0,
+			2,
+		), Error::<Test>::ManagerIsRequired);
+	});
+}
+
+#[test]
+fn can_update_manager_required_manager() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			false,
+			Some(3),
+		));
+
+		assert_ok!(MerkleGroups::set_manager_required(
+			Origin::signed(1),
+			0,
+			true,
+		));
+	});
+}
+
+#[test]
+fn cannot_update_manager_required_as_not_manager() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			false,
+			Some(3),
+		));
+
+		assert_err!(MerkleGroups::set_manager_required(
+			Origin::signed(2),
+			0,
+			true,
+		), Error::<Test>::ManagerIsRequired);
 	});
 }
 
@@ -42,8 +126,7 @@ fn can_add_member() {
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(3),
 		));
 		assert_ok!(MerkleGroups::add_members(
@@ -55,11 +138,47 @@ fn can_add_member() {
 }
 
 #[test]
+fn can_add_member_as_manager() {
+	new_test_ext().execute_with(|| {
+		let key = Data::from(key_bytes(1));
+
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			true,
+			Some(3),
+		));
+		assert_ok!(MerkleGroups::add_members(
+			Origin::signed(1),
+			0,
+			vec![key.clone()]
+		));
+	});
+}
+
+#[test]
+fn cannot_add_member_as_not_manager() {
+	new_test_ext().execute_with(|| {
+		let key = Data::from(key_bytes(1));
+
+		assert_ok!(MerkleGroups::create_group(
+			Origin::signed(1),
+			true,
+			Some(3),
+		));
+		assert_err!(MerkleGroups::add_members(
+			Origin::signed(2),
+			0,
+			vec![key.clone()]
+		), Error::<Test>::ManagerIsRequired);
+	});
+}
+
+#[test]
 fn should_not_have_0_depth() {
 	new_test_ext().execute_with(|| {
 		assert_err!(
-			MerkleGroups::create_group(Origin::signed(1), 0, Some(10), Some(0),),
-			"Invalid tree depth."
+			MerkleGroups::create_group(Origin::signed(1), false, Some(0)),
+			Error::<Test>::InvalidTreeDepth,
 		);
 	});
 }
@@ -70,8 +189,7 @@ fn should_have_min_depth() {
 		let key = Data::from(key_bytes(1));
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(1),
 		));
 
@@ -82,7 +200,7 @@ fn should_have_min_depth() {
 		));
 		assert_err!(
 			MerkleGroups::add_members(Origin::signed(1), 0, vec![key.clone()]),
-			"Exceeded maximum tree depth."
+			Error::<Test>::ExceedsMaxDepth,
 		);
 	});
 }
@@ -92,8 +210,7 @@ fn should_have_max_depth() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(32),
 		));
 	});
@@ -103,24 +220,8 @@ fn should_have_max_depth() {
 fn should_not_have_more_than_max_depth() {
 	new_test_ext().execute_with(|| {
 		assert_err!(
-			MerkleGroups::create_group(Origin::signed(1), 0, Some(10), Some(33),),
-			"Invalid tree depth."
-		);
-	});
-}
-
-#[test]
-fn should_not_use_existing_group_id() {
-	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleGroups::create_group(
-			Origin::signed(1),
-			0,
-			Some(10),
-			Some(3),
-		));
-		assert_err!(
-			MerkleGroups::create_group(Origin::signed(1), 0, Some(10), Some(3),),
-			"Group already exists."
+			MerkleGroups::create_group(Origin::signed(1), false, Some(33),),
+			Error::<Test>::InvalidTreeDepth,
 		);
 	});
 }
@@ -135,8 +236,7 @@ fn should_have_correct_root_hash_after_insertion() {
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(2),
 		));
 		assert_ok!(MerkleGroups::add_members(
@@ -192,8 +292,7 @@ fn should_have_correct_root_hash() {
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(4),
 		));
 
@@ -236,8 +335,7 @@ fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 		let key2 = Data::from(key_bytes(2));
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(2),
 		));
 		assert_ok!(MerkleGroups::add_members(
@@ -249,13 +347,13 @@ fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 		let path = vec![(true, key0)];
 		assert_err!(
 			MerkleGroups::verify(Origin::signed(2), 0, key0, path),
-			"Invalid path length."
+			Error::<Test>::InvalidPathLength,
 		);
 
 		let path = vec![(true, key0), (false, key1), (true, key2)];
 		assert_err!(
 			MerkleGroups::verify(Origin::signed(2), 0, key0, path),
-			"Invalid path length."
+			Error::<Test>::InvalidPathLength,
 		);
 	});
 }
@@ -270,8 +368,7 @@ fn should_not_verify_invalid_proof() {
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(2),
 		));
 		assert_ok!(MerkleGroups::add_members(
@@ -288,21 +385,21 @@ fn should_not_verify_invalid_proof() {
 
 		assert_err!(
 			MerkleGroups::verify(Origin::signed(2), 0, key0, path),
-			"Invalid proof of membership."
+			Error::<Test>::InvalidMembershipProof,
 		);
 
 		let path = vec![(true, key1), (false, keyh2)];
 
 		assert_err!(
 			MerkleGroups::verify(Origin::signed(2), 0, key0, path),
-			"Invalid proof of membership."
+			Error::<Test>::InvalidMembershipProof,
 		);
 
 		let path = vec![(true, key2), (true, keyh1)];
 
 		assert_err!(
 			MerkleGroups::verify(Origin::signed(2), 0, key0, path),
-			"Invalid proof of membership."
+			Error::<Test>::InvalidMembershipProof,
 		);
 	});
 }
@@ -318,8 +415,7 @@ fn should_verify_proof_of_membership() {
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(4),
 		));
 
@@ -401,8 +497,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(1),
 		));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
@@ -446,8 +541,7 @@ fn should_not_use_nullifier_more_than_once() {
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(1),
 		));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
@@ -483,7 +577,7 @@ fn should_not_use_nullifier_more_than_once() {
 				Data(nullifier),
 				proof.to_bytes(),
 			),
-			"Nullifier already used."
+			Error::<Test>::AlreadyUsedNullifier,
 		);
 	});
 }
@@ -503,8 +597,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(1),
 		));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
@@ -531,7 +624,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 				Data(nullifier),
 				proof.to_bytes(),
 			),
-			"Invalid proof of membership or leaf creation."
+			Error::<Test>::ZkVericationFailed,
 		);
 	});
 }
@@ -551,8 +644,7 @@ fn should_not_verify_invalid_commitments_for_membership() {
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(1),
 		));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
@@ -577,7 +669,7 @@ fn should_not_verify_invalid_commitments_for_membership() {
 				Data(nullifier),
 				proof.to_bytes(),
 			),
-			"Invalid proof of membership or leaf creation."
+			Error::<Test>::ZkVericationFailed,
 		);
 	});
 }
@@ -597,8 +689,7 @@ fn should_not_verify_invalid_transcript() {
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(1),
 		));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
@@ -624,7 +715,7 @@ fn should_not_verify_invalid_transcript() {
 				Data(nullifier),
 				proof.to_bytes(),
 			),
-			"Invalid proof of membership or leaf creation."
+			Error::<Test>::ZkVericationFailed,
 		);
 	});
 }
@@ -650,8 +741,7 @@ fn should_verify_zk_proof_of_membership() {
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(3),
 		));
 		assert_ok!(MerkleGroups::add_members(
@@ -716,8 +806,7 @@ fn should_verify_large_zk_proof_of_membership() {
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
-			0,
-			Some(10),
+			false,
 			Some(32),
 		));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
