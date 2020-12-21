@@ -55,7 +55,7 @@ impl MerkleClient {
 			curr_root: init_root,
 			states: init_states,
 			leaf_indices: HashMap::new(),
-			levels: vec![Vec::new(); num_levels],
+			levels: vec![vec![Data::zero()]; num_levels],
 			hasher: Poseidon::new(4),
 			max_leaves: u32::MAX >> (max_levels - num_levels),
 		}
@@ -77,6 +77,9 @@ impl MerkleClient {
 		);
 		let curr_state = self.states.get(&self.curr_root).unwrap();
 
+		// There is a new tree state on every insert
+		// It consists of edge nodes, since they change on every insert
+		// And they are needed for creating proofs of membership in the past trees
 		let mut new_state = TreeState {
 			edge_nodes: curr_state.edge_nodes.clone(),
 			leaf_count: curr_state.leaf_count + 1,
@@ -86,11 +89,17 @@ impl MerkleClient {
 		let mut pair_hash = data.clone();
 
 		for i in 0..curr_state.edge_nodes.len() {
+			let level = self.levels.get_mut(i).unwrap();
+			// Update the edges if leaf index is uneven number
 			if edge_index % 2 == 0 {
 				new_state.edge_nodes[i] = pair_hash;
 			}
-			let level = self.levels.get_mut(i).unwrap();
-			level.push(pair_hash);
+			// Push new node one current level or replace the last one
+			if edge_index >= level.len() {
+				level.push(pair_hash);
+			} else {
+				level[edge_index] = pair_hash;
+			}
 
 			let hash = new_state.edge_nodes[i];
 			pair_hash = Data::hash(hash, pair_hash, &self.hasher);
@@ -101,61 +110,6 @@ impl MerkleClient {
 		self.curr_root = pair_hash;
 		self.states.insert(pair_hash, new_state);
 	}
-
-	pub fn prove(&self, root_bytes: [u8; 32], leaf_bytes: [u8; 32]) -> Vec<(bool, [u8; 32])> {
-		let root = Data::from(root_bytes);
-		let leaf = Data::from(leaf_bytes);
-		assert!(self.states.contains_key(&root), "Root not found!");
-		assert!(self.leaf_indices.contains_key(&leaf), "Leaf not found!");
-
-		let state = self.states.get(&root).unwrap();
-
-		let mut node_index = self.leaf_indices.get(&leaf).cloned().unwrap();
-		let mut path = Vec::new();
-		for (i, level) in self.levels.iter().enumerate() {
-			let res = if node_index % 2 == 0 {
-				let node = if node_index == 0 {
-					level[0]
-				} else {
-					level[node_index - 1]
-				};
-				(false, node.0.to_bytes())
-			} else {
-				let node = if node_index == level.len() - 1 {
-					state.edge_nodes[i]
-				} else {
-					level[node_index + 1]
-				};
-				(true, node.0.to_bytes())
-			};
-
-			path.push(res);
-			node_index /= 2;
-		}
-
-		path
-	}
-
-	pub fn verify(
-		&self,
-		root_bytes: [u8; 32],
-		leaf_bytes: [u8; 32],
-		path: Vec<(bool, [u8; 32])>,
-	) -> bool {
-		let root = Data::from(root_bytes);
-		let mut hash = Data::from(leaf_bytes);
-		for (right, bytes) in path {
-			let pair = Data::from(bytes);
-
-			hash = if right {
-				Data::hash(hash, pair, &self.hasher)
-			} else {
-				Data::hash(pair, hash, &self.hasher)
-			}
-		}
-
-		root == hash
-	}
 }
 
 #[cfg(test)]
@@ -164,19 +118,81 @@ mod tests {
 	use curve25519_dalek::scalar::Scalar;
 	use pallet_merkle::merkle::keys::Data;
 	#[test]
-	fn should_make_tree() {
+	fn should_have_correct_root() {
 		let mut tree = MerkleClient::new(2);
 		let leaf1 = Scalar::from(1u32);
 		let leaf2 = Scalar::from(2u32);
 		let leaf3 = Scalar::from(3u32);
-		tree.add_leaf(leaf1.to_bytes());
-		tree.add_leaf(leaf2.to_bytes());
-		tree.add_leaf(leaf3.to_bytes());
 
+		tree.add_leaf(leaf1.to_bytes());
+		let node1 = Data::hash(Data(leaf1), Data(leaf1), &tree.hasher);
+		let root = Data::hash(node1, node1, &tree.hasher);
+		assert_eq!(tree.curr_root, root);
+
+		tree.add_leaf(leaf2.to_bytes());
+		let node1 = Data::hash(Data(leaf1), Data(leaf2), &tree.hasher);
+		let root = Data::hash(node1, node1, &tree.hasher);
+		assert_eq!(tree.curr_root, root);
+
+		tree.add_leaf(leaf3.to_bytes());
 		let node1 = Data::hash(Data(leaf1), Data(leaf2), &tree.hasher);
 		let node2 = Data::hash(Data(leaf3), Data(leaf3), &tree.hasher);
 		let root = Data::hash(node1, node2, &tree.hasher);
 
-		assert_eq!(tree.curr_root, root, "Invalid root!");
+		assert_eq!(tree.curr_root, root);
+	}
+
+	#[test]
+	fn should_have_correct_levels() {
+		let mut tree = MerkleClient::new(2);
+		let leaf1 = Scalar::from(1u32);
+		let leaf2 = Scalar::from(2u32);
+		let leaf3 = Scalar::from(3u32);
+
+		tree.add_leaf(leaf1.to_bytes());
+		let node1 = Data::hash(Data(leaf1), Data(leaf1), &tree.hasher);
+		let level0 = vec![Data(leaf1)];
+		let level1 = vec![node1];
+		assert_eq!(tree.levels, vec![level0, level1]);
+
+		tree.add_leaf(leaf2.to_bytes());
+		let node1 = Data::hash(Data(leaf1), Data(leaf2), &tree.hasher);
+		let level0 = vec![Data(leaf1), Data(leaf2)];
+		let level1 = vec![node1];
+		assert_eq!(tree.levels, vec![level0, level1]);
+
+		tree.add_leaf(leaf3.to_bytes());
+		let node1 = Data::hash(Data(leaf1), Data(leaf2), &tree.hasher);
+		let node2 = Data::hash(Data(leaf3), Data(leaf3), &tree.hasher);
+		let level0 = vec![Data(leaf1), Data(leaf2), Data(leaf3)];
+		let level1 = vec![node1, node2];
+
+		assert_eq!(tree.levels, vec![level0, level1]);
+	}
+
+	#[test]
+	fn should_have_correct_state() {
+		let mut tree = MerkleClient::new(2);
+		let leaf1 = Scalar::from(1u32);
+		let leaf2 = Scalar::from(2u32);
+		let leaf3 = Scalar::from(3u32);
+
+		tree.add_leaf(leaf1.to_bytes());
+		let node1 = Data::hash(Data(leaf1), Data(leaf1), &tree.hasher);
+		let edge_nodes = vec![Data(leaf1), node1];
+		let last_state = tree.states.get(&tree.curr_root).unwrap();
+		assert_eq!(edge_nodes, last_state.edge_nodes);
+
+		tree.add_leaf(leaf2.to_bytes());
+		let node1 = Data::hash(Data(leaf1), Data(leaf2), &tree.hasher);
+		let edge_nodes = vec![Data(leaf1), node1];
+		let last_state = tree.states.get(&tree.curr_root).unwrap();
+		assert_eq!(edge_nodes, last_state.edge_nodes);
+
+		tree.add_leaf(leaf3.to_bytes());
+		let node1 = Data::hash(Data(leaf1), Data(leaf2), &tree.hasher);
+		let edge_nodes = vec![Data(leaf3), node1];
+		let last_state = tree.states.get(&tree.curr_root).unwrap();
+		assert_eq!(edge_nodes, last_state.edge_nodes);
 	}
 }
