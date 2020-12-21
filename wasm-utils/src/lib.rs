@@ -1,4 +1,3 @@
-use curve25519_dalek::scalar::Scalar;
 use pallet_merkle::merkle::keys::Data;
 use pallet_merkle::merkle::poseidon::Poseidon;
 use std::collections::hash_map::HashMap;
@@ -14,6 +13,11 @@ extern "C" {
 	fn getItem(key: &str);
 }
 
+#[wasm_bindgen]
+pub fn greet() {
+	log("Hello from rust");
+}
+
 pub struct TreeState {
 	edge_nodes: Vec<Data>,
 	leaf_count: usize,
@@ -22,21 +26,32 @@ pub struct TreeState {
 #[wasm_bindgen]
 pub struct MerkleClient {
 	curr_root: Data,
-	states: HashMap<Scalar, TreeState>,
+	states: HashMap<Data, TreeState>,
 	leaves: Vec<Data>,
 	levels: Vec<Vec<Data>>,
 	hasher: Poseidon,
+	max_leaves: u32,
 }
 
 #[wasm_bindgen]
 impl MerkleClient {
 	pub fn new(num_levels: usize) -> Self {
+		assert!(num_levels < 32 && num_levels > 0, "Invalid tree height!");
+		let max_levels = 32;
+		let init_root = Data::zero();
+		let init_tree_state = TreeState {
+			edge_nodes: vec![Data::zero(); num_levels],
+			leaf_count: 0,
+		};
+		let mut init_states = HashMap::new();
+		init_states.insert(init_root, init_tree_state);
 		Self {
-			curr_root: Data::zero(),
-			states: HashMap::new(),
-			leaves: vec![Data::zero(); num_levels],
+			curr_root: init_root,
+			states: init_states,
+			leaves: Vec::new(),
 			levels: vec![Vec::new(); num_levels],
 			hasher: Poseidon::new(4),
+			max_leaves: u32::MAX >> (max_levels - num_levels),
 		}
 	}
 
@@ -50,33 +65,58 @@ impl MerkleClient {
 
 impl MerkleClient {
 	pub fn add_leaf(&mut self, leaf: [u8; 32]) {
-		let curr_state = self.states.get(&self.curr_root.0).unwrap();
+		assert!(
+			self.leaves.len() < self.max_leaves as usize,
+			"Tree is already full!"
+		);
+		let curr_state = self.states.get(&self.curr_root).unwrap();
 
 		let mut new_state = TreeState {
 			edge_nodes: curr_state.edge_nodes.clone(),
 			leaf_count: curr_state.leaf_count + 1,
 		};
 		let mut edge_index = curr_state.leaf_count;
-		let data = Data(Scalar::from_bytes_mod_order(leaf));
-		let mut pair_hash = data;
+		let data = Data::from(leaf);
+		let mut pair_hash = data.clone();
 
-		for (i, node) in curr_state.edge_nodes.iter().enumerate() {
+		for i in 0..curr_state.edge_nodes.len() {
 			if edge_index % 2 == 0 {
 				new_state.edge_nodes[i] = pair_hash;
 			}
-			pair_hash = Data::hash(*node, pair_hash, &self.hasher);
+
+			let hash = new_state.edge_nodes[i];
+			pair_hash = Data::hash(hash, pair_hash, &self.hasher);
 			let level = self.levels.get_mut(i).unwrap();
 			level.push(pair_hash);
 
 			edge_index /= 2;
 		}
 
+		self.curr_root = pair_hash;
 		self.leaves.push(data);
-		self.states.insert(pair_hash.0, new_state);
+		self.states.insert(pair_hash, new_state);
 	}
 }
 
-#[wasm_bindgen]
-pub fn greet() {
-	log("Hello from rust");
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use curve25519_dalek::scalar::Scalar;
+	use pallet_merkle::merkle::keys::Data;
+	#[test]
+	fn should_make_tree() {
+		let mut tree = MerkleClient::new(2);
+		let leaf1 = Scalar::from(1u32);
+		let leaf2 = Scalar::from(2u32);
+		let leaf3 = Scalar::from(3u32);
+		tree.add_leaf(leaf1.to_bytes());
+		tree.add_leaf(leaf2.to_bytes());
+		tree.add_leaf(leaf3.to_bytes());
+
+		let node1 = Data::hash(Data(leaf1), Data(leaf2), &tree.hasher);
+		let node2 = Data::hash(Data(leaf3), Data(leaf3), &tree.hasher);
+		let root = Data::hash(node1, node2, &tree.hasher);
+
+		assert_eq!(tree.curr_root, root, "Invalid root!");
+	}
 }
