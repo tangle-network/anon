@@ -12,7 +12,7 @@ use curve25519_dalek::scalar::Scalar;
 pub struct Commitment(pub CompressedRistretto);
 #[derive(Eq, PartialEq, Clone, Default, Debug, Copy)]
 pub struct PrivateKey(pub Scalar);
-#[derive(Eq, PartialEq, Clone, Default, Debug, Copy)]
+#[derive(Eq, PartialEq, Clone, Default, Debug, Copy, Hash)]
 pub struct Data(pub Scalar);
 
 pub const SIZE: usize = 32;

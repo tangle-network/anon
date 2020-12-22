@@ -8,4 +8,5 @@ members = [
 	"pallets/merkle",
 	"pallets/mixer",
 	"runtime",
+	"wasm-utils"
 ]

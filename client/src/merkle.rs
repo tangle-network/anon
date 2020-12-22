@@ -1,16 +1,49 @@
 use crate::substrate_subxt::system::SystemEventsDecoder;
 use codec::{Decode, Encode};
+use frame_support::traits::Get;
+use frame_support::Parameter;
 use pallet_merkle::merkle::keys::{Commitment, Data};
+use sp_runtime::traits::AtLeast32Bit;
 use std::marker::PhantomData;
 use substrate_subxt::balances::{Balances, BalancesEventsDecoder};
 use substrate_subxt::system::System;
 use substrate_subxt::{Call, Store};
 
 type GroupId = u32;
+#[derive(Default, Eq, PartialEq, Encode, Decode)]
+pub struct MaxTreeDepth;
+
+impl Get<u8> for MaxTreeDepth {
+	fn get() -> u8 {
+		32
+	}
+}
+
+#[derive(Default, Eq, PartialEq, Encode, Decode)]
+pub struct CacheBlockLength;
+
+impl Get<u32> for CacheBlockLength {
+	fn get() -> u32 {
+		100
+	}
+}
 
 #[module]
 pub trait Merkle: Balances + System {
 	type Data: Encode + Decode + PartialEq + Eq + Default + Send + Sync + 'static;
+	type GroupId: Parameter + AtLeast32Bit + Default + Copy + Send + 'static;
+	/// The max depth of trees
+	type MaxTreeDepth: Get<u8> + Default + Send + Encode + Decode + PartialEq + Eq + Sync + 'static;
+	/// The amount of blocks to cache roots over
+	type CacheBlockLength: Get<Self::BlockNumber>
+		+ Default
+		+ Send
+		+ Encode
+		+ Decode
+		+ PartialEq
+		+ Eq
+		+ Sync
+		+ 'static;
 }
 
 #[derive(Clone, Encode, Decode)]
@@ -24,9 +57,9 @@ pub struct GroupTree<T: Merkle> {
 
 #[derive(Clone, Debug, PartialEq, Call, Encode)]
 pub struct CreateGroupCall<T: Merkle> {
-	group_id: GroupId,
-	_fee: Option<T::Balance>,
+	r_is_mgr: bool,
 	_depth: Option<u32>,
+	pub _runtime: PhantomData<T>,
 }
 
 #[derive(Clone, Debug, PartialEq, Call, Encode)]

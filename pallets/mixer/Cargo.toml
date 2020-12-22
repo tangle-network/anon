@@ -43,6 +43,7 @@ sp-io = { default-features = false, version = '2.0.0' }
 [features]
 default = ['std']
 std = [
+	"pallet-merkle/std",
     'codec/std',
     'frame-support/std',
     'frame-system/std',
