@@ -94,7 +94,7 @@ impl MerkleClient {
 			if edge_index % 2 == 0 {
 				new_state.edge_nodes[i] = pair_hash;
 			}
-			// Push new node one current level or replace the last one
+			// Push new node on the current level or replace the last one
 			if edge_index >= level.len() {
 				level.push(pair_hash);
 			} else {
