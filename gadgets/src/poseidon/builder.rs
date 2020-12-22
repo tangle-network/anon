@@ -39,11 +39,11 @@ pub type Matrix = Vec<Vec<Scalar>>;
 pub struct Poseidon {
 	/// The size of the permutation, in field elements.
 	pub width: usize,
-    /// Number of full SBox rounds in beginning
-    pub full_rounds_beginning: usize,
-    /// Number of full SBox rounds in end
-    pub full_rounds_end: usize,
-    /// Number of partial rounds
+	/// Number of full SBox rounds in beginning
+	pub full_rounds_beginning: usize,
+	/// Number of full SBox rounds in end
+	pub full_rounds_end: usize,
+	/// Number of partial rounds
 	pub partial_rounds: usize,
 	/// The S-box to apply in the sub words layer.
 	pub sbox: PoseidonSbox,
@@ -63,11 +63,11 @@ pub struct Poseidon {
 pub struct PoseidonBuilder {
 	/// The size of the permutation, in field elements.
 	width: usize,
-    /// Number of full SBox rounds in beginning
-    pub full_rounds_beginning: Option<usize>,
-    /// Number of full SBox rounds in end
-    pub full_rounds_end: Option<usize>,
-    /// Number of partial rounds
+	/// Number of full SBox rounds in beginning
+	pub full_rounds_beginning: Option<usize>,
+	/// Number of full SBox rounds in end
+	pub full_rounds_end: Option<usize>,
+	/// Number of partial rounds
 	pub partial_rounds: Option<usize>,
 	/// The S-box to apply in the sub words layer.
 	sbox: Option<PoseidonSbox>,
@@ -89,8 +89,8 @@ impl PoseidonBuilder {
 	pub fn new(width: usize) -> Self {
 		PoseidonBuilder {
 			width,
-		    full_rounds_beginning: None,
-		    full_rounds_end: None,
+			full_rounds_beginning: None,
+			full_rounds_end: None,
 			partial_rounds: None,
 			sbox: None,
 			security_bits: None,
@@ -126,12 +126,12 @@ impl PoseidonBuilder {
 			r_keys.len()
 		};
 		assert!(cap <= r_keys.len());
-        let mut rc = vec![];
-        for i in 0..cap {
-            // TODO: Remove unwrap, handle error
-            let c = get_scalar_from_hex(&r_keys[i]);
-            rc.push(c);
-        }
+		let mut rc = vec![];
+		for i in 0..cap {
+			// TODO: Remove unwrap, handle error
+			let c = get_scalar_from_hex(&r_keys[i]);
+			rc.push(c);
+		}
 		self.round_keys = Some(rc);
 
 		self
@@ -209,54 +209,54 @@ impl PoseidonBuilder {
 
 impl Poseidon {
 	pub fn get_total_rounds(&self) -> usize {
-        self.full_rounds_beginning + self.partial_rounds + self.full_rounds_end
-    }
+		self.full_rounds_beginning + self.partial_rounds + self.full_rounds_end
+	}
 
-    #[cfg(feature="std")]
+	#[cfg(feature="std")]
 	pub fn prove_hash_2<C: CryptoRng + RngCore>(&self, xl: Scalar, xr: Scalar, output: Scalar, mut rng: &mut C) {
 		let total_rounds = self.get_total_rounds();
-	    let (_proof, _commitments) = {
-	        let mut prover_transcript = Transcript::new(self.transcript_label);
-	        let mut prover = Prover::new(&self.pc_gens, &mut prover_transcript);
+		let (_proof, _commitments) = {
+			let mut prover_transcript = Transcript::new(self.transcript_label);
+			let mut prover = Prover::new(&self.pc_gens, &mut prover_transcript);
 
-	        let mut comms = vec![];
+			let mut comms = vec![];
 
-	        let (com_l, var_l) = prover.commit(xl.clone(), Scalar::random(&mut rng));
-	        comms.push(com_l);
-	        let l_alloc = AllocatedScalar {
-	            variable: var_l,
-	            assignment: Some(xl),
-	        };
+			let (com_l, var_l) = prover.commit(xl.clone(), Scalar::random(&mut rng));
+			comms.push(com_l);
+			let l_alloc = AllocatedScalar {
+				variable: var_l,
+				assignment: Some(xl),
+			};
 
-	        let (com_r, var_r) = prover.commit(xr.clone(), Scalar::random(&mut rng));
-	        comms.push(com_r);
-	        let r_alloc = AllocatedScalar {
-	            variable: var_r,
-	            assignment: Some(xr),
-	        };
+			let (com_r, var_r) = prover.commit(xr.clone(), Scalar::random(&mut rng));
+			comms.push(com_r);
+			let r_alloc = AllocatedScalar {
+				variable: var_r,
+				assignment: Some(xr),
+			};
 
-	        let num_statics = 4;
-	        let statics = allocate_statics_for_prover(&mut prover, num_statics);
+			let num_statics = 4;
+			let statics = allocate_statics_for_prover(&mut prover, num_statics);
 
-	        let start = Instant::now();
-	        assert!(Poseidon_hash_2_gadget(
-	        	&mut prover,
-	        	l_alloc,
-	        	r_alloc,
-	        	statics,
-	        	&self,
-	        	&output
-	        ).is_ok());
+			let start = Instant::now();
+			assert!(Poseidon_hash_2_gadget(
+				&mut prover,
+				l_alloc,
+				r_alloc,
+				statics,
+				&self,
+				&output
+			).is_ok());
 
-	        println!("For Poseidon hash 2:1 rounds {}, no of constraints is {}, no of multipliers is {}", total_rounds, &prover.num_constraints(), &prover.num_multipliers());
+			println!("For Poseidon hash 2:1 rounds {}, no of constraints is {}, no of multipliers is {}", total_rounds, &prover.num_constraints(), &prover.num_multipliers());
 
-	        let proof = prover.prove_with_rng(&self.bp_gens, &mut rng).unwrap();
+			let proof = prover.prove_with_rng(&self.bp_gens, &mut rng).unwrap();
 
-	        let end = start.elapsed();
+			let end = start.elapsed();
 
-	        println!("Proving time is {:?}", end);
-	        (proof, comms)
-	    };
+			println!("Proving time is {:?}", end);
+			(proof, comms)
+		};
 	}
 }
 
@@ -281,19 +281,19 @@ pub fn gen_round_keys(width: usize, total_rounds: usize) -> Vec<Scalar> {
 		constants_3::ROUND_CONSTS.to_vec()
 	};
 
-    let cap = total_rounds * width;
-    /*let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);
-    vec![Scalar::random(&mut test_rng); cap]*/
-    if ROUND_CONSTS.len() < cap {
-        panic!("Not enough round constants, need {}, found {}", cap, ROUND_CONSTS.len());
-    }
-    let mut rc = vec![];
-    for i in 0..cap {
-        // TODO: Remove unwrap, handle error
-        let c = get_scalar_from_hex(ROUND_CONSTS[i]);
-        rc.push(c);
-    }
-    rc
+	let cap = total_rounds * width;
+	/*let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);
+	vec![Scalar::random(&mut test_rng); cap]*/
+	if ROUND_CONSTS.len() < cap {
+		panic!("Not enough round constants, need {}, found {}", cap, ROUND_CONSTS.len());
+	}
+	let mut rc = vec![];
+	for i in 0..cap {
+		// TODO: Remove unwrap, handle error
+		let c = get_scalar_from_hex(ROUND_CONSTS[i]);
+		rc.push(c);
+	}
+	rc
 }
 
 // TODO: Write logic to generate correct MDS matrix. Currently loading hardcoded constants.
@@ -316,20 +316,20 @@ pub fn gen_mds_matrix(width: usize) -> Vec<Vec<Scalar>> {
 		constants_3::MDS_ENTRIES.to_vec().iter().map(|v| v.to_vec()).collect()
 	};
 
-    /*let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);
-    vec![vec![Scalar::random(&mut test_rng); width]; width]*/
-    if MDS_ENTRIES.len() != width {
-        panic!("Incorrect width, only width {} is supported now", width);
-    }
-    let mut mds: Vec<Vec<Scalar>> = vec![vec![Scalar::zero(); width]; width];
-    for i in 0..width {
-        if MDS_ENTRIES[i].len() != width {
-            panic!("Incorrect width, only width {} is supported now", width);
-        }
-        for j in 0..width {
-            // TODO: Remove unwrap, handle error
-            mds[i][j] = get_scalar_from_hex(MDS_ENTRIES[i][j]);
-        }
-    }
-    mds
+	/*let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);
+	vec![vec![Scalar::random(&mut test_rng); width]; width]*/
+	if MDS_ENTRIES.len() != width {
+		panic!("Incorrect width, only width {} is supported now", width);
+	}
+	let mut mds: Vec<Vec<Scalar>> = vec![vec![Scalar::zero(); width]; width];
+	for i in 0..width {
+		if MDS_ENTRIES[i].len() != width {
+			panic!("Incorrect width, only width {} is supported now", width);
+		}
+		for j in 0..width {
+			// TODO: Remove unwrap, handle error
+			mds[i][j] = get_scalar_from_hex(MDS_ENTRIES[i][j]);
+		}
+	}
+	mds
 }

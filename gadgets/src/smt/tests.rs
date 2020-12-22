@@ -4,7 +4,7 @@ use crate::poseidon::gen_mds_matrix;
 use crate::poseidon::sbox::PoseidonSbox;
 use super::binary_smt::*;
 use rand::rngs::StdRng;
-use crate::poseidon::builder::Poseidon;
+
 use curve25519_dalek::scalar::Scalar;
 use bulletproofs::r1cs::{Prover, Verifier};
 use bulletproofs::{BulletproofGens, PedersenGens};
@@ -15,7 +15,7 @@ use crate::utils::{get_bits};
 use crate::utils::{AllocatedScalar};
 // use crate::gadget_mimc::{mimc, MIMC_ROUNDS, mimc_hash_2, mimc_gadget};
 use crate::poseidon::{
-    allocate_statics_for_prover, allocate_statics_for_verifier
+	allocate_statics_for_prover, allocate_statics_for_verifier
 };
 
 use crate::smt::binary_smt::VanillaSparseMerkleTree;
@@ -32,11 +32,11 @@ fn test_vanilla_sparse_merkle_tree() {
 	let (full_b, full_e) = (4, 4);
 	let partial_rounds = 57;
 	let p_params = PoseidonBuilder::new(width)
-        .num_rounds(full_b, full_e, partial_rounds)
-        .round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
-        .mds_matrix(gen_mds_matrix(width))
-        .sbox(PoseidonSbox::Inverse)
-        .build();
+		.num_rounds(full_b, full_e, partial_rounds)
+		.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
+		.mds_matrix(gen_mds_matrix(width))
+		.sbox(PoseidonSbox::Inverse)
+		.build();
 
 	let mut tree = VanillaSparseMerkleTree::new(&p_params);
 
@@ -75,11 +75,11 @@ fn test_vsmt_verif() {
 	let partial_rounds = 57;
 	let total_rounds = full_b + partial_rounds + full_e;
 	let p_params = PoseidonBuilder::new(width)
-        .num_rounds(full_b, full_e, partial_rounds)
-        .round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
-        .mds_matrix(gen_mds_matrix(width))
-        .sbox(PoseidonSbox::Inverse)
-        .build();
+		.num_rounds(full_b, full_e, partial_rounds)
+		.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
+		.mds_matrix(gen_mds_matrix(width))
+		.sbox(PoseidonSbox::Inverse)
+		.build();
 	let mut tree = VanillaSparseMerkleTree::new(&p_params);
 
 	for i in 1..=10 {
