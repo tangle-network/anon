@@ -4,10 +4,9 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"wasm-build": "cd wasm-utils/ && wasm-pack build",
-		"dev": "npm run wasm-build && next dev",
+		"dev": "next dev",
 		"build": "next build",
-		"export": "npm run wasm-build && npm run build && next export",
+		"export": "npm run build && next export",
 		"start": "next start"
 	},
 	"author": "",
