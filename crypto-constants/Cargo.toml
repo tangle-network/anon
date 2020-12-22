@@ -2,6 +2,7 @@
 name = "crypto-constants"
 version = "0.1.0"
 authors = ["Drew Stone <drewstone329@gmail.com>"]
+description = "Crypto constants generated and taken from parts of the web"
 edition = "2018"
 
 [package.metadata.docs.rs]

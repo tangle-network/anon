@@ -1,3 +1,4 @@
+// These constants were taken from https://github.com/iden3/circomlib/blob/master/circuits/poseidon_constants.circom
 pub mod constants_2;
 pub mod constants_3;
 pub mod constants_4;
