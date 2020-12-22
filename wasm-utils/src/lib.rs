@@ -108,7 +108,65 @@ impl MerkleClient {
 		}
 
 		self.curr_root = pair_hash;
+		self.leaf_indices.insert(data, curr_state.leaf_count);
 		self.states.insert(pair_hash, new_state);
+	}
+
+	pub fn prove(&self, root_bytes: [u8; 32], leaf_bytes: [u8; 32]) -> Vec<(bool, [u8; 32])> {
+		let root = Data::from(root_bytes);
+		let leaf = Data::from(leaf_bytes);
+		assert!(self.states.contains_key(&root), "Root not found!");
+		assert!(self.leaf_indices.contains_key(&leaf), "Leaf not found!");
+
+		let state = self.states.get(&root).unwrap();
+		let mut last_index = state.leaf_count - 1;
+		let mut node_index = self.leaf_indices.get(&leaf).cloned().unwrap();
+
+		assert!(
+			node_index <= last_index,
+			"Current tree state doesn't contain specified leaf."
+		);
+		let mut path = Vec::new();
+		for (i, level) in self.levels.iter().enumerate() {
+			let is_left = node_index % 2 == 0;
+			let node = match is_left {
+				true => {
+					if node_index == last_index {
+						state.edge_nodes[i]
+					} else {
+						level[node_index + 1]
+					}
+				}
+				false => level[node_index - 1],
+			};
+
+			path.push((is_left, node.0.to_bytes()));
+			node_index /= 2;
+			last_index /= 2;
+		}
+
+		path
+	}
+
+	// Mostly used for testing purposes
+	pub fn verify(
+		&self,
+		root_bytes: [u8; 32],
+		leaf_bytes: [u8; 32],
+		path: Vec<(bool, [u8; 32])>,
+	) -> bool {
+		let root = Data::from(root_bytes);
+		let mut hash = Data::from(leaf_bytes);
+		for (right, bytes) in path {
+			let pair = Data::from(bytes);
+
+			hash = if right {
+				Data::hash(hash, pair, &self.hasher)
+			} else {
+				Data::hash(pair, hash, &self.hasher)
+			}
+		}
+		root == hash
 	}
 }
 
@@ -120,23 +178,23 @@ mod tests {
 	#[test]
 	fn should_have_correct_root() {
 		let mut tree = MerkleClient::new(2);
-		let leaf1 = Scalar::from(1u32);
-		let leaf2 = Scalar::from(2u32);
-		let leaf3 = Scalar::from(3u32);
+		let leaf1 = Data(Scalar::from(1u32));
+		let leaf2 = Data(Scalar::from(2u32));
+		let leaf3 = Data(Scalar::from(3u32));
 
-		tree.add_leaf(leaf1.to_bytes());
-		let node1 = Data::hash(Data(leaf1), Data(leaf1), &tree.hasher);
+		tree.add_leaf(leaf1.0.to_bytes());
+		let node1 = Data::hash(leaf1, leaf1, &tree.hasher);
 		let root = Data::hash(node1, node1, &tree.hasher);
 		assert_eq!(tree.curr_root, root);
 
-		tree.add_leaf(leaf2.to_bytes());
-		let node1 = Data::hash(Data(leaf1), Data(leaf2), &tree.hasher);
+		tree.add_leaf(leaf2.0.to_bytes());
+		let node1 = Data::hash(leaf1, leaf2, &tree.hasher);
 		let root = Data::hash(node1, node1, &tree.hasher);
 		assert_eq!(tree.curr_root, root);
 
-		tree.add_leaf(leaf3.to_bytes());
-		let node1 = Data::hash(Data(leaf1), Data(leaf2), &tree.hasher);
-		let node2 = Data::hash(Data(leaf3), Data(leaf3), &tree.hasher);
+		tree.add_leaf(leaf3.0.to_bytes());
+		let node1 = Data::hash(leaf1, leaf2, &tree.hasher);
+		let node2 = Data::hash(leaf3, leaf3, &tree.hasher);
 		let root = Data::hash(node1, node2, &tree.hasher);
 
 		assert_eq!(tree.curr_root, root);
@@ -145,26 +203,26 @@ mod tests {
 	#[test]
 	fn should_have_correct_levels() {
 		let mut tree = MerkleClient::new(2);
-		let leaf1 = Scalar::from(1u32);
-		let leaf2 = Scalar::from(2u32);
-		let leaf3 = Scalar::from(3u32);
+		let leaf1 = Data(Scalar::from(1u32));
+		let leaf2 = Data(Scalar::from(2u32));
+		let leaf3 = Data(Scalar::from(3u32));
 
-		tree.add_leaf(leaf1.to_bytes());
-		let node1 = Data::hash(Data(leaf1), Data(leaf1), &tree.hasher);
-		let level0 = vec![Data(leaf1)];
+		tree.add_leaf(leaf1.0.to_bytes());
+		let node1 = Data::hash(leaf1, leaf1, &tree.hasher);
+		let level0 = vec![leaf1];
 		let level1 = vec![node1];
 		assert_eq!(tree.levels, vec![level0, level1]);
 
-		tree.add_leaf(leaf2.to_bytes());
-		let node1 = Data::hash(Data(leaf1), Data(leaf2), &tree.hasher);
-		let level0 = vec![Data(leaf1), Data(leaf2)];
+		tree.add_leaf(leaf2.0.to_bytes());
+		let node1 = Data::hash(leaf1, leaf2, &tree.hasher);
+		let level0 = vec![leaf1, leaf2];
 		let level1 = vec![node1];
 		assert_eq!(tree.levels, vec![level0, level1]);
 
-		tree.add_leaf(leaf3.to_bytes());
-		let node1 = Data::hash(Data(leaf1), Data(leaf2), &tree.hasher);
-		let node2 = Data::hash(Data(leaf3), Data(leaf3), &tree.hasher);
-		let level0 = vec![Data(leaf1), Data(leaf2), Data(leaf3)];
+		tree.add_leaf(leaf3.0.to_bytes());
+		let node1 = Data::hash(leaf1, leaf2, &tree.hasher);
+		let node2 = Data::hash(leaf3, leaf3, &tree.hasher);
+		let level0 = vec![leaf1, leaf2, leaf3];
 		let level1 = vec![node1, node2];
 
 		assert_eq!(tree.levels, vec![level0, level1]);
@@ -173,26 +231,87 @@ mod tests {
 	#[test]
 	fn should_have_correct_state() {
 		let mut tree = MerkleClient::new(2);
-		let leaf1 = Scalar::from(1u32);
-		let leaf2 = Scalar::from(2u32);
-		let leaf3 = Scalar::from(3u32);
+		let leaf1 = Data(Scalar::from(1u32));
+		let leaf2 = Data(Scalar::from(2u32));
+		let leaf3 = Data(Scalar::from(3u32));
 
-		tree.add_leaf(leaf1.to_bytes());
-		let node1 = Data::hash(Data(leaf1), Data(leaf1), &tree.hasher);
-		let edge_nodes = vec![Data(leaf1), node1];
+		tree.add_leaf(leaf1.0.to_bytes());
+		let node1 = Data::hash(leaf1, leaf1, &tree.hasher);
+		let edge_nodes = vec![leaf1, node1];
 		let last_state = tree.states.get(&tree.curr_root).unwrap();
 		assert_eq!(edge_nodes, last_state.edge_nodes);
 
-		tree.add_leaf(leaf2.to_bytes());
-		let node1 = Data::hash(Data(leaf1), Data(leaf2), &tree.hasher);
-		let edge_nodes = vec![Data(leaf1), node1];
+		tree.add_leaf(leaf2.0.to_bytes());
+		let node1 = Data::hash(leaf1, leaf2, &tree.hasher);
+		let edge_nodes = vec![leaf1, node1];
 		let last_state = tree.states.get(&tree.curr_root).unwrap();
 		assert_eq!(edge_nodes, last_state.edge_nodes);
 
-		tree.add_leaf(leaf3.to_bytes());
-		let node1 = Data::hash(Data(leaf1), Data(leaf2), &tree.hasher);
-		let edge_nodes = vec![Data(leaf3), node1];
+		tree.add_leaf(leaf3.0.to_bytes());
+		let node1 = Data::hash(leaf1, leaf2, &tree.hasher);
+		let edge_nodes = vec![leaf3, node1];
 		let last_state = tree.states.get(&tree.curr_root).unwrap();
 		assert_eq!(edge_nodes, last_state.edge_nodes);
+	}
+
+	#[test]
+	fn should_make_correct_proof() {
+		let mut tree = MerkleClient::new(2);
+		let leaf1 = Data(Scalar::from(1u32));
+		let leaf2 = Data(Scalar::from(2u32));
+		let leaf3 = Data(Scalar::from(3u32));
+
+		tree.add_leaf(leaf1.0.to_bytes());
+		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf1.0.to_bytes());
+		let valid = tree.verify(
+			tree.curr_root.0.to_bytes(),
+			leaf1.0.to_bytes(),
+			path.clone(),
+		);
+		assert!(valid);
+
+		tree.add_leaf(leaf2.0.to_bytes());
+		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf2.0.to_bytes());
+		let valid = tree.verify(
+			tree.curr_root.0.to_bytes(),
+			leaf2.0.to_bytes(),
+			path.clone(),
+		);
+		assert!(valid);
+
+		tree.add_leaf(leaf3.0.to_bytes());
+		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf3.0.to_bytes());
+		let valid = tree.verify(
+			tree.curr_root.0.to_bytes(),
+			leaf3.0.to_bytes(),
+			path.clone(),
+		);
+		assert!(valid);
+	}
+
+	#[test]
+	fn should_not_verify_incorrect_proof() {
+		let mut tree = MerkleClient::new(2);
+		let leaf1 = Data(Scalar::from(1u32));
+		let leaf2 = Data(Scalar::from(2u32));
+		let leaf3 = Data(Scalar::from(3u32));
+
+		tree.add_leaf(leaf1.0.to_bytes());
+		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf1.0.to_bytes());
+		let valid = tree.verify(
+			tree.curr_root.0.to_bytes(),
+			leaf2.0.to_bytes(),
+			path.clone(),
+		);
+		assert!(!valid);
+
+		tree.add_leaf(leaf2.0.to_bytes());
+		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf1.0.to_bytes());
+		let valid = tree.verify(
+			tree.curr_root.0.to_bytes(),
+			leaf3.0.to_bytes(),
+			path.clone(),
+		);
+		assert!(!valid);
 	}
 }
