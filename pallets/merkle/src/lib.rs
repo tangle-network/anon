@@ -253,7 +253,7 @@ decl_module! {
 			group_id: T::GroupId,
 			leaf_com: Commitment,
 			path: Vec<(Commitment, Commitment)>,
-			s_com: Commitment,
+			r_com: Commitment,
 			nullifier: Data,
 			proof_bytes: Vec<u8>
 		) -> dispatch::DispatchResult {
@@ -263,7 +263,7 @@ decl_module! {
 				group_id,
 				leaf_com,
 				path,
-				s_com,
+				r_com,
 				nullifier,
 				proof_bytes,
 			)?;
@@ -284,7 +284,7 @@ decl_module! {
 			group_id: T::GroupId,
 			leaf_com: Commitment,
 			path: Vec<(Commitment, Commitment)>,
-			s_com: Commitment,
+			r_com: Commitment,
 			nullifier: Data,
 			proof_bytes: Vec<u8>
 		) -> dispatch::DispatchResult {
@@ -296,7 +296,7 @@ decl_module! {
 				group_id,
 				leaf_com,
 				path,
-				s_com,
+				r_com,
 				nullifier,
 				proof_bytes,
 			)?;
@@ -358,7 +358,7 @@ impl<T: Trait> Module<T> {
 		group_id: T::GroupId,
 		leaf_com: Commitment,
 		path: Vec<(Commitment, Commitment)>,
-		s_com: Commitment,
+		r_com: Commitment,
 		nullifier: Data,
 		proof_bytes: Vec<u8>
 	) -> Result<(), Error<T>> {
@@ -381,7 +381,7 @@ impl<T: Trait> Module<T> {
 			tree.root_hash,
 			leaf_com,
 			path,
-			s_com,
+			r_com,
 			nullifier,
 			proof_bytes,
 		)
@@ -397,7 +397,7 @@ impl<T: Trait> Module<T> {
 		group_id: T::GroupId,
 		leaf_com: Commitment,
 		path: Vec<(Commitment, Commitment)>,
-		s_com: Commitment,
+		r_com: Commitment,
 		nullifier: Data,
 		proof_bytes: Vec<u8>
 	) -> Result<(), Error<T>> {
@@ -423,7 +423,7 @@ impl<T: Trait> Module<T> {
 			tree.root_hash,
 			leaf_com,
 			path,
-			s_com,
+			r_com,
 			nullifier,
 			proof_bytes,
 		)
@@ -435,7 +435,7 @@ impl<T: Trait> Module<T> {
 		m_root: Data,
 		leaf_com: Commitment,
 		path: Vec<(Commitment, Commitment)>,
-		s_com: Commitment,
+		r_com: Commitment,
 		nullifier: Data,
 		proof_bytes: Vec<u8>
 	) -> Result<(), Error<T>>{
@@ -444,7 +444,7 @@ impl<T: Trait> Module<T> {
 		let mut verifier = Verifier::new(&mut verifier_transcript);
 
 		let var_leaf = verifier.commit(leaf_com.0);
-		let var_s = verifier.commit(s_com.0);
+		let var_s = verifier.commit(r_com.0);
 		let leaf_lc =
 			Data::constrain_verifier(&mut verifier, &pc_gens, var_s.into(), nullifier.0.into(), &h);
 		// Commited leaf value should be the same as calculated
