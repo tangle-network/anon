@@ -4,7 +4,10 @@ extern crate pallet_merkle;
 
 mod merkle;
 use crate::substrate_subxt::sp_runtime::traits::Hash;
-use merkle::{AddMembersCallExt, CreateGroupCallExt, Merkle, VerifyZkMembershipProofCallExt};
+use merkle::{
+	AddMembersCallExt, CacheBlockLength, CreateGroupCallExt, MaxTreeDepth, Merkle,
+	VerifyZkMembershipProofCallExt,
+};
 use pallet_merkle::merkle::helper::prove;
 use pallet_merkle::merkle::keys::Data;
 use pallet_merkle::merkle::poseidon::Poseidon;
@@ -16,6 +19,9 @@ use substrate_subxt::{ClientBuilder, NodeTemplateRuntime, PairSigner};
 
 impl Merkle for NodeTemplateRuntime {
 	type Data = Data;
+	type GroupId = u32;
+	type MaxTreeDepth = MaxTreeDepth;
+	type CacheBlockLength = CacheBlockLength;
 }
 
 #[async_std::main]
@@ -29,13 +35,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	// Create group
 	let start = Instant::now();
 	signer.set_nonce(0);
-	for group_id in 0..num_groups {
-		client.create_group(&signer, group_id, None, None).await?;
+	for _ in 0..num_groups {
+		client.create_group(&signer, false, None).await?;
 		signer.increment_nonce();
 	}
-	client
-		.create_group_and_watch(&signer, num_groups, None, None)
-		.await?;
+	client.create_group_and_watch(&signer, false, None).await?;
 	signer.increment_nonce();
 	let elapsed = start.elapsed();
 	println!("create group {:?}", elapsed);
