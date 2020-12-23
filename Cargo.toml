@@ -1,10 +1,12 @@
 [workspace]
 members = [
+	"client",
+	"crypto-constants",
+	"gadgets",
 	"node",
-	"runtime",
 	"pallets/clsag",
 	"pallets/merkle",
 	"pallets/mixer",
-	"client",
+	"runtime",
 	"wasm-utils"
 ]
