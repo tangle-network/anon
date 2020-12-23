@@ -10,6 +10,7 @@ edition = "2018"
 wasm-bindgen = {version = "0.2.69", features = ["serde-serialize"]}
 curve25519-dalek = "3.0.0"
 pallet-merkle = { path = "../pallets/merkle" }
+rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
