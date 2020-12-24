@@ -204,9 +204,12 @@ impl MerkleClient {
 
 		// First we create normal proof, then make zk proof against it
 		let path = self.prove(root_bytes, leaf_bytes);
+		let valid = self.verify(root_bytes, leaf_bytes, path.clone());
+		assert!(valid, "Could not make proof!");
 		let path_data: Vec<(bool, Data)> = path
 			.into_iter()
-			.map(|(side, d)| (side, Data::from(d)))
+			// Our gadget calculates the sides inversely
+			.map(|(side, d)| (!side, Data::from(d)))
 			.collect();
 
 		let zk_proof = prove_with_path(root, leaf, ld.nullifier, ld.r, path_data, &self.hasher);
@@ -354,10 +357,33 @@ mod tests {
 	#[test]
 	fn should_make_correct_zk_proof() {
 		let mut tree = MerkleClient::new(2);
-
 		let leaf1 = tree.deposit();
+		let leaf2 = tree.deposit();
+		let leaf3 = tree.deposit();
+
 		let proof = tree.prove_zk(tree.curr_root.0.to_bytes(), leaf1);
 		let valid = tree.verify_zk(tree.curr_root.0.to_bytes(), proof);
 		assert!(valid);
+
+		let proof = tree.prove_zk(tree.curr_root.0.to_bytes(), leaf2);
+		let valid = tree.verify_zk(tree.curr_root.0.to_bytes(), proof);
+		assert!(valid);
+
+		let proof = tree.prove_zk(tree.curr_root.0.to_bytes(), leaf3);
+		let valid = tree.verify_zk(tree.curr_root.0.to_bytes(), proof);
+		assert!(valid);
+	}
+
+	#[test]
+	fn should_not_verify_incorrect_zk_proof() {
+		let mut tree = MerkleClient::new(2);
+
+		tree.deposit();
+		let old_root = tree.curr_root;
+		tree.deposit();
+		let leaf = tree.deposit();
+		let proof = tree.prove_zk(tree.curr_root.0.to_bytes(), leaf);
+		let valid = tree.verify_zk(old_root.0.to_bytes(), proof);
+		assert!(!valid);
 	}
 }
