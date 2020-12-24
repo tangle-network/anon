@@ -25,26 +25,26 @@ features = ["u64_backend", "alloc"]
 version = "0.1.5"
 
 [dependencies]
-balances = { version = "2.0.0", default-features = false, package = "pallet-balances" }
-frame-support = { default-features = false, version = '2.0.0' }
-frame-system = { default-features = false, version = '2.0.0' }
-sp-std = { default-features = false, version = "2.0.0" }
-sp-runtime = { default-features = false, version = '2.0.0' }
-pallet-merkle = { path = "../merkle", default-features = false}
+balances = { version = "2.0.0", default-features = false, package = "pallet-balances", git = "https://github.com/paritytech/substrate.git" }
+frame-support = { default-features = false, version = '2.0.0', git = "https://github.com/paritytech/substrate.git" }
+frame-system = { default-features = false, version = '2.0.0', git = "https://github.com/paritytech/substrate.git" }
+sp-std = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-runtime = { default-features = false, version = '2.0.0', git = "https://github.com/paritytech/substrate.git" }
+merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
 
 rand = { version = "0.7", optional = true }
 
 [dev-dependencies]
-sp-core = { default-features = false, version = '2.0.0' }
-sp-io = { default-features = false, version = '2.0.0' }
+sp-core = { default-features = false, version = '2.0.0', git = "https://github.com/paritytech/substrate.git" }
+sp-io = { default-features = false, version = '2.0.0', git = "https://github.com/paritytech/substrate.git" }
 
 [features]
 default = ['std']
 std = [
-	"pallet-merkle/std",
     'codec/std',
     'frame-support/std',
     'frame-system/std',
+    "merkle/std",
     "rand/std",
     "rand"
 ]

@@ -15,9 +15,8 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
-use pallet_merkle::merkle::keys::Data;
-use sp_runtime::traits::One;
-use frame_support::traits::Get;
+use sp_runtime::traits::Zero;
+use merkle::merkle::keys::Data;
 use sp_runtime::traits::AtLeast32Bit;
 use frame_support::Parameter;
 use codec::{Decode, Encode};
@@ -26,24 +25,34 @@ use frame_system::ensure_signed;
 use sp_std::prelude::*;
 
 /// The pallet's configuration trait.
-pub trait Config: pallet_merkle::Config {
+pub trait Config: merkle::Config {
 	/// The overarching event type.
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 	/// The overarching group ID type
-	type MixerId: Self::GroupId;
+	type MixerId: Parameter + AtLeast32Bit + Default + Copy;
 }
 
 
-#[derive(Encode, Decode, PartialEq, Debug)]
-struct MixerInfo<T: Config> {
+#[derive(Encode, Decode, PartialEq)]
+pub struct MixerInfo<T: Config> {
 	pub minimum_deposit_length_for_reward: T::BlockNumber,
 	pub fixed_deposit_size: T::Balance,
 	pub leaves: Vec<Data>,
 }
 
+impl<T: Config> core::default::Default for MixerInfo<T> {
+	fn default() -> Self {
+		Self {
+			minimum_deposit_length_for_reward: Zero::zero(),
+			fixed_deposit_size: Zero::zero(),
+			leaves: Vec::new(),
+		}
+	}
+} 
+
 
 impl<T: Config> MixerInfo<T> {
-	pub fn new(mgr: T::AccountId, min_dep_length: T::BlockNumber, dep_size: T::Balance, leaves: Vec<Data>) -> Self {
+	pub fn new(min_dep_length: T::BlockNumber, dep_size: T::Balance, leaves: Vec<Data>) -> Self {
 		Self {
 			minimum_deposit_length_for_reward: min_dep_length,
 			fixed_deposit_size: dep_size,
@@ -55,7 +64,7 @@ impl<T: Config> MixerInfo<T> {
 // This pallet's storage items.
 decl_storage! {
 	trait Store for Module<T: Config> as MerkleGroups {
-		pub Initialised: bool;
+		pub Initialised get(fn initialised): bool;
 		/// The map of mixer groups to their metadata
 		pub MixerGroups get(fn mixer_groups): map hasher(blake2_128_concat) T::MixerId => MixerInfo<T>;
 		/// Map of used nullifiers (Data) for each tree.
@@ -100,7 +109,7 @@ decl_module! {
 		#[weight = 0]
 		pub fn deposit(origin, mixer_id: T::GroupId, data_points: Vec<Data>) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
-			let mixer = MixerGroups::<T>::get(mixer_id)?;
+			let mixer = <merkle::Module<T>>::get_group(mixer_id)?;
 			Ok(())
 		}
 
@@ -116,7 +125,7 @@ decl_module! {
 
 		#[weight = 0]
 		pub fn initialise(origin) -> dispatch::DispatchResult {
-			ensure!(!Initialised, Error::<T>::AlreadyInitialized);
+			ensure!(!Self::initialised(), Error::<T>::AlreadyInitialized);
 			let sender = ensure_signed(origin)?;
 			Initialised::set(true);
 			// create small mixer
