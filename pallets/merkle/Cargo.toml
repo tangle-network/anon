@@ -29,9 +29,9 @@ balances = { version = "2.0.0", default-features = false, package = "pallet-bala
 frame-support = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
 frame-system = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
 sp-std = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-runtime = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
 merlin = { version = "2.0.0", default-features = false }
 sha2 = { version = "0.9.1", default-features = false }
-sp-runtime = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
 rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
 bulletproofs = { version = "2.0.0", rev = "9ed295f", git = "https://github.com/edgeware-builders/bulletproofs", default-features = false, features = ["yoloproofs"] }
 rand = { version = "0.7", optional = true }

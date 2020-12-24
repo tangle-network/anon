@@ -63,7 +63,7 @@ impl<T: Config> MixerInfo<T> {
 
 // This pallet's storage items.
 decl_storage! {
-	trait Store for Module<T: Config> as MerkleGroups {
+	trait Store for Module<T: Config> as Mixer {
 		pub Initialised get(fn initialised): bool;
 		/// The map of mixer groups to their metadata
 		pub MixerGroups get(fn mixer_groups): map hasher(blake2_128_concat) T::MixerId => MixerInfo<T>;
