@@ -1,4 +1,5 @@
-pub mod binary_smt;
+pub mod builder;
+pub mod smt;
 
 #[cfg(test)]
 pub mod tests;

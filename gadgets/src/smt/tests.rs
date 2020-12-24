@@ -2,7 +2,7 @@ use crate::poseidon::PoseidonBuilder;
 use crate::poseidon::gen_round_keys;
 use crate::poseidon::gen_mds_matrix;
 use crate::poseidon::sbox::PoseidonSbox;
-use super::binary_smt::*;
+use super::smt::*;
 use rand::rngs::StdRng;
 
 use curve25519_dalek::scalar::Scalar;
@@ -18,7 +18,7 @@ use crate::poseidon::{
 	allocate_statics_for_prover, allocate_statics_for_verifier
 };
 
-use crate::smt::binary_smt::VanillaSparseMerkleTree;
+use crate::smt::smt::VanillaSparseMerkleTree;
 use rand::SeedableRng;
 use rand::rngs::OsRng;
 // For benchmarking
