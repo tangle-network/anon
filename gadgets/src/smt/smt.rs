@@ -11,7 +11,7 @@ use crate::utils::{AllocatedScalar, constrain_lc_with_scalar};
 use crate::poseidon::{Poseidon_hash_2, Poseidon_hash_2_constraints, PoseidonSbox};
 use crate::poseidon::builder::Poseidon;
 
-type DBVal = (Scalar, Scalar);
+pub type DBVal = (Scalar, Scalar);
 
 pub const TREE_DEPTH: usize = 30;
 
@@ -19,6 +19,7 @@ pub const TREE_DEPTH: usize = 30;
 
 pub struct VanillaSparseMerkleTree<'a> {
 	pub depth: usize,
+	empty_tree_hashes: Vec<Scalar>,
 	db: BTreeMap<ScalarBytes, DBVal>,
 	//hash_constants: &'a [Scalar],
 	hash_params: &'a Poseidon,
@@ -46,6 +47,7 @@ impl<'a> VanillaSparseMerkleTree<'a> {
 
 		VanillaSparseMerkleTree {
 			depth,
+			empty_tree_hashes,
 			db,
 			hash_params,
 			root
@@ -192,7 +194,7 @@ pub fn vanilla_merkle_merkle_tree_verif_gadget<CS: ConstraintSystem>(
 		let right = right_1 + right_2;
 
 		// prev_hash = mimc_hash_2::<CS>(cs, left, right, mimc_rounds, mimc_constants)?;
-		assert!(poseidon_params.sbox == PoseidonSbox::Inverse, "Asset sbox is inverse");
+		assert!(poseidon_params.sbox == PoseidonSbox::Inverse, "Assert sbox is inverse");
 		prev_hash = Poseidon_hash_2_constraints::<CS>(cs, left, right, statics.clone(), poseidon_params)?;
 	}
 

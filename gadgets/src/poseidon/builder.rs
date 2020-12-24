@@ -36,6 +36,7 @@ use curve25519_dalek::scalar::Scalar;
 pub type Matrix = Vec<Vec<Scalar>>;
 
 /// The Poseidon permutation.
+#[derive(Clone)]
 pub struct Poseidon {
 	/// The size of the permutation, in field elements.
 	pub width: usize,
