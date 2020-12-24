@@ -34,9 +34,9 @@ use rand_core::OsRng;
 use sp_std::prelude::*;
 
 /// The pallet's configuration trait.
-pub trait Trait: balances::Trait {
+pub trait Config: balances::Config {
 	/// The overarching event type.
-	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 	/// The overarching group ID type
 	type GroupId: Parameter + AtLeast32Bit + Default + Copy;
 	/// The max depth of trees
@@ -53,7 +53,7 @@ fn default_hasher() -> impl Hasher {
 
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Encode, Decode, PartialEq)]
-pub struct GroupTree<T: Trait> {
+pub struct GroupTree<T: Config> {
 	pub manager: T::AccountId,
 	pub requires_is_manager: bool,
 	pub leaf_count: u32,
@@ -62,7 +62,7 @@ pub struct GroupTree<T: Trait> {
 	pub edge_nodes: Vec<Data>,
 }
 
-impl<T: Trait> GroupTree<T> {
+impl<T: Config> GroupTree<T> {
 	pub fn new(mgr: T::AccountId, r_is_mgr: bool, depth: u8) -> Self {
 		Self {
 			manager: mgr,
@@ -77,7 +77,7 @@ impl<T: Trait> GroupTree<T> {
 
 // This pallet's storage items.
 decl_storage! {
-	trait Store for Module<T: Trait> as MerkleGroups {
+	trait Store for Module<T: Config> as MerkleGroups {
 		/// The next group identifier up for grabs
 		pub NextGroupId get(fn next_group_id): T::GroupId;
 		/// The map of groups to their metadata
@@ -96,8 +96,8 @@ decl_storage! {
 decl_event!(
 	pub enum Event<T>
 	where
-		AccountId = <T as frame_system::Trait>::AccountId,
-		GroupId = <T as Trait>::GroupId,
+		AccountId = <T as frame_system::Config>::AccountId,
+		GroupId = <T as Config>::GroupId,
 	{
 		NewMember(GroupId, AccountId, Vec<Data>),
 	}
@@ -105,7 +105,7 @@ decl_event!(
 
 // The pallet's errors
 decl_error! {
-	pub enum Error for Module<T: Trait> {
+	pub enum Error for Module<T: Config> {
 		/// Value was None
 		NoneValue,
 		///
@@ -142,7 +142,7 @@ decl_error! {
 // The pallet's dispatchable functions.
 decl_module! {
 	/// The module declaration.
-	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+	pub struct Module<T: Config> for enum Call where origin: T::Origin {
 		type Error = Error<T>;
 
 		fn deposit_event() = default;
@@ -325,7 +325,14 @@ decl_module! {
 	}
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
+	pub fn get_group(group_id: T::GroupId) -> Result<GroupTree<T>, Error<T>> {
+		match <Groups<T>>::get(group_id) {
+			Some(g) => Ok(g),
+			None => Err(Error::<T>::GroupDoesntExist),
+		}
+	}
+
 	pub fn is_manager_required(sender: T::AccountId, tree: &GroupTree<T>) -> bool {
 		if tree.requires_is_manager {
 			return sender == tree.manager;

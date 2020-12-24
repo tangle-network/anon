@@ -2,10 +2,8 @@
 authors = ['Drew Stone <drew@commonwealth.im>, Filip Lazovic']
 description = 'Pallet for mixing native assets in a zero-knowledge mixer'
 edition = '2018'
-homepage = 'https://substrate.dev'
 license = 'Unlicense'
 name = 'pallet-mixer'
-repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
 version = '2.0.0'
 
 [package.metadata.docs.rs]
