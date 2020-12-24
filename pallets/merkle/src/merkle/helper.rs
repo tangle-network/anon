@@ -70,7 +70,7 @@ pub fn prove<H: Hasher>(h: &H) -> (Data, Data, ZkProof) {
 		path.push((true, hash));
 		hash = Data::hash(hash, hash, h);
 	}
-	let zk_proof = prove_with_path(hash, leaf, nullifier, r, path, h);
+	let zk_proof = prove_with_path(hash, leaf, nullifier, r, path, h).unwrap();
 
 	(leaf, hash, zk_proof)
 }
@@ -82,7 +82,7 @@ pub fn prove_with_path<H: Hasher>(
 	r: Scalar,
 	path: Vec<(bool, Data)>,
 	h: &H,
-) -> ZkProof {
+) -> Result<ZkProof, R1CSError> {
 	let pc_gens = PedersenGens::default();
 	let bp_gens = BulletproofGens::new(4096, 1);
 
@@ -103,15 +103,15 @@ pub fn prove_with_path<H: Hasher>(
 	}
 	prover.constrain(hash_lc - root.0);
 
-	let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
+	let proof = prover.prove_with_rng(&bp_gens, &mut test_rng)?;
 
-	ZkProof {
+	Ok(ZkProof {
 		leaf_com: Commitment(leaf_com),
 		path: zk_path,
 		r_com: Commitment(r_com),
 		nullifier: Data(nullifier),
 		bytes: proof.to_bytes(),
-	}
+	})
 }
 
 pub fn verify<H: Hasher>(root_hash: Data, zk_proof: ZkProof, h: &H) -> Result<(), R1CSError> {
