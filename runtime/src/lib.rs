@@ -5,7 +5,7 @@
 // Make the WASM binary available.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
-
+use sp_runtime::ModuleId;
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use sp_api::impl_runtime_apis;
@@ -278,11 +278,6 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
-impl mixer::Config for Runtime {
-	type Event = Event;
-	type MixerId = u32;
-}
-
 parameter_types! {
 	pub const MaxTreeDepth: u8 = 32;
 	pub const CacheBlockLength: BlockNumber = 100;
@@ -294,6 +289,21 @@ impl merkle::Config for Runtime {
 	type MaxTreeDepth = MaxTreeDepth;
 	type CacheBlockLength = CacheBlockLength;
 }
+
+parameter_types! {
+	pub const MixerModuleId: ModuleId = ModuleId(*b"py/mixer");
+	pub const MinimumDepositLength: BlockNumber = 10 * 60 * 24 * 28;
+}
+
+impl mixer::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type ModuleId = MixerModuleId;
+	type Group = Merkle;
+	type MaxTreeDepth = MaxTreeDepth;
+	type DepositLength = MinimumDepositLength;
+}
+
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(

@@ -1,3 +1,4 @@
+use sp_std::vec::Vec;
 use bulletproofs::BulletproofGens;
 use bulletproofs::PedersenGens;
 pub use frame_support::dispatch;
