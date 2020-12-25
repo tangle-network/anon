@@ -35,6 +35,8 @@ merkle = { package = "pallet-merkle", path = "../merkle", default-features = fal
 rand = { version = "0.7", optional = true }
 
 [dev-dependencies]
+merlin = { version = "2.0.0", default-features = false }
+bulletproofs = { version = "2.0.0", rev = "9ed295f", git = "https://github.com/edgeware-builders/bulletproofs", default-features = false, features = ["yoloproofs"] }
 sp-core = { default-features = false, version = '2.0.0', git = "https://github.com/paritytech/substrate.git" }
 sp-io = { default-features = false, version = '2.0.0', git = "https://github.com/paritytech/substrate.git" }
 
@@ -42,6 +44,7 @@ sp-io = { default-features = false, version = '2.0.0', git = "https://github.com
 default = ['std']
 std = [
     'codec/std',
+    'balances/std',
     'frame-support/std',
     'frame-system/std',
     "merkle/std",

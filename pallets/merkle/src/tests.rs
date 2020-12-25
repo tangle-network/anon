@@ -1,4 +1,3 @@
-// Tests to be written here
 use super::*;
 use crate::merkle::hasher::Hasher;
 use crate::merkle::helper::{commit_leaf, commit_path_level, leaf_data};
@@ -514,71 +513,17 @@ fn should_verify_simple_zk_proof_of_membership() {
 
 		let path = vec![(Commitment(bit_com), Commitment(leaf_com2))];
 
+		let root = MerkleGroups::get_merkle_root(0);
 		assert_ok!(MerkleGroups::verify_zk_membership_proof(
-			Origin::signed(1),
 			0,
+			0,
+			root.unwrap(),
 			Commitment(leaf_com1),
 			path,
 			Commitment(s_com),
 			Data(nullifier),
 			proof.to_bytes(),
 		));
-	});
-}
-
-#[test]
-fn should_not_use_nullifier_more_than_once() {
-	new_test_ext().execute_with(|| {
-		let h = default_hasher();
-		let pc_gens = PedersenGens::default();
-		let bp_gens = BulletproofGens::new(2048, 1);
-
-		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
-		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
-
-		let mut test_rng = rand::thread_rng();
-		let (s, nullifier, leaf) = leaf_data(&mut test_rng, &h);
-
-		assert_ok!(MerkleGroups::create_group(
-			Origin::signed(1),
-			false,
-			Some(1),
-		));
-		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
-
-		let (s_com, leaf_com1, leaf_var1) =
-			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, &h);
-
-		let root = Data::hash(leaf, leaf, &h);
-		let (bit_com, leaf_com2, root_con) =
-			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), 1, &h);
-		prover.constrain(root_con - root.0);
-
-		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
-
-		let path = vec![(Commitment(bit_com), Commitment(leaf_com2))];
-
-		assert_ok!(MerkleGroups::verify_zk_membership_proof(
-			Origin::signed(1),
-			0,
-			Commitment(leaf_com1),
-			path.clone(),
-			Commitment(s_com),
-			Data(nullifier),
-			proof.to_bytes(),
-		));
-		assert_err!(
-			MerkleGroups::verify_zk_membership_proof(
-				Origin::signed(1),
-				0,
-				Commitment(leaf_com1),
-				path,
-				Commitment(s_com),
-				Data(nullifier),
-				proof.to_bytes(),
-			),
-			Error::<Test>::AlreadyUsedNullifier,
-		);
 	});
 }
 
@@ -614,10 +559,12 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 
 		let invalid_s_com = RistrettoPoint::random(&mut test_rng).compress();
 
+		let root = MerkleGroups::get_merkle_root(0);
 		assert_err!(
 			MerkleGroups::verify_zk_membership_proof(
-				Origin::signed(1),
 				0,
+				0,
+				root.unwrap(),
 				Commitment(leaf_com1),
 				path,
 				Commitment(invalid_s_com),
@@ -659,10 +606,12 @@ fn should_not_verify_invalid_commitments_for_membership() {
 		let invalid_bit_com = RistrettoPoint::random(&mut test_rng).compress();
 		let path = vec![(Commitment(invalid_bit_com), Commitment(invalid_path_com))];
 
+		let root = MerkleGroups::get_merkle_root(0);
 		assert_err!(
 			MerkleGroups::verify_zk_membership_proof(
-				Origin::signed(1),
 				0,
+				0,
+				root.unwrap(),
 				Commitment(leaf_com1),
 				path,
 				Commitment(s_com),
@@ -705,10 +654,12 @@ fn should_not_verify_invalid_transcript() {
 		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
 		let path = vec![(Commitment(bit_com), Commitment(leaf_com2))];
 
+		let root = MerkleGroups::get_merkle_root(0);
 		assert_err!(
 			MerkleGroups::verify_zk_membership_proof(
-				Origin::signed(1),
 				0,
+				0,
+				root.unwrap(),
 				Commitment(leaf_com1),
 				path,
 				Commitment(s_com),
@@ -779,9 +730,11 @@ fn should_verify_zk_proof_of_membership() {
 			(Commitment(bit_com2), Commitment(node_com2)),
 		];
 
-		assert_ok!(MerkleGroups::verify_zk_membership_proof(
-			Origin::signed(1),
+		let root = MerkleGroups::get_merkle_root(0);
+		assert_ok!(<MerkleGroups>::verify_zk_membership_proof(
 			0,
+			0,
+			root.unwrap(),
 			Commitment(leaf_com5),
 			path,
 			Commitment(s_com),
@@ -828,9 +781,11 @@ fn should_verify_large_zk_proof_of_membership() {
 
 		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
 
-		assert_ok!(MerkleGroups::verify_zk_membership_proof(
-			Origin::signed(1),
+		let root = MerkleGroups::get_merkle_root(0);
+		assert_ok!(<MerkleGroups>::verify_zk_membership_proof(
 			0,
+			0,
+			root.unwrap(),
 			Commitment(leaf_com1),
 			path,
 			Commitment(s_com),

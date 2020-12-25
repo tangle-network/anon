@@ -16,6 +16,8 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
+use frame_system::ensure_root;
+pub use crate::group_trait::Group;
 use sp_runtime::traits::One;
 use frame_support::traits::Get;
 use sp_runtime::traits::AtLeast32Bit;
@@ -33,12 +35,14 @@ use merlin::Transcript;
 use rand_core::OsRng;
 use sp_std::prelude::*;
 
+pub mod group_trait;
+
 /// The pallet's configuration trait.
-pub trait Config: balances::Config {
+pub trait Config: frame_system::Config + balances::Config {
 	/// The overarching event type.
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
 	/// The overarching group ID type
-	type GroupId: Parameter + AtLeast32Bit + Default + Copy;
+	type GroupId: Encode + Decode + Parameter + AtLeast32Bit + Default + Copy;
 	/// The max depth of trees
 	type MaxTreeDepth: Get<u8>;
 	/// The amount of blocks to cache roots over
@@ -52,10 +56,10 @@ fn default_hasher() -> impl Hasher {
 }
 
 #[cfg_attr(feature = "std", derive(Debug))]
-#[derive(Encode, Decode, PartialEq)]
+#[derive(Clone, Encode, Decode, PartialEq)]
 pub struct GroupTree<T: Config> {
 	pub manager: T::AccountId,
-	pub requires_is_manager: bool,
+	pub manager_required: bool,
 	pub leaf_count: u32,
 	pub max_leaves: u32,
 	pub root_hash: Data,
@@ -66,7 +70,7 @@ impl<T: Config> GroupTree<T> {
 	pub fn new(mgr: T::AccountId, r_is_mgr: bool, depth: u8) -> Self {
 		Self {
 			manager: mgr,
-			requires_is_manager: r_is_mgr,
+			manager_required: r_is_mgr,
 			root_hash: Data::zero(),
 			leaf_count: 0,
 			max_leaves: u32::MAX >> (T::MaxTreeDepth::get() - depth),
@@ -148,17 +152,21 @@ decl_module! {
 		fn deposit_event() = default;
 
 		#[weight = 0]
+		pub fn create_group(origin, r_is_mgr: bool, _depth: Option<u8>) -> dispatch::DispatchResult {
+			let sender = ensure_signed(origin)?;
+			let depth = match _depth {
+				Some(d) => d,
+				None => T::MaxTreeDepth::get()
+			};
+			let _ = <Self as Group<_,_,_>>::create_group(sender, r_is_mgr, depth)?;
+			Ok(())
+		}
+
+		#[weight = 0]
 		pub fn set_manager_required(origin, group_id: T::GroupId, manager_required: bool) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
 
-			let mut tree = <Groups<T>>::get(group_id)
-				.ok_or(Error::<T>::GroupDoesntExist)
-				.unwrap();
-			// Changing manager required should always require an extrinsic from the manager even
-			// if the group doesn't explicitly require managers for other calls.
-			ensure!(sender == tree.manager, Error::<T>::ManagerIsRequired);
-			tree.requires_is_manager = manager_required;
-			Ok(())
+			<Self as Group<_,_,_>>::set_manager_required(sender, group_id, manager_required)
 		}
 
 		#[weight = 0]
@@ -177,28 +185,21 @@ decl_module! {
 		}
 
 		#[weight = 0]
-		pub fn add_members(origin, group_id: T::GroupId, data_points: Vec<Data>) -> dispatch::DispatchResult {
-			let sender = ensure_signed(origin)?;
+		pub fn force_set_manager(origin, group_id: T::GroupId, new_manager: T::AccountId) -> dispatch::DispatchResult {
+			let _ = ensure_root(origin)?;
 
 			let mut tree = <Groups<T>>::get(group_id)
 				.ok_or(Error::<T>::GroupDoesntExist)
 				.unwrap();
-			// Check if the tree requires extrinsics to be called from a manager
-			ensure!(Self::is_manager_required(sender.clone(), &tree), Error::<T>::ManagerIsRequired);
-			let num_points = data_points.len() as u32;
-			ensure!(tree.leaf_count + num_points <= tree.max_leaves, Error::<T>::ExceedsMaxDepth);
-
-			let h = default_hasher();
-			for data in &data_points {
-				Self::add_leaf(&mut tree, *data, &h);
-			}
-			let block_number: T::BlockNumber = <frame_system::Module<T>>::block_number();
-			CachedRoots::<T>::append(block_number, group_id, tree.root_hash);
-			Groups::<T>::insert(group_id, tree);
-
-			// Raising the New Member event for the client to build a tree locally
-			Self::deposit_event(RawEvent::NewMember(group_id, sender, data_points));
+			
+			tree.manager = new_manager;
 			Ok(())
+		}
+
+		#[weight = 0]
+		pub fn add_members(origin, group_id: T::GroupId, members: Vec<Data>) -> dispatch::DispatchResult {
+			let sender = ensure_signed(origin)?;
+			<Self as Group<_,_,_>>::add_members(sender, group_id, members)
 		}
 
 		/// Verification stub for testing, these verification functions should
@@ -207,102 +208,8 @@ decl_module! {
 		/// logic.
 		#[weight = 0]
 		pub fn verify(origin, group_id: T::GroupId, leaf: Data, path: Vec<(bool, Data)>) -> dispatch::DispatchResult {
-			let tree = <Groups<T>>::get(group_id)
-				.ok_or(Error::<T>::GroupDoesntExist)
-				.unwrap();
-			ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
-			let h = default_hasher();
-			let mut hash = leaf;
-			for (is_right, node) in path {
-				hash = match is_right {
-					true => Data::hash(hash, node, &h),
-					false => Data::hash(node, hash, &h),
-				}
-			}
-
-			ensure!(hash == tree.root_hash, Error::<T>::InvalidMembershipProof);
-			Ok(())
-		}
-
-		#[weight = 0]
-		pub fn create_group(origin, r_is_mgr: bool, _depth: Option<u8>) -> dispatch::DispatchResult {
-			let sender = ensure_signed(origin)?;
-			let group_id = Self::next_group_id();
-			NextGroupId::<T>::mutate(|id| *id += One::one());
-
-			let depth = match _depth {
-				Some(d) => d,
-				None => T::MaxTreeDepth::get()
-			};
-
-			ensure!(depth <= T::MaxTreeDepth::get() && depth > 0, Error::<T>::InvalidTreeDepth);
-
-			let mtree = GroupTree::<T>::new(sender, r_is_mgr, depth);
-			<Groups<T>>::insert(group_id, mtree);
-
-			Ok(())
-		}
-
-		/// Verification stub for testing, these verification functions should
-		/// not need to be used directly as extrinsics. Rather, higher-order
-		/// modules should use the module functions to verify and execute further
-		/// logic.
-		#[weight = 0]
-		pub fn verify_zk_membership_proof(
-			origin,
-			group_id: T::GroupId,
-			leaf_com: Commitment,
-			path: Vec<(Commitment, Commitment)>,
-			r_com: Commitment,
-			nullifier: Data,
-			proof_bytes: Vec<u8>
-		) -> dispatch::DispatchResult {
-			let sender = ensure_signed(origin)?;
-			Self::verify_zk_proof(
-				sender,
-				group_id,
-				leaf_com,
-				path,
-				r_com,
-				nullifier,
-				proof_bytes,
-			)?;
-			// Set nullifier as used
-			UsedNullifiers::<T>::insert((group_id, nullifier), true);
-			Ok(())
-		}
-
-		/// Verification stub for testing, these verification functions should
-		/// not need to be used directly as extrinsics. Rather, higher-order
-		/// modules should use the module functions to verify and execute further
-		/// logic.
-		#[weight = 0]
-		pub fn verify_zk_membership_proof_with_cache(
-			origin,
-			old_block: T::BlockNumber,
-			old_root: Data,
-			group_id: T::GroupId,
-			leaf_com: Commitment,
-			path: Vec<(Commitment, Commitment)>,
-			r_com: Commitment,
-			nullifier: Data,
-			proof_bytes: Vec<u8>
-		) -> dispatch::DispatchResult {
-			let sender = ensure_signed(origin)?;
-			Self::verify_zk_proof_with_cache(
-				sender,
-				old_block,
-				old_root,
-				group_id,
-				leaf_com,
-				path,
-				r_com,
-				nullifier,
-				proof_bytes,
-			)?;
-			// Set nullifier as used
-			UsedNullifiers::<T>::insert((group_id, nullifier), true);
-			Ok(())
+			let _sender = ensure_signed(origin)?;
+			<Self as Group<_,_,_>>::verify(group_id, leaf, path)
 		}
 
 		fn on_finalize(_n: T::BlockNumber) {
@@ -325,106 +232,112 @@ decl_module! {
 	}
 }
 
-impl<T: Config> Module<T> {
-	pub fn get_group(group_id: T::GroupId) -> Result<GroupTree<T>, Error<T>> {
-		match <Groups<T>>::get(group_id) {
-			Some(g) => Ok(g),
-			None => Err(Error::<T>::GroupDoesntExist),
-		}
+impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
+	fn create_group(sender: T::AccountId, is_manager_required: bool, depth: u8) -> Result<T::GroupId, dispatch::DispatchError> {
+		ensure!(depth <= T::MaxTreeDepth::get() && depth > 0, Error::<T>::InvalidTreeDepth);
+
+		let group_id = Self::next_group_id();
+		NextGroupId::<T>::mutate(|id| *id += One::one());
+
+		let mtree = GroupTree::<T>::new(sender, is_manager_required, depth);
+		<Groups<T>>::insert(group_id, mtree);
+		Ok(group_id)
 	}
 
-	pub fn is_manager_required(sender: T::AccountId, tree: &GroupTree<T>) -> bool {
-		if tree.requires_is_manager {
-			return sender == tree.manager;
-		} else {
-			return true;
-		}
+	fn set_manager_required(sender: T::AccountId, id: T::GroupId, manager_required: bool) -> Result<(), dispatch::DispatchError> {
+		let mut tree = <Groups<T>>::get(id)
+			.ok_or(Error::<T>::GroupDoesntExist)
+			.unwrap();
+		// Changing manager required should always require an extrinsic from the manager even
+		// if the group doesn't explicitly require managers for other calls.
+		ensure!(sender == tree.manager, Error::<T>::ManagerIsRequired);
+		tree.manager_required = manager_required;
+		Ok(())
 	}
 
-	pub fn add_leaf<H: Hasher>(tree: &mut GroupTree<T>, data: Data, h: &H) {
-		let mut edge_index = tree.leaf_count;
-		let mut pair_hash = data;
-		// Update the tree
-		for i in 0..tree.edge_nodes.len() {
-			if edge_index % 2 == 0 {
-				tree.edge_nodes[i] = pair_hash;
-			}
-
-			let hash = tree.edge_nodes[i];
-			pair_hash = Data::hash(hash, pair_hash, h);
-
-			edge_index /= 2;
-		}
-
-		tree.leaf_count += 1;
-		tree.root_hash = pair_hash;
-	}
-
-	pub fn verify_zk_proof(
-		sender: T::AccountId,
-		group_id: T::GroupId,
-		leaf_com: Commitment,
-		path: Vec<(Commitment, Commitment)>,
-		r_com: Commitment,
-		nullifier: Data,
-		proof_bytes: Vec<u8>
-	) -> Result<(), Error<T>> {
-		let tree = <Groups<T>>::get(group_id)
+	fn add_members(sender: T::AccountId, id: T::GroupId, members: Vec<Data>) -> Result<(), dispatch::DispatchError> {
+		let mut tree = <Groups<T>>::get(id)
 			.ok_or(Error::<T>::GroupDoesntExist)
 			.unwrap();
 		// Check if the tree requires extrinsics to be called from a manager
-		ensure!(Self::is_manager_required(sender, &tree), Error::<T>::ManagerIsRequired);
-		// Ensure that nullifier is not used
-		ensure!(!UsedNullifiers::<T>::get((group_id, nullifier)), Error::<T>::AlreadyUsedNullifier);
+		ensure!(Self::is_manager_required(sender.clone(), &tree), Error::<T>::ManagerIsRequired);
+		let num_points = members.len() as u32;
+		ensure!(tree.leaf_count + num_points <= tree.max_leaves, Error::<T>::ExceedsMaxDepth);
+
+		let h = default_hasher();
+		for data in &members {
+			Self::add_leaf(&mut tree, *data, &h);
+		}
+		let block_number: T::BlockNumber = <frame_system::Module<T>>::block_number();
+		CachedRoots::<T>::append(block_number, id, tree.root_hash);
+		Groups::<T>::insert(id, tree);
+
+		// Raising the New Member event for the client to build a tree locally
+		Self::deposit_event(RawEvent::NewMember(id, sender, members));
+		Ok(())
+	}
+
+	fn add_nullifier(sender: T::AccountId, id: T::GroupId, nullifier: Data) -> Result<(), dispatch::DispatchError> {
+		let tree = <Groups<T>>::get(id)
+			.ok_or(Error::<T>::GroupDoesntExist)
+			.unwrap();
+		// Check if the tree requires extrinsics to be called from a manager
+		ensure!(Self::is_manager_required(sender.clone(), &tree), Error::<T>::ManagerIsRequired);
+		UsedNullifiers::<T>::insert((id, nullifier), true);
+		Ok(())
+	}
+
+	fn has_used_nullifier(id: T::GroupId, nullifier: Data) -> Result<(), dispatch::DispatchError> {
+		let _ = <Groups<T>>::get(id)
+			.ok_or(Error::<T>::GroupDoesntExist)
+			.unwrap();
+
+		ensure!(!UsedNullifiers::<T>::contains_key((id, nullifier)), Error::<T>::AlreadyUsedNullifier);
+		Ok(())
+	}
+
+	fn verify(id: T::GroupId, leaf: Data, path: Vec<(bool, Data)> )-> Result<(), dispatch::DispatchError> {
+		let tree = <Groups<T>>::get(id)
+			.ok_or(Error::<T>::GroupDoesntExist)
+			.unwrap();
+
 		ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
-		// TODO: Initialise these generators with the pallet
-		let pc_gens = PedersenGens::default();
-		// TODO: should be able to pass number of generators
-		// TODO: Initialise these generators with the pallet
-		let bp_gens = BulletproofGens::new(4096, 1);
-		Self::verify_zk(
-			pc_gens,
-			bp_gens,
-			tree.root_hash,
-			leaf_com,
-			path,
-			r_com,
-			nullifier,
-			proof_bytes,
-		)
-		// // Set nullifier as used
-		// UsedNullifiers::<T>::insert((group_id, nullifier), true);
-		// Ok(())
+		let h = default_hasher();
+		let mut hash = leaf;
+		for (is_right, node) in path {
+			hash = match is_right {
+				true => Data::hash(hash, node, &h),
+				false => Data::hash(node, hash, &h),
+			}
+		}
+
+		ensure!(hash == tree.root_hash, Error::<T>::InvalidMembershipProof);
+		Ok(())
 	}
 
-	pub fn verify_zk_proof_with_cache(
-		sender: T::AccountId,
-		old_block: T::BlockNumber,
-		old_root: Data,
+	fn verify_zk_membership_proof(
 		group_id: T::GroupId,
+		cached_block: T::BlockNumber,
+		cached_root: Data,
 		leaf_com: Commitment,
 		path: Vec<(Commitment, Commitment)>,
 		r_com: Commitment,
 		nullifier: Data,
 		proof_bytes: Vec<u8>
-	) -> Result<(), Error<T>> {
+	) -> Result<(), dispatch::DispatchError> {
 		let tree = <Groups<T>>::get(group_id)
 			.ok_or(Error::<T>::GroupDoesntExist)
 			.unwrap();
-		// Check if the tree requires extrinsics to be called from a manager
-		ensure!(Self::is_manager_required(sender, &tree), Error::<T>::ManagerIsRequired);
-		// Ensure that nullifier is not used
-		ensure!(!UsedNullifiers::<T>::get((group_id, nullifier)), Error::<T>::AlreadyUsedNullifier);
 		ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
 		// Ensure that root being checked against is in the cache
-		let old_roots = Self::cached_roots(old_block, group_id);
-		ensure!(old_roots.iter().any(|r| *r == old_root), Error::<T>::InvalidMerkleRoot);
+		let old_roots = Self::cached_roots(cached_block, group_id);
+		ensure!(old_roots.iter().any(|r| *r == cached_root), Error::<T>::InvalidMerkleRoot);
 		// TODO: Initialise these generators with the pallet
 		let pc_gens = PedersenGens::default();
 		// TODO: should be able to pass number of generators
 		// TODO: Initialise these generators with the pallet
 		let bp_gens = BulletproofGens::new(4096, 1);
-		Self::verify_zk(
+		<Self as Group<_,_,_>>::verify_zk(
 			pc_gens,
 			bp_gens,
 			tree.root_hash,
@@ -435,7 +348,6 @@ impl<T: Config> Module<T> {
 			proof_bytes,
 		)
 	}
-
 	fn verify_zk(
 		pc_gens: PedersenGens,
 		bp_gens: BulletproofGens,
@@ -445,7 +357,7 @@ impl<T: Config> Module<T> {
 		r_com: Commitment,
 		nullifier: Data,
 		proof_bytes: Vec<u8>
-	) -> Result<(), Error<T>>{
+	) -> Result<(), dispatch::DispatchError> {
 		let h = default_hasher();
 		let mut verifier_transcript = Transcript::new(b"zk_membership_proof");
 		let mut verifier = Verifier::new(&mut verifier_transcript);
@@ -486,10 +398,48 @@ impl<T: Config> Module<T> {
 		let mut rng = OsRng {};
 		// Final verification
 		let res = verifier.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut rng);
-		if res.is_ok() {
-			Ok(())
+		ensure!(res.is_ok(), Error::<T>::ZkVericationFailed);
+		Ok(())
+	}
+}
+
+impl<T: Config> Module<T> {
+	pub fn get_merkle_root(group_id: T::GroupId) -> Result<Data, dispatch::DispatchError> {
+		let group = Self::get_group(group_id)?;
+		Ok(group.root_hash)
+	}
+
+	pub fn get_group(group_id: T::GroupId) -> Result<GroupTree<T>, dispatch::DispatchError> {
+		let tree = <Groups<T>>::get(group_id)
+			.ok_or(Error::<T>::GroupDoesntExist)
+			.unwrap();
+		Ok(tree)
+	}
+
+	pub fn is_manager_required(sender: T::AccountId, tree: &GroupTree<T>) -> bool {
+		if tree.manager_required {
+			return sender == tree.manager;
 		} else {
-			Err(Error::<T>::ZkVericationFailed)
+			return true;
 		}
+	}
+
+	pub fn add_leaf<H: Hasher>(tree: &mut GroupTree<T>, data: Data, h: &H) {
+		let mut edge_index = tree.leaf_count;
+		let mut pair_hash = data;
+		// Update the tree
+		for i in 0..tree.edge_nodes.len() {
+			if edge_index % 2 == 0 {
+				tree.edge_nodes[i] = pair_hash;
+			}
+
+			let hash = tree.edge_nodes[i];
+			pair_hash = Data::hash(hash, pair_hash, h);
+
+			edge_index /= 2;
+		}
+
+		tree.leaf_count += 1;
+		tree.root_hash = pair_hash;
 	}
 }
