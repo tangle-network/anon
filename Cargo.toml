@@ -9,6 +9,10 @@ members = [
 	"wasm-utils"
 ]
 
+exclude = [
+	"client"
+]
+
 [profile.dev.package]
 aes-soft = { opt-level = 3 }
 aesni = { opt-level = 3 }
