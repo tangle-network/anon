@@ -135,9 +135,15 @@ decl_module! {
 			let mut mixer_info = Self::get_mixer(mixer_id)?;
 			// ensure the sender has enough balance to cover deposit
 			let balance = T::Currency::free_balance(&sender);
-			ensure!(balance >= mixer_info.fixed_deposit_size.into(), Error::<T>::InsufficientBalance);
+			// TODO: Multiplication by usize should be possible
+			// using this hack for now, though we should optimise with regular multiplication
+			// `data_points.len() * mixer_info.fixed_deposit_size`
+			let deposit: BalanceOf<T> = data_points.iter()
+				.map(|_| mixer_info.fixed_deposit_size)
+				.fold(Zero::zero(), |acc, elt| acc + elt);
+			ensure!(balance >= deposit, Error::<T>::InsufficientBalance);
 			// transfer the deposit to the module
-			T::Currency::transfer(&sender, &Self::account_id(), mixer_info.fixed_deposit_size, AllowDeath)?;
+			T::Currency::transfer(&sender, &Self::account_id(), deposit, AllowDeath)?;
 			// add elements to the mixer group's merkle tree and save the leaves
 			T::Group::add_members(Self::account_id(), mixer_id.into(), data_points.clone())?;
 			for i in 0..data_points.len() {
