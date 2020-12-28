@@ -1,5 +1,8 @@
+use curve25519_dalek::scalar::Scalar;
+use pallet_merkle::merkle::helper::{prove_with_path, verify, ZkProof};
 use pallet_merkle::merkle::keys::Data;
 use pallet_merkle::merkle::poseidon::Poseidon;
+use rand_core::OsRng;
 use std::collections::hash_map::HashMap;
 use wasm_bindgen::prelude::*;
 
@@ -24,6 +27,16 @@ pub fn set_panic_hook() {
 	console_error_panic_hook::set_once();
 }
 
+pub fn generate_secrets() -> (Scalar, Scalar) {
+	let mut rng = OsRng {};
+	(Scalar::random(&mut rng), Scalar::random(&mut rng))
+}
+
+pub struct LeafData {
+	r: Scalar,
+	nullifier: Scalar,
+}
+
 pub struct TreeState {
 	edge_nodes: Vec<Data>,
 	leaf_count: usize,
@@ -33,7 +46,8 @@ pub struct TreeState {
 pub struct MerkleClient {
 	curr_root: Data,
 	states: HashMap<Data, TreeState>,
-	leaf_indices: HashMap<Data, usize>,
+	saved_leafs: HashMap<Data, LeafData>,
+	leaf_indicies: HashMap<Data, usize>,
 	levels: Vec<Vec<Data>>,
 	hasher: Poseidon,
 	max_leaves: u32,
@@ -54,8 +68,9 @@ impl MerkleClient {
 		Self {
 			curr_root: init_root,
 			states: init_states,
-			leaf_indices: HashMap::new(),
+			saved_leafs: HashMap::new(),
 			levels: vec![vec![Data::zero()]; num_levels],
+			leaf_indicies: HashMap::new(),
 			hasher: Poseidon::new(4),
 			max_leaves: u32::MAX >> (max_levels - num_levels),
 		}
@@ -70,6 +85,17 @@ impl MerkleClient {
 }
 
 impl MerkleClient {
+	pub fn deposit(&mut self) -> [u8; 32] {
+		let (r, nullifier) = generate_secrets();
+		let leaf = Data::hash(Data(r), Data(nullifier), &self.hasher);
+		// TODO: send extrinsic to the chain,
+		// and listen to events to get the index of the added leaf
+		let ld = LeafData { r, nullifier };
+		self.saved_leafs.insert(leaf, ld);
+		self.add_leaf(leaf.0.to_bytes());
+		leaf.0.to_bytes()
+	}
+
 	pub fn add_leaf(&mut self, leaf: [u8; 32]) {
 		assert!(
 			self.levels[0].len() < self.max_leaves as usize,
@@ -108,7 +134,7 @@ impl MerkleClient {
 		}
 
 		self.curr_root = pair_hash;
-		self.leaf_indices.insert(data, curr_state.leaf_count);
+		self.leaf_indicies.insert(data, curr_state.leaf_count);
 		self.states.insert(pair_hash, new_state);
 	}
 
@@ -116,11 +142,11 @@ impl MerkleClient {
 		let root = Data::from(root_bytes);
 		let leaf = Data::from(leaf_bytes);
 		assert!(self.states.contains_key(&root), "Root not found!");
-		assert!(self.leaf_indices.contains_key(&leaf), "Leaf not found!");
+		assert!(self.leaf_indicies.contains_key(&leaf), "Leaf not found!");
 
 		let state = self.states.get(&root).unwrap();
 		let mut last_index = state.leaf_count - 1;
-		let mut node_index = self.leaf_indices.get(&leaf).cloned().unwrap();
+		let mut node_index = self.leaf_indicies.get(&leaf).cloned().unwrap();
 
 		assert!(
 			node_index <= last_index,
@@ -128,8 +154,8 @@ impl MerkleClient {
 		);
 		let mut path = Vec::new();
 		for (i, level) in self.levels.iter().enumerate() {
-			let is_left = node_index % 2 == 0;
-			let node = match is_left {
+			let is_right = node_index % 2 == 0;
+			let node = match is_right {
 				true => {
 					if node_index == last_index {
 						state.edge_nodes[i]
@@ -140,7 +166,7 @@ impl MerkleClient {
 				false => level[node_index - 1],
 			};
 
-			path.push((is_left, node.0.to_bytes()));
+			path.push((is_right, node.0.to_bytes()));
 			node_index /= 2;
 			last_index /= 2;
 		}
@@ -167,6 +193,36 @@ impl MerkleClient {
 			}
 		}
 		root == hash
+	}
+
+	pub fn prove_zk(&self, root_bytes: [u8; 32], leaf_bytes: [u8; 32]) -> ZkProof {
+		let root = Data::from(root_bytes);
+		let leaf = Data::from(leaf_bytes);
+
+		assert!(self.saved_leafs.contains_key(&leaf), "Leaf not found!");
+		let ld = self.saved_leafs.get(&leaf).unwrap();
+
+		// First we create normal proof, then make zk proof against it
+		let path = self.prove(root_bytes, leaf_bytes);
+		let valid = self.verify(root_bytes, leaf_bytes, path.clone());
+		assert!(valid, "Could not make proof!");
+		let path_data: Vec<(bool, Data)> = path
+			.into_iter()
+			// Our gadget calculates the sides inversely
+			.map(|(side, d)| (!side, Data::from(d)))
+			.collect();
+
+		let zk_proof = prove_with_path(root, leaf, ld.nullifier, ld.r, path_data, &self.hasher);
+		assert!(zk_proof.is_ok(), "Could not make proof!");
+
+		zk_proof.unwrap()
+	}
+
+	pub fn verify_zk(&self, root_bytes: [u8; 32], zk_proof: ZkProof) -> bool {
+		let root = Data::from(root_bytes);
+		let res = verify(root, zk_proof, &self.hasher);
+
+		res.is_ok()
 	}
 }
 
@@ -257,47 +313,31 @@ mod tests {
 	#[test]
 	fn should_make_correct_proof() {
 		let mut tree = MerkleClient::new(2);
-		let leaf1 = Data(Scalar::from(1u32));
-		let leaf2 = Data(Scalar::from(2u32));
-		let leaf3 = Data(Scalar::from(3u32));
+		let leaf1 = tree.deposit();
+		let leaf2 = tree.deposit();
+		let leaf3 = tree.deposit();
 
-		tree.add_leaf(leaf1.0.to_bytes());
-		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf1.0.to_bytes());
-		let valid = tree.verify(
-			tree.curr_root.0.to_bytes(),
-			leaf1.0.to_bytes(),
-			path.clone(),
-		);
+		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf1);
+		let valid = tree.verify(tree.curr_root.0.to_bytes(), leaf1, path.clone());
 		assert!(valid);
 
-		tree.add_leaf(leaf2.0.to_bytes());
-		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf2.0.to_bytes());
-		let valid = tree.verify(
-			tree.curr_root.0.to_bytes(),
-			leaf2.0.to_bytes(),
-			path.clone(),
-		);
+		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf2);
+		let valid = tree.verify(tree.curr_root.0.to_bytes(), leaf2, path.clone());
 		assert!(valid);
 
-		tree.add_leaf(leaf3.0.to_bytes());
-		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf3.0.to_bytes());
-		let valid = tree.verify(
-			tree.curr_root.0.to_bytes(),
-			leaf3.0.to_bytes(),
-			path.clone(),
-		);
+		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf3);
+		let valid = tree.verify(tree.curr_root.0.to_bytes(), leaf3, path.clone());
 		assert!(valid);
 	}
 
 	#[test]
 	fn should_not_verify_incorrect_proof() {
 		let mut tree = MerkleClient::new(2);
-		let leaf1 = Data(Scalar::from(1u32));
+		let leaf1 = tree.deposit();
 		let leaf2 = Data(Scalar::from(2u32));
 		let leaf3 = Data(Scalar::from(3u32));
 
-		tree.add_leaf(leaf1.0.to_bytes());
-		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf1.0.to_bytes());
+		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf1);
 		let valid = tree.verify(
 			tree.curr_root.0.to_bytes(),
 			leaf2.0.to_bytes(),
@@ -305,13 +345,45 @@ mod tests {
 		);
 		assert!(!valid);
 
-		tree.add_leaf(leaf2.0.to_bytes());
-		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf1.0.to_bytes());
+		let path = tree.prove(tree.curr_root.0.to_bytes(), leaf1);
 		let valid = tree.verify(
 			tree.curr_root.0.to_bytes(),
 			leaf3.0.to_bytes(),
 			path.clone(),
 		);
+		assert!(!valid);
+	}
+
+	#[test]
+	fn should_make_correct_zk_proof() {
+		let mut tree = MerkleClient::new(2);
+		let leaf1 = tree.deposit();
+		let leaf2 = tree.deposit();
+		let leaf3 = tree.deposit();
+
+		let proof = tree.prove_zk(tree.curr_root.0.to_bytes(), leaf1);
+		let valid = tree.verify_zk(tree.curr_root.0.to_bytes(), proof);
+		assert!(valid);
+
+		let proof = tree.prove_zk(tree.curr_root.0.to_bytes(), leaf2);
+		let valid = tree.verify_zk(tree.curr_root.0.to_bytes(), proof);
+		assert!(valid);
+
+		let proof = tree.prove_zk(tree.curr_root.0.to_bytes(), leaf3);
+		let valid = tree.verify_zk(tree.curr_root.0.to_bytes(), proof);
+		assert!(valid);
+	}
+
+	#[test]
+	fn should_not_verify_incorrect_zk_proof() {
+		let mut tree = MerkleClient::new(2);
+
+		tree.deposit();
+		let old_root = tree.curr_root;
+		tree.deposit();
+		let leaf = tree.deposit();
+		let proof = tree.prove_zk(tree.curr_root.0.to_bytes(), leaf);
+		let valid = tree.verify_zk(old_root.0.to_bytes(), proof);
 		assert!(!valid);
 	}
 }

@@ -45,7 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	println!("create group {:?}", elapsed);
 	println!("");
 
-	let (leaf, _, leaf_com, path, s_com, nullifier, proof_bytes) = prove(&h);
+	let (leaf, _, zk_proof) = prove(&h);
 
 	// Add members
 	let start = Instant::now();
@@ -69,11 +69,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 			.verify_zk_membership_proof(
 				&signer,
 				group_id,
-				leaf_com,
-				path.clone(),
-				s_com,
-				nullifier,
-				proof_bytes.clone(),
+				zk_proof.leaf_com,
+				zk_proof.path.clone(),
+				zk_proof.r_com,
+				zk_proof.nullifier,
+				zk_proof.bytes.clone(),
 			)
 			.await?;
 		signer.increment_nonce();
@@ -83,11 +83,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 		.verify_zk_membership_proof_and_watch(
 			&signer,
 			num_groups,
-			leaf_com,
-			path,
-			s_com,
-			nullifier,
-			proof_bytes,
+			zk_proof.leaf_com,
+			zk_proof.path,
+			zk_proof.r_com,
+			zk_proof.nullifier,
+			zk_proof.bytes,
 		)
 		.await?;
 	verify_zk_txs.insert(format!("{:?}", res_zk.extrinsic));
