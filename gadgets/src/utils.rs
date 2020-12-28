@@ -1,3 +1,4 @@
+use curve25519_dalek::ristretto::CompressedRistretto;
 use bulletproofs::r1cs::{ConstraintSystem, R1CSError, Variable};
 use curve25519_dalek::scalar::Scalar;
 use bulletproofs::r1cs::LinearCombination;
@@ -16,6 +17,12 @@ pub struct AllocatedQuantity {
 pub struct AllocatedScalar {
 	pub variable: Variable,
 	pub assignment: Option<Scalar>
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct AllocatedCompressedRistretto {
+	pub variable: Variable,
+	pub assignment: Option<CompressedRistretto>
 }
 
 pub fn decode_hex(s: &str) -> Vec<u8> {
