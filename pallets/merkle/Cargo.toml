@@ -35,7 +35,7 @@ merlin = { version = "2.0.0", default-features = false }
 sha2 = { version = "0.9.1", default-features = false }
 sp-runtime = { default-features = false, version = "2.0.0" }
 rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
-bulletproofs = { version = "2.0.0", rev = "9ed295f", git = "https://github.com/edgeware-builders/bulletproofs", default-features = false, features = ["yoloproofs"] }
+bulletproofs = { version = "2.0.0", rev = "553863b", git = "https://github.com/edgeware-builders/bulletproofs", default-features = false, features = ["yoloproofs"] }
 rand = { version = "0.7", optional = true }
 
 [dev-dependencies]

@@ -1,54 +1,9 @@
 use super::constants::{MDS_ENTRIES, POSEIDON_FULL_ROUNDS, POSEIDON_PARTIAL_ROUNDS, ROUND_CONSTS};
 use super::hasher::Hasher;
-use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Prover, Variable, Verifier};
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Prover, Verifier};
 use bulletproofs::PedersenGens;
 use curve25519_dalek::scalar::Scalar;
-use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
-
-pub fn simplify(lc: LinearCombination) -> LinearCombination {
-	// Build hashmap to hold unique variables with their values.
-	let mut vars: BTreeMap<Variable, Scalar> = BTreeMap::new();
-
-	let terms: Vec<(Variable, Scalar)> = lc.get_terms().to_vec();
-	for (var, val) in terms {
-		*vars.entry(var).or_insert(Scalar::zero()) += val;
-	}
-
-	let mut new_lc_terms = vec![];
-	for (var, val) in vars {
-		new_lc_terms.push((var, val));
-	}
-	new_lc_terms.iter().collect()
-}
-
-pub fn mix(m: &Vec<Vec<Scalar>>, state: &Vec<Scalar>) -> Vec<Scalar> {
-	let mut new_state: Vec<Scalar> = Vec::new();
-	for i in 0..state.len() {
-		new_state.push(Scalar::zero());
-		for j in 0..state.len() {
-			let mij = m[j][i];
-			new_state[i] += mij * state[j];
-		}
-	}
-	new_state
-}
-
-pub fn mix_lc(m: &Vec<Vec<Scalar>>, state: &Vec<LinearCombination>) -> Vec<LinearCombination> {
-	let mut new_state: Vec<LinearCombination> = Vec::new();
-	let mut simp_state: Vec<LinearCombination> = Vec::new();
-	for i in 0..state.len() {
-		simp_state.push(simplify(state[i].clone()));
-	}
-	for i in 0..state.len() {
-		new_state.push(LinearCombination::default());
-		for j in 0..state.len() {
-			let mij = m[j][i];
-			new_state[i] = new_state[i].clone() + (simp_state[j].clone() * mij);
-		}
-	}
-	new_state
-}
 
 #[derive(Eq, PartialEq, Clone, Default, Debug)]
 pub struct Poseidon {
@@ -108,6 +63,36 @@ impl Poseidon {
 		mds
 	}
 
+	pub fn mix(&self, state: &Vec<Scalar>) -> Vec<Scalar> {
+		let mut new_state: Vec<Scalar> = Vec::new();
+		for i in 0..state.len() {
+			let mut sc = Scalar::zero();
+			for j in 0..state.len() {
+				let mij = self.mds_matrix[j][i];
+				sc += mij * state[j];
+			}
+			new_state.push(sc);
+		}
+		new_state
+	}
+
+	pub fn mix_lc(&self, state: &Vec<LinearCombination>) -> Vec<LinearCombination> {
+		let mut new_state: Vec<LinearCombination> = Vec::new();
+		let mut simp_state: Vec<LinearCombination> = Vec::new();
+		for i in 0..state.len() {
+			simp_state.push(state[i].clone().simplify());
+		}
+		for i in 0..state.len() {
+			let mut lc = LinearCombination::default();
+			for j in 0..state.len() {
+				let mij = self.mds_matrix[j][i];
+				lc = lc.clone() + (simp_state[j].clone() * mij);
+			}
+			new_state.push(lc);
+		}
+		new_state
+	}
+
 	pub fn apply_sbox(&self, elem: Scalar) -> Scalar {
 		(elem * elem) * elem
 	}
@@ -132,24 +117,29 @@ impl Poseidon {
 		);
 		let full_rounds_per_side = self.full_rounds / 2;
 		let mut current = inputs.to_vec();
+		let mut const_num = 0;
 		for round in 0..rounds {
-			// Sub words layer.
 			let full = round < full_rounds_per_side || round >= rounds - full_rounds_per_side;
+			// Ark transformation
+			current = current
+				.iter()
+				.map(|exp| {
+					let new_exp = exp + self.round_keys[const_num];
+					const_num += 1;
+					new_exp
+				})
+				.collect();
 			if full {
-				current = current
-					.iter()
-					.map(|exp| self.apply_sbox(exp + self.round_keys[round]))
-					.collect();
+				// Full layer
+				current = current.iter().map(|exp| self.apply_sbox(*exp)).collect();
 			} else {
-				current = current
-					.into_iter()
-					.map(|exp| exp + self.round_keys[round])
-					.collect();
+				// Partial layer, only one input is passed to sbox,
+				// The choice is arbitrary
 				current[0] = self.apply_sbox(current[0]);
 			}
 
 			// Mix layer.
-			current = mix(&self.mds_matrix, &current);
+			current = self.mix(&current);
 		}
 		current
 	}
@@ -168,24 +158,32 @@ impl Poseidon {
 		);
 		let full_rounds_per_side = self.full_rounds / 2;
 		let mut current = inputs.to_vec();
+		let mut const_num = 0;
 		for round in 0..rounds {
-			// Sub words layer.
 			let full = round < full_rounds_per_side || round >= rounds - full_rounds_per_side;
+			// Ark transformation
+			current = current
+				.iter()
+				.map(|exp| {
+					let new_exp = exp.clone() + self.round_keys[const_num];
+					const_num += 1;
+					new_exp
+				})
+				.collect();
 			if full {
+				// Full layer
 				current = current
 					.into_iter()
-					.map(|exp| self.synthesize_sbox(cs, exp + self.round_keys[round]))
+					.map(|exp| self.synthesize_sbox(cs, exp))
 					.collect();
 			} else {
-				current = current
-					.into_iter()
-					.map(|exp| exp + self.round_keys[round])
-					.collect();
+				// Partial layer, only one input is passed to sbox,
+				// The choice is arbitrary
 				current[0] = self.synthesize_sbox(cs, current[0].clone().into());
 			}
 
 			// Mix layer.
-			current = mix_lc(&self.mds_matrix, &current);
+			current = self.mix_lc(&current);
 		}
 		current
 	}

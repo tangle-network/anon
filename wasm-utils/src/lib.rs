@@ -380,7 +380,6 @@ mod tests {
 
 		tree.deposit();
 		let old_root = tree.curr_root;
-		tree.deposit();
 		let leaf = tree.deposit();
 		let proof = tree.prove_zk(tree.curr_root.0.to_bytes(), leaf);
 		let valid = tree.verify_zk(old_root.0.to_bytes(), proof);
