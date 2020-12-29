@@ -1,19 +1,17 @@
 use curve25519_dalek::scalar::Scalar;
-use pallet_merkle::merkle::helper::{prove_with_path, verify, ZkProof};
+use js_sys::{Array, JSON};
+use pallet_merkle::merkle::helper::{leaf_data, prove_with_path, verify, ZkProof};
 use pallet_merkle::merkle::keys::Data;
 use pallet_merkle::merkle::poseidon::Poseidon;
 use rand_core::OsRng;
 use std::collections::hash_map::HashMap;
 use wasm_bindgen::prelude::*;
+use web_sys::{window, Storage};
 
 #[wasm_bindgen]
 extern "C" {
 	#[wasm_bindgen(js_namespace = console)]
 	fn log(s: &str);
-	#[wasm_bindgen(js_namespace = localStorage)]
-	fn setItem(key: &str, value: &str);
-	#[wasm_bindgen(js_namespace = localStorage)]
-	fn getItem(key: &str);
 }
 
 pub fn set_panic_hook() {
@@ -27,10 +25,7 @@ pub fn set_panic_hook() {
 	console_error_panic_hook::set_once();
 }
 
-pub fn generate_secrets() -> (Scalar, Scalar) {
-	let mut rng = OsRng {};
-	(Scalar::random(&mut rng), Scalar::random(&mut rng))
-}
+const STORAGE_PREFIX: &str = "WEBB-MIX-0.1.0-";
 
 pub struct LeafData {
 	r: Scalar,
@@ -51,6 +46,7 @@ pub struct MerkleClient {
 	levels: Vec<Vec<Data>>,
 	hasher: Poseidon,
 	max_leaves: u32,
+	store: Storage,
 }
 
 #[wasm_bindgen]
@@ -65,6 +61,8 @@ impl MerkleClient {
 		};
 		let mut init_states = HashMap::new();
 		init_states.insert(init_root, init_tree_state);
+		let win = window().unwrap();
+		let store = win.local_storage().unwrap().unwrap();
 		Self {
 			curr_root: init_root,
 			states: init_states,
@@ -73,6 +71,7 @@ impl MerkleClient {
 			leaf_indicies: HashMap::new(),
 			hasher: Poseidon::new(4),
 			max_leaves: u32::MAX >> (max_levels - num_levels),
+			store,
 		}
 	}
 
@@ -82,14 +81,48 @@ impl MerkleClient {
 			self.add_leaf(elem);
 		}
 	}
+
+	pub fn generate_secrets(&self) -> JsValue {
+		let mut rng = OsRng {};
+		let (r, nullifier, leaf) = leaf_data(&mut rng, &self.hasher);
+		JsValue::from_serde(&[r.to_bytes(), nullifier.to_bytes(), leaf.0.to_bytes()]).unwrap()
+	}
+
+	pub fn generate_secrets_and_save(&self) -> JsValue {
+		let secrets = self.generate_secrets();
+		let key = format!("{}{}", STORAGE_PREFIX, "secret");
+		let arr = if let Ok(Some(value)) = self.store.get_item(&key) {
+			let data = JSON::parse(&value).ok().unwrap();
+			Array::from(&data)
+		} else {
+			Array::new()
+		};
+		arr.push(&secrets);
+		let storage_string: String = JSON::stringify(&JsValue::from(arr)).unwrap().into();
+		self.store.set_item(&key, &storage_string).unwrap();
+		secrets
+	}
+
+	pub fn generate_proof(&self, root_json: JsValue, leaf_json: JsValue) -> JsValue {
+		let root_bytes = root_json.into_serde().unwrap();
+		let leaf_bytes = leaf_json.into_serde().unwrap();
+		let proof = self.prove_zk(root_bytes, leaf_bytes);
+
+		let path = Array::new();
+		let leaf_com = JsValue::from_serde(&proof.leaf_com.0.0).unwrap();
+
+		JsValue::NULL
+	}
 }
 
 impl MerkleClient {
+	// Used for testing purposes
 	pub fn deposit(&mut self) -> [u8; 32] {
-		let (r, nullifier) = generate_secrets();
-		let leaf = Data::hash(Data(r), Data(nullifier), &self.hasher);
-		// TODO: send extrinsic to the chain,
-		// and listen to events to get the index of the added leaf
+		let [r_bytes, nullifier_bytes, leaf_bytes]: [[u8; 32]; 3] =
+			self.generate_secrets().into_serde().unwrap();
+		let r = Scalar::from_bytes_mod_order(r_bytes);
+		let nullifier = Scalar::from_bytes_mod_order(nullifier_bytes);
+		let leaf = Data::from(leaf_bytes);
 		let ld = LeafData { r, nullifier };
 		self.saved_leafs.insert(leaf, ld);
 		self.add_leaf(leaf.0.to_bytes());
@@ -145,6 +178,7 @@ impl MerkleClient {
 		assert!(self.leaf_indicies.contains_key(&leaf), "Leaf not found!");
 
 		let state = self.states.get(&root).unwrap();
+		assert!(state.leaf_count > 0, "Tree is empty!");
 		let mut last_index = state.leaf_count - 1;
 		let mut node_index = self.leaf_indicies.get(&leaf).cloned().unwrap();
 
@@ -195,6 +229,13 @@ impl MerkleClient {
 		root == hash
 	}
 
+	pub fn verify_zk(&self, root_bytes: [u8; 32], zk_proof: ZkProof) -> bool {
+		let root = Data::from(root_bytes);
+		let res = verify(root, zk_proof, &self.hasher);
+
+		res.is_ok()
+	}
+
 	pub fn prove_zk(&self, root_bytes: [u8; 32], leaf_bytes: [u8; 32]) -> ZkProof {
 		let root = Data::from(root_bytes);
 		let leaf = Data::from(leaf_bytes);
@@ -216,13 +257,6 @@ impl MerkleClient {
 		assert!(zk_proof.is_ok(), "Could not make proof!");
 
 		zk_proof.unwrap()
-	}
-
-	pub fn verify_zk(&self, root_bytes: [u8; 32], zk_proof: ZkProof) -> bool {
-		let root = Data::from(root_bytes);
-		let res = verify(root, zk_proof, &self.hasher);
-
-		res.is_ok()
 	}
 }
 
