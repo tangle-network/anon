@@ -83,8 +83,6 @@ decl_storage! {
 		pub Initialised get(fn initialised): bool;
 		/// The map of mixer groups to their metadata
 		pub MixerGroups get(fn mixer_groups): map hasher(blake2_128_concat) T::GroupId => MixerInfo<T>;
-		/// Map of used nullifiers (Data) for each tree.
-		pub UsedNullifiers get(fn used_nullifiers): map hasher(blake2_128_concat) (T::GroupId, Data) => bool;
 	}
 }
 
@@ -112,10 +110,6 @@ decl_error! {
 		NotInitialised,
 		///
 		AlreadyInitialised,
-		///
-		AlreadyUsedNullifier,
-		///
-		MixerDoesntExist,
 		///
 		InsufficientBalance,
 	}
@@ -171,7 +165,7 @@ decl_module! {
 			let mixer_info = MixerGroups::<T>::get(mixer_id);
 			// check if the nullifier has been used
 			// Returns `()` if the nullifier has not been used
-			// otherwsie returns `AlreadyUsedNullifier` error from merkle groups pallet
+			// otherwise returns `Err` from merkle groups pallet
 			T::Group::has_used_nullifier(mixer_id.into(), nullifier)?;
 			// Verify the zero-knowledge proof of membership provided
 			// Returns `()` if verification is successful
