@@ -1,3 +1,4 @@
+use sp_runtime::ModuleId;
 use crate::{Module, Config};
 use frame_support::{impl_outer_origin, impl_outer_event, parameter_types, weights::Weight};
 use frame_system as system;
@@ -9,7 +10,7 @@ use sp_runtime::{
 };
 pub(crate) type Balance = u64;
 
-mod pallet_merkle {
+mod pallet_mixer {
 	pub use crate::Event;
 }
 
@@ -17,7 +18,8 @@ impl_outer_event! {
 	pub enum Event for Test {
 		frame_system<T>,
 		balances<T>,
-		pallet_merkle<T>,
+		merkle<T>,
+		pallet_mixer<T>,
 	}
 }
 
@@ -65,7 +67,8 @@ parameter_types! {
 	pub const MaxLocks: u32 = 50;
 	pub const MaxTreeDepth: u8 = 32;
 	pub const CacheBlockLength: u64 = 100;
-	pub const MinimumDepositLength: u64 = 10;
+	// Minimum deposit length is 1 month w/ 6 second blocks
+	pub const MinimumDepositLength: u64 = 10 * 60 * 24 * 28;
 }
 
 impl balances::Config for Test {
@@ -78,20 +81,42 @@ impl balances::Config for Test {
 	type WeightInfo = ();
 }
 
-impl Config for Test {
+impl merkle::Config for Test {
 	type Event = Event;
 	type GroupId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
 	type CacheBlockLength = CacheBlockLength;
 }
 
+parameter_types! {
+	pub const MixerModuleId: ModuleId = ModuleId(*b"py/mixer");
+}
+
+impl Config for Test {
+	type Event = Event;
+	type Currency = Balances;
+	type ModuleId = MixerModuleId;
+	type Group = MerkleGroups;
+	type MaxTreeDepth = MaxTreeDepth;
+	type DepositLength = MinimumDepositLength;
+}
+
+pub type Balances = balances::Module<Test>;
 pub type System = system::Module<Test>;
-pub type MerkleGroups = Module<Test>;
+pub type MerkleGroups = merkle::Module<Test>;
+pub type Mixer = Module<Test>;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	system::GenesisConfig::default()
-		.build_storage::<Test>()
-		.unwrap()
-		.into()
+	use balances::{GenesisConfig as BalancesConfig};
+	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+	BalancesConfig::<Test>{
+		// Total issuance will be 200 with treasury account initialized at ED.
+		balances: vec![
+			(0, 1_000_000_000),
+			(1, 1_000_000_000),
+			(2, 1_000_000_000),
+		],
+	}.assimilate_storage(&mut t).unwrap();
+	t.into()
 }

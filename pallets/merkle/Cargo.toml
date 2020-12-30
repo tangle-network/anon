@@ -2,10 +2,8 @@
 authors = ["Drew Stone <drew@commonwealth.im>, Filip Lazovic"]
 description = "Merkle tree membership pallet with zero-knowledge membership proof verification"
 edition = "2018"
-homepage = "https://substrate.dev"
 license = "Unlicense"
 name = "pallet-merkle"
-repository = "https://github.com/substrate-developer-hub/substrate-node-template/"
 version = "2.0.0"
 
 [package.metadata.docs.rs]
@@ -27,30 +25,30 @@ features = ["u64_backend", "alloc"]
 version = "0.1.5"
 
 [dependencies]
-balances = { version = "2.0.0", default-features = false, package = "pallet-balances" }
-frame-support = { default-features = false, version = "2.0.0" }
-frame-system = { default-features = false, version = "2.0.0" }
-sp-std = { default-features = false, version = "2.0.0" }
+balances = { version = "2.0.0", default-features = false, package = "pallet-balances", git = "https://github.com/paritytech/substrate.git" }
+frame-support = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
+frame-system = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-std = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-runtime = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
 merlin = { version = "2.0.0", default-features = false }
 sha2 = { version = "0.9.1", default-features = false }
-sp-runtime = { default-features = false, version = "2.0.0" }
 rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
 bulletproofs = { version = "2.0.0", rev = "553863b", git = "https://github.com/edgeware-builders/bulletproofs", default-features = false, features = ["yoloproofs"] }
 rand = { version = "0.7", optional = true }
 
 [dev-dependencies]
-sp-core = { default-features = false, version = "2.0.0" }
-sp-io = { default-features = false, version = "2.0.0" }
+sp-core = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-io = { default-features = false, version = "2.0.0", git = "https://github.com/paritytech/substrate.git" }
 
 [features]
-default = ["std", "verify"]
-verify = []
+default = ["std"]
 std = [
+    "bulletproofs/std",
     "codec/std",
     "frame-support/std",
     "frame-system/std",
     "rand/std",
-    "rand"
+    "rand",
 ]
 
 [[bench]]

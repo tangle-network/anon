@@ -1,6 +1,5 @@
-use bulletproofs::r1cs::{ConstraintSystem, R1CSError, Variable, Prover, Verifier};
+use bulletproofs::r1cs::{ConstraintSystem, R1CSError, Variable};
 use curve25519_dalek::scalar::Scalar;
-use bulletproofs::{BulletproofGens, PedersenGens};
 use bulletproofs::r1cs::LinearCombination;
 use crate::utils::{AllocatedScalar};
 
