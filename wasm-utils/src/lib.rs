@@ -43,33 +43,17 @@ pub struct MerkleClient {
 	levels: Vec<Vec<Data>>,
 	hasher: Poseidon,
 	max_leaves: u32,
-	store: Storage,
+	store: Option<Storage>,
 }
 
 #[wasm_bindgen]
 impl MerkleClient {
 	pub fn new(num_levels: usize) -> Self {
-		assert!(num_levels < 32 && num_levels > 0, "Invalid tree height!");
-		let max_levels = 32;
-		let init_root = Data::zero();
-		let init_tree_state = TreeState {
-			edge_nodes: vec![Data::zero(); num_levels],
-			leaf_count: 0,
-		};
-		let mut init_states = HashMap::new();
-		init_states.insert(init_root, init_tree_state);
+		let mut client = MerkleClient::init(num_levels);
 		let win = window().unwrap();
 		let store = win.local_storage().unwrap().unwrap();
-		Self {
-			curr_root: init_root,
-			states: init_states,
-			saved_leafs: HashMap::new(),
-			levels: vec![vec![Data::zero()]; num_levels],
-			leaf_indicies: HashMap::new(),
-			hasher: Poseidon::new(4),
-			max_leaves: u32::MAX >> (max_levels - num_levels),
-			store,
-		}
+		client.store = Some(store);
+		client
 	}
 
 	pub fn get_root(&self) -> JsValue {
@@ -98,7 +82,9 @@ impl MerkleClient {
 	pub fn generate_secrets_and_save(&self) -> Array {
 		let secrets = self.generate_secrets();
 		let key = format!("{}{}", STORAGE_SECRETS_PREFIX, VERSION);
-		let arr = if let Ok(Some(value)) = self.store.get_item(&key) {
+		assert!(self.store.is_some(), "Storage not initialized!");
+		let store = self.store.as_ref().unwrap();
+		let arr = if let Ok(Some(value)) = store.get_item(&key) {
 			let data = JSON::parse(&value).ok().unwrap();
 			Array::from(&data)
 		} else {
@@ -106,13 +92,15 @@ impl MerkleClient {
 		};
 		arr.push(&secrets);
 		let storage_string: String = JSON::stringify(&arr).unwrap().into();
-		self.store.set_item(&key, &storage_string).unwrap();
+		store.set_item(&key, &storage_string).unwrap();
 		secrets
 	}
 
 	pub fn load_secrets_from_storage(&mut self) {
 		let key = format!("{}{}", STORAGE_SECRETS_PREFIX, VERSION);
-		if let Ok(Some(value)) = self.store.get_item(&key) {
+		assert!(self.store.is_some(), "Storage not initialized!");
+		let store = self.store.as_ref().unwrap();
+		if let Ok(Some(value)) = store.get_item(&key) {
 			let data = JSON::parse(&value).ok().unwrap();
 			let arr = Array::from(&data);
 			let arr_iter = arr.iter();
@@ -166,13 +154,33 @@ impl MerkleClient {
 }
 
 impl MerkleClient {
+	// Separated from `new` method for testing purposes
+	pub fn init(num_levels: usize) -> Self {
+		assert!(num_levels < 32 && num_levels > 0, "Invalid tree height!");
+		let max_levels = 32;
+		let init_root = Data::zero();
+		let init_tree_state = TreeState {
+			edge_nodes: vec![Data::zero(); num_levels],
+			leaf_count: 0,
+		};
+		let mut init_states = HashMap::new();
+		init_states.insert(init_root, init_tree_state);
+		Self {
+			curr_root: init_root,
+			states: init_states,
+			saved_leafs: HashMap::new(),
+			levels: vec![vec![Data::zero()]; num_levels],
+			leaf_indicies: HashMap::new(),
+			hasher: Poseidon::new(4),
+			max_leaves: u32::MAX >> (max_levels - num_levels),
+			store: None,
+		}
+	}
+
 	// Used for testing purposes
 	pub fn deposit(&mut self) -> Data {
-		let [r_bytes, nullifier_bytes, leaf_bytes]: [[u8; 32]; 3] =
-			self.generate_secrets().into_serde().unwrap();
-		let r = Scalar::from_bytes_mod_order(r_bytes);
-		let nullifier = Scalar::from_bytes_mod_order(nullifier_bytes);
-		let leaf = Data::from(leaf_bytes);
+		let mut rng = OsRng::default();
+		let (r, nullifier, leaf) = leaf_data(&mut rng, &self.hasher);
 		let ld = LeafData { r, nullifier };
 		self.saved_leafs.insert(leaf, ld);
 		self.add_leaf(leaf);
@@ -306,7 +314,7 @@ mod tests {
 	use pallet_merkle::merkle::keys::Data;
 	#[test]
 	fn should_have_correct_root() {
-		let mut tree = MerkleClient::new(2);
+		let mut tree = MerkleClient::init(2);
 		let leaf1 = Data(Scalar::from(1u32));
 		let leaf2 = Data(Scalar::from(2u32));
 		let leaf3 = Data(Scalar::from(3u32));
@@ -331,7 +339,7 @@ mod tests {
 
 	#[test]
 	fn should_have_correct_levels() {
-		let mut tree = MerkleClient::new(2);
+		let mut tree = MerkleClient::init(2);
 		let leaf1 = Data(Scalar::from(1u32));
 		let leaf2 = Data(Scalar::from(2u32));
 		let leaf3 = Data(Scalar::from(3u32));
@@ -359,7 +367,7 @@ mod tests {
 
 	#[test]
 	fn should_have_correct_state() {
-		let mut tree = MerkleClient::new(2);
+		let mut tree = MerkleClient::init(2);
 		let leaf1 = Data(Scalar::from(1u32));
 		let leaf2 = Data(Scalar::from(2u32));
 		let leaf3 = Data(Scalar::from(3u32));
@@ -385,7 +393,7 @@ mod tests {
 
 	#[test]
 	fn should_make_correct_proof() {
-		let mut tree = MerkleClient::new(2);
+		let mut tree = MerkleClient::init(2);
 		let leaf1 = tree.deposit();
 		let leaf2 = tree.deposit();
 		let leaf3 = tree.deposit();
@@ -405,7 +413,7 @@ mod tests {
 
 	#[test]
 	fn should_not_verify_incorrect_proof() {
-		let mut tree = MerkleClient::new(2);
+		let mut tree = MerkleClient::init(2);
 		let leaf1 = tree.deposit();
 		let leaf2 = Data(Scalar::from(2u32));
 		let leaf3 = Data(Scalar::from(3u32));
@@ -421,7 +429,7 @@ mod tests {
 
 	#[test]
 	fn should_make_correct_zk_proof() {
-		let mut tree = MerkleClient::new(2);
+		let mut tree = MerkleClient::init(2);
 		let leaf1 = tree.deposit();
 		let leaf2 = tree.deposit();
 		let leaf3 = tree.deposit();
@@ -441,7 +449,7 @@ mod tests {
 
 	#[test]
 	fn should_not_verify_incorrect_zk_proof() {
-		let mut tree = MerkleClient::new(2);
+		let mut tree = MerkleClient::init(2);
 
 		tree.deposit();
 		let old_root = tree.curr_root;
