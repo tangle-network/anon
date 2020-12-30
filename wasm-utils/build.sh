@@ -1,1 +1,1 @@
-wasm-pack build && mv ./pcg ../web/wasm-utils
+wasm-pack build && cp -R ./pkg/* ../web/wasm-utils && rm -R ./pkg/
