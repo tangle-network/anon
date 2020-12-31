@@ -1,19 +1,21 @@
 const isServer = () => typeof window === 'undefined';
 
 function Index() {
-	import("../wasm-utils").then(module => {
-		if (!isServer()) {
-			let cl = module.MerkleClient.new(2);
-			let arr = cl.generate_secrets_and_save();
-			let leaf = arr[2];
-			cl.load_secrets_from_storage();
+	if (!isServer()) {
+		import("merkle-client").then(wasm => {
+			let cl = wasm.MerkleClient.new(2);
+			let note = cl.generate_note();
+			console.log(note, note.length);
+			let leaf = cl.save_note(note);
+			console.log(leaf);
+			cl.save_note_to_storage(note);
 
 			cl.add_leaves([leaf]);
 			let root = cl.get_root();
 			let proof = cl.generate_proof(root, leaf);
 			console.log(proof);
-		}
-	});
+		});
+	}
 	return "hello there";
 }
 

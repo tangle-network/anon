@@ -1,1 +1,1 @@
-wasm-pack build && cp -R ./pkg/* ../web/wasm-utils && rm -R ./pkg/
+wasm-pack build --out-name merkle-client && cp -R ./pkg/* ../web/merkle-client

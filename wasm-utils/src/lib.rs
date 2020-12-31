@@ -1,5 +1,5 @@
 use curve25519_dalek::scalar::Scalar;
-use js_sys::{Array, Map, JSON};
+use js_sys::{Array, Map, JSON, JsString};
 use pallet_merkle::merkle::helper::{leaf_data, prove_with_path, verify, ZkProof};
 use pallet_merkle::merkle::keys::Data;
 use pallet_merkle::merkle::poseidon::Poseidon;
@@ -7,6 +7,7 @@ use rand::rngs::OsRng;
 use std::collections::hash_map::HashMap;
 use wasm_bindgen::prelude::*;
 use web_sys::{window, Storage};
+use std::convert::TryInto;
 
 #[wasm_bindgen]
 extern "C" {
@@ -19,6 +20,22 @@ pub fn set_panic_hook() {
 	// `set_panic_hook`is called once during initialization
 	// we are printing useful errors when out code panics
 	console_error_panic_hook::set_once();
+}
+
+pub fn decode_hex(s: &str) -> [u8; 32] {
+	assert!(s.len() == 64, "Invalid hex length!");
+	let arr: Vec<u8> = (0..s.len())
+			.step_by(2)
+			.map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
+			.collect();
+	arr.try_into().unwrap()
+}
+
+pub fn encode_hex(bytes: [u8; 32]) -> String {
+	bytes
+		.iter()
+		.map(|&b| format!("{:02x}", b))
+		.collect()
 }
 
 const VERSION: &str = "0.1.0";
@@ -68,19 +85,36 @@ impl MerkleClient {
 		}
 	}
 
-	pub fn generate_secrets(&self) -> Array {
+	pub fn generate_note(&mut self) -> JsString {
 		let mut rng = OsRng::default();
 		let (r, nullifier, leaf) = leaf_data(&mut rng, &self.hasher);
-		let arr = Array::new();
-		arr.push(&JsValue::from_serde(&r.to_bytes()).unwrap());
-		arr.push(&JsValue::from_serde(&nullifier.to_bytes()).unwrap());
-		arr.push(&JsValue::from_serde(&leaf.0.to_bytes()).unwrap());
+		let ld = LeafData { r, nullifier };
+		self.saved_leafs.insert(leaf, ld);
 
-		arr
+		let encoded_r = encode_hex(r.to_bytes());
+		let encoded_nullifier = encode_hex(nullifier.to_bytes());
+		let note = encoded_r + &encoded_nullifier;
+		let note_js = JsString::from(note);
+
+		note_js
 	}
 
-	pub fn generate_secrets_and_save(&self) -> Array {
-		let secrets = self.generate_secrets();
+	pub fn save_note(&mut self, note_js: JsString) -> JsValue {
+		let note: String = note_js.into();
+		assert!(note.len() == 128, "Invalid note length");
+		let r_bytes = decode_hex(&note[..64]);
+		let nullifier_bytes = decode_hex(&note[64..]);
+
+		let r = Scalar::from_bytes_mod_order(r_bytes);
+		let nullifier = Scalar::from_bytes_mod_order(nullifier_bytes);
+		let leaf = Data::hash(Data(r), Data(nullifier), &self.hasher);
+
+		self.saved_leafs.insert(leaf, LeafData { r, nullifier });
+
+		JsValue::from_serde(&leaf.0.to_bytes()).unwrap()
+	}
+
+	pub fn save_note_to_storage(&self, note: &JsValue) {
 		let key = format!("{}{}", STORAGE_SECRETS_PREFIX, VERSION);
 		assert!(self.store.is_some(), "Storage not initialized!");
 		let store = self.store.as_ref().unwrap();
@@ -90,13 +124,12 @@ impl MerkleClient {
 		} else {
 			Array::new()
 		};
-		arr.push(&secrets);
+		arr.push(note);
 		let storage_string: String = JSON::stringify(&arr).unwrap().into();
 		store.set_item(&key, &storage_string).unwrap();
-		secrets
 	}
 
-	pub fn load_secrets_from_storage(&mut self) {
+	pub fn load_notes_from_storage(&mut self) {
 		let key = format!("{}{}", STORAGE_SECRETS_PREFIX, VERSION);
 		assert!(self.store.is_some(), "Storage not initialized!");
 		let store = self.store.as_ref().unwrap();
@@ -105,16 +138,8 @@ impl MerkleClient {
 			let arr = Array::from(&data);
 			let arr_iter = arr.iter();
 			for item in arr_iter {
-				let data_touple = Array::from(&item);
-				let r_bytes: [u8; 32] = data_touple.get(0).into_serde().unwrap();
-				let nullifier_bytes: [u8; 32] = data_touple.get(1).into_serde().unwrap();
-				let leaf_bytes: [u8; 32] = data_touple.get(2).into_serde().unwrap();
-
-				let r = Scalar::from_bytes_mod_order(r_bytes);
-				let nullifier = Scalar::from_bytes_mod_order(nullifier_bytes);
-				let leaf = Data::from(leaf_bytes);
-
-				self.saved_leafs.insert(leaf, LeafData { r, nullifier });
+				let note_string = JsString::from(item);
+				self.save_note(note_string);
 			}
 		};
 	}
@@ -310,8 +335,18 @@ impl MerkleClient {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use curve25519_dalek::scalar::Scalar;
-	use pallet_merkle::merkle::keys::Data;
+
+	#[test]
+	fn should_encode_and_decode_hex() {
+		let mut rng = OsRng::default();
+		let num = Scalar::random(&mut rng);
+
+		let enc = encode_hex(num.to_bytes());
+		let dec = decode_hex(&enc);
+
+		assert!(dec == num.to_bytes());
+	}
+
 	#[test]
 	fn should_have_correct_root() {
 		let mut tree = MerkleClient::init(2);

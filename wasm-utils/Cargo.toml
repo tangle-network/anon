@@ -1,6 +1,6 @@
 [package]
-name = "wasm-utils"
-version = "0.1.0"
+name = "merkle-client"
+version = "0.1.2"
 authors = ["Commonwealth <https://github.com/hicommonwealth>"]
 edition = "2018"
 
