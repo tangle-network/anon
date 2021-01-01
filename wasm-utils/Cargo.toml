@@ -1,6 +1,6 @@
 [package]
-name = "wasm-utils"
-version = "0.1.0"
+name = "merkle-client"
+version = "0.1.2"
 authors = ["Commonwealth <https://github.com/hicommonwealth>"]
 edition = "2018"
 
@@ -10,7 +10,19 @@ edition = "2018"
 wasm-bindgen = {version = "0.2.69", features = ["serde-serialize"]}
 curve25519-dalek = "3.0.0"
 pallet-merkle = { path = "../pallets/merkle" }
-rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
+js-sys = "0.3.46"
+console_error_panic_hook = "0.1.6"
+
+[dependencies.rand]
+version = "0.7"
+features = ["wasm-bindgen"]
+
+[dependencies.web-sys]
+version = "0.3.46"
+features = [
+	"Storage",
+	"Window",
+]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
