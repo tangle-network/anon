@@ -233,7 +233,7 @@ fn test_is_valid_transaction_spend() {
 			(proof, coms)
 		};
 
-		let mut verifier_transcript = Transcript::new(b"TransactionTest");
+		let mut verifier_transcript = Transcript::new(b"Transaction");
 		let mut verifier = Verifier::new(&mut verifier_transcript);
 		let mut allocs = vec![];
 		for i in 0..commitments.len() {
