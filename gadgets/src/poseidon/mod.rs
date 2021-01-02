@@ -7,8 +7,6 @@ use bulletproofs::{PedersenGens};
 use bulletproofs::r1cs::LinearCombination;
 use crate::utils::{AllocatedScalar, constrain_lc_with_scalar};
 
-
-
 pub mod sbox;
 pub use sbox::*;
 pub mod builder;
