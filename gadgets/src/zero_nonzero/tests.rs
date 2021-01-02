@@ -1,4 +1,6 @@
 use super::*;
+use bulletproofs::r1cs::{Prover, Verifier};
+use bulletproofs::{BulletproofGens, PedersenGens};
 use merlin::Transcript;
 
 #[test]
