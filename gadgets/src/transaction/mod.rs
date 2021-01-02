@@ -144,7 +144,9 @@ pub fn transaction_preimage_gadget<CS: ConstraintSystem>(
 	for i in 0..transactions.len() {
 		let tx = &transactions[i];
 		tx.hash_constraints(cs, poseidon_params)?;
-		tx.non_zero_constraints(cs)?;		
+		// ensure all amounts are non-zero
+		tx.non_zero_constraints(cs)?;
+		// TODO: ensure all amounts are less than MAX number
 
 		sum_inputs = sum_inputs + tx.input_amount();
 		sum_outputs = sum_outputs + tx.output_amount();
