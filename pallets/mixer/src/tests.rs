@@ -1,14 +1,14 @@
+use crate::mock::*;
 use bulletproofs::r1cs::LinearCombination;
-use rand::rngs::ThreadRng;
-use sp_runtime::DispatchError;
+use bulletproofs::r1cs::{ConstraintSystem, Prover};
+use bulletproofs::{BulletproofGens, PedersenGens};
 use curve25519_dalek::scalar::Scalar;
 use merkle::merkle::hasher::Hasher;
 use merkle::merkle::helper::{commit_leaf, commit_path_level, leaf_data};
 use merkle::merkle::keys::{Commitment, Data};
 use merkle::merkle::poseidon::Poseidon;
-use crate::mock::*;
-use bulletproofs::r1cs::{ConstraintSystem, Prover};
-use bulletproofs::{BulletproofGens, PedersenGens};
+use rand::rngs::ThreadRng;
+use sp_runtime::DispatchError;
 
 use frame_support::{assert_err, assert_ok};
 use merlin::Transcript;
@@ -63,7 +63,7 @@ fn should_fail_to_deposit_with_insufficient_balance() {
 				Mixer::deposit(Origin::signed(4), i, vec![leaf]),
 				DispatchError::Module {
 					index: 0,
-					error: 6,
+					error: 4,
 					message: Some("InsufficientBalance")
 				}
 			);

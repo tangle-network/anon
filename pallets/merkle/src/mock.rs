@@ -1,5 +1,5 @@
-use crate::{Module, Config};
-use frame_support::{impl_outer_origin, impl_outer_event, parameter_types, weights::Weight};
+use crate::{Config, Module};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 use frame_system as system;
 use sp_core::H256;
 use sp_runtime::{
@@ -58,9 +58,11 @@ impl frame_system::Config for Test {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
+	type SS58Prefix = Prefix;
 }
 
 parameter_types! {
+	pub Prefix: u8 = 100;
 	pub const ExistentialDeposit: Balance = 0;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxTreeDepth: u8 = 32;

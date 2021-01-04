@@ -1,8 +1,8 @@
-use sp_runtime::ModuleId;
-use crate::{Module, Config};
-use frame_support::{impl_outer_origin, impl_outer_event, parameter_types, weights::Weight};
+use crate::{Config, Module};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 use frame_system as system;
 use sp_core::H256;
+use sp_runtime::ModuleId;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
@@ -32,6 +32,7 @@ impl_outer_origin! {
 #[derive(Clone, Eq, PartialEq)]
 pub struct Test;
 parameter_types! {
+	pub Prefix: u8 = 100;
 	pub const BlockHashCount: u64 = 250;
 	pub const MaximumBlockWeight: Weight = 1024;
 	pub const MaximumBlockLength: u32 = 2 * 1024;
@@ -60,6 +61,7 @@ impl frame_system::Config for Test {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
+	type SS58Prefix = Prefix;
 }
 
 parameter_types! {
@@ -108,15 +110,15 @@ pub type Mixer = Module<Test>;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	use balances::{GenesisConfig as BalancesConfig};
-	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
-	BalancesConfig::<Test>{
+	use balances::GenesisConfig as BalancesConfig;
+	let mut t = frame_system::GenesisConfig::default()
+		.build_storage::<Test>()
+		.unwrap();
+	BalancesConfig::<Test> {
 		// Total issuance will be 200 with treasury account initialized at ED.
-		balances: vec![
-			(0, 1_000_000_000),
-			(1, 1_000_000_000),
-			(2, 1_000_000_000),
-		],
-	}.assimilate_storage(&mut t).unwrap();
+		balances: vec![(0, 1_000_000_000), (1, 1_000_000_000), (2, 1_000_000_000)],
+	}
+	.assimilate_storage(&mut t)
+	.unwrap();
 	t.into()
 }
