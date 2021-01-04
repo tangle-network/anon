@@ -4,3 +4,4 @@ pub mod poseidon;
 pub mod zero_nonzero;
 pub mod smt;
 pub mod utils;
+pub mod transaction;
