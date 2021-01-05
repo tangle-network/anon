@@ -1,1 +1,1 @@
-wasm-pack build --out-name merkle-client && cp -R ./pkg/* ../web/merkle-client
+wasm-pack build --out-name mixer-client && cp -R ./pkg/* ../web/mixer-client

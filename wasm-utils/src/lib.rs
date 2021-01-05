@@ -1,13 +1,13 @@
 use curve25519_dalek::scalar::Scalar;
-use js_sys::{Array, Map, JSON, JsString};
+use js_sys::{Array, JsString, Map, JSON};
 use pallet_merkle::merkle::helper::{leaf_data, prove_with_path, verify, ZkProof};
 use pallet_merkle::merkle::keys::Data;
 use pallet_merkle::merkle::poseidon::Poseidon;
 use rand::rngs::OsRng;
 use std::collections::hash_map::HashMap;
+use std::convert::TryInto;
 use wasm_bindgen::prelude::*;
 use web_sys::{window, Storage};
-use std::convert::TryInto;
 
 #[wasm_bindgen]
 extern "C" {
@@ -22,30 +22,167 @@ pub fn set_panic_hook() {
 	console_error_panic_hook::set_once();
 }
 
+// Decodes hex string into byte array
 pub fn decode_hex(s: &str) -> [u8; 32] {
 	assert!(s.len() == 64, "Invalid hex length!");
 	let arr: Vec<u8> = (0..s.len())
-			.step_by(2)
-			.map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
-			.collect();
+		.step_by(2)
+		.map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
+		.collect();
 	arr.try_into().unwrap()
 }
 
+// Encodes byte array
 pub fn encode_hex(bytes: [u8; 32]) -> String {
-	bytes
-		.iter()
-		.map(|&b| format!("{:02x}", b))
-		.collect()
+	bytes.iter().map(|&b| format!("{:02x}", b)).collect()
 }
 
-const VERSION: &str = "0.1.0";
-const STORAGE_SECRETS_PREFIX: &str = "WEBB-MIX-SECRETS-";
+// Keys used for saving things in storage and generating notes
+const STORAGE_SECRETS_PREFIX: &str = "webb-mix-secrets";
+const NOTE_PREFIX: &str = "webb.mix";
+
+#[wasm_bindgen]
+pub struct Mixer {
+	tree_map: HashMap<(String, u8), MerkleClient>,
+	store: Storage,
+}
+
+impl Mixer {
+	fn get_tree_mut(&mut self, asset: String, id: u8) -> &mut MerkleClient {
+		assert!(
+			self.tree_map.contains_key(&(asset.to_owned(), id)),
+			"Tree not found!"
+		);
+		let tree = self.tree_map.get_mut(&(asset.to_owned(), id)).unwrap();
+		tree
+	}
+
+	fn get_tree(&self, asset: String, id: u8) -> &MerkleClient {
+		assert!(
+			self.tree_map.contains_key(&(asset.to_owned(), id)),
+			"Tree not found!"
+		);
+		let tree = self.tree_map.get(&(asset.to_owned(), id)).unwrap();
+		tree
+	}
+}
+
+// Implementation available to JS
+#[wasm_bindgen]
+impl Mixer {
+	pub fn new(trees_js: JsValue) -> Self {
+		let trees: Vec<(String, u8, usize)> = trees_js.into_serde().unwrap();
+		let mut tree_map = HashMap::new();
+		for (asset, id, height) in trees {
+			tree_map.insert((asset, id), MerkleClient::init(height));
+		}
+		let win = window().unwrap();
+		let store = win.local_storage().unwrap().unwrap();
+		Mixer { tree_map, store }
+	}
+
+	pub fn add_leaves(&mut self, asset: String, id: u8, leaves: JsValue) {
+		let tree = self.get_tree_mut(asset, id);
+		tree.add_leaves(leaves);
+	}
+
+	pub fn generate_proof(&self, asset: String, id: u8, root: JsValue, leaf: JsValue) -> Map {
+		let tree = self.get_tree(asset, id);
+		tree.generate_proof(root, leaf)
+	}
+
+	pub fn get_root(&self, asset: String, id: u8) -> JsValue {
+		let tree = self.get_tree(asset, id);
+		tree.get_root()
+	}
+
+	// Generates a new note with random samples
+	// note has a format of `webb.mix-<mixed_id>-<r as hex string><nullifier as hex string>`
+	pub fn generate_note(&mut self, asset: String, id: u8) -> JsString {
+		assert!(
+			self.tree_map.contains_key(&(asset.to_owned(), id)),
+			"Tree not found!"
+		);
+		let tree = self.tree_map.get_mut(&(asset.to_owned(), id)).unwrap();
+		let (r, nullifier, _) = tree.generate_leaf_data();
+
+		let encoded_r = encode_hex(r.to_bytes());
+		let encoded_nullifier = encode_hex(nullifier.to_bytes());
+		let note = format!(
+			"{}-{}-{}-{}{}",
+			NOTE_PREFIX, asset, id, encoded_r, encoded_nullifier
+		);
+		let note_js = JsString::from(note);
+
+		note_js
+	}
+
+	// Saving the note to a memory.
+	// First it checks if the note is in valid format,
+	// then decodes it and saves a note to a Merkle Client
+	// to be used for constructing the proof
+	pub fn save_note(&mut self, note_js: JsString) -> JsValue {
+		let note: String = note_js.into();
+
+		let parts: Vec<&str> = note.split("-").collect();
+		assert!(parts[0] == NOTE_PREFIX, "Invalid note!");
+		let asset: String = parts[1].to_owned();
+		let id: u8 = parts[2].parse().unwrap();
+		assert!(
+			self.tree_map.contains_key(&(asset.to_owned(), id)),
+			"Tree not found!"
+		);
+		let note_val = parts[3];
+		assert!(note_val.len() == 128, "Invalid note length");
+
+		// Checking the validity
+		let r_bytes = decode_hex(&note_val[..64]);
+		let nullifier_bytes = decode_hex(&note_val[64..]);
+
+		let tree = self.tree_map.get_mut(&(asset, id)).unwrap();
+		let (r, nullifier, leaf) = tree.leaf_data_from_bytes(r_bytes, nullifier_bytes);
+		tree.saved_leafs.insert(leaf, LeafData { r, nullifier });
+
+		JsValue::from_serde(&leaf.0.to_bytes()).unwrap()
+	}
+
+	// Saving to storage which is an option with users consent
+	// All saved notes are stored into one array
+	pub fn save_note_to_storage(&self, note: &JsValue) {
+		let key = STORAGE_SECRETS_PREFIX;
+		let arr = if let Ok(Some(value)) = self.store.get_item(&key) {
+			let data = JSON::parse(&value).ok().unwrap();
+			Array::from(&data)
+		} else {
+			Array::new()
+		};
+		arr.push(note);
+		let storage_string: String = JSON::stringify(&arr).unwrap().into();
+		self.store.set_item(&key, &storage_string).unwrap();
+	}
+
+	// Loads saved notes from the storage and saves them to memory
+	// to be used for constructing the tree
+	pub fn load_notes_from_storage(&mut self) {
+		let key = STORAGE_SECRETS_PREFIX;
+		if let Ok(Some(value)) = self.store.get_item(&key) {
+			let data = JSON::parse(&value).ok().unwrap();
+			let arr = Array::from(&data);
+			let arr_iter = arr.iter();
+			for item in arr_iter {
+				let note_string = JsString::from(item);
+				self.save_note(note_string);
+			}
+		};
+	}
+}
 
 pub struct LeafData {
 	r: Scalar,
 	nullifier: Scalar,
 }
 
+// State of the tree which includes its size + current edge nodes
 pub struct TreeState {
 	edge_nodes: Vec<Data>,
 	leaf_count: usize,
@@ -58,25 +195,18 @@ pub struct MerkleClient {
 	saved_leafs: HashMap<Data, LeafData>,
 	leaf_indicies: HashMap<Data, usize>,
 	levels: Vec<Vec<Data>>,
-	hasher: Poseidon,
 	max_leaves: u32,
-	store: Option<Storage>,
+	hasher: Poseidon,
 }
 
 #[wasm_bindgen]
 impl MerkleClient {
-	pub fn new(num_levels: usize) -> Self {
-		let mut client = MerkleClient::init(num_levels);
-		let win = window().unwrap();
-		let store = win.local_storage().unwrap().unwrap();
-		client.store = Some(store);
-		client
-	}
-
+	// Get the current root, mostly used for testing
 	pub fn get_root(&self) -> JsValue {
 		JsValue::from_serde(&self.curr_root.0.to_bytes()).unwrap()
 	}
 
+	// Add array of leaves fetched from the chain
 	pub fn add_leaves(&mut self, leaves: JsValue) {
 		let elements: Vec<[u8; 32]> = leaves.into_serde().unwrap();
 		for elem in elements {
@@ -85,77 +215,20 @@ impl MerkleClient {
 		}
 	}
 
-	pub fn generate_note(&mut self) -> JsString {
-		let mut rng = OsRng::default();
-		let (r, nullifier, leaf) = leaf_data(&mut rng, &self.hasher);
-		let ld = LeafData { r, nullifier };
-		self.saved_leafs.insert(leaf, ld);
-
-		let encoded_r = encode_hex(r.to_bytes());
-		let encoded_nullifier = encode_hex(nullifier.to_bytes());
-		let note = encoded_r + &encoded_nullifier;
-		let note_js = JsString::from(note);
-
-		note_js
-	}
-
-	pub fn save_note(&mut self, note_js: JsString) -> JsValue {
-		let note: String = note_js.into();
-		assert!(note.len() == 128, "Invalid note length");
-		let r_bytes = decode_hex(&note[..64]);
-		let nullifier_bytes = decode_hex(&note[64..]);
-
-		let r = Scalar::from_bytes_mod_order(r_bytes);
-		let nullifier = Scalar::from_bytes_mod_order(nullifier_bytes);
-		let leaf = Data::hash(Data(r), Data(nullifier), &self.hasher);
-
-		self.saved_leafs.insert(leaf, LeafData { r, nullifier });
-
-		JsValue::from_serde(&leaf.0.to_bytes()).unwrap()
-	}
-
-	pub fn save_note_to_storage(&self, note: &JsValue) {
-		let key = format!("{}{}", STORAGE_SECRETS_PREFIX, VERSION);
-		assert!(self.store.is_some(), "Storage not initialized!");
-		let store = self.store.as_ref().unwrap();
-		let arr = if let Ok(Some(value)) = store.get_item(&key) {
-			let data = JSON::parse(&value).ok().unwrap();
-			Array::from(&data)
-		} else {
-			Array::new()
-		};
-		arr.push(note);
-		let storage_string: String = JSON::stringify(&arr).unwrap().into();
-		store.set_item(&key, &storage_string).unwrap();
-	}
-
-	pub fn load_notes_from_storage(&mut self) {
-		let key = format!("{}{}", STORAGE_SECRETS_PREFIX, VERSION);
-		assert!(self.store.is_some(), "Storage not initialized!");
-		let store = self.store.as_ref().unwrap();
-		if let Ok(Some(value)) = store.get_item(&key) {
-			let data = JSON::parse(&value).ok().unwrap();
-			let arr = Array::from(&data);
-			let arr_iter = arr.iter();
-			for item in arr_iter {
-				let note_string = JsString::from(item);
-				self.save_note(note_string);
-			}
-		};
-	}
-
+	// Generates zk proof
 	pub fn generate_proof(&self, root_json: JsValue, leaf_json: JsValue) -> Map {
 		let root_bytes: [u8; 32] = root_json.into_serde().unwrap();
 		let leaf_bytes: [u8; 32] = leaf_json.into_serde().unwrap();
 		let root = Data::from(root_bytes);
 		let leaf = Data::from(leaf_bytes);
+
 		let proof = self.prove_zk(root, leaf);
 
 		let path = Array::new();
 		for (bit, node) in proof.path {
 			let level_arr = Array::new();
-			let bit_js = JsValue::from_serde(&bit.0.0).unwrap();
-			let node_js = JsValue::from_serde(&node.0.0).unwrap();
+			let bit_js = JsValue::from_serde(&(bit.0).0).unwrap();
+			let node_js = JsValue::from_serde(&(node.0).0).unwrap();
 
 			level_arr.push(&bit_js);
 			level_arr.push(&node_js);
@@ -196,10 +269,27 @@ impl MerkleClient {
 			saved_leafs: HashMap::new(),
 			levels: vec![vec![Data::zero()]; num_levels],
 			leaf_indicies: HashMap::new(),
-			hasher: Poseidon::new(4),
 			max_leaves: u32::MAX >> (max_levels - num_levels),
-			store: None,
+			hasher: Poseidon::new(4),
 		}
+	}
+
+	pub fn generate_leaf_data(&self) -> (Scalar, Scalar, Data) {
+		let mut rng = OsRng::default();
+
+		leaf_data(&mut rng, &self.hasher)
+	}
+
+	pub fn leaf_data_from_bytes(
+		&self,
+		r_bytes: [u8; 32],
+		nullifier_bytes: [u8; 32],
+	) -> (Scalar, Scalar, Data) {
+		let r = Scalar::from_bytes_mod_order(r_bytes);
+		let nullifier = Scalar::from_bytes_mod_order(nullifier_bytes);
+		// Constructing a leaf from the scalars
+		let leaf = Data::hash(Data(r), Data(nullifier), &self.hasher);
+		(r, nullifier, leaf)
 	}
 
 	// Used for testing purposes
@@ -212,6 +302,8 @@ impl MerkleClient {
 		leaf
 	}
 
+	// Adds a single leaf to the tree
+	// Saves the new state and saves the index of the added leaf
 	pub fn add_leaf(&mut self, leaf: Data) {
 		assert!(
 			self.levels[0].len() < self.max_leaves as usize,
@@ -254,6 +346,7 @@ impl MerkleClient {
 		self.states.insert(pair_hash, new_state);
 	}
 
+	// Membership proofs
 	pub fn prove(&self, root: Data, leaf: Data) -> Vec<(bool, Data)> {
 		assert!(self.states.contains_key(&root), "Root not found!");
 		assert!(self.leaf_indicies.contains_key(&leaf), "Leaf not found!");
