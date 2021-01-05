@@ -322,7 +322,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		leaf_com: Commitment,
 		path: Vec<(Commitment, Commitment)>,
 		r_com: Commitment,
-		nullifier: Data,
+		nullifier_com: Commitment,
+		nullifier_hash: Data,
 		proof_bytes: Vec<u8>
 	) -> Result<(), dispatch::DispatchError> {
 		let tree = <Groups<T>>::get(group_id)
@@ -344,7 +345,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 			leaf_com,
 			path,
 			r_com,
-			nullifier,
+			nullifier_com,
+			nullifier_hash,
 			proof_bytes,
 		)
 	}
@@ -355,7 +357,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		leaf_com: Commitment,
 		path: Vec<(Commitment, Commitment)>,
 		r_com: Commitment,
-		nullifier: Data,
+		nullifier_com: Commitment,
+		nullifier_hash: Data,
 		proof_bytes: Vec<u8>
 	) -> Result<(), dispatch::DispatchError> {
 		let h = default_hasher();
@@ -364,8 +367,9 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 
 		let var_leaf = verifier.commit(leaf_com.0);
 		let var_s = verifier.commit(r_com.0);
+		let var_nullifier = verifier.commit(nullifier_com.0);
 		let leaf_lc =
-			Data::constrain_verifier(&mut verifier, &pc_gens, var_s.into(), nullifier.0.into(), &h);
+			Data::constrain_verifier(&mut verifier, &pc_gens, var_s.into(), var_nullifier.into(), &h);
 		// Commited leaf value should be the same as calculated
 		verifier.constrain(leaf_lc - var_leaf);
 

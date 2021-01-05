@@ -18,6 +18,7 @@ pub trait Group<AccountId, BlockNumber, GroupId> {
 		leaf_com: Commitment,
 		path: Vec<(Commitment, Commitment)>,
 		r_com: Commitment,
+		nullifier_com: Commitment,
 		nullifier: Data,
 		proof_bytes: Vec<u8>
 	) -> Result<(), dispatch::DispatchError>;
@@ -28,6 +29,7 @@ pub trait Group<AccountId, BlockNumber, GroupId> {
 		leaf_com: Commitment,
 		path: Vec<(Commitment, Commitment)>,
 		r_com: Commitment,
+		nullifier_com: Commitment,
 		nullifier: Data,
 		proof_bytes: Vec<u8>
 	) -> Result<(), dispatch::DispatchError>;
