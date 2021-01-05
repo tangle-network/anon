@@ -366,10 +366,10 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		let mut verifier = Verifier::new(&mut verifier_transcript);
 
 		let var_leaf = verifier.commit(leaf_com.0);
-		let var_s = verifier.commit(r_com.0);
+		let var_r = verifier.commit(r_com.0);
 		let var_nullifier = verifier.commit(nullifier_com.0);
 		let leaf_lc =
-			Data::constrain_verifier(&mut verifier, &pc_gens, var_s.into(), var_nullifier.into(), &h);
+			Data::constrain_verifier(&mut verifier, &pc_gens, var_r.into(), var_nullifier.into(), &h);
 		// Commited leaf value should be the same as calculated
 		verifier.constrain(leaf_lc - var_leaf);
 		// committed nullifier into a hash should match hash of nullifier
