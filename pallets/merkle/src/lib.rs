@@ -380,7 +380,7 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 			var_nullifier.into(),
 			&h
 		);
-		verifier.constrain(nullifier_hash_lc - nullifier_hash.0);
+		verifier.constrain(nullifier_hash_lc - LinearCombination::from(nullifier_hash.0));
 
 		// Check of path proof is correct
 		// hash = 5
