@@ -157,7 +157,8 @@ decl_module! {
 			leaf_com: Commitment,
 			path: Vec<(Commitment, Commitment)>,
 			r_com: Commitment,
-			nullifier: Data,
+			nullifier_com: Commitment,
+			nullifier_hash: Data,
 			proof_bytes: Vec<u8>
 		) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
@@ -166,7 +167,7 @@ decl_module! {
 			// check if the nullifier has been used
 			// Returns `()` if the nullifier has not been used
 			// otherwise returns `Err` from merkle groups pallet
-			T::Group::has_used_nullifier(mixer_id.into(), nullifier)?;
+			T::Group::has_used_nullifier(mixer_id.into(), nullifier_hash)?;
 			// Verify the zero-knowledge proof of membership provided
 			// Returns `()` if verification is successful
 			// Otherwise returns `Err` for failed verification / bad proof from merkle groups pallet
@@ -177,13 +178,14 @@ decl_module! {
 				leaf_com,
 				path,
 				r_com,
-				nullifier,
+				nullifier_com,
+				nullifier_hash,
 				proof_bytes,
 			)?;
 			// transfer the fixed deposit size to the sender
 			T::Currency::transfer(&Self::account_id(), &sender, mixer_info.fixed_deposit_size, AllowDeath)?;
 			// Add the nullifier on behalf of the module
-			T::Group::add_nullifier(Self::account_id(), mixer_id.into(), nullifier)
+			T::Group::add_nullifier(Self::account_id(), mixer_id.into(), nullifier_hash)
 		}
 
 		#[weight = 0]

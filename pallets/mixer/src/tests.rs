@@ -25,10 +25,10 @@ fn default_hasher() -> impl Hasher {
 	// Mimc::new(70)
 }
 
-fn create_deposit_info(mut test_rng: &mut ThreadRng) -> (Scalar, Scalar, Data) {
+fn create_deposit_info(mut test_rng: &mut ThreadRng) -> (Scalar, Scalar, Data, Data) {
 	let h = default_hasher();
-	let (s, nullifier, leaf) = leaf_data(&mut test_rng, &h);
-	(s, nullifier, leaf)
+	let (s, nullifier, nullifier_hash, leaf) = leaf_data(&mut test_rng, &h);
+	(s, nullifier, nullifier_hash, leaf)
 }
 
 #[test]
@@ -58,7 +58,7 @@ fn should_fail_to_deposit_with_insufficient_balance() {
 			let dep = create_deposit_info(&mut test_rng);
 			deposits.push(dep);
 			// ensure depositing works
-			let (_, _, leaf) = dep;
+			let (_, _, _, leaf) = dep;
 			assert_err!(
 				Mixer::deposit(Origin::signed(4), i, vec![leaf]),
 				DispatchError::Module {
@@ -81,7 +81,7 @@ fn should_deposit_into_each_mixer_successfully() {
 			let dep = create_deposit_info(&mut test_rng);
 			deposits.push(dep);
 			// ensure depositing works
-			let (_, _, leaf) = dep;
+			let (_, _, _, leaf) = dep;
 			let balance_before = Balances::free_balance(1);
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![leaf]));
 			let balance_after = Balances::free_balance(1);
@@ -110,15 +110,15 @@ fn should_withdraw_from_each_mixer_successfully() {
 			let dep = create_deposit_info(&mut test_rng);
 			deposits.push(dep);
 			// ensure depositing works
-			let (s, nullifier, leaf) = dep;
+			let (s, nullifier, nullifier_hash, leaf) = dep;
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![leaf]));
 
 			let root = MerkleGroups::get_merkle_root(i);
 			let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 			let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-			let (s_com, leaf_com1, leaf_var1) =
-				commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, &h);
+			let (s_com, nullifier_com, leaf_com1, leaf_var1) =
+				commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, nullifier_hash, &h);
 
 			let mut lh = leaf;
 			let mut lh_lc: LinearCombination = leaf_var1.into();
@@ -145,7 +145,8 @@ fn should_withdraw_from_each_mixer_successfully() {
 				Commitment(leaf_com1),
 				path,
 				Commitment(s_com),
-				Data(nullifier),
+				Commitment(nullifier_com),
+				nullifier_hash,
 				proof.to_bytes(),
 			));
 			let balance_after = Balances::free_balance(2);

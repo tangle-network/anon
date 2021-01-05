@@ -277,13 +277,13 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		Ok(())
 	}
 
-	fn add_nullifier(sender: T::AccountId, id: T::GroupId, nullifier: Data) -> Result<(), dispatch::DispatchError> {
+	fn add_nullifier(sender: T::AccountId, id: T::GroupId, nullifier_hash: Data) -> Result<(), dispatch::DispatchError> {
 		let tree = <Groups<T>>::get(id)
 			.ok_or(Error::<T>::GroupDoesntExist)
 			.unwrap();
 		// Check if the tree requires extrinsics to be called from a manager
 		ensure!(Self::is_manager_required(sender.clone(), &tree), Error::<T>::ManagerIsRequired);
-		UsedNullifiers::<T>::insert((id, nullifier), true);
+		UsedNullifiers::<T>::insert((id, nullifier_hash), true);
 		Ok(())
 	}
 
