@@ -26,11 +26,12 @@ pub fn constrain_lc_with_scalar<CS: ConstraintSystem>(cs: &mut CS, lc: LinearCom
 }
 
 /// A leaf in our system represents a commitment to a random number `r` and a random number `nullifier`
-pub fn leaf_data<H: Hasher, C: CryptoRng + RngCore>(rng: &mut C, h: &H) -> (Scalar, Scalar, Data) {
+pub fn leaf_data<H: Hasher, C: CryptoRng + RngCore>(rng: &mut C, h: &H) -> (Scalar, Scalar, Data, Data) {
 	let r = Scalar::random(rng);
 	let nullifier = Scalar::random(rng);
+	let nullifier_hash = Data::hash(Data(nullifier), Data(nullifier), h);
 	let leaf = Data::hash(Data(r), Data(nullifier), h);
-	(r, nullifier, leaf)
+	(r, nullifier, nullifier_hash, leaf)
 }
 
 pub fn commit_leaf<H: Hasher, C: CryptoRng + RngCore>(
@@ -91,8 +92,7 @@ pub fn commit_path_level<H: Hasher, C: CryptoRng + RngCore>(
 
 pub fn prove_with_random_leaf<H: Hasher>(h: &H) -> (Data, Data, ZkProof) {
 	let mut test_rng = OsRng;
-	let (r, nullifier, leaf) = leaf_data(&mut test_rng, h);
-	let nullifier_hash = Data::hash(Data(nullifier), Data(nullifier), h);
+	let (r, nullifier, nullifier_hash, leaf) = leaf_data(&mut test_rng, h);
 	let mut path = Vec::new();
 	let mut hash = leaf;
 	for _ in 0..32 {
