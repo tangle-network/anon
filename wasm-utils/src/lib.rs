@@ -97,7 +97,7 @@ impl Mixer {
 	}
 
 	// Generates a new note with random samples
-	// note has a format of `webb-mix-<mixed_id>-<r as hex string><nullifier as hex string>`
+	// note has a format of `webb.mix-<mixed_id>-<r as hex string><nullifier as hex string>`
 	pub fn generate_note(&mut self, asset: String, id: u8) -> JsString {
 		assert!(
 			self.tree_map.contains_key(&(asset.to_owned(), id)),
@@ -215,7 +215,7 @@ impl MerkleClient {
 		}
 	}
 
-		// Generates zk proof
+	// Generates zk proof
 	pub fn generate_proof(&self, root_json: JsValue, leaf_json: JsValue) -> Map {
 		let root_bytes: [u8; 32] = root_json.into_serde().unwrap();
 		let leaf_bytes: [u8; 32] = leaf_json.into_serde().unwrap();
@@ -227,8 +227,8 @@ impl MerkleClient {
 		let path = Array::new();
 		for (bit, node) in proof.path {
 			let level_arr = Array::new();
-			let bit_js = JsValue::from_serde(&bit.0.0).unwrap();
-			let node_js = JsValue::from_serde(&node.0.0).unwrap();
+			let bit_js = JsValue::from_serde(&(bit.0).0).unwrap();
+			let node_js = JsValue::from_serde(&(node.0).0).unwrap();
 
 			level_arr.push(&bit_js);
 			level_arr.push(&node_js);
@@ -280,7 +280,11 @@ impl MerkleClient {
 		leaf_data(&mut rng, &self.hasher)
 	}
 
-	pub fn leaf_data_from_bytes(&self, r_bytes: [u8; 32], nullifier_bytes: [u8; 32]) -> (Scalar, Scalar, Data) {
+	pub fn leaf_data_from_bytes(
+		&self,
+		r_bytes: [u8; 32],
+		nullifier_bytes: [u8; 32],
+	) -> (Scalar, Scalar, Data) {
 		let r = Scalar::from_bytes_mod_order(r_bytes);
 		let nullifier = Scalar::from_bytes_mod_order(nullifier_bytes);
 		// Constructing a leaf from the scalars
@@ -379,12 +383,7 @@ impl MerkleClient {
 	}
 
 	// Mostly used for testing purposes
-	pub fn verify(
-		&self,
-		root: Data,
-		leaf: Data,
-		path: Vec<(bool, Data)>,
-	) -> bool {
+	pub fn verify(&self, root: Data, leaf: Data, path: Vec<(bool, Data)>) -> bool {
 		let mut hash = leaf;
 		for (right, pair) in path {
 			hash = if right {
