@@ -505,7 +505,6 @@ fn should_verify_simple_zk_proof_of_membership() {
 		let (s_com, leaf_com1, nullifier_com, leaf_var1) =
 			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, nullifier_hash, &h);
 
-
 		let root = Data::hash(leaf, leaf, &h);
 		let (bit_com, leaf_com2, root_con) =
 			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), 1, &h);

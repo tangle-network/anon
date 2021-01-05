@@ -372,6 +372,15 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 			Data::constrain_verifier(&mut verifier, &pc_gens, var_s.into(), var_nullifier.into(), &h);
 		// Commited leaf value should be the same as calculated
 		verifier.constrain(leaf_lc - var_leaf);
+		// committed nullifier into a hash should match hash of nullifier
+		let nullifier_hash_lc = Data::constrain_verifier(
+			&mut verifier,
+			&pc_gens,
+			var_nullifier.into(),
+			var_nullifier.into(),
+			&h
+		);
+		verifier.constrain(nullifier_hash_lc - nullifier_hash.0);
 
 		// Check of path proof is correct
 		// hash = 5

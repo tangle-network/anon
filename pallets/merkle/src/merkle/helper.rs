@@ -163,11 +163,12 @@ pub fn verify<H: Hasher>(root_hash: Data, zk_proof: ZkProof, h: &H) -> Result<()
 		h,
 	);
 	verifier.constrain(leaf_lc - var_leaf);
+
 	let nullifier_hash_lc = Data::constrain_verifier(
 		&mut verifier,
 		&pc_gens,
-		LinearCombination::from(var_nullifier),
-		LinearCombination::from(var_nullifier),
+		var_nullifier.into(),
+		var_nullifier.into(),
 		h
 	);
 	constrain_lc_with_scalar::<Verifier>(&mut verifier, nullifier_hash_lc, &zk_proof.nullifier_hash.0);
