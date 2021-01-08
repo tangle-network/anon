@@ -122,7 +122,7 @@ impl Mixer {
 	// First it checks if the note is in valid format,
 	// then decodes it and saves a note to a Merkle Client
 	// to be used for constructing the proof
-	pub fn save_note(&mut self, note_js: JsString) -> JsValue {
+	pub fn save_note(&mut self, note_js: JsString) -> Map {
 		let note: String = note_js.into();
 
 		let parts: Vec<&str> = note.split("-").collect();
@@ -141,10 +141,26 @@ impl Mixer {
 		let nullifier_bytes = decode_hex(&note_val[64..]);
 
 		let tree = self.tree_map.get_mut(&(asset, id)).unwrap();
-		let (r, nullifier, nullifier_hash, leaf) = tree.leaf_data_from_bytes(r_bytes, nullifier_bytes);
-		tree.saved_leafs.insert(leaf, LeafData { r, nullifier, nullifier_hash });
+		let (r, nullifier, nullifier_hash, leaf) =
+			tree.leaf_data_from_bytes(r_bytes, nullifier_bytes);
+		tree.saved_leafs.insert(
+			leaf,
+			LeafData {
+				r,
+				nullifier,
+				nullifier_hash,
+			},
+		);
 
-		JsValue::from_serde(&leaf.0.to_bytes()).unwrap()
+		let leaf_js = JsValue::from_serde(&leaf.0.to_bytes()).unwrap();
+		let asset_js = JsValue::from(&asset);
+		let id_js = JsValue::from(id);
+
+		let map = Map::new();
+		map.set(&JsValue::from_str("leaf"), &leaf_js);
+		map.set(&JsValue::from_str("asset"), &asset_js);
+		map.set(&JsValue::from_str("id"), &id_js);
+		map
 	}
 
 	// Saving to storage which is an option with users consent
@@ -258,7 +274,7 @@ impl MerkleClient {
 impl MerkleClient {
 	// Separated from `new` method for testing purposes
 	pub fn init(num_levels: usize) -> Self {
-		assert!(num_levels < 32 && num_levels > 0, "Invalid tree height!");
+		assert!(num_levels <= 32 && num_levels > 0, "Invalid tree height!");
 		let max_levels = 32;
 		let init_root = Data::zero();
 		let init_tree_state = TreeState {
@@ -302,7 +318,11 @@ impl MerkleClient {
 	pub fn deposit(&mut self) -> Data {
 		let mut rng = OsRng::default();
 		let (r, nullifier, nullifier_hash, leaf) = leaf_data(&mut rng, &self.hasher);
-		let ld = LeafData { r, nullifier, nullifier_hash };
+		let ld = LeafData {
+			r,
+			nullifier,
+			nullifier_hash,
+		};
 		self.saved_leafs.insert(leaf, ld);
 		self.add_leaf(leaf);
 		leaf
@@ -424,7 +444,15 @@ impl MerkleClient {
 			.map(|(side, d)| (!side, d))
 			.collect();
 
-		let zk_proof = prove_with_path(root, leaf, ld.nullifier_hash, ld.nullifier, ld.r, path_data, &self.hasher);
+		let zk_proof = prove_with_path(
+			root,
+			leaf,
+			ld.nullifier_hash,
+			ld.nullifier,
+			ld.r,
+			path_data,
+			&self.hasher,
+		);
 		assert!(zk_proof.is_ok(), "Could not make proof!");
 
 		zk_proof.unwrap()

@@ -2,12 +2,15 @@ const isServer = () => typeof window === 'undefined';
 
 function Index() {
 	if (!isServer()) {
-		import("mixer-cl").then(wasm => {
-			let cl = wasm.Mixer.new([["EDG", 0, 2]]);
+		import("../mixer-client").then(wasm => {
+			let cl = wasm.Mixer.new([["EDG", 0, 32]]);
 			let note = cl.generate_note("EDG", 0);
 			console.log(note, note.length);
-			let leaf = cl.save_note(note);
-			console.log(leaf);
+			let data = cl.save_note(note);
+			let leaf = data.get("leaf");
+			let asset = data.get("asset");
+			let id = data.get("id");
+			console.log(leaf, asset, id);
 			cl.save_note_to_storage(note);
 			cl.load_notes_from_storage();
 
