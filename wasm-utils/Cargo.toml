@@ -1,6 +1,6 @@
 [package]
 name = "mixer-cl"
-version = "0.1.5"
+version = "0.1.7"
 authors = ["Commonwealth <https://github.com/hicommonwealth>"]
 edition = "2018"
 

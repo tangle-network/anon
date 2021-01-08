@@ -99,7 +99,7 @@ impl Mixer {
 
 	// Generates a new note with random samples
 	// note has a format of `webb.mix-<mixed_id>-<r as hex string><nullifier as hex string>`
-	pub fn generate_note(&mut self, asset: String, id: u8) -> JsString {
+	pub fn generate_note(&mut self, asset: String, id: u8, block_number: u32) -> JsString {
 		assert!(
 			self.tree_map.contains_key(&(asset.to_owned(), id)),
 			"Tree not found!"
@@ -110,8 +110,8 @@ impl Mixer {
 		let encoded_r = encode_hex(r.to_bytes());
 		let encoded_nullifier = encode_hex(nullifier.to_bytes());
 		let note = format!(
-			"{}-{}-{}-{}{}",
-			NOTE_PREFIX, asset, id, encoded_r, encoded_nullifier
+			"{}-{}-{}-{}-{}{}",
+			NOTE_PREFIX, asset, id, block_number, encoded_r, encoded_nullifier
 		);
 		let note_js = JsString::from(note);
 
@@ -133,7 +133,8 @@ impl Mixer {
 			self.tree_map.contains_key(&(asset.to_owned(), id)),
 			"Tree not found!"
 		);
-		let note_val = parts[3];
+		let block_number: u32 = parts[3].parse().unwrap();
+		let note_val = parts[4];
 		assert!(note_val.len() == 128, "Invalid note length");
 
 		// Checking the validity
@@ -155,11 +156,13 @@ impl Mixer {
 		let leaf_js = JsValue::from_serde(&leaf.0.to_bytes()).unwrap();
 		let asset_js = JsValue::from(&asset);
 		let id_js = JsValue::from(id);
+		let block_number_js = JsValue::from(block_number);
 
 		let map = Map::new();
 		map.set(&JsValue::from_str("leaf"), &leaf_js);
 		map.set(&JsValue::from_str("asset"), &asset_js);
 		map.set(&JsValue::from_str("id"), &id_js);
+		map.set(&JsValue::from_str("block_number"), &block_number_js);
 		map
 	}
 
