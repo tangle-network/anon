@@ -16,8 +16,11 @@ function Index() {
 			cl.load_notes_from_storage();
 
 			cl.add_leaves("EDG", 0, [leaf]);
-			let root = cl.get_root("EDG", 0);
-			let proof = cl.generate_proof("EDG", 0, root, leaf);
+			let root1 = cl.get_root("EDG", 0);
+			cl.add_leaves("EDG", 0, [leaf]);
+			let root2 = cl.get_root("EDG", 0);
+			console.log(root1, root2);
+			let proof = cl.generate_proof("EDG", 0, root2, leaf);
 			console.log(proof);
 		});
 	}

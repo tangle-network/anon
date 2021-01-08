@@ -217,6 +217,7 @@ pub struct MerkleClient {
 	leaf_indicies: HashMap<Data, usize>,
 	levels: Vec<Vec<Data>>,
 	max_leaves: u32,
+	num_levels: usize,
 	hasher: Poseidon,
 }
 
@@ -230,6 +231,11 @@ impl MerkleClient {
 	// Add array of leaves fetched from the chain
 	pub fn add_leaves(&mut self, leaves: JsValue) {
 		let elements: Vec<[u8; 32]> = leaves.into_serde().unwrap();
+		let (root, states, levels, leaf_indicies) = MerkleClient::init_data(self.num_levels);
+		self.curr_root = root;
+		self.states = states;
+		self.levels = levels;
+		self.leaf_indicies = leaf_indicies;
 		for elem in elements {
 			let leaf = Data::from(elem);
 			self.add_leaf(leaf);
@@ -279,6 +285,27 @@ impl MerkleClient {
 	pub fn init(num_levels: usize) -> Self {
 		assert!(num_levels <= 32 && num_levels > 0, "Invalid tree height!");
 		let max_levels = 32;
+		let (root, states, levels, leaf_indicies) = MerkleClient::init_data(num_levels);
+		Self {
+			num_levels,
+			curr_root: root,
+			states,
+			saved_leafs: HashMap::new(),
+			levels,
+			leaf_indicies,
+			max_leaves: u32::MAX >> (max_levels - num_levels),
+			hasher: Poseidon::new(4),
+		}
+	}
+
+	pub fn init_data(
+		num_levels: usize,
+	) -> (
+		Data,
+		HashMap<Data, TreeState>,
+		Vec<Vec<Data>>,
+		HashMap<Data, usize>,
+	) {
 		let init_root = Data::zero();
 		let init_tree_state = TreeState {
 			edge_nodes: vec![Data::zero(); num_levels],
@@ -286,15 +313,12 @@ impl MerkleClient {
 		};
 		let mut init_states = HashMap::new();
 		init_states.insert(init_root, init_tree_state);
-		Self {
-			curr_root: init_root,
-			states: init_states,
-			saved_leafs: HashMap::new(),
-			levels: vec![vec![Data::zero()]; num_levels],
-			leaf_indicies: HashMap::new(),
-			max_leaves: u32::MAX >> (max_levels - num_levels),
-			hasher: Poseidon::new(4),
-		}
+		(
+			init_root,
+			init_states,
+			vec![vec![Data::zero()]; num_levels],
+			HashMap::new(),
+		)
 	}
 
 	pub fn generate_leaf_data(&self) -> (Scalar, Scalar, Data, Data) {
