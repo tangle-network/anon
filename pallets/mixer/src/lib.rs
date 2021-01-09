@@ -83,6 +83,8 @@ decl_storage! {
 		pub Initialised get(fn initialised): bool;
 		/// The map of mixer groups to their metadata
 		pub MixerGroups get(fn mixer_groups): map hasher(blake2_128_concat) T::GroupId => MixerInfo<T>;
+		/// The vec of group ids
+		pub MixerGroupIds get(fn mixer_group_ids): Vec<T::GroupId>;
 	}
 }
 
@@ -165,12 +167,8 @@ decl_module! {
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 			let mixer_info = MixerGroups::<T>::get(mixer_id);
 			// check if the nullifier has been used
-			// Returns `()` if the nullifier has not been used
-			// otherwise returns `Err` from merkle groups pallet
 			T::Group::has_used_nullifier(mixer_id.into(), nullifier_hash)?;
 			// Verify the zero-knowledge proof of membership provided
-			// Returns `()` if verification is successful
-			// Otherwise returns `Err` for failed verification / bad proof from merkle groups pallet
 			T::Group::verify_zk_membership_proof(
 				mixer_id.into(),
 				cached_block,
@@ -227,7 +225,26 @@ decl_module! {
 				leaves: Vec::new(),
 			};
 			MixerGroups::<T>::insert(huge_mixer_id, huge_mixer_info);
+			MixerGroupIds::<T>::set(vec![
+				small_mixer_id,
+				med_mixer_id,
+				large_mixer_id,
+				huge_mixer_id,
+			]);
 			Ok(())
+		}
+
+		fn on_finalize(_n: T::BlockNumber) {
+			// check if any deposits happened (by checked the size of collection at this block)
+			// if none happened, carry over previous merkle roots for the cache.
+			let mixer_ids = MixerGroupIds::<T>::get();
+			for i in 0..mixer_ids.len() {
+				let cached_roots = <merkle::Module<T>>::cached_roots(_n, mixer_ids[i]);
+				// if there are no cached roots, carry forward the current root
+				if cached_roots.len() == 0 {
+					let _ = <merkle::Module<T>>::add_root_to_cache(mixer_ids[i], _n);
+				}
+			}
 		}
 	}
 }

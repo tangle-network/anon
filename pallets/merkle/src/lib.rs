@@ -422,9 +422,19 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 }
 
 impl<T: Config> Module<T> {
+	pub fn get_cache(group_id: T::GroupId, block_number: T::BlockNumber) -> Vec<Data> {
+		Self::cached_roots(block_number, group_id)
+	}
+
 	pub fn get_merkle_root(group_id: T::GroupId) -> Result<Data, dispatch::DispatchError> {
 		let group = Self::get_group(group_id)?;
 		Ok(group.root_hash)
+	}
+
+	pub fn add_root_to_cache(group_id: T::GroupId, block_number: T::BlockNumber) -> Result<(), dispatch::DispatchError> {
+		let root = Self::get_merkle_root(group_id)?;
+		CachedRoots::<T>::append(block_number, group_id, root);
+		Ok(())
 	}
 
 	pub fn get_group(group_id: T::GroupId) -> Result<GroupTree<T>, dispatch::DispatchError> {
