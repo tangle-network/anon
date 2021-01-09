@@ -18,7 +18,8 @@ pub trait Group<AccountId, BlockNumber, GroupId> {
 		leaf_com: Commitment,
 		path: Vec<(Commitment, Commitment)>,
 		r_com: Commitment,
-		nullifier: Data,
+		nullifier_com: Commitment,
+		nullifier_hash: Data,
 		proof_bytes: Vec<u8>
 	) -> Result<(), dispatch::DispatchError>;
 	fn verify_zk(
@@ -28,7 +29,8 @@ pub trait Group<AccountId, BlockNumber, GroupId> {
 		leaf_com: Commitment,
 		path: Vec<(Commitment, Commitment)>,
 		r_com: Commitment,
-		nullifier: Data,
+		nullifier_com: Commitment,
+		nullifier_hash: Data,
 		proof_bytes: Vec<u8>
 	) -> Result<(), dispatch::DispatchError>;
 }

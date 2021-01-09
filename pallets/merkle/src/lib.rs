@@ -277,13 +277,13 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		Ok(())
 	}
 
-	fn add_nullifier(sender: T::AccountId, id: T::GroupId, nullifier: Data) -> Result<(), dispatch::DispatchError> {
+	fn add_nullifier(sender: T::AccountId, id: T::GroupId, nullifier_hash: Data) -> Result<(), dispatch::DispatchError> {
 		let tree = <Groups<T>>::get(id)
 			.ok_or(Error::<T>::GroupDoesntExist)
 			.unwrap();
 		// Check if the tree requires extrinsics to be called from a manager
 		ensure!(Self::is_manager_required(sender.clone(), &tree), Error::<T>::ManagerIsRequired);
-		UsedNullifiers::<T>::insert((id, nullifier), true);
+		UsedNullifiers::<T>::insert((id, nullifier_hash), true);
 		Ok(())
 	}
 
@@ -322,7 +322,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		leaf_com: Commitment,
 		path: Vec<(Commitment, Commitment)>,
 		r_com: Commitment,
-		nullifier: Data,
+		nullifier_com: Commitment,
+		nullifier_hash: Data,
 		proof_bytes: Vec<u8>
 	) -> Result<(), dispatch::DispatchError> {
 		let tree = <Groups<T>>::get(group_id)
@@ -344,7 +345,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 			leaf_com,
 			path,
 			r_com,
-			nullifier,
+			nullifier_com,
+			nullifier_hash,
 			proof_bytes,
 		)
 	}
@@ -355,7 +357,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		leaf_com: Commitment,
 		path: Vec<(Commitment, Commitment)>,
 		r_com: Commitment,
-		nullifier: Data,
+		nullifier_com: Commitment,
+		nullifier_hash: Data,
 		proof_bytes: Vec<u8>
 	) -> Result<(), dispatch::DispatchError> {
 		let h = default_hasher();
@@ -363,11 +366,26 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		let mut verifier = Verifier::new(&mut verifier_transcript);
 
 		let var_leaf = verifier.commit(leaf_com.0);
-		let var_s = verifier.commit(r_com.0);
-		let leaf_lc =
-			Data::constrain_verifier(&mut verifier, &pc_gens, var_s.into(), nullifier.0.into(), &h);
+		let var_r = verifier.commit(r_com.0);
+		let var_nullifier = verifier.commit(nullifier_com.0);
+		let leaf_lc = Data::constrain_verifier(
+			&mut verifier,
+			&pc_gens,
+			var_r.into(),
+			var_nullifier.into(),
+			&h
+		);
 		// Commited leaf value should be the same as calculated
 		verifier.constrain(leaf_lc - var_leaf);
+		// committed nullifier into a hash should match hash of nullifier
+		let nullifier_hash_lc = Data::constrain_verifier(
+			&mut verifier,
+			&pc_gens,
+			var_nullifier.into(),
+			var_nullifier.into(),
+			&h
+		);
+		verifier.constrain(nullifier_hash_lc - LinearCombination::from(nullifier_hash.0));
 
 		// Check of path proof is correct
 		// hash = 5

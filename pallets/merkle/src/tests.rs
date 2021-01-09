@@ -492,7 +492,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 		let mut test_rng = rand::thread_rng();
-		let (s, nullifier, leaf) = leaf_data(&mut test_rng, &h);
+		let (s, nullifier, nullifier_hash, leaf) = leaf_data(&mut test_rng, &h);
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
@@ -501,8 +501,8 @@ fn should_verify_simple_zk_proof_of_membership() {
 		));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
 
-		let (s_com, leaf_com1, leaf_var1) =
-			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, &h);
+		let (s_com, nullifier_com, leaf_com1, leaf_var1) =
+			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, nullifier_hash, &h);
 
 		let root = Data::hash(leaf, leaf, &h);
 		let (bit_com, leaf_com2, root_con) =
@@ -521,7 +521,8 @@ fn should_verify_simple_zk_proof_of_membership() {
 			Commitment(leaf_com1),
 			path,
 			Commitment(s_com),
-			Data(nullifier),
+			Commitment(nullifier_com),
+			nullifier_hash,
 			proof.to_bytes(),
 		));
 	});
@@ -538,7 +539,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 		let mut test_rng = rand::thread_rng();
-		let (s, nullifier, leaf) = leaf_data(&mut test_rng, &h);
+		let (s, nullifier, nullifier_hash, leaf) = leaf_data(&mut test_rng, &h);
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
@@ -547,8 +548,8 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
 
-		let (_, leaf_com1, leaf_var1) =
-			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, &h);
+		let (_, nullifier_com, leaf_com1, leaf_var1) =
+			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, nullifier_hash, &h);
 		let root = Data::hash(leaf, leaf, &h);
 		let (bit_com, leaf_com2, root_con) =
 			commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), 1, &h);
@@ -568,7 +569,8 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 				Commitment(leaf_com1),
 				path,
 				Commitment(invalid_s_com),
-				Data(nullifier),
+				Commitment(nullifier_com),
+				nullifier_hash,
 				proof.to_bytes(),
 			),
 			Error::<Test>::ZkVericationFailed,
@@ -587,7 +589,7 @@ fn should_not_verify_invalid_commitments_for_membership() {
 		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 		let mut test_rng = rand::thread_rng();
-		let (s, nullifier, leaf) = leaf_data(&mut test_rng, &h);
+		let (s, nullifier, nullifier_hash, leaf) = leaf_data(&mut test_rng, &h);
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
@@ -596,8 +598,8 @@ fn should_not_verify_invalid_commitments_for_membership() {
 		));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
 
-		let (s_com, leaf_com1, leaf_var1) =
-			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, &h);
+		let (s_com, nullifier_com, leaf_com1, leaf_var1) =
+			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, nullifier_hash, &h);
 
 		let _ = commit_path_level(&mut test_rng, &mut prover, leaf, leaf_var1.into(), 1, &h);
 
@@ -615,7 +617,8 @@ fn should_not_verify_invalid_commitments_for_membership() {
 				Commitment(leaf_com1),
 				path,
 				Commitment(s_com),
-				Data(nullifier),
+				Commitment(nullifier_com),
+				nullifier_hash,
 				proof.to_bytes(),
 			),
 			Error::<Test>::ZkVericationFailed,
@@ -634,7 +637,7 @@ fn should_not_verify_invalid_transcript() {
 		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 		let mut test_rng = rand::thread_rng();
-		let (s, nullifier, leaf) = leaf_data(&mut test_rng, &h);
+		let (s, nullifier, nullifier_hash, leaf) = leaf_data(&mut test_rng, &h);
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
@@ -643,8 +646,8 @@ fn should_not_verify_invalid_transcript() {
 		));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
 
-		let (s_com, leaf_com1, leaf_var1) =
-			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, &h);
+		let (s_com, nullifier_com, leaf_com1, leaf_var1) =
+			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, nullifier_hash, &h);
 
 		let root = Data::hash(leaf, leaf, &h);
 		let (bit_com, leaf_com2, root_con) =
@@ -663,7 +666,8 @@ fn should_not_verify_invalid_transcript() {
 				Commitment(leaf_com1),
 				path,
 				Commitment(s_com),
-				Data(nullifier),
+				Commitment(nullifier_com),
+				nullifier_hash,
 				proof.to_bytes(),
 			),
 			Error::<Test>::ZkVericationFailed,
@@ -682,13 +686,13 @@ fn should_verify_zk_proof_of_membership() {
 		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 		let mut test_rng = rand::thread_rng();
-		let (_, _, leaf0) = leaf_data(&mut test_rng, &h);
-		let (_, _, leaf1) = leaf_data(&mut test_rng, &h);
-		let (_, _, leaf2) = leaf_data(&mut test_rng, &h);
-		let (_, _, leaf3) = leaf_data(&mut test_rng, &h);
-		let (_, _, leaf4) = leaf_data(&mut test_rng, &h);
-		let (s, nullifier, leaf5) = leaf_data(&mut test_rng, &h);
-		let (_, _, leaf6) = leaf_data(&mut test_rng, &h);
+		let (_, _, _, leaf0) = leaf_data(&mut test_rng, &h);
+		let (_, _, _, leaf1) = leaf_data(&mut test_rng, &h);
+		let (_, _, _, leaf2) = leaf_data(&mut test_rng, &h);
+		let (_, _, _, leaf3) = leaf_data(&mut test_rng, &h);
+		let (_, _, _, leaf4) = leaf_data(&mut test_rng, &h);
+		let (s, nullifier, nullifier_hash, leaf5) = leaf_data(&mut test_rng, &h);
+		let (_, _, _, leaf6) = leaf_data(&mut test_rng, &h);
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
@@ -701,8 +705,8 @@ fn should_verify_zk_proof_of_membership() {
 			vec![leaf0, leaf1, leaf2, leaf3, leaf4, leaf5, leaf6]
 		));
 
-		let (s_com, leaf_com5, leaf_var5) =
-			commit_leaf(&mut test_rng, &mut prover, leaf5, s, nullifier, &h);
+		let (s_com, nullifier_com, leaf_com5, leaf_var5) =
+			commit_leaf(&mut test_rng, &mut prover, leaf5, s, nullifier, nullifier_hash, &h);
 
 		let node0_0 = Data::hash(leaf0, leaf1, &h);
 		let node0_1 = Data::hash(leaf2, leaf3, &h);
@@ -738,7 +742,8 @@ fn should_verify_zk_proof_of_membership() {
 			Commitment(leaf_com5),
 			path,
 			Commitment(s_com),
-			Data(nullifier),
+			Commitment(nullifier_com),
+			nullifier_hash,
 			proof.to_bytes(),
 		));
 	});
@@ -755,7 +760,7 @@ fn should_verify_large_zk_proof_of_membership() {
 		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 		let mut test_rng = rand::thread_rng();
-		let (s, nullifier, leaf) = leaf_data(&mut test_rng, &h);
+		let (s, nullifier, nullifier_hash, leaf) = leaf_data(&mut test_rng, &h);
 
 		assert_ok!(MerkleGroups::create_group(
 			Origin::signed(1),
@@ -764,8 +769,8 @@ fn should_verify_large_zk_proof_of_membership() {
 		));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![leaf]));
 
-		let (s_com, leaf_com1, leaf_var1) =
-			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, &h);
+		let (s_com, nullifier_com, leaf_com1, leaf_var1) =
+			commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, nullifier_hash, &h);
 
 		let mut lh = leaf;
 		let mut lh_lc: LinearCombination = leaf_var1.into();
@@ -789,7 +794,8 @@ fn should_verify_large_zk_proof_of_membership() {
 			Commitment(leaf_com1),
 			path,
 			Commitment(s_com),
-			Data(nullifier),
+			Commitment(nullifier_com),
+			nullifier_hash,
 			proof.to_bytes(),
 		));
 	});
