@@ -1,4 +1,4 @@
-use super::constants::{MIMC_CONSTANTS, MIMC_ROUNDS};
+use super::constants::{MIMC_CONSTANTS};
 use super::hasher::Hasher;
 use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Prover, Verifier};
 use bulletproofs::PedersenGens;

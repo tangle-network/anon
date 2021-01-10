@@ -219,14 +219,16 @@ decl_module! {
 			}
 
 			// initialise lowest block in cache if not already
-			if LowestCachedBlock::<T>::get() <= One::one() {
+			if LowestCachedBlock::<T>::get() < One::one() {
 				LowestCachedBlock::<T>::set(_n);
 			}
 
 			// update and prune database if pruning length has been hit
-			if HighestCachedBlock::<T>::get() - T::CacheBlockLength::get() > LowestCachedBlock::<T>::get() {
-				CachedRoots::<T>::remove_prefix(LowestCachedBlock::<T>::get());
-				LowestCachedBlock::<T>::set(LowestCachedBlock::<T>::get() + One::one());
+			if HighestCachedBlock::<T>::get() > T::CacheBlockLength::get() {
+				if HighestCachedBlock::<T>::get() - T::CacheBlockLength::get() >= LowestCachedBlock::<T>::get() {
+					CachedRoots::<T>::remove_prefix(LowestCachedBlock::<T>::get());
+					LowestCachedBlock::<T>::set(LowestCachedBlock::<T>::get() + One::one());
+				}
 			}
 		}
 	}
