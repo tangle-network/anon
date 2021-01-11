@@ -7,7 +7,7 @@ use crate::mock::*;
 use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Prover};
 use bulletproofs::{BulletproofGens, PedersenGens};
 use curve25519_dalek::ristretto::RistrettoPoint;
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_ok, traits::{OnFinalize}};
 use merlin::Transcript;
 
 fn key_bytes(x: u8) -> [u8; 32] {
