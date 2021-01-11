@@ -17,17 +17,18 @@ pub const TREE_DEPTH: usize = 30;
 
 // TODO: ABSTRACT HASH FUNCTION BETTER
 
-pub struct VanillaSparseMerkleTree<'a> {
+#[derive(Clone)]
+pub struct VanillaSparseMerkleTree {
 	pub depth: usize,
 	empty_tree_hashes: Vec<Scalar>,
 	db: BTreeMap<ScalarBytes, DBVal>,
 	//hash_constants: &'a [Scalar],
-	hash_params: &'a Poseidon,
+	hash_params: Poseidon,
 	pub root: Scalar
 }
 
-impl<'a> VanillaSparseMerkleTree<'a> {
-	pub fn new(hash_params: &'a Poseidon) -> VanillaSparseMerkleTree<'a> {
+impl VanillaSparseMerkleTree {
+	pub fn new(hash_params: Poseidon) -> VanillaSparseMerkleTree {
 		let depth = TREE_DEPTH;
 		let mut db = BTreeMap::new();
 		let mut empty_tree_hashes: Vec<Scalar> = vec![];
@@ -36,7 +37,7 @@ impl<'a> VanillaSparseMerkleTree<'a> {
 			let prev = empty_tree_hashes[i-1];
 			// let new = mimc(&prev, &prev, hash_constants);
 			// Ensure using PoseidonSbox::Inverse
-			let new = Poseidon_hash_2(prev.clone(), prev.clone(), hash_params);
+			let new = Poseidon_hash_2(prev.clone(), prev.clone(), &hash_params);
 			let key = new.to_bytes();
 
 			db.insert(key, (prev, prev));
@@ -70,13 +71,13 @@ impl<'a> VanillaSparseMerkleTree<'a> {
 				if cur_idx.is_lsb_set() {
 					// LSB is set, so put new value on right
 					//let h =  mimc(&side_elem, &cur_val, self.hash_constants);
-					let h =  Poseidon_hash_2(side_elem.clone(), cur_val.clone(), self.hash_params);
+					let h =  Poseidon_hash_2(side_elem.clone(), cur_val.clone(), &self.hash_params);
 					self.update_db_with_key_val(h, (side_elem, cur_val));
 					h
 				} else {
 					// LSB is unset, so put new value on left
 					//let h =  mimc(&cur_val, &side_elem, self.hash_constants);
-					let h =  Poseidon_hash_2(cur_val.clone(), side_elem.clone(), self.hash_params);
+					let h =  Poseidon_hash_2(cur_val.clone(), side_elem.clone(), &self.hash_params);
 					self.update_db_with_key_val(h, (cur_val, side_elem));
 					h
 				}
@@ -133,10 +134,10 @@ impl<'a> VanillaSparseMerkleTree<'a> {
 			cur_val = {
 				if cur_idx.is_lsb_set() {
 					// mimc(&proof[self.depth-1-i], &cur_val, self.hash_constants)
-					Poseidon_hash_2(proof[self.depth-1-i].clone(), cur_val.clone(), self.hash_params)
+					Poseidon_hash_2(proof[self.depth-1-i].clone(), cur_val.clone(), &self.hash_params)
 				} else {
 					// mimc(&cur_val, &proof[self.depth-1-i], self.hash_constants)
-					Poseidon_hash_2(cur_val.clone(), proof[self.depth-1-i].clone(), self.hash_params)
+					Poseidon_hash_2(cur_val.clone(), proof[self.depth-1-i].clone(), &self.hash_params)
 				}
 			};
 

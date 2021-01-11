@@ -38,7 +38,7 @@ fn test_vanilla_sparse_merkle_tree() {
 		.sbox(PoseidonSbox::Inverse)
 		.build();
 
-	let mut tree = VanillaSparseMerkleTree::new(&p_params);
+	let mut tree = VanillaSparseMerkleTree::new(p_params);
 
 	for i in 1..10 {
 		let s = Scalar::from(i as u32);
@@ -80,7 +80,7 @@ fn test_vsmt_verif() {
 		.mds_matrix(gen_mds_matrix(width))
 		.sbox(PoseidonSbox::Inverse)
 		.build();
-	let mut tree = VanillaSparseMerkleTree::new(&p_params);
+	let mut tree = VanillaSparseMerkleTree::new(p_params.clone());
 
 	for i in 1..=10 {
 		let s = Scalar::from(i as u32);
