@@ -141,7 +141,7 @@ impl Mixer {
 		let r_bytes = decode_hex(&note_val[..64]);
 		let nullifier_bytes = decode_hex(&note_val[64..]);
 
-		let tree = self.tree_map.get_mut(&(asset, id)).unwrap();
+		let tree = self.tree_map.get_mut(&(asset.to_owned(), id)).unwrap();
 		let (r, nullifier, nullifier_hash, leaf) =
 			tree.leaf_data_from_bytes(r_bytes, nullifier_bytes);
 		tree.saved_leafs.insert(
