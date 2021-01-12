@@ -113,13 +113,13 @@ fn test_is_valid_transaction_spend() {
 				assignment: Some(input_nullifier),
 			};
 			coms.push(com_input_nullifier);
-			let coin = AllocatedCoin::new(
+			let coin = AllocatedCoin::new_for_input(
 				alloc_input_inverse_val,
 				alloc_input_val,
 				alloc_input_rho,
 				alloc_input_r,
 				alloc_input_nullifier,
-				input_sn,
+				Some(input_sn),
 				input_cm,
 			);
 
@@ -154,13 +154,12 @@ fn test_is_valid_transaction_spend() {
 			};
 			coms.push(com_output_1_nullifier);
 
-			let output_coin_1 = AllocatedCoin::new(
+			let output_coin_1 = AllocatedCoin::new_for_output(
 				alloc_output_1_inverse_val,
 				alloc_output_1_val,
 				alloc_output_1_rho,
 				alloc_output_1_r,
 				alloc_output_1_nullifier,
-				output_1_sn,
 				output_1_cm,
 			);
 
@@ -195,13 +194,12 @@ fn test_is_valid_transaction_spend() {
 			};
 			coms.push(com_output_2_nullifier);
 
-			let output_coin_2 = AllocatedCoin::new(
+			let output_coin_2 = AllocatedCoin::new_for_output(
 				alloc_output_2_inverse_val,
 				alloc_output_2_val,
 				alloc_output_2_rho,
 				alloc_output_2_r,
 				alloc_output_2_nullifier,
-				output_2_sn,
 				output_2_cm,
 			);
 
@@ -251,30 +249,28 @@ fn test_is_valid_transaction_spend() {
 		let statics_4 = allocate_statics_for_verifier(&mut verifier, num_statics, &pc_gens);
 
 		let transaction = Transaction {
-			inputs: vec![AllocatedCoin::new(
+			inputs: vec![AllocatedCoin::new_for_input(
 				allocs[0],
 				allocs[1],
 				allocs[2],
 				allocs[3],
 				allocs[4],
-				input_sn,
+				Some(input_sn),
 				input_cm,
 			)],
-			outputs: vec![AllocatedCoin::new(
+			outputs: vec![AllocatedCoin::new_for_output(
 				allocs[5],
 				allocs[6],
 				allocs[7],
 				allocs[8],
 				allocs[9],
-				output_1_sn,
 				output_1_cm,
-			), AllocatedCoin::new(
+			), AllocatedCoin::new_for_output(
 				allocs[10],
 				allocs[11],
 				allocs[12],
 				allocs[13],
 				allocs[14],
-				output_2_sn,
 				output_2_cm,
 			)],
 			statics_2,
