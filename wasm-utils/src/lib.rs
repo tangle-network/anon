@@ -99,7 +99,7 @@ impl Mixer {
 
 	// Generates a new note with random samples
 	// note has a format of `webb.mix-<mixed_id>-<r as hex string><nullifier as hex string>`
-	pub fn generate_note(&mut self, asset: String, id: u8) -> JsString {
+	pub fn generate_note(&mut self, asset: String, id: u8, block_number: u32) -> JsString {
 		assert!(
 			self.tree_map.contains_key(&(asset.to_owned(), id)),
 			"Tree not found!"
@@ -110,8 +110,8 @@ impl Mixer {
 		let encoded_r = encode_hex(r.to_bytes());
 		let encoded_nullifier = encode_hex(nullifier.to_bytes());
 		let note = format!(
-			"{}-{}-{}-{}{}",
-			NOTE_PREFIX, asset, id, encoded_r, encoded_nullifier
+			"{}-{}-{}-{}-{}{}",
+			NOTE_PREFIX, asset, id, block_number, encoded_r, encoded_nullifier
 		);
 		let note_js = JsString::from(note);
 
@@ -122,7 +122,7 @@ impl Mixer {
 	// First it checks if the note is in valid format,
 	// then decodes it and saves a note to a Merkle Client
 	// to be used for constructing the proof
-	pub fn save_note(&mut self, note_js: JsString) -> JsValue {
+	pub fn save_note(&mut self, note_js: JsString) -> Map {
 		let note: String = note_js.into();
 
 		let parts: Vec<&str> = note.split("-").collect();
@@ -133,18 +133,37 @@ impl Mixer {
 			self.tree_map.contains_key(&(asset.to_owned(), id)),
 			"Tree not found!"
 		);
-		let note_val = parts[3];
+		let block_number: u32 = parts[3].parse().unwrap();
+		let note_val = parts[4];
 		assert!(note_val.len() == 128, "Invalid note length");
 
 		// Checking the validity
 		let r_bytes = decode_hex(&note_val[..64]);
 		let nullifier_bytes = decode_hex(&note_val[64..]);
 
-		let tree = self.tree_map.get_mut(&(asset, id)).unwrap();
-		let (r, nullifier, nullifier_hash, leaf) = tree.leaf_data_from_bytes(r_bytes, nullifier_bytes);
-		tree.saved_leafs.insert(leaf, LeafData { r, nullifier, nullifier_hash });
+		let tree = self.tree_map.get_mut(&(asset.to_owned(), id)).unwrap();
+		let (r, nullifier, nullifier_hash, leaf) =
+			tree.leaf_data_from_bytes(r_bytes, nullifier_bytes);
+		tree.saved_leafs.insert(
+			leaf,
+			LeafData {
+				r,
+				nullifier,
+				nullifier_hash,
+			},
+		);
 
-		JsValue::from_serde(&leaf.0.to_bytes()).unwrap()
+		let leaf_js = JsValue::from_serde(&leaf.0.to_bytes()).unwrap();
+		let asset_js = JsValue::from(&asset);
+		let id_js = JsValue::from(id);
+		let block_number_js = JsValue::from(block_number);
+
+		let map = Map::new();
+		map.set(&JsValue::from_str("leaf"), &leaf_js);
+		map.set(&JsValue::from_str("asset"), &asset_js);
+		map.set(&JsValue::from_str("id"), &id_js);
+		map.set(&JsValue::from_str("block_number"), &block_number_js);
+		map
 	}
 
 	// Saving to storage which is an option with users consent
@@ -198,6 +217,7 @@ pub struct MerkleClient {
 	leaf_indicies: HashMap<Data, usize>,
 	levels: Vec<Vec<Data>>,
 	max_leaves: u32,
+	num_levels: usize,
 	hasher: Poseidon,
 }
 
@@ -211,6 +231,11 @@ impl MerkleClient {
 	// Add array of leaves fetched from the chain
 	pub fn add_leaves(&mut self, leaves: JsValue) {
 		let elements: Vec<[u8; 32]> = leaves.into_serde().unwrap();
+		let (root, states, levels, leaf_indicies) = MerkleClient::init_data(self.num_levels);
+		self.curr_root = root;
+		self.states = states;
+		self.levels = levels;
+		self.leaf_indicies = leaf_indicies;
 		for elem in elements {
 			let leaf = Data::from(elem);
 			self.add_leaf(leaf);
@@ -258,8 +283,29 @@ impl MerkleClient {
 impl MerkleClient {
 	// Separated from `new` method for testing purposes
 	pub fn init(num_levels: usize) -> Self {
-		assert!(num_levels < 32 && num_levels > 0, "Invalid tree height!");
+		assert!(num_levels <= 32 && num_levels > 0, "Invalid tree height!");
 		let max_levels = 32;
+		let (root, states, levels, leaf_indicies) = MerkleClient::init_data(num_levels);
+		Self {
+			num_levels,
+			curr_root: root,
+			states,
+			saved_leafs: HashMap::new(),
+			levels,
+			leaf_indicies,
+			max_leaves: u32::MAX >> (max_levels - num_levels),
+			hasher: Poseidon::new(4),
+		}
+	}
+
+	pub fn init_data(
+		num_levels: usize,
+	) -> (
+		Data,
+		HashMap<Data, TreeState>,
+		Vec<Vec<Data>>,
+		HashMap<Data, usize>,
+	) {
 		let init_root = Data::zero();
 		let init_tree_state = TreeState {
 			edge_nodes: vec![Data::zero(); num_levels],
@@ -267,15 +313,12 @@ impl MerkleClient {
 		};
 		let mut init_states = HashMap::new();
 		init_states.insert(init_root, init_tree_state);
-		Self {
-			curr_root: init_root,
-			states: init_states,
-			saved_leafs: HashMap::new(),
-			levels: vec![vec![Data::zero()]; num_levels],
-			leaf_indicies: HashMap::new(),
-			max_leaves: u32::MAX >> (max_levels - num_levels),
-			hasher: Poseidon::new(4),
-		}
+		(
+			init_root,
+			init_states,
+			vec![vec![Data::zero()]; num_levels],
+			HashMap::new(),
+		)
 	}
 
 	pub fn generate_leaf_data(&self) -> (Scalar, Scalar, Data, Data) {
@@ -302,7 +345,11 @@ impl MerkleClient {
 	pub fn deposit(&mut self) -> Data {
 		let mut rng = OsRng::default();
 		let (r, nullifier, nullifier_hash, leaf) = leaf_data(&mut rng, &self.hasher);
-		let ld = LeafData { r, nullifier, nullifier_hash };
+		let ld = LeafData {
+			r,
+			nullifier,
+			nullifier_hash,
+		};
 		self.saved_leafs.insert(leaf, ld);
 		self.add_leaf(leaf);
 		leaf
@@ -424,7 +471,15 @@ impl MerkleClient {
 			.map(|(side, d)| (!side, d))
 			.collect();
 
-		let zk_proof = prove_with_path(root, leaf, ld.nullifier_hash, ld.nullifier, ld.r, path_data, &self.hasher);
+		let zk_proof = prove_with_path(
+			root,
+			leaf,
+			ld.nullifier_hash,
+			ld.nullifier,
+			ld.r,
+			path_data,
+			&self.hasher,
+		);
 		assert!(zk_proof.is_ok(), "Could not make proof!");
 
 		zk_proof.unwrap()
