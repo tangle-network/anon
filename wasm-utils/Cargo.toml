@@ -1,6 +1,6 @@
 [package]
 name = "mixer-cl"
-version = "0.1.10"
+version = "0.1.11"
 authors = ["Commonwealth <https://github.com/hicommonwealth>"]
 edition = "2018"
 
@@ -8,10 +8,11 @@ edition = "2018"
 
 [dependencies]
 wasm-bindgen = { version = "0.2.69", features = ["serde-serialize"] }
-pallet-merkle = { path = "../pallets/merkle", default-features = false }
+pallet-merkle = { path = "../pallets/merkle" }
 js-sys = "0.3.46"
 console_error_panic_hook = "0.1.6"
-rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
+rand = { version = "0.7", features = ["wasm-bindgen"] }
+getrandom = { version = "0.2", features = ["js"] }
 
 [dependencies.curve25519-dalek]
 version = "3.0.0"
