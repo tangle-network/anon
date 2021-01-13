@@ -1,29 +1,26 @@
-use crate::poseidon::PoseidonBuilder;
-use crate::poseidon::gen_round_keys;
-use crate::poseidon::gen_mds_matrix;
-use crate::poseidon::sbox::PoseidonSbox;
 use super::smt::*;
+use crate::poseidon::gen_mds_matrix;
+use crate::poseidon::gen_round_keys;
+use crate::poseidon::sbox::PoseidonSbox;
+use crate::poseidon::PoseidonBuilder;
 use rand::rngs::StdRng;
 
-use curve25519_dalek::scalar::Scalar;
 use bulletproofs::r1cs::{Prover, Verifier};
 use bulletproofs::{BulletproofGens, PedersenGens};
+use curve25519_dalek::scalar::Scalar;
 use merlin::Transcript;
 
-
-use crate::utils::{get_bits};
-use crate::utils::{AllocatedScalar};
+use crate::utils::get_bits;
+use crate::utils::AllocatedScalar;
 // use crate::gadget_mimc::{mimc, MIMC_ROUNDS, mimc_hash_2, mimc_gadget};
-use crate::poseidon::{
-	allocate_statics_for_prover, allocate_statics_for_verifier
-};
+use crate::poseidon::{allocate_statics_for_prover, allocate_statics_for_verifier};
 
-use crate::smt::smt::VanillaSparseMerkleTree;
-use rand::SeedableRng;
+use crate::smt::builder::{SparseMerkleTreeBuilder, DEFAULT_TREE_DEPTH};
 use rand::rngs::OsRng;
+use rand::SeedableRng;
 // For benchmarking
-#[cfg(feature="std")]
-use std::time::{Instant};
+#[cfg(feature = "std")]
+use std::time::Instant;
 
 #[test]
 fn test_vanilla_sparse_merkle_tree() {
@@ -38,7 +35,7 @@ fn test_vanilla_sparse_merkle_tree() {
 		.sbox(PoseidonSbox::Inverse)
 		.build();
 
-	let mut tree = VanillaSparseMerkleTree::new(&p_params);
+	let mut tree = SparseMerkleTreeBuilder::new().hash_params(p_params).build();
 
 	for i in 1..10 {
 		let s = Scalar::from(i as u32);
@@ -56,7 +53,9 @@ fn test_vanilla_sparse_merkle_tree() {
 		assert!(tree.verify_proof(s, s, &proof_vec, Some(&tree.root)));
 	}
 
-	let kvs: Vec<(Scalar, Scalar)> = (0..100).map(|_| (Scalar::random(&mut test_rng), Scalar::random(&mut test_rng))).collect();
+	let kvs: Vec<(Scalar, Scalar)> = (0..100)
+		.map(|_| (Scalar::random(&mut test_rng), Scalar::random(&mut test_rng)))
+		.collect();
 	for i in 0..kvs.len() {
 		tree.update(kvs[i].0, kvs[i].1);
 	}
@@ -80,7 +79,9 @@ fn test_vsmt_verif() {
 		.mds_matrix(gen_mds_matrix(width))
 		.sbox(PoseidonSbox::Inverse)
 		.build();
-	let mut tree = VanillaSparseMerkleTree::new(&p_params);
+	let mut tree = SparseMerkleTreeBuilder::new()
+		.hash_params(p_params.clone())
+		.build();
 
 	for i in 1..=10 {
 		let s = Scalar::from(i as u32);
@@ -89,7 +90,7 @@ fn test_vsmt_verif() {
 
 	let mut merkle_proof_vec = Vec::<Scalar>::new();
 	let mut merkle_proof = Some(merkle_proof_vec);
-	let k =  Scalar::from(7u32);
+	let k = Scalar::from(7u32);
 	assert_eq!(k, tree.get(k, &mut merkle_proof));
 	merkle_proof_vec = merkle_proof.unwrap();
 	assert!(tree.verify_proof(k, k, &merkle_proof_vec, None));
@@ -111,7 +112,7 @@ fn test_vsmt_verif() {
 		let mut leaf_index_comms = vec![];
 		let mut leaf_index_vars = vec![];
 		let mut leaf_index_alloc_scalars = vec![];
-		for b in get_bits(&k, TREE_DEPTH).iter().take(tree.depth) {
+		for b in get_bits(&k, DEFAULT_TREE_DEPTH).iter().take(tree.depth) {
 			let val: Scalar = Scalar::from(*b as u8);
 			let (c, v) = prover.commit(val.clone(), Scalar::random(&mut test_rng));
 			leaf_index_comms.push(c);
@@ -147,9 +148,11 @@ fn test_vsmt_verif() {
 			leaf_index_alloc_scalars,
 			proof_alloc_scalars,
 			statics,
-			&p_params).is_ok());
+			&p_params
+		)
+		.is_ok());
 
-//            println!("For tree height {} and MiMC rounds {}, no of constraints is {}", tree.depth, &MIMC_ROUNDS, &prover.num_constraints());
+		//            println!("For tree height {} and MiMC rounds {}, no of constraints is {}", tree.depth, &MIMC_ROUNDS, &prover.num_constraints());
 
 		println!("For binary tree of height {} and Poseidon rounds {}, no of multipliers is {} and constraints is {}", tree.depth, total_rounds, &prover.num_multipliers(), &prover.num_constraints());
 
@@ -199,9 +202,13 @@ fn test_vsmt_verif() {
 		leaf_index_alloc_scalars,
 		proof_alloc_scalars,
 		statics,
-		&p_params).is_ok());
+		&p_params
+	)
+	.is_ok());
 
-	assert!(verifier.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut test_rng).is_ok());
+	assert!(verifier
+		.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut test_rng)
+		.is_ok());
 	let end = start.elapsed();
 
 	println!("Verification time is {:?}", end);
