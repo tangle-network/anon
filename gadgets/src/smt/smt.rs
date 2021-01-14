@@ -1,14 +1,12 @@
 use bulletproofs::r1cs::LinearCombination;
 use bulletproofs::r1cs::Prover;
 use bulletproofs::r1cs::{ConstraintSystem, R1CSError, R1CSProof, Variable};
-use bulletproofs::{BulletproofGens, PedersenGens};
+use bulletproofs::BulletproofGens;
 use curve25519_dalek::ristretto::CompressedRistretto;
 use curve25519_dalek::scalar::Scalar;
-use merlin::Transcript;
 use sp_std::collections::btree_map::BTreeMap;
 use std::collections::HashMap;
 
-use crate::smt::builder::DEFAULT_TREE_DEPTH;
 use crate::utils::{constrain_lc_with_scalar, get_bits, AllocatedScalar};
 use crate::utils::{ScalarBits, ScalarBytes};
 // use crate::gadget_mimc::{mimc, MIMC_ROUNDS, mimc_hash_2, mimc_gadget};
@@ -216,7 +214,7 @@ impl VanillaSparseMerkleTree {
 		let mut leaf_index_comms = vec![];
 		let mut leaf_index_vars = vec![];
 		let mut leaf_index_alloc_scalars = vec![];
-		for b in get_bits(&k, DEFAULT_TREE_DEPTH).iter().take(self.depth) {
+		for b in get_bits(&k, self.depth).iter().take(self.depth) {
 			let val: Scalar = Scalar::from(*b as u8);
 			let (c, v) = prover.commit(val.clone(), Scalar::random(&mut test_rng));
 			leaf_index_comms.push(c);
