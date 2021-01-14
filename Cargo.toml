@@ -62,138 +62,138 @@ yamux = { opt-level = 3 }
 zeroize = { opt-level = 3 }
 
 [patch.crates-io]
-# fork-tree = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# frame-executive = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# frame-metadata = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# frame-support = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# frame-support-procedural = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# frame-support-procedural-tools = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# frame-support-procedural-tools-derive = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# frame-system = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# frame-system-rpc-runtime-api = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-assets = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-aura = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-authority-discovery = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-authorship = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-balances = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-collective = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-contracts = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-contracts-primitives = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-contracts-proc-macro = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-contracts-rpc = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-contracts-rpc-runtime-api = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-democracy = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-elections-phragmen = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-grandpa = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-identity = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-im-online = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-indices = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-multisig = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-offences = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-proxy = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-randomness-collective-flip = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-recovery = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-scheduler = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-session = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-staking = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-staking-reward-curve = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-sudo = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-transaction-payment = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-transaction-payment-rpc = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-treasury = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-utility = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# pallet-vesting = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-authority-discovery = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-basic-authorship = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-block-builder = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-chain-spec = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-chain-spec-derive = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-cli = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-cli-proc-macro = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-client-api = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-client-db = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-consensus = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-consensus-aura = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-consensus-babe = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-consensus-epochs = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-consensus-slots = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-consensus-uncles = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-executor = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-executor-common = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-executor-wasmi = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-executor-wasmtime = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-finality-grandpa = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-finality-grandpa-rpc = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-informant = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-keystore = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-light = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-network = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-network-gossip = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-offchain = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-peerset = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-proposer-metrics = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-rpc = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-rpc-api = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-rpc-server = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-service = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-state-db = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-telemetry = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-tracing = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-transaction-graph = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sc-transaction-pool = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-allocator = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-api = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-api-proc-macro = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-application-crypto = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-arithmetic = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-authority-discovery = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-authorship = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-block-builder = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-blockchain = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-chain-spec = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-consensus = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-consensus-aura = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-consensus-babe = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-consensus-slots = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-consensus-vrf = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-core = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-database = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-debug-derive = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-externalities = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-finality-grandpa = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-inherents = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-io = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-keyring = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-keystore = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-npos-elections = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-npos-elections-compact = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-offchain = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-panic-handler = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-rpc = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-runtime = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-runtime-interface = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-runtime-interface-proc-macro = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-sandbox = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-serializer = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-session = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-staking = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-state-machine = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-std = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-storage = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-tasks = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-timestamp = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-tracing = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-transaction-pool = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-trie = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-utils = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-version = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# sp-wasm-interface = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# substrate-browser-utils = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# substrate-frame-cli = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# substrate-frame-rpc-system = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# substrate-prometheus-endpoint = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
-# substrate-test-client = { git = "https://github.com/paritytech/substrate.git", rev = "b2750359" }
+fork-tree = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+frame-executive = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+frame-metadata = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+frame-support = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+frame-support-procedural = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+frame-support-procedural-tools = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+frame-support-procedural-tools-derive = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+frame-system = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+frame-system-rpc-runtime-api = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-assets = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-aura = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-authority-discovery = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-authorship = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-balances = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-collective = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-contracts = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-contracts-primitives = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-contracts-proc-macro = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-contracts-rpc = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-contracts-rpc-runtime-api = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-democracy = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-elections-phragmen = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-grandpa = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-identity = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-im-online = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-indices = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-multisig = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-offences = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-proxy = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-randomness-collective-flip = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-recovery = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-scheduler = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-session = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-staking = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-staking-reward-curve = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-sudo = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-transaction-payment = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-transaction-payment-rpc = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-treasury = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-utility = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+pallet-vesting = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-authority-discovery = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-basic-authorship = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-block-builder = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-chain-spec = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-chain-spec-derive = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-cli = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-cli-proc-macro = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-client-api = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-client-db = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-consensus = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-consensus-aura = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-consensus-babe = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-consensus-epochs = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-consensus-slots = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-consensus-uncles = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-executor = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-executor-common = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-executor-wasmi = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-executor-wasmtime = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-finality-grandpa = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-finality-grandpa-rpc = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-informant = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-keystore = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-light = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-network = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-network-gossip = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-offchain = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-peerset = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-proposer-metrics = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-rpc = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-rpc-api = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-rpc-server = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-service = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-state-db = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-telemetry = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-tracing = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-transaction-graph = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sc-transaction-pool = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-allocator = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-api = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-api-proc-macro = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-application-crypto = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-arithmetic = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-authority-discovery = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-authorship = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-block-builder = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-blockchain = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-chain-spec = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-consensus = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-consensus-aura = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-consensus-babe = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-consensus-slots = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-consensus-vrf = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-core = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-database = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-debug-derive = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-externalities = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-finality-grandpa = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-inherents = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-io = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-keyring = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-keystore = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-npos-elections = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-npos-elections-compact = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-offchain = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-panic-handler = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-rpc = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-runtime-interface = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-runtime-interface-proc-macro = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-sandbox = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-serializer = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-session = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-staking = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-state-machine = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-std = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-storage = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-tasks = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-timestamp = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-tracing = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-transaction-pool = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-trie = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-utils = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-version = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+sp-wasm-interface = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+substrate-browser-utils = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+substrate-frame-cli = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+substrate-frame-rpc-system = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+substrate-prometheus-endpoint = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
+substrate-test-client = { git = "https://github.com/paritytech/substrate.git", rev = "8ee55dde" }
