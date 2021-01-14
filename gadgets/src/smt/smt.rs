@@ -1,14 +1,22 @@
-use bulletproofs::r1cs::{ConstraintSystem, R1CSError, Variable};
-use curve25519_dalek::scalar::Scalar;
-use sp_std::collections::btree_map::BTreeMap;
-
 use bulletproofs::r1cs::LinearCombination;
+use bulletproofs::r1cs::Prover;
+use bulletproofs::r1cs::{ConstraintSystem, R1CSError, R1CSProof, Variable};
+use bulletproofs::{BulletproofGens, PedersenGens};
+use curve25519_dalek::ristretto::CompressedRistretto;
+use curve25519_dalek::scalar::Scalar;
+use merlin::Transcript;
+use sp_std::collections::btree_map::BTreeMap;
+use std::collections::HashMap;
 
-use crate::utils::{constrain_lc_with_scalar, AllocatedScalar};
+use crate::smt::builder::DEFAULT_TREE_DEPTH;
+use crate::utils::{constrain_lc_with_scalar, get_bits, AllocatedScalar};
 use crate::utils::{ScalarBits, ScalarBytes};
 // use crate::gadget_mimc::{mimc, MIMC_ROUNDS, mimc_hash_2, mimc_gadget};
 use crate::poseidon::builder::Poseidon;
-use crate::poseidon::{PoseidonSbox, Poseidon_hash_2, Poseidon_hash_2_constraints};
+use crate::poseidon::{
+	allocate_statics_for_prover, PoseidonSbox, Poseidon_hash_2, Poseidon_hash_2_constraints,
+};
+use rand::rngs::OsRng;
 
 pub type DBVal = (Scalar, Scalar);
 
@@ -21,6 +29,8 @@ pub struct VanillaSparseMerkleTree {
 	//hash_constants: &'a [Scalar],
 	hash_params: Poseidon,
 	pub root: Scalar,
+	curr_index: Scalar,
+	leaf_indecies: HashMap<Scalar, Scalar>,
 }
 
 impl VanillaSparseMerkleTree {
@@ -47,13 +57,27 @@ impl VanillaSparseMerkleTree {
 			db,
 			hash_params,
 			root,
+			curr_index: Scalar::zero(),
+			leaf_indecies: HashMap::new(),
+		}
+	}
+
+	// Should not be used along with `update`
+	// This function allows this tree to work as a normal tree
+	// Should be deleted in the future if we opt out to use sparse tree
+	// that support non-membership proofs
+	pub fn add(&mut self, vals: Vec<Scalar>) {
+		for val in vals {
+			self.update(self.curr_index, val);
+			self.leaf_indecies.insert(val, self.curr_index);
+			self.curr_index = self.curr_index + Scalar::one();
 		}
 	}
 
 	pub fn update(&mut self, idx: Scalar, val: Scalar) -> Scalar {
 		// Find path to insert the new key
 		let mut sidenodes_wrap = Some(Vec::<Scalar>::new());
-		self.get(idx, &mut sidenodes_wrap);
+		self.get(idx, self.root, &mut sidenodes_wrap);
 		let mut sidenodes: Vec<Scalar> = sidenodes_wrap.unwrap();
 
 		let mut cur_idx = ScalarBits::from_scalar(&idx, self.depth);
@@ -87,9 +111,9 @@ impl VanillaSparseMerkleTree {
 	}
 
 	/// Get a value from tree, if `proof` is not None, populate `proof` with the merkle proof
-	pub fn get(&self, idx: Scalar, proof: &mut Option<Vec<Scalar>>) -> Scalar {
+	pub fn get(&self, idx: Scalar, root: Scalar, proof: &mut Option<Vec<Scalar>>) -> Scalar {
 		let mut cur_idx = ScalarBits::from_scalar(&idx, self.depth);
-		let mut cur_node = self.root.clone();
+		let mut cur_node = root.clone();
 
 		let need_proof = proof.is_some();
 		let mut proof_vec = Vec::<Scalar>::new();
@@ -161,6 +185,80 @@ impl VanillaSparseMerkleTree {
 			Some(r) => cur_val == *r,
 			None => cur_val == self.root,
 		}
+	}
+
+	pub fn prove_zk(
+		&self,
+		k: Scalar,
+		root: Scalar,
+	) -> (
+		R1CSProof,
+		(
+			CompressedRistretto,
+			Vec<CompressedRistretto>,
+			Vec<CompressedRistretto>,
+		),
+	) {
+		let mut test_rng: OsRng = OsRng::default();
+		let mut merkle_proof_vec = Vec::<Scalar>::new();
+		let mut merkle_proof = Some(merkle_proof_vec);
+		self.get(k, root, &mut merkle_proof);
+		merkle_proof_vec = merkle_proof.unwrap();
+		let pc_gens = PedersenGens::default();
+		let bp_gens = BulletproofGens::new(40960, 1);
+		let mut prover_transcript = Transcript::new(b"VSMT");
+		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
+
+		let (com_leaf, var_leaf) = prover.commit(k, Scalar::random(&mut test_rng));
+		let leaf_alloc_scalar = AllocatedScalar {
+			variable: var_leaf,
+			assignment: Some(k),
+		};
+
+		let mut leaf_index_comms = vec![];
+		let mut leaf_index_vars = vec![];
+		let mut leaf_index_alloc_scalars = vec![];
+		for b in get_bits(&k, DEFAULT_TREE_DEPTH).iter().take(self.depth) {
+			let val: Scalar = Scalar::from(*b as u8);
+			let (c, v) = prover.commit(val.clone(), Scalar::random(&mut test_rng));
+			leaf_index_comms.push(c);
+			leaf_index_vars.push(v);
+			leaf_index_alloc_scalars.push(AllocatedScalar {
+				variable: v,
+				assignment: Some(val),
+			});
+		}
+
+		let mut proof_comms = vec![];
+		let mut proof_vars = vec![];
+		let mut proof_alloc_scalars = vec![];
+		for p in merkle_proof_vec.iter().rev() {
+			let (c, v) = prover.commit(*p, Scalar::random(&mut test_rng));
+			proof_comms.push(c);
+			proof_vars.push(v);
+			proof_alloc_scalars.push(AllocatedScalar {
+				variable: v,
+				assignment: Some(*p),
+			});
+		}
+
+		let num_statics = 4;
+		let statics = allocate_statics_for_prover(&mut prover, num_statics);
+
+		assert!(vanilla_merkle_merkle_tree_verif_gadget(
+			&mut prover,
+			self.depth,
+			&self.root,
+			leaf_alloc_scalar,
+			leaf_index_alloc_scalars,
+			proof_alloc_scalars,
+			statics,
+			&self.hash_params
+		)
+		.is_ok());
+
+		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
+		(proof, (com_leaf, leaf_index_comms, proof_comms))
 	}
 
 	fn update_db_with_key_val(&mut self, key: Scalar, val: DBVal) {

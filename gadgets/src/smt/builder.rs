@@ -3,6 +3,7 @@ use crate::poseidon::gen_round_keys;
 use crate::poseidon::sbox::PoseidonSbox;
 use crate::poseidon::PoseidonBuilder;
 use crate::poseidon::Poseidon_hash_2;
+use bulletproofs::BulletproofGens;
 use sp_std::collections::btree_map::BTreeMap;
 
 use crate::smt::smt::DBVal;
@@ -77,6 +78,7 @@ impl SparseMerkleTreeBuilder {
 				.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
 				.mds_matrix(gen_mds_matrix(width))
 				.sbox(PoseidonSbox::Inverse)
+				.bulletproof_gens(BulletproofGens::new(40096, 1))
 				.build()
 		});
 		VanillaSparseMerkleTree::new(hash_params, depth)
