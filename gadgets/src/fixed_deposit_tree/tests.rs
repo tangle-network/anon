@@ -77,7 +77,7 @@ fn test_fixed_deposit_tree_verification() {
 
 		let mut comms = vec![];
 
-		let (com_r, var_r) = prover.commit(r.clone(), Scalar::random(&mut test_rng));
+		let (com_r, var_r) = prover.commit(r, Scalar::random(&mut test_rng));
 		comms.push(com_r);
 		let r_alloc = AllocatedScalar {
 			variable: var_r,
@@ -85,7 +85,7 @@ fn test_fixed_deposit_tree_verification() {
 		};
 		comms.push(com_r);
 
-		let (com_nullifier, var_nullifier) = prover.commit(nullifier.clone(), Scalar::random(&mut test_rng));
+		let (com_nullifier, var_nullifier) = prover.commit(nullifier, Scalar::random(&mut test_rng));
 		comms.push(com_nullifier);
 		let nullifier_alloc = AllocatedScalar {
 			variable: var_nullifier,
@@ -93,17 +93,17 @@ fn test_fixed_deposit_tree_verification() {
 		};
 		comms.push(com_nullifier);
 
-		let (com_leaf, var_leaf) = prover.commit(k, Scalar::random(&mut test_rng));
+		let (com_leaf, var_leaf) = prover.commit(expected_output, Scalar::random(&mut test_rng));
 		let leaf_alloc_scalar = AllocatedScalar {
 			variable: var_leaf,
-			assignment: Some(k),
+			assignment: Some(expected_output),
 		};
 		comms.push(com_leaf);
 
 		let mut leaf_index_comms = vec![];
 		let mut leaf_index_vars = vec![];
 		let mut leaf_index_alloc_scalars = vec![];
-		for b in get_bits(&k, TREE_DEPTH).iter().take(tree.depth) {
+		for b in get_bits(&expected_output, TREE_DEPTH).iter().take(tree.depth) {
 			let val: Scalar = Scalar::from(*b as u8);
 			let (c, v) = prover.commit(val.clone(), Scalar::random(&mut test_rng));
 			leaf_index_comms.push(c);
@@ -131,7 +131,6 @@ fn test_fixed_deposit_tree_verification() {
 		let statics = allocate_statics_for_prover(&mut prover, num_statics);
 
 		let start = Instant::now();
-		println!("hello");
 		assert!(fixed_deposit_tree_verif_gadget(
 			&mut prover,
 			tree.depth,

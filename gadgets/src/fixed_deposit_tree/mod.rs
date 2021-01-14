@@ -1,8 +1,7 @@
+pub mod builder;
+
 #[cfg(test)]
 pub mod tests;
-
-
-pub mod builder;
 
 use crate::smt::smt::vanilla_merkle_merkle_tree_verif_gadget;
 use crate::utils::constrain_lc_with_scalar;
@@ -10,12 +9,10 @@ use crate::poseidon::Poseidon_hash_2_constraints;
 use crate::poseidon::builder::Poseidon;
 use bulletproofs::r1cs::{ConstraintSystem, R1CSError};
 use curve25519_dalek::scalar::Scalar;
-
-
 use bulletproofs::r1cs::LinearCombination;
 use crate::utils::{AllocatedScalar};
 
-pub const TREE_DEPTH: usize = 32;
+pub const TREE_DEPTH: usize = 30;
 
 pub fn fixed_deposit_tree_verif_gadget<CS: ConstraintSystem>(
 	cs: &mut CS,

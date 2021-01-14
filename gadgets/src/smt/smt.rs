@@ -133,10 +133,8 @@ impl VanillaSparseMerkleTree {
 		for i in 0..self.depth {
 			cur_val = {
 				if cur_idx.is_lsb_set() {
-					// mimc(&proof[self.depth-1-i], &cur_val, self.hash_constants)
 					Poseidon_hash_2(proof[self.depth-1-i].clone(), cur_val.clone(), &self.hash_params)
 				} else {
-					// mimc(&cur_val, &proof[self.depth-1-i], self.hash_constants)
 					Poseidon_hash_2(cur_val.clone(), proof[self.depth-1-i].clone(), &self.hash_params)
 				}
 			};
