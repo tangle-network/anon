@@ -221,7 +221,6 @@ fn test_vsmt_prove_verif() {
 	let width = 6;
 	let (full_b, full_e) = (4, 4);
 	let partial_rounds = 57;
-	let total_rounds = full_b + partial_rounds + full_e;
 	let p_params = PoseidonBuilder::new(width)
 		.num_rounds(full_b, full_e, partial_rounds)
 		.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
@@ -244,12 +243,15 @@ fn test_vsmt_prove_verif() {
 	merkle_proof_vec = merkle_proof.unwrap();
 	assert!(tree.verify_proof(k, k, &merkle_proof_vec, None));
 	assert!(tree.verify_proof(k, k, &merkle_proof_vec, Some(&tree.root)));
-	let (proof, commitments) = tree.prove_zk(k, tree.root);
 
-	// Verify part
 	let pc_gens = PedersenGens::default();
 	let bp_gens = BulletproofGens::new(40960, 1);
+	let mut prover_transcript = Transcript::new(b"VSMT");
+	let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
+	let (proof, commitments) = tree.prove_zk(k, tree.root, &bp_gens, prover);
+
+	// Verify part
 	let mut verifier_transcript = Transcript::new(b"VSMT");
 	let mut verifier = Verifier::new(&mut verifier_transcript);
 	let var_leaf = verifier.commit(commitments.0);

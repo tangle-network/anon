@@ -191,6 +191,8 @@ impl VanillaSparseMerkleTree {
 		&self,
 		k: Scalar,
 		root: Scalar,
+		bp_gens: &BulletproofGens,
+		mut prover: Prover,
 	) -> (
 		R1CSProof,
 		(
@@ -204,10 +206,6 @@ impl VanillaSparseMerkleTree {
 		let mut merkle_proof = Some(merkle_proof_vec);
 		self.get(k, root, &mut merkle_proof);
 		merkle_proof_vec = merkle_proof.unwrap();
-		let pc_gens = PedersenGens::default();
-		let bp_gens = BulletproofGens::new(40960, 1);
-		let mut prover_transcript = Transcript::new(b"VSMT");
-		let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 		let (com_leaf, var_leaf) = prover.commit(k, Scalar::random(&mut test_rng));
 		let leaf_alloc_scalar = AllocatedScalar {
@@ -257,7 +255,7 @@ impl VanillaSparseMerkleTree {
 		)
 		.is_ok());
 
-		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
+		let proof = prover.prove_with_rng(bp_gens, &mut test_rng).unwrap();
 		(proof, (com_leaf, leaf_index_comms, proof_comms))
 	}
 
