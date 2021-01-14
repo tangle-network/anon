@@ -119,7 +119,7 @@ fn test_is_valid_transaction_spend() {
 				alloc_input_rho,
 				alloc_input_r,
 				alloc_input_nullifier,
-				Some(input_sn),
+				input_sn,
 				input_cm,
 			);
 
@@ -255,7 +255,7 @@ fn test_is_valid_transaction_spend() {
 				allocs[2],
 				allocs[3],
 				allocs[4],
-				Some(input_sn),
+				input_sn,
 				input_cm,
 			)],
 			outputs: vec![AllocatedCoin::new_for_output(
