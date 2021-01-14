@@ -15,6 +15,8 @@ use curve25519_dalek::scalar::Scalar;
 use bulletproofs::r1cs::LinearCombination;
 use crate::utils::{AllocatedScalar};
 
+pub const TREE_DEPTH: usize = 32;
+
 pub fn fixed_deposit_tree_verif_gadget<CS: ConstraintSystem>(
 	cs: &mut CS,
 	depth: usize,
