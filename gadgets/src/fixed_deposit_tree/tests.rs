@@ -78,7 +78,6 @@ fn test_fixed_deposit_tree_verification() {
 		let mut comms = vec![];
 
 		let (com_r, var_r) = prover.commit(r, Scalar::random(&mut test_rng));
-		comms.push(com_r);
 		let r_alloc = AllocatedScalar {
 			variable: var_r,
 			assignment: Some(r),
@@ -86,7 +85,6 @@ fn test_fixed_deposit_tree_verification() {
 		comms.push(com_r);
 
 		let (com_nullifier, var_nullifier) = prover.commit(nullifier, Scalar::random(&mut test_rng));
-		comms.push(com_nullifier);
 		let nullifier_alloc = AllocatedScalar {
 			variable: var_nullifier,
 			assignment: Some(nullifier),
