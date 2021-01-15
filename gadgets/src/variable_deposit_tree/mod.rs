@@ -46,8 +46,8 @@ pub struct AllocatedOutputCoin {
 
 #[derive(Clone)]
 pub struct Transaction {
-	inputs: Vec<AllocatedInputCoin>,
-	outputs: Vec<AllocatedOutputCoin>,
+	pub inputs: Vec<AllocatedInputCoin>,
+	pub	outputs: Vec<AllocatedOutputCoin>,
 	pub statics_2: Vec<AllocatedScalar>,
 	pub statics_4: Vec<AllocatedScalar>,
 }
