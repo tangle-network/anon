@@ -1,15 +1,17 @@
-use crate::utils::get_scalar_from_hex;
-use crate::poseidon::Poseidon_hash_2_gadget;
 use crate::poseidon::allocate_statics_for_prover;
-use rand::CryptoRng;
-use rand::RngCore;
+use crate::poseidon::Poseidon_hash_2_gadget;
+use crate::utils::get_scalar_from_hex;
+use alloc::string::String;
+use alloc::vec::Vec;
+use rand_core::CryptoRng;
+use rand_core::RngCore;
 
+use crate::poseidon::sbox::PoseidonSbox;
 use crate::utils::AllocatedScalar;
 use bulletproofs::r1cs::Prover;
-use merlin::Transcript;
-use bulletproofs::PedersenGens;
 use bulletproofs::BulletproofGens;
-use crate::poseidon::sbox::PoseidonSbox;
+use bulletproofs::PedersenGens;
+use merlin::Transcript;
 
 use crypto_constants::poseidon::constants_3;
 use crypto_constants::poseidon::constants_4;
@@ -19,7 +21,7 @@ use crypto_constants::poseidon::constants_7;
 use crypto_constants::poseidon::constants_8;
 use crypto_constants::poseidon::constants_9;
 
-#[cfg(feature="std")]
+#[cfg(feature = "std")]
 use std::time::Instant;
 
 use curve25519_dalek::scalar::Scalar;
@@ -121,8 +123,14 @@ impl PoseidonBuilder {
 	}
 
 	pub fn round_keys_hex(&mut self, r_keys: Vec<String>) -> &mut Self {
-		let cap = if self.full_rounds_beginning.is_some() && self.full_rounds_end.is_some() && self.partial_rounds.is_some() {
-			(self.full_rounds_beginning.unwrap() + self.partial_rounds.unwrap() + self.full_rounds_end.unwrap()) * self.width
+		let cap = if self.full_rounds_beginning.is_some()
+			&& self.full_rounds_end.is_some()
+			&& self.partial_rounds.is_some()
+		{
+			(self.full_rounds_beginning.unwrap()
+				+ self.partial_rounds.unwrap()
+				+ self.full_rounds_end.unwrap())
+				* self.width
 		} else {
 			r_keys.len()
 		};
@@ -166,10 +174,16 @@ impl PoseidonBuilder {
 	pub fn build(&self) -> Poseidon {
 		let width = self.width;
 
-		let round_keys = self.round_keys.clone().expect("Round keys required for now");
+		let round_keys = self
+			.round_keys
+			.clone()
+			.expect("Round keys required for now");
 
 		// TODO: Generate a default MDS matrix instead of making the caller supply one.
-		let mds_matrix = self.mds_matrix.clone().expect("MDS matrix required for now");
+		let mds_matrix = self
+			.mds_matrix
+			.clone()
+			.expect("MDS matrix required for now");
 
 		// If an S-box is not specified, determine the optimal choice based on the guidance in the
 		// paper.
@@ -178,7 +192,8 @@ impl PoseidonBuilder {
 		if self.full_rounds_beginning.is_some()
 			&& self.full_rounds_end.is_some()
 			&& self.partial_rounds.is_some()
-			&& self.security_bits.is_some() {
+			&& self.security_bits.is_some()
+		{
 			panic!("Cannot specify both the number of rounds and the desired security level");
 		}
 
@@ -189,9 +204,14 @@ impl PoseidonBuilder {
 		// default pedersen genrators
 		let pc_gens = self.pc_gens.unwrap_or_else(|| PedersenGens::default());
 		// default 4096 might not be enough
-		let bp_gens = self.bp_gens.clone().unwrap_or_else(|| BulletproofGens::new(4096, 1));
+		let bp_gens = self
+			.bp_gens
+			.clone()
+			.unwrap_or_else(|| BulletproofGens::new(4096, 1));
 
-		let transcript_label = self.transcript_label.unwrap_or_else(|| b"test_poseidon_transcript");
+		let transcript_label = self
+			.transcript_label
+			.unwrap_or_else(|| b"test_poseidon_transcript");
 
 		Poseidon {
 			width,
@@ -213,8 +233,14 @@ impl Poseidon {
 		self.full_rounds_beginning + self.partial_rounds + self.full_rounds_end
 	}
 
-	#[cfg(feature="std")]
-	pub fn prove_hash_2<C: CryptoRng + RngCore>(&self, xl: Scalar, xr: Scalar, output: Scalar, mut rng: &mut C) {
+	#[cfg(feature = "std")]
+	pub fn prove_hash_2<C: CryptoRng + RngCore>(
+		&self,
+		xl: Scalar,
+		xr: Scalar,
+		output: Scalar,
+		mut rng: &mut C,
+	) {
 		let total_rounds = self.get_total_rounds();
 		let (_proof, _commitments) = {
 			let mut prover_transcript = Transcript::new(self.transcript_label);
@@ -240,16 +266,17 @@ impl Poseidon {
 			let statics = allocate_statics_for_prover(&mut prover, num_statics);
 
 			let start = Instant::now();
-			assert!(Poseidon_hash_2_gadget(
-				&mut prover,
-				l_alloc,
-				r_alloc,
-				statics,
-				&self,
-				&output
-			).is_ok());
+			assert!(
+				Poseidon_hash_2_gadget(&mut prover, l_alloc, r_alloc, statics, &self, &output)
+					.is_ok()
+			);
 
-			println!("For Poseidon hash 2:1 rounds {}, no of constraints is {}, no of multipliers is {}", total_rounds, &prover.num_constraints(), &prover.num_multipliers());
+			println!(
+				"For Poseidon hash 2:1 rounds {}, no of constraints is {}, no of multipliers is {}",
+				total_rounds,
+				&prover.num_constraints(),
+				&prover.num_multipliers()
+			);
 
 			let proof = prover.prove_with_rng(&self.bp_gens, &mut rng).unwrap();
 
@@ -260,7 +287,6 @@ impl Poseidon {
 		};
 	}
 }
-
 
 // TODO: Write logic to generate correct round keys.
 pub fn gen_round_keys(width: usize, total_rounds: usize) -> Vec<Scalar> {
@@ -286,7 +312,11 @@ pub fn gen_round_keys(width: usize, total_rounds: usize) -> Vec<Scalar> {
 	/*let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);
 	vec![Scalar::random(&mut test_rng); cap]*/
 	if ROUND_CONSTS.len() < cap {
-		panic!("Not enough round constants, need {}, found {}", cap, ROUND_CONSTS.len());
+		panic!(
+			"Not enough round constants, need {}, found {}",
+			cap,
+			ROUND_CONSTS.len()
+		);
 	}
 	let mut rc = vec![];
 	for i in 0..cap {
@@ -300,21 +330,53 @@ pub fn gen_round_keys(width: usize, total_rounds: usize) -> Vec<Scalar> {
 // TODO: Write logic to generate correct MDS matrix. Currently loading hardcoded constants.
 pub fn gen_mds_matrix(width: usize) -> Vec<Vec<Scalar>> {
 	let MDS_ENTRIES: Vec<Vec<&str>> = if width == 3 {
-		constants_3::MDS_ENTRIES.to_vec().iter().map(|v| v.to_vec()).collect()
+		constants_3::MDS_ENTRIES
+			.to_vec()
+			.iter()
+			.map(|v| v.to_vec())
+			.collect()
 	} else if width == 4 {
-		constants_4::MDS_ENTRIES.to_vec().iter().map(|v| v.to_vec()).collect()
+		constants_4::MDS_ENTRIES
+			.to_vec()
+			.iter()
+			.map(|v| v.to_vec())
+			.collect()
 	} else if width == 5 {
-		constants_5::MDS_ENTRIES.to_vec().iter().map(|v| v.to_vec()).collect()
+		constants_5::MDS_ENTRIES
+			.to_vec()
+			.iter()
+			.map(|v| v.to_vec())
+			.collect()
 	} else if width == 6 {
-		constants_6::MDS_ENTRIES.to_vec().iter().map(|v| v.to_vec()).collect()
+		constants_6::MDS_ENTRIES
+			.to_vec()
+			.iter()
+			.map(|v| v.to_vec())
+			.collect()
 	} else if width == 7 {
-		constants_7::MDS_ENTRIES.to_vec().iter().map(|v| v.to_vec()).collect()
+		constants_7::MDS_ENTRIES
+			.to_vec()
+			.iter()
+			.map(|v| v.to_vec())
+			.collect()
 	} else if width == 8 {
-		constants_8::MDS_ENTRIES.to_vec().iter().map(|v| v.to_vec()).collect()
+		constants_8::MDS_ENTRIES
+			.to_vec()
+			.iter()
+			.map(|v| v.to_vec())
+			.collect()
 	} else if width == 9 {
-		constants_9::MDS_ENTRIES.to_vec().iter().map(|v| v.to_vec()).collect()
+		constants_9::MDS_ENTRIES
+			.to_vec()
+			.iter()
+			.map(|v| v.to_vec())
+			.collect()
 	} else {
-		constants_3::MDS_ENTRIES.to_vec().iter().map(|v| v.to_vec()).collect()
+		constants_3::MDS_ENTRIES
+			.to_vec()
+			.iter()
+			.map(|v| v.to_vec())
+			.collect()
 	};
 
 	/*let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);

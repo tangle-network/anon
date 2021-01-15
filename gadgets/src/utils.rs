@@ -1,7 +1,8 @@
-use bulletproofs::r1cs::{ConstraintSystem, R1CSError, Variable};
-use curve25519_dalek::scalar::Scalar;
+use alloc::vec::Vec;
 use bulletproofs::r1cs::LinearCombination;
+use bulletproofs::r1cs::{ConstraintSystem, R1CSError, Variable};
 use core::fmt;
+use curve25519_dalek::scalar::Scalar;
 
 pub type ScalarBytes = [u8; 32];
 
@@ -9,13 +10,13 @@ pub type ScalarBytes = [u8; 32];
 #[derive(Copy, Clone, Debug)]
 pub struct AllocatedQuantity {
 	pub variable: Variable,
-	pub assignment: Option<u64>
+	pub assignment: Option<u64>,
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct AllocatedScalar {
 	pub variable: Variable,
-	pub assignment: Option<Scalar>
+	pub assignment: Option<Scalar>,
 }
 
 pub fn decode_hex(s: &str) -> Vec<u8> {
@@ -34,7 +35,7 @@ pub fn get_bits(scalar: &Scalar, process_bits: usize) -> Vec<u8> {
 	for i in 0..process_bits {
 		// As i runs from 0..256, the bottom 3 bits index the bit,
 		// while the upper bits index the byte.
-		bits[i] = ((bytes[i>>3] >> (i&7)) & 1u8) as u8;
+		bits[i] = ((bytes[i >> 3] >> (i & 7)) & 1u8) as u8;
 	}
 	bits
 }
@@ -46,12 +47,12 @@ pub fn get_scalar_from_hex(hex_str: &str) -> Scalar {
 	Scalar::from_bytes_mod_order(result)
 }
 
-
 /// Enforces that the quantity of v is in the range [0, 2^n).
 pub fn positive_no_gadget<CS: ConstraintSystem>(
 	cs: &mut CS,
 	v: AllocatedQuantity,
-	bit_size: usize) -> Result<(), R1CSError> {
+	bit_size: usize,
+) -> Result<(), R1CSError> {
 	let mut constraint_v = vec![(v.variable, -Scalar::one())];
 	let mut exp_2 = Scalar::one();
 	for i in 0..bit_size {
@@ -68,7 +69,7 @@ pub fn positive_no_gadget<CS: ConstraintSystem>(
 		// Enforce that a = 1 - b, so they both are 1 or 0.
 		cs.constrain(a + (b - 1u64));
 
-		constraint_v.push((b, exp_2)  );
+		constraint_v.push((b, exp_2));
 		exp_2 = exp_2 + exp_2;
 	}
 
@@ -79,14 +80,18 @@ pub fn positive_no_gadget<CS: ConstraintSystem>(
 }
 
 /// Constrain a linear combination to be equal to a scalar
-pub fn constrain_lc_with_scalar<CS: ConstraintSystem>(cs: &mut CS, lc: LinearCombination, scalar: &Scalar) {
+pub fn constrain_lc_with_scalar<CS: ConstraintSystem>(
+	cs: &mut CS,
+	lc: LinearCombination,
+	scalar: &Scalar,
+) {
 	cs.constrain(lc - LinearCombination::from(*scalar));
 }
 
 /// Get a bit array of this scalar, LSB is first element of this array
 #[derive(Clone)]
 pub struct ScalarBits {
-	pub bit_array: Vec<u8>
+	pub bit_array: Vec<u8>,
 }
 
 impl fmt::Debug for ScalarBits {
@@ -99,7 +104,7 @@ impl ScalarBits {
 	pub fn from_scalar(scalar: &Scalar, process_bits: usize) -> Self {
 		let s = scalar.reduce();
 		Self {
-			bit_array: get_bits(&s, process_bits)
+			bit_array: get_bits(&s, process_bits),
 		}
 	}
 
@@ -129,7 +134,7 @@ impl ScalarBits {
 	/// Shift left by 1 bit
 	pub fn shl(&mut self) {
 		for i in (1..self.bit_array.len()).rev() {
-			self.bit_array[i] = self.bit_array[i-1];
+			self.bit_array[i] = self.bit_array[i - 1];
 		}
 		self.bit_array[0] = 0;
 	}
@@ -138,9 +143,9 @@ impl ScalarBits {
 	pub fn shr(&mut self) {
 		let size = self.bit_array.len();
 		for i in 1..size {
-			self.bit_array[i-1] = self.bit_array[i];
+			self.bit_array[i - 1] = self.bit_array[i];
 		}
-		self.bit_array[size-1] = 0;
+		self.bit_array[size - 1] = 0;
 	}
 
 	/// Return a new bit-array shifted to the left with 1 bit
@@ -149,11 +154,11 @@ impl ScalarBits {
 		let size = self.bit_array.len();
 		let mut new_array = vec![0; size];
 		for i in (1..size).rev() {
-			new_array[i] = self.bit_array[i-1];
+			new_array[i] = self.bit_array[i - 1];
 		}
 		new_array[0] = 0;
 		Self {
-			bit_array: new_array
+			bit_array: new_array,
 		}
 	}
 
@@ -163,17 +168,17 @@ impl ScalarBits {
 		let size = self.bit_array.len();
 		let mut new_array = vec![0; size];
 		for i in 1..size {
-			new_array[i-1] = self.bit_array[i];
+			new_array[i - 1] = self.bit_array[i];
 		}
-		new_array[size-1] = 0;
+		new_array[size - 1] = 0;
 		Self {
-			bit_array: new_array
+			bit_array: new_array,
 		}
 	}
 
 	/// Check if most significant bit is set
 	pub fn is_msb_set(&self) -> bool {
-		self.bit_array[self.bit_array.len()-1] == 1
+		self.bit_array[self.bit_array.len() - 1] == 1
 	}
 
 	/// Check if least significant bit is set

@@ -1,13 +1,13 @@
 #![allow(non_snake_case)]
 
 use crate::poseidon::builder::Poseidon;
-use curve25519_dalek::scalar::Scalar;
-use bulletproofs::r1cs::{ConstraintSystem, R1CSError, Prover, Verifier};
-use bulletproofs::{PedersenGens};
+use crate::utils::{constrain_lc_with_scalar, AllocatedScalar};
+use alloc::vec::Vec;
 use bulletproofs::r1cs::LinearCombination;
-use crate::utils::{AllocatedScalar, constrain_lc_with_scalar};
-
-
+use bulletproofs::r1cs::{ConstraintSystem, Prover, R1CSError, Verifier};
+use bulletproofs::PedersenGens;
+use curve25519_dalek::scalar::Scalar;
+use sp_std::borrow::ToOwned;
 
 pub mod sbox;
 pub use sbox::*;
@@ -17,12 +17,7 @@ pub use builder::*;
 #[cfg(test)]
 pub mod tests;
 
-
-fn Poseidon_permutation(
-	input: &[Scalar],
-	params: &Poseidon,
-) -> Vec<Scalar>
-{
+fn Poseidon_permutation(input: &[Scalar], params: &Poseidon) -> Vec<Scalar> {
 	let width = params.width;
 	assert_eq!(input.len(), width);
 
@@ -59,7 +54,7 @@ fn Poseidon_permutation(
 	}
 
 	// middle partial Sbox rounds
-	for _ in full_rounds_beginning..(full_rounds_beginning+partial_rounds) {
+	for _ in full_rounds_beginning..(full_rounds_beginning + partial_rounds) {
 		for i in 0..width {
 			current_state[i] += &params.round_keys[round_keys_offset];
 			round_keys_offset += 1;
@@ -67,7 +62,7 @@ fn Poseidon_permutation(
 
 		// partial Sbox layer, apply Sbox to only 1 element of the state.
 		// Here the last one is chosen but the choice is arbitrary.
-		current_state[width-1] = params.sbox.apply_sbox(&current_state[width-1]);
+		current_state[width - 1] = params.sbox.apply_sbox(&current_state[width - 1]);
 
 		// linear layer
 		for j in 0..width {
@@ -84,7 +79,9 @@ fn Poseidon_permutation(
 	}
 
 	// last full Sbox rounds
-	for _ in full_rounds_beginning+partial_rounds..(full_rounds_beginning+partial_rounds+full_rounds_end) {
+	for _ in full_rounds_beginning + partial_rounds
+		..(full_rounds_beginning + partial_rounds + full_rounds_end)
+	{
 		// Sbox layer
 		for i in 0..width {
 			current_state[i] += params.round_keys[round_keys_offset];
@@ -147,14 +144,22 @@ pub fn Poseidon_permutation_constraints<'a, CS: ConstraintSystem>(
 		// Substitution (S-box) layer
 		for i in 0..width {
 			let round_key = params.round_keys[round_keys_offset];
-			sbox_outputs[i] = params.sbox.synthesize_sbox(cs, input_vars[i].clone(), round_key)?.into();
+			sbox_outputs[i] = params
+				.sbox
+				.synthesize_sbox(cs, input_vars[i].clone(), round_key)?
+				.into();
 
 			round_keys_offset += 1;
 		}
 
 		let mut next_input_vars: Vec<LinearCombination> = vec![LinearCombination::default(); width];
 
-		apply_linear_layer(width, sbox_outputs, &mut next_input_vars, &params.mds_matrix);
+		apply_linear_layer(
+			width,
+			sbox_outputs,
+			&mut next_input_vars,
+			&params.mds_matrix,
+		);
 
 		for i in 0..width {
 			// replace input_vars with next_input_vars
@@ -166,7 +171,7 @@ pub fn Poseidon_permutation_constraints<'a, CS: ConstraintSystem>(
 
 	// ------------ Middle rounds with partial SBox begin --------------------
 
-	for _k in full_rounds_beginning..(full_rounds_beginning+partial_rounds) {
+	for _k in full_rounds_beginning..(full_rounds_beginning + partial_rounds) {
 		let mut sbox_outputs: Vec<LinearCombination> = vec![LinearCombination::default(); width];
 
 		// Substitution (S-box) layer
@@ -175,8 +180,11 @@ pub fn Poseidon_permutation_constraints<'a, CS: ConstraintSystem>(
 
 			// apply Sbox to only 1 element of the state.
 			// Here the last one is chosen but the choice is arbitrary.
-			if i == width-1 {
-				sbox_outputs[i] = params.sbox.synthesize_sbox(cs, input_vars[i].clone(), round_key)?.into();
+			if i == width - 1 {
+				sbox_outputs[i] = params
+					.sbox
+					.synthesize_sbox(cs, input_vars[i].clone(), round_key)?
+					.into();
 			} else {
 				sbox_outputs[i] = input_vars[i].clone() + LinearCombination::from(round_key);
 			}
@@ -188,7 +196,12 @@ pub fn Poseidon_permutation_constraints<'a, CS: ConstraintSystem>(
 
 		let mut next_input_vars: Vec<LinearCombination> = vec![LinearCombination::default(); width];
 
-		apply_linear_layer(width, sbox_outputs, &mut next_input_vars, &params.mds_matrix);
+		apply_linear_layer(
+			width,
+			sbox_outputs,
+			&mut next_input_vars,
+			&params.mds_matrix,
+		);
 
 		for i in 0..width {
 			// replace input_vars with simplified next_input_vars
@@ -200,13 +213,18 @@ pub fn Poseidon_permutation_constraints<'a, CS: ConstraintSystem>(
 
 	// ------------ Last rounds with full SBox begin --------------------
 
-	for _k in (full_rounds_beginning+partial_rounds)..(full_rounds_beginning+partial_rounds+full_rounds_end) {
+	for _k in (full_rounds_beginning + partial_rounds)
+		..(full_rounds_beginning + partial_rounds + full_rounds_end)
+	{
 		let mut sbox_outputs: Vec<LinearCombination> = vec![LinearCombination::default(); width];
 
 		// Substitution (S-box) layer
 		for i in 0..width {
 			let round_key = params.round_keys[round_keys_offset];
-			sbox_outputs[i] = params.sbox.synthesize_sbox(cs, input_vars[i].clone(), round_key)?.into();
+			sbox_outputs[i] = params
+				.sbox
+				.synthesize_sbox(cs, input_vars[i].clone(), round_key)?
+				.into();
 
 			round_keys_offset += 1;
 		}
@@ -215,7 +233,12 @@ pub fn Poseidon_permutation_constraints<'a, CS: ConstraintSystem>(
 
 		let mut next_input_vars: Vec<LinearCombination> = vec![LinearCombination::default(); width];
 
-		apply_linear_layer(width, sbox_outputs, &mut next_input_vars, &params.mds_matrix);
+		apply_linear_layer(
+			width,
+			sbox_outputs,
+			&mut next_input_vars,
+			&params.mds_matrix,
+		);
 
 		for i in 0..width {
 			// replace input_vars with next_input_vars
@@ -228,12 +251,11 @@ pub fn Poseidon_permutation_constraints<'a, CS: ConstraintSystem>(
 	Ok(input_vars)
 }
 
-
 pub fn Poseidon_permutation_gadget<'a, CS: ConstraintSystem>(
 	cs: &mut CS,
 	input: Vec<AllocatedScalar>,
 	params: &'a Poseidon,
-	output: &[Scalar]
+	output: &[Scalar],
 ) -> Result<(), R1CSError> {
 	let width = params.width;
 	assert_eq!(output.len(), width);
@@ -264,7 +286,7 @@ pub fn Poseidon_hash_2(xl: Scalar, xr: Scalar, params: &Poseidon) -> Scalar {
 		xr,
 		Scalar::from(PADDING_CONST),
 		Scalar::from(ZERO_CONST),
-		Scalar::from(ZERO_CONST)
+		Scalar::from(ZERO_CONST),
 	];
 
 	// Never take the first output
@@ -280,7 +302,7 @@ pub fn Poseidon_hash_2_constraints<'a, CS: ConstraintSystem>(
 ) -> Result<LinearCombination, R1CSError> {
 	let width = params.width;
 	// Only 2 inputs to the permutation are set to the input of this hash function.
-	assert_eq!(statics.len(), width-2);
+	assert_eq!(statics.len(), width - 2);
 
 	// Always keep the 1st input as 0
 	let mut inputs = vec![statics[0].to_owned()];
@@ -301,11 +323,16 @@ pub fn Poseidon_hash_2_gadget<'a, CS: ConstraintSystem>(
 	xr: AllocatedScalar,
 	statics: Vec<AllocatedScalar>,
 	params: &'a Poseidon,
-	output: &Scalar
+	output: &Scalar,
 ) -> Result<(), R1CSError> {
-
 	let statics: Vec<LinearCombination> = statics.iter().map(|s| s.variable.into()).collect();
-	let hash = Poseidon_hash_2_constraints::<CS>(cs, xl.variable.into(), xr.variable.into(), statics, params)?;
+	let hash = Poseidon_hash_2_constraints::<CS>(
+		cs,
+		xl.variable.into(),
+		xr.variable.into(),
+		statics,
+		params,
+	)?;
 
 	constrain_lc_with_scalar::<CS>(cs, hash, output);
 
@@ -322,7 +349,7 @@ pub fn Poseidon_hash_4(inputs: [Scalar; 4], params: &Poseidon) -> Scalar {
 		inputs[1],
 		inputs[2],
 		inputs[3],
-		Scalar::from(PADDING_CONST)
+		Scalar::from(PADDING_CONST),
 	];
 
 	// Never take the first output
@@ -335,10 +362,9 @@ pub fn Poseidon_hash_4_constraints<'a, CS: ConstraintSystem>(
 	statics: Vec<LinearCombination>,
 	params: &'a Poseidon,
 ) -> Result<LinearCombination, R1CSError> {
-
 	let width = params.width;
 	// Only 4 inputs to the permutation are set to the input of this hash function.
-	assert_eq!(statics.len(), width-4);
+	assert_eq!(statics.len(), width - 4);
 
 	// Always keep the 1st input as 0
 	let mut inputs = vec![statics[0].to_owned()];
@@ -360,15 +386,14 @@ pub fn Poseidon_hash_4_gadget<'a, CS: ConstraintSystem>(
 	input: Vec<AllocatedScalar>,
 	statics: Vec<AllocatedScalar>,
 	params: &'a Poseidon,
-	output: &Scalar
+	output: &Scalar,
 ) -> Result<(), R1CSError> {
-
 	let statics: Vec<LinearCombination> = statics.iter().map(|s| s.variable.into()).collect();
 	let mut input_arr: [LinearCombination; 4] = [
 		LinearCombination::default(),
 		LinearCombination::default(),
 		LinearCombination::default(),
-		LinearCombination::default()
+		LinearCombination::default(),
 	];
 	for i in 0..input.len() {
 		input_arr[i] = input[i].variable.into();
@@ -381,7 +406,10 @@ pub fn Poseidon_hash_4_gadget<'a, CS: ConstraintSystem>(
 }
 
 /// Allocate padding constant and zeroes for Prover
-pub fn allocate_statics_for_prover(prover: &mut Prover, num_statics: usize) -> Vec<AllocatedScalar> {
+pub fn allocate_statics_for_prover(
+	prover: &mut Prover,
+	num_statics: usize,
+) -> Vec<AllocatedScalar> {
 	let mut statics = vec![];
 	let (_, var) = prover.commit(Scalar::from(ZERO_CONST), Scalar::zero());
 	statics.push(AllocatedScalar {
@@ -408,13 +436,21 @@ pub fn allocate_statics_for_prover(prover: &mut Prover, num_statics: usize) -> V
 }
 
 /// Allocate padding constant and zeroes for Verifier
-pub fn allocate_statics_for_verifier(verifier: &mut Verifier, num_statics: usize, pc_gens: &PedersenGens) -> Vec<AllocatedScalar> {
+pub fn allocate_statics_for_verifier(
+	verifier: &mut Verifier,
+	num_statics: usize,
+	pc_gens: &PedersenGens,
+) -> Vec<AllocatedScalar> {
 	let mut statics = vec![];
 	// Commitment to PADDING_CONST with blinding as 0
-	let pad_comm = pc_gens.commit(Scalar::from(PADDING_CONST), Scalar::zero()).compress();
+	let pad_comm = pc_gens
+		.commit(Scalar::from(PADDING_CONST), Scalar::zero())
+		.compress();
 
 	// Commitment to 0 with blinding as 0
-	let zero_comm = pc_gens.commit(Scalar::from(ZERO_CONST), Scalar::zero()).compress();
+	let zero_comm = pc_gens
+		.commit(Scalar::from(ZERO_CONST), Scalar::zero())
+		.compress();
 
 	let v = verifier.commit(zero_comm.clone());
 	statics.push(AllocatedScalar {

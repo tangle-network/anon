@@ -1,3 +1,6 @@
+use crate::utils::{constrain_lc_with_scalar, get_bits, AllocatedScalar};
+use crate::utils::{ScalarBits, ScalarBytes};
+use alloc::vec::Vec;
 use bulletproofs::r1cs::LinearCombination;
 use bulletproofs::r1cs::Prover;
 use bulletproofs::r1cs::{ConstraintSystem, R1CSError, R1CSProof, Variable};
@@ -5,21 +8,20 @@ use bulletproofs::BulletproofGens;
 use curve25519_dalek::ristretto::CompressedRistretto;
 use curve25519_dalek::scalar::Scalar;
 use sp_std::collections::btree_map::BTreeMap;
+#[cfg(feature = "std")]
 use std::collections::HashMap;
-
-use crate::utils::{constrain_lc_with_scalar, get_bits, AllocatedScalar};
-use crate::utils::{ScalarBits, ScalarBytes};
 // use crate::gadget_mimc::{mimc, MIMC_ROUNDS, mimc_hash_2, mimc_gadget};
 use crate::poseidon::builder::Poseidon;
 use crate::poseidon::{
 	allocate_statics_for_prover, PoseidonSbox, Poseidon_hash_2, Poseidon_hash_2_constraints,
 };
+#[cfg(feature = "std")]
 use rand::rngs::OsRng;
 
 pub type DBVal = (Scalar, Scalar);
 
 // TODO: ABSTRACT HASH FUNCTION BETTER
-
+#[cfg(feature = "std")]
 pub struct VanillaSparseMerkleTree {
 	pub depth: usize,
 	empty_tree_hashes: Vec<Scalar>,
@@ -30,7 +32,7 @@ pub struct VanillaSparseMerkleTree {
 	curr_index: Scalar,
 	leaf_indecies: HashMap<Scalar, Scalar>,
 }
-
+#[cfg(feature = "std")]
 impl VanillaSparseMerkleTree {
 	pub fn new(hash_params: Poseidon, depth: usize) -> VanillaSparseMerkleTree {
 		let mut db = BTreeMap::new();
