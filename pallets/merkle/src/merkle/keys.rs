@@ -2,11 +2,15 @@ use sha2::Sha512;
 use sp_std::prelude::*;
 
 use super::hasher::Hasher;
-use bulletproofs::r1cs::{LinearCombination, Prover, Verifier};
-use bulletproofs::PedersenGens;
+use bulletproofs::{
+	r1cs::{LinearCombination, Prover, Verifier},
+	PedersenGens,
+};
 use codec::{Decode, Encode, EncodeLike, Input};
-use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
-use curve25519_dalek::scalar::Scalar;
+use curve25519_dalek::{
+	ristretto::{CompressedRistretto, RistrettoPoint},
+	scalar::Scalar,
+};
 
 #[derive(Eq, PartialEq, Clone, Default, Debug, Copy)]
 pub struct Commitment(pub CompressedRistretto);
@@ -59,6 +63,7 @@ impl Commitment {
 		let point: RistrettoPoint = RistrettoPoint::hash_from_bytes::<Sha512>(bytes);
 		Commitment(point.compress())
 	}
+
 	/// Serialize this public key to 32 bytes
 	pub fn as_bytes(&self) -> Vec<u8> {
 		(&self.0.as_bytes()).to_vec()
@@ -130,7 +135,8 @@ impl Data {
 		xl: LinearCombination,
 		xr: LinearCombination,
 		h: &H,
-	) -> LinearCombination {
+	) -> LinearCombination
+	{
 		h.constrain_prover(cs, xl, xr)
 	}
 
@@ -140,7 +146,8 @@ impl Data {
 		xl: LinearCombination,
 		xr: LinearCombination,
 		h: &H,
-	) -> LinearCombination {
+	) -> LinearCombination
+	{
 		h.constrain_verifier(cs, pc_gens, xl, xr)
 	}
 }

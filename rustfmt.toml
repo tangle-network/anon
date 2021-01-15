@@ -1,0 +1,12 @@
+max_width = 100
+binop_separator = "Back"
+brace_style = "PreferSameLine"
+condense_wildcard_suffixes = true
+format_code_in_doc_comments = true
+hard_tabs = true
+merge_imports = true
+overflow_delimited_expr = true
+reorder_impl_items = true
+use_field_init_shorthand = true
+where_single_line = true
+wrap_comments = true

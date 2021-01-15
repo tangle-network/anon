@@ -1,22 +1,19 @@
 #[cfg(test)]
 pub mod tests;
 
-
 pub mod builder;
 
-use crate::poseidon::Poseidon_hash_4_gadget;
-use crate::poseidon::Poseidon_hash_2_gadget;
-use crate::poseidon::Poseidon_hash_2;
-use crate::poseidon::Poseidon_hash_4;
-use crate::zero_nonzero::is_nonzero_gadget;
+use crate::{
+	poseidon::{Poseidon_hash_2, Poseidon_hash_2_gadget, Poseidon_hash_4, Poseidon_hash_4_gadget},
+	zero_nonzero::is_nonzero_gadget,
+};
 
 use crate::poseidon::builder::Poseidon;
 use bulletproofs::r1cs::{ConstraintSystem, R1CSError};
 use curve25519_dalek::scalar::Scalar;
 
-
+use crate::utils::AllocatedScalar;
 use bulletproofs::r1cs::LinearCombination;
-use crate::utils::{AllocatedScalar};
 
 pub enum HashSize {
 	Two,
@@ -44,8 +41,17 @@ impl AllocatedCoin {
 		nullifier: AllocatedScalar,
 		sn: Scalar,
 		cm: Scalar,
-	) -> Self {
-		Self { inv_value, value, rho, r, nullifier, sn, cm }
+	) -> Self
+	{
+		Self {
+			inv_value,
+			value,
+			rho,
+			r,
+			nullifier,
+			sn,
+			cm,
+		}
 	}
 }
 
@@ -57,7 +63,12 @@ pub struct Transaction {
 }
 
 impl Transaction {
-	fn hash_constraints<CS: ConstraintSystem>(&self, cs: &mut CS, poseidon_params: &Poseidon) -> Result<(), R1CSError>{
+	fn hash_constraints<CS: ConstraintSystem>(
+		&self,
+		cs: &mut CS,
+		poseidon_params: &Poseidon,
+	) -> Result<(), R1CSError>
+	{
 		// check inputs
 		for i in 0..self.inputs.len() {
 			Poseidon_hash_2_gadget(
@@ -66,15 +77,21 @@ impl Transaction {
 				self.inputs[i].nullifier,
 				self.statics_2.clone(),
 				poseidon_params,
-				&self.inputs[i].sn
+				&self.inputs[i].sn,
 			)?;
 
 			Poseidon_hash_4_gadget(
 				cs,
-				[self.inputs[i].value, self.inputs[i].rho, self.inputs[i].r, self.inputs[i].nullifier].to_vec(),
+				[
+					self.inputs[i].value,
+					self.inputs[i].rho,
+					self.inputs[i].r,
+					self.inputs[i].nullifier,
+				]
+				.to_vec(),
 				self.statics_4.clone(),
 				poseidon_params,
-				&self.inputs[i].cm
+				&self.inputs[i].cm,
 			)?;
 		}
 
@@ -86,15 +103,21 @@ impl Transaction {
 				self.outputs[i].nullifier,
 				self.statics_2.clone(),
 				poseidon_params,
-				&self.outputs[i].sn
+				&self.outputs[i].sn,
 			)?;
 
 			Poseidon_hash_4_gadget(
 				cs,
-				[self.outputs[i].value, self.outputs[i].rho, self.outputs[i].r, self.outputs[i].nullifier].to_vec(),
+				[
+					self.outputs[i].value,
+					self.outputs[i].rho,
+					self.outputs[i].r,
+					self.outputs[i].nullifier,
+				]
+				.to_vec(),
 				self.statics_4.clone(),
 				poseidon_params,
-				&self.outputs[i].cm
+				&self.outputs[i].cm,
 			)?;
 		}
 
@@ -135,8 +158,9 @@ impl Transaction {
 pub fn transaction_preimage_gadget<CS: ConstraintSystem>(
 	cs: &mut CS,
 	transactions: Vec<Transaction>,
-	poseidon_params: &Poseidon
-) -> Result<(), R1CSError> {
+	poseidon_params: &Poseidon,
+) -> Result<(), R1CSError>
+{
 	let mut sum_inputs = LinearCombination::from(Scalar::zero());
 	let mut sum_outputs = LinearCombination::from(Scalar::zero());
 
@@ -152,7 +176,8 @@ pub fn transaction_preimage_gadget<CS: ConstraintSystem>(
 		sum_outputs = sum_outputs + tx.output_amount();
 	}
 
-	// total inputs and outputs should be equal and the difference should be zero
+	// total inputs and outputs should be equal and the difference should be
+	// zero
 	cs.constrain(sum_inputs - sum_outputs);
 	Ok(())
 }

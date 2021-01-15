@@ -1,23 +1,20 @@
 use super::smt::*;
-use crate::poseidon::gen_mds_matrix;
-use crate::poseidon::gen_round_keys;
-use crate::poseidon::sbox::PoseidonSbox;
-use crate::poseidon::PoseidonBuilder;
+use crate::poseidon::{gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder};
 use rand::rngs::StdRng;
 
-use bulletproofs::r1cs::{Prover, Verifier};
-use bulletproofs::{BulletproofGens, PedersenGens};
+use bulletproofs::{
+	r1cs::{Prover, Verifier},
+	BulletproofGens, PedersenGens,
+};
 use curve25519_dalek::scalar::Scalar;
 use merlin::Transcript;
 
-use crate::utils::get_bits;
-use crate::utils::AllocatedScalar;
+use crate::utils::{get_bits, AllocatedScalar};
 // use crate::gadget_mimc::{mimc, MIMC_ROUNDS, mimc_hash_2, mimc_gadget};
 use crate::poseidon::{allocate_statics_for_prover, allocate_statics_for_verifier};
 
 use crate::smt::builder::{SparseMerkleTreeBuilder, DEFAULT_TREE_DEPTH};
-use rand::rngs::OsRng;
-use rand::SeedableRng;
+use rand::{rngs::OsRng, SeedableRng};
 // For benchmarking
 #[cfg(feature = "std")]
 use std::time::Instant;
@@ -152,9 +149,17 @@ fn test_vsmt_verif() {
 		)
 		.is_ok());
 
-		//            println!("For tree height {} and MiMC rounds {}, no of constraints is {}", tree.depth, &MIMC_ROUNDS, &prover.num_constraints());
+		//            println!("For tree height {} and MiMC rounds {}, no of
+		// constraints is {}", tree.depth, &MIMC_ROUNDS,
+		// &prover.num_constraints());
 
-		println!("For binary tree of height {} and Poseidon rounds {}, no of multipliers is {} and constraints is {}", tree.depth, total_rounds, &prover.num_multipliers(), &prover.num_constraints());
+		println!(
+			"For binary tree of height {} and Poseidon rounds {}, no of multipliers is {} and constraints is {}",
+			tree.depth,
+			total_rounds,
+			&prover.num_multipliers(),
+			&prover.num_constraints()
+		);
 
 		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
 		let end = start.elapsed();

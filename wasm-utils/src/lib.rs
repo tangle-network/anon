@@ -1,8 +1,10 @@
 use curve25519_dalek::scalar::Scalar;
 use js_sys::{Array, JsString, Map, JSON};
-use pallet_merkle::merkle::helper::{leaf_data, prove_with_path, verify, ZkProof};
-use pallet_merkle::merkle::keys::Data;
-use pallet_merkle::merkle::poseidon::Poseidon;
+use pallet_merkle::merkle::{
+	helper::{leaf_data, prove_with_path, verify, ZkProof},
+	keys::Data,
+	poseidon::Poseidon,
+};
 use rand::rngs::OsRng;
 use std::collections::hash_map::HashMap;
 use wasm_bindgen::prelude::*;
@@ -98,14 +100,15 @@ impl Mixer {
 	}
 
 	// Generates a new note with random samples
-	// note has a format of `webb.mix-<mixed_id>-<r as hex string><nullifier as hex string>`
+	// note has a format of `webb.mix-<mixed_id>-<r as hex string><nullifier as
+	// hex string>`
 	pub fn generate_note(&mut self, asset: String, id: u8, block_number: u32) -> JsString {
 		assert!(
 			self.tree_map.contains_key(&(asset.to_owned(), id)),
 			"Tree not found!"
 		);
 		let tree = self.tree_map.get_mut(&(asset.to_owned(), id)).unwrap();
-		let (r, nullifier, _, _) = tree.generate_leaf_data();
+		let (r, nullifier, ..) = tree.generate_leaf_data();
 
 		let encoded_r = encode_hex(r.to_bytes());
 		let encoded_nullifier = encode_hex(nullifier.to_bytes());
@@ -144,14 +147,11 @@ impl Mixer {
 		let tree = self.tree_map.get_mut(&(asset.to_owned(), id)).unwrap();
 		let (r, nullifier, nullifier_hash, leaf) =
 			tree.leaf_data_from_bytes(r_bytes, nullifier_bytes);
-		tree.saved_leafs.insert(
-			leaf,
-			LeafData {
-				r,
-				nullifier,
-				nullifier_hash,
-			},
-		);
+		tree.saved_leafs.insert(leaf, LeafData {
+			r,
+			nullifier,
+			nullifier_hash,
+		});
 
 		let leaf_js = JsValue::from_serde(&leaf.0.to_bytes()).unwrap();
 		let asset_js = JsValue::from(&asset);
@@ -331,7 +331,8 @@ impl MerkleClient {
 		&self,
 		r_bytes: [u8; 32],
 		nullifier_bytes: [u8; 32],
-	) -> (Scalar, Scalar, Data, Data) {
+	) -> (Scalar, Scalar, Data, Data)
+	{
 		let r = Scalar::from_bytes_mod_order(r_bytes);
 		let nullifier = Scalar::from_bytes_mod_order(nullifier_bytes);
 		// Construct nullifier hash for note
@@ -366,7 +367,8 @@ impl MerkleClient {
 
 		// There is a new tree state on every insert
 		// It consists of edge nodes, since they change on every insert
-		// And they are needed for creating proofs of membership in the past trees
+		// And they are needed for creating proofs of membership in the past
+		// trees
 		let mut new_state = TreeState {
 			edge_nodes: curr_state.edge_nodes.clone(),
 			leaf_count: curr_state.leaf_count + 1,

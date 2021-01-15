@@ -1,7 +1,11 @@
-use super::constants::{MDS_ENTRIES, POSEIDON_FULL_ROUNDS, POSEIDON_PARTIAL_ROUNDS, ROUND_CONSTS};
-use super::hasher::Hasher;
-use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Prover, Verifier};
-use bulletproofs::PedersenGens;
+use super::{
+	constants::{MDS_ENTRIES, POSEIDON_FULL_ROUNDS, POSEIDON_PARTIAL_ROUNDS, ROUND_CONSTS},
+	hasher::Hasher,
+};
+use bulletproofs::{
+	r1cs::{ConstraintSystem, LinearCombination, Prover, Verifier},
+	PedersenGens,
+};
 use curve25519_dalek::scalar::Scalar;
 use sp_std::prelude::*;
 
@@ -101,7 +105,8 @@ impl Poseidon {
 		&self,
 		cs: &mut CS,
 		input_var: LinearCombination,
-	) -> LinearCombination {
+	) -> LinearCombination
+	{
 		let (i, _, sqr) = cs.multiply(input_var.clone(), input_var);
 		let (_, _, cube) = cs.multiply(sqr.into(), i.into());
 		cube.into()
@@ -148,7 +153,8 @@ impl Poseidon {
 		&self,
 		cs: &mut CS,
 		inputs: Vec<LinearCombination>,
-	) -> Vec<LinearCombination> {
+	) -> Vec<LinearCombination>
+	{
 		assert_eq!(inputs.len(), self.width);
 
 		let rounds = self.full_rounds + self.partial_rounds;
@@ -192,7 +198,8 @@ impl Poseidon {
 		&self,
 		cs: &mut CS,
 		inputs: Vec<LinearCombination>,
-	) -> LinearCombination {
+	) -> LinearCombination
+	{
 		let permutation_output = self.permute_constraints::<CS>(cs, inputs);
 		permutation_output[1].clone()
 	}
@@ -225,7 +232,8 @@ impl Poseidon {
 		prover: &mut Prover,
 		xl: LinearCombination,
 		xr: LinearCombination,
-	) -> Vec<LinearCombination> {
+	) -> Vec<LinearCombination>
+	{
 		let (_, var1) = prover.commit(Scalar::from(ZERO_CONST), Scalar::zero());
 		let (_, var4) = prover.commit(Scalar::from(PADDING_CONST), Scalar::zero());
 		let inputs = vec![var1.into(), xl, xr, var4.into()];
@@ -237,7 +245,8 @@ impl Poseidon {
 		pc_gens: &PedersenGens,
 		xl: LinearCombination,
 		xr: LinearCombination,
-	) -> Vec<LinearCombination> {
+	) -> Vec<LinearCombination>
+	{
 		// TODO use passed commitments instead odd committing again in runtime
 		let com_zero = pc_gens
 			.commit(Scalar::from(ZERO_CONST), Scalar::zero())
@@ -279,7 +288,8 @@ impl Hasher for Poseidon {
 		prover: &mut Prover,
 		xl: LinearCombination,
 		xr: LinearCombination,
-	) -> LinearCombination {
+	) -> LinearCombination
+	{
 		let inputs = Poseidon::prover_constrain_inputs(prover, xl, xr);
 		self.constrain(prover, inputs)
 	}
@@ -290,7 +300,8 @@ impl Hasher for Poseidon {
 		pc_gens: &PedersenGens,
 		xl: LinearCombination,
 		xr: LinearCombination,
-	) -> LinearCombination {
+	) -> LinearCombination
+	{
 		let inputs = Poseidon::verifier_constrain_inputs(verifier, pc_gens, xl, xr);
 		self.constrain(verifier, inputs)
 	}

@@ -1,19 +1,17 @@
-use crate::utils::{constrain_lc_with_scalar, get_bits, AllocatedScalar};
-use crate::utils::{ScalarBits, ScalarBytes};
+use crate::utils::{constrain_lc_with_scalar, get_bits, AllocatedScalar, ScalarBits, ScalarBytes};
 use alloc::vec::Vec;
-use bulletproofs::r1cs::LinearCombination;
-use bulletproofs::r1cs::Prover;
-use bulletproofs::r1cs::{ConstraintSystem, R1CSError, R1CSProof, Variable};
-use bulletproofs::BulletproofGens;
-use curve25519_dalek::ristretto::CompressedRistretto;
-use curve25519_dalek::scalar::Scalar;
+use bulletproofs::{
+	r1cs::{ConstraintSystem, LinearCombination, Prover, R1CSError, R1CSProof, Variable},
+	BulletproofGens,
+};
+use curve25519_dalek::{ristretto::CompressedRistretto, scalar::Scalar};
 use sp_std::collections::btree_map::BTreeMap;
 #[cfg(feature = "std")]
 use std::collections::HashMap;
 // use crate::gadget_mimc::{mimc, MIMC_ROUNDS, mimc_hash_2, mimc_gadget};
-use crate::poseidon::builder::Poseidon;
 use crate::poseidon::{
-	allocate_statics_for_prover, PoseidonSbox, Poseidon_hash_2, Poseidon_hash_2_constraints,
+	allocate_statics_for_prover, builder::Poseidon, PoseidonSbox, Poseidon_hash_2,
+	Poseidon_hash_2_constraints,
 };
 #[cfg(feature = "std")]
 use rand::rngs::OsRng;
@@ -110,7 +108,8 @@ impl VanillaSparseMerkleTree {
 		cur_val
 	}
 
-	/// Get a value from tree, if `proof` is not None, populate `proof` with the merkle proof
+	/// Get a value from tree, if `proof` is not None, populate `proof` with the
+	/// merkle proof
 	pub fn get(&self, idx: Scalar, root: Scalar, proof: &mut Option<Vec<Scalar>>) -> Scalar {
 		let mut cur_idx = ScalarBits::from_scalar(&idx, self.depth);
 		let mut cur_node = root.clone();
@@ -147,28 +146,32 @@ impl VanillaSparseMerkleTree {
 		cur_node
 	}
 
-	/// Verify a merkle proof, if `root` is None, use the current root else use given root
+	/// Verify a merkle proof, if `root` is None, use the current root else use
+	/// given root
 	pub fn verify_proof(
 		&self,
 		idx: Scalar,
 		val: Scalar,
 		proof: &[Scalar],
 		root: Option<&Scalar>,
-	) -> bool {
+	) -> bool
+	{
 		let mut cur_idx = ScalarBits::from_scalar(&idx, self.depth);
 		let mut cur_val = val.clone();
 
 		for i in 0..self.depth {
 			cur_val = {
 				if cur_idx.is_lsb_set() {
-					// mimc(&proof[self.depth-1-i], &cur_val, self.hash_constants)
+					// mimc(&proof[self.depth-1-i], &cur_val,
+					// self.hash_constants)
 					Poseidon_hash_2(
 						proof[self.depth - 1 - i].clone(),
 						cur_val.clone(),
 						&self.hash_params,
 					)
 				} else {
-					// mimc(&cur_val, &proof[self.depth-1-i], self.hash_constants)
+					// mimc(&cur_val, &proof[self.depth-1-i],
+					// self.hash_constants)
 					Poseidon_hash_2(
 						cur_val.clone(),
 						proof[self.depth - 1 - i].clone(),
@@ -200,7 +203,8 @@ impl VanillaSparseMerkleTree {
 			Vec<CompressedRistretto>,
 			Vec<CompressedRistretto>,
 		),
-	) {
+	)
+	{
 		let mut test_rng: OsRng = OsRng::default();
 		let mut merkle_proof_vec = Vec::<Scalar>::new();
 		let mut merkle_proof = Some(merkle_proof_vec);
@@ -275,7 +279,8 @@ pub fn vanilla_merkle_merkle_tree_verif_gadget<CS: ConstraintSystem>(
 	proof_nodes: Vec<AllocatedScalar>,
 	statics: Vec<AllocatedScalar>,
 	poseidon_params: &Poseidon,
-) -> Result<(), R1CSError> {
+) -> Result<(), R1CSError>
+{
 	let mut prev_hash = LinearCombination::default();
 
 	let statics: Vec<LinearCombination> = statics.iter().map(|s| s.variable.into()).collect();
@@ -299,7 +304,8 @@ pub fn vanilla_merkle_merkle_tree_verif_gadget<CS: ConstraintSystem>(
 		let (_, _, right_2) = cs.multiply(one_minus_leaf_side, proof_nodes[i].variable.into());
 		let right = right_1 + right_2;
 
-		// prev_hash = mimc_hash_2::<CS>(cs, left, right, mimc_rounds, mimc_constants)?;
+		// prev_hash = mimc_hash_2::<CS>(cs, left, right, mimc_rounds,
+		// mimc_constants)?;
 		assert!(
 			poseidon_params.sbox == PoseidonSbox::Inverse,
 			"Assert sbox is inverse"

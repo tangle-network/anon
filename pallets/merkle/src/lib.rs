@@ -3,8 +3,8 @@
 /// A runtime module Groups with necessary imports
 
 /// Feel free to remove or edit this file as needed.
-/// If you change the name of this file, make sure to update its references in runtime/src/lib.rs
-/// If you remove this file, you can remove those references
+/// If you change the name of this file, make sure to update its references in
+/// runtime/src/lib.rs If you remove this file, you can remove those references
 
 /// For more guidance on Substrate modules, see the example module
 /// https://github.com/paritytech/substrate/blob/master/frame/example/src/lib.rs
@@ -17,22 +17,24 @@ pub mod mock;
 pub mod tests;
 
 pub use crate::group_trait::Group;
-use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Verifier};
-use bulletproofs::{BulletproofGens, PedersenGens};
+use bulletproofs::{
+	r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Verifier},
+	BulletproofGens, PedersenGens,
+};
 use codec::{Decode, Encode};
 use curve25519_gadgets::smt::smt::vanilla_merkle_merkle_tree_verif_gadget;
-use frame_support::traits::Get;
-use frame_support::Parameter;
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
-use frame_system::ensure_root;
-use frame_system::ensure_signed;
-use merkle::hasher::Hasher;
-use merkle::keys::{Commitment, Data};
-use merkle::poseidon::Poseidon;
+use frame_support::{
+	decl_error, decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter,
+};
+use frame_system::{ensure_root, ensure_signed};
+use merkle::{
+	hasher::Hasher,
+	keys::{Commitment, Data},
+	poseidon::Poseidon,
+};
 use merlin::Transcript;
 use rand_core::OsRng;
-use sp_runtime::traits::AtLeast32Bit;
-use sp_runtime::traits::One;
+use sp_runtime::traits::{AtLeast32Bit, One};
 use sp_std::prelude::*;
 
 pub mod group_trait;
@@ -101,8 +103,7 @@ decl_event!(
 	pub enum Event<T>
 	where
 		AccountId = <T as frame_system::Config>::AccountId,
-		GroupId = <T as Config>::GroupId,
-	{
+		GroupId = <T as Config>::GroupId, {
 		NewMember(GroupId, AccountId, Vec<Data>),
 	}
 );
@@ -237,7 +238,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		sender: T::AccountId,
 		is_manager_required: bool,
 		depth: u8,
-	) -> Result<T::GroupId, dispatch::DispatchError> {
+	) -> Result<T::GroupId, dispatch::DispatchError>
+	{
 		ensure!(
 			depth <= T::MaxTreeDepth::get() && depth > 0,
 			Error::<T>::InvalidTreeDepth
@@ -255,12 +257,14 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		sender: T::AccountId,
 		id: T::GroupId,
 		manager_required: bool,
-	) -> Result<(), dispatch::DispatchError> {
+	) -> Result<(), dispatch::DispatchError>
+	{
 		let mut tree = <Groups<T>>::get(id)
 			.ok_or(Error::<T>::GroupDoesntExist)
 			.unwrap();
-		// Changing manager required should always require an extrinsic from the manager even
-		// if the group doesn't explicitly require managers for other calls.
+		// Changing manager required should always require an extrinsic from the
+		// manager even if the group doesn't explicitly require managers for
+		// other calls.
 		ensure!(sender == tree.manager, Error::<T>::ManagerIsRequired);
 		tree.manager_required = manager_required;
 		Ok(())
@@ -270,7 +274,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		sender: T::AccountId,
 		id: T::GroupId,
 		members: Vec<Data>,
-	) -> Result<(), dispatch::DispatchError> {
+	) -> Result<(), dispatch::DispatchError>
+	{
 		let mut tree = <Groups<T>>::get(id)
 			.ok_or(Error::<T>::GroupDoesntExist)
 			.unwrap();
@@ -302,7 +307,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		sender: T::AccountId,
 		id: T::GroupId,
 		nullifier_hash: Data,
-	) -> Result<(), dispatch::DispatchError> {
+	) -> Result<(), dispatch::DispatchError>
+	{
 		let tree = <Groups<T>>::get(id)
 			.ok_or(Error::<T>::GroupDoesntExist)
 			.unwrap();
@@ -331,7 +337,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		id: T::GroupId,
 		leaf: Data,
 		path: Vec<(bool, Data)>,
-	) -> Result<(), dispatch::DispatchError> {
+	) -> Result<(), dispatch::DispatchError>
+	{
 		let tree = <Groups<T>>::get(id)
 			.ok_or(Error::<T>::GroupDoesntExist)
 			.unwrap();
@@ -363,7 +370,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		nullifier_com: Commitment,
 		nullifier_hash: Data,
 		proof_bytes: Vec<u8>,
-	) -> Result<(), dispatch::DispatchError> {
+	) -> Result<(), dispatch::DispatchError>
+	{
 		let tree = <Groups<T>>::get(group_id)
 			.ok_or(Error::<T>::GroupDoesntExist)
 			.unwrap();
@@ -394,6 +402,7 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 			proof_bytes,
 		)
 	}
+
 	fn verify_zk(
 		pc_gens: PedersenGens,
 		bp_gens: BulletproofGens,
@@ -404,7 +413,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		nullifier_com: Commitment,
 		nullifier_hash: Data,
 		proof_bytes: Vec<u8>,
-	) -> Result<(), dispatch::DispatchError> {
+	) -> Result<(), dispatch::DispatchError>
+	{
 		let h = default_hasher();
 		let mut verifier_transcript = Transcript::new(b"zk_membership_proof");
 		let mut verifier = Verifier::new(&mut verifier_transcript);
@@ -478,7 +488,8 @@ impl<T: Config> Module<T> {
 	pub fn add_root_to_cache(
 		group_id: T::GroupId,
 		block_number: T::BlockNumber,
-	) -> Result<(), dispatch::DispatchError> {
+	) -> Result<(), dispatch::DispatchError>
+	{
 		let root = Self::get_merkle_root(group_id)?;
 		CachedRoots::<T>::append(block_number, group_id, root);
 		Ok(())

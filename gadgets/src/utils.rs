@@ -1,6 +1,5 @@
 use alloc::vec::Vec;
-use bulletproofs::r1cs::LinearCombination;
-use bulletproofs::r1cs::{ConstraintSystem, R1CSError, Variable};
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSError, Variable};
 use core::fmt;
 use curve25519_dalek::scalar::Scalar;
 
@@ -52,7 +51,8 @@ pub fn positive_no_gadget<CS: ConstraintSystem>(
 	cs: &mut CS,
 	v: AllocatedQuantity,
 	bit_size: usize,
-) -> Result<(), R1CSError> {
+) -> Result<(), R1CSError>
+{
 	let mut constraint_v = vec![(v.variable, -Scalar::one())];
 	let mut exp_2 = Scalar::one();
 	for i in 0..bit_size {
@@ -73,7 +73,8 @@ pub fn positive_no_gadget<CS: ConstraintSystem>(
 		exp_2 = exp_2 + exp_2;
 	}
 
-	// Enforce that -v + Sum(b_i * 2^i, i = 0..n-1) = 0 => Sum(b_i * 2^i, i = 0..n-1) = v
+	// Enforce that -v + Sum(b_i * 2^i, i = 0..n-1) = 0 => Sum(b_i * 2^i, i =
+	// 0..n-1) = v
 	cs.constrain(constraint_v.iter().collect());
 
 	Ok(())
@@ -84,7 +85,8 @@ pub fn constrain_lc_with_scalar<CS: ConstraintSystem>(
 	cs: &mut CS,
 	lc: LinearCombination,
 	scalar: &Scalar,
-) {
+)
+{
 	cs.constrain(lc - LinearCombination::from(*scalar));
 }
 

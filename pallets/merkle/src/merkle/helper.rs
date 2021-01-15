@@ -1,11 +1,12 @@
-use crate::merkle::hasher::Hasher;
-use crate::merkle::keys::{Commitment, Data};
-use bulletproofs::r1cs::{
-	ConstraintSystem, LinearCombination, Prover, R1CSError, R1CSProof, Variable, Verifier,
+use crate::merkle::{
+	hasher::Hasher,
+	keys::{Commitment, Data},
 };
-use bulletproofs::{BulletproofGens, PedersenGens};
-use curve25519_dalek::ristretto::CompressedRistretto;
-use curve25519_dalek::scalar::Scalar;
+use bulletproofs::{
+	r1cs::{ConstraintSystem, LinearCombination, Prover, R1CSError, R1CSProof, Variable, Verifier},
+	BulletproofGens, PedersenGens,
+};
+use curve25519_dalek::{ristretto::CompressedRistretto, scalar::Scalar};
 use merlin::Transcript;
 use rand_core::{CryptoRng, OsRng, RngCore};
 use sp_std::prelude::*;
@@ -21,12 +22,22 @@ pub struct ZkProof {
 }
 
 /// Constrain a linear combination to be equal to a scalar
-pub fn constrain_lc_with_scalar<CS: ConstraintSystem>(cs: &mut CS, lc: LinearCombination, scalar: &Scalar) {
+pub fn constrain_lc_with_scalar<CS: ConstraintSystem>(
+	cs: &mut CS,
+	lc: LinearCombination,
+	scalar: &Scalar,
+)
+{
 	cs.constrain(lc - LinearCombination::from(*scalar));
 }
 
-/// A leaf in our system represents a commitment to a random number `r` and a random number `nullifier`
-pub fn leaf_data<H: Hasher, C: CryptoRng + RngCore>(rng: &mut C, h: &H) -> (Scalar, Scalar, Data, Data) {
+/// A leaf in our system represents a commitment to a random number `r` and a
+/// random number `nullifier`
+pub fn leaf_data<H: Hasher, C: CryptoRng + RngCore>(
+	rng: &mut C,
+	h: &H,
+) -> (Scalar, Scalar, Data, Data)
+{
 	let r = Scalar::random(rng);
 	let nullifier = Scalar::random(rng);
 	let nullifier_hash = Data::hash(Data(nullifier), Data(nullifier), h);
@@ -42,7 +53,13 @@ pub fn commit_leaf<H: Hasher, C: CryptoRng + RngCore>(
 	nullifier: Scalar,
 	nullifier_hash: Data,
 	h: &H,
-) -> (CompressedRistretto, CompressedRistretto, CompressedRistretto, Variable) {
+) -> (
+	CompressedRistretto,
+	CompressedRistretto,
+	CompressedRistretto,
+	Variable,
+)
+{
 	// commit to leaf
 	let (leaf_com1, leaf_var1) = prover.commit(leaf.0, Scalar::random(rng));
 	// commit to randomness
@@ -50,21 +67,12 @@ pub fn commit_leaf<H: Hasher, C: CryptoRng + RngCore>(
 	// commit to nullifier
 	let (nullifier_com, nullifier_var) = prover.commit(nullifier, Scalar::random(rng));
 	// constrain prover with generated leaf commitment
-	let leaf_com = Data::constrain_prover(
-		prover,
-		r_var.into(),
-		nullifier_var.into(),
-		h
-	);
+	let leaf_com = Data::constrain_prover(prover, r_var.into(), nullifier_var.into(), h);
 	// constrain leaf commitment by computed leaf on commitments
 	prover.constrain(leaf_com - leaf_var1);
 	// constrain nullifier by computed nullifier hash
-	let nullifier_hash_alloc = Data::constrain_prover(
-		prover,
-		nullifier_var.into(),
-		nullifier_var.into(),
-		h
-	);
+	let nullifier_hash_alloc =
+		Data::constrain_prover(prover, nullifier_var.into(), nullifier_var.into(), h);
 	constrain_lc_with_scalar::<Prover>(prover, nullifier_hash_alloc, &nullifier_hash.0);
 
 	// return commitments and leaf variable
@@ -78,7 +86,8 @@ pub fn commit_path_level<H: Hasher, C: CryptoRng + RngCore>(
 	hash: LinearCombination,
 	bit: u8,
 	h: &H,
-) -> (CompressedRistretto, CompressedRistretto, LinearCombination) {
+) -> (CompressedRistretto, CompressedRistretto, LinearCombination)
+{
 	let (com_bit, var_bit) = prover.commit(Scalar::from(bit), Scalar::random(rng));
 	let (com_pair, var_pair) = prover.commit(pair.0, Scalar::random(rng));
 
@@ -112,7 +121,8 @@ pub fn prove_with_path<H: Hasher>(
 	r: Scalar,
 	path: Vec<(bool, Data)>,
 	h: &H,
-) -> Result<ZkProof, R1CSError> {
+) -> Result<ZkProof, R1CSError>
+{
 	let pc_gens = PedersenGens::default();
 	let bp_gens = BulletproofGens::new(4096, 1);
 
@@ -120,8 +130,15 @@ pub fn prove_with_path<H: Hasher>(
 	let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
 	let mut test_rng = OsRng;
-	let (r_com, nullifier_com, leaf_com, leaf_var) =
-		commit_leaf(&mut test_rng, &mut prover, leaf, r, nullifier, nullifier_hash, h);
+	let (r_com, nullifier_com, leaf_com, leaf_var) = commit_leaf(
+		&mut test_rng,
+		&mut prover,
+		leaf,
+		r,
+		nullifier,
+		nullifier_hash,
+		h,
+	);
 
 	let mut hash_lc: LinearCombination = leaf_var.into();
 	let mut zk_path = Vec::new();
@@ -140,7 +157,7 @@ pub fn prove_with_path<H: Hasher>(
 		path: zk_path,
 		r_com: Commitment(r_com),
 		nullifier_com: Commitment(nullifier_com),
-		nullifier_hash: nullifier_hash,
+		nullifier_hash,
 		bytes: proof.to_bytes(),
 	})
 }
@@ -169,10 +186,13 @@ pub fn verify<H: Hasher>(root_hash: Data, zk_proof: ZkProof, h: &H) -> Result<()
 		&pc_gens,
 		var_nullifier.into(),
 		var_nullifier.into(),
-		h
+		h,
 	);
-	constrain_lc_with_scalar::<Verifier>(&mut verifier, nullifier_hash_lc, &zk_proof.nullifier_hash.0);
-
+	constrain_lc_with_scalar::<Verifier>(
+		&mut verifier,
+		nullifier_hash_lc,
+		&zk_proof.nullifier_hash.0,
+	);
 
 	let mut hash: LinearCombination = var_leaf.into();
 	for (bit, pair) in zk_proof.path {

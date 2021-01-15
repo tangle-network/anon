@@ -1,25 +1,17 @@
-use crate::poseidon::allocate_statics_for_prover;
-use crate::poseidon::Poseidon_hash_2_gadget;
-use crate::utils::get_scalar_from_hex;
-use alloc::string::String;
-use alloc::vec::Vec;
-use rand_core::CryptoRng;
-use rand_core::RngCore;
+use crate::{
+	poseidon::{allocate_statics_for_prover, Poseidon_hash_2_gadget},
+	utils::get_scalar_from_hex,
+};
+use alloc::{string::String, vec::Vec};
+use rand_core::{CryptoRng, RngCore};
 
-use crate::poseidon::sbox::PoseidonSbox;
-use crate::utils::AllocatedScalar;
-use bulletproofs::r1cs::Prover;
-use bulletproofs::BulletproofGens;
-use bulletproofs::PedersenGens;
+use crate::{poseidon::sbox::PoseidonSbox, utils::AllocatedScalar};
+use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use merlin::Transcript;
 
-use crypto_constants::poseidon::constants_3;
-use crypto_constants::poseidon::constants_4;
-use crypto_constants::poseidon::constants_5;
-use crypto_constants::poseidon::constants_6;
-use crypto_constants::poseidon::constants_7;
-use crypto_constants::poseidon::constants_8;
-use crypto_constants::poseidon::constants_9;
+use crypto_constants::poseidon::{
+	constants_3, constants_4, constants_5, constants_6, constants_7, constants_8, constants_9,
+};
 
 #[cfg(feature = "std")]
 use std::time::Instant;
@@ -123,14 +115,14 @@ impl PoseidonBuilder {
 	}
 
 	pub fn round_keys_hex(&mut self, r_keys: Vec<String>) -> &mut Self {
-		let cap = if self.full_rounds_beginning.is_some()
-			&& self.full_rounds_end.is_some()
-			&& self.partial_rounds.is_some()
+		let cap = if self.full_rounds_beginning.is_some() &&
+			self.full_rounds_end.is_some() &&
+			self.partial_rounds.is_some()
 		{
-			(self.full_rounds_beginning.unwrap()
-				+ self.partial_rounds.unwrap()
-				+ self.full_rounds_end.unwrap())
-				* self.width
+			(self.full_rounds_beginning.unwrap() +
+				self.partial_rounds.unwrap() +
+				self.full_rounds_end.unwrap()) *
+				self.width
 		} else {
 			r_keys.len()
 		};
@@ -179,20 +171,21 @@ impl PoseidonBuilder {
 			.clone()
 			.expect("Round keys required for now");
 
-		// TODO: Generate a default MDS matrix instead of making the caller supply one.
+		// TODO: Generate a default MDS matrix instead of making the caller
+		// supply one.
 		let mds_matrix = self
 			.mds_matrix
 			.clone()
 			.expect("MDS matrix required for now");
 
-		// If an S-box is not specified, determine the optimal choice based on the guidance in the
-		// paper.
+		// If an S-box is not specified, determine the optimal choice based on
+		// the guidance in the paper.
 		let sbox = self.sbox.unwrap_or_else(|| PoseidonSbox::Inverse);
 
-		if self.full_rounds_beginning.is_some()
-			&& self.full_rounds_end.is_some()
-			&& self.partial_rounds.is_some()
-			&& self.security_bits.is_some()
+		if self.full_rounds_beginning.is_some() &&
+			self.full_rounds_end.is_some() &&
+			self.partial_rounds.is_some() &&
+			self.security_bits.is_some()
 		{
 			panic!("Cannot specify both the number of rounds and the desired security level");
 		}
@@ -240,7 +233,8 @@ impl Poseidon {
 		xr: Scalar,
 		output: Scalar,
 		mut rng: &mut C,
-	) {
+	)
+	{
 		let total_rounds = self.get_total_rounds();
 		let (_proof, _commitments) = {
 			let mut prover_transcript = Transcript::new(self.transcript_label);
@@ -327,7 +321,8 @@ pub fn gen_round_keys(width: usize, total_rounds: usize) -> Vec<Scalar> {
 	rc
 }
 
-// TODO: Write logic to generate correct MDS matrix. Currently loading hardcoded constants.
+// TODO: Write logic to generate correct MDS matrix. Currently loading hardcoded
+// constants.
 pub fn gen_mds_matrix(width: usize) -> Vec<Vec<Scalar>> {
 	let MDS_ENTRIES: Vec<Vec<&str>> = if width == 3 {
 		constants_3::MDS_ENTRIES

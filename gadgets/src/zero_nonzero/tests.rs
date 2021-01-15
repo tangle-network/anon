@@ -1,6 +1,8 @@
 use super::*;
-use bulletproofs::r1cs::{Prover, Verifier};
-use bulletproofs::{BulletproofGens, PedersenGens};
+use bulletproofs::{
+	r1cs::{Prover, Verifier},
+	BulletproofGens, PedersenGens,
+};
 use merlin::Transcript;
 
 #[test]
@@ -44,12 +46,13 @@ fn test_is_zero_non_zero() {
 
 		assert!(is_zero_gadget(&mut verifier, alloc_scal).is_ok());
 
-		verifier.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut rng).unwrap();
+		verifier
+			.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut rng)
+			.unwrap();
 	}
 
 	{
 		let (proof, commitments) = {
-
 			let value = Scalar::random(&mut rng);
 			let inv = value.invert();
 			let mut prover_transcript = Transcript::new(b"NonZeroTest");
@@ -89,6 +92,8 @@ fn test_is_zero_non_zero() {
 
 		assert!(is_nonzero_gadget(&mut verifier, alloc_scal, alloc_scal_inv).is_ok());
 
-		verifier.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut rng).unwrap();
+		verifier
+			.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut rng)
+			.unwrap();
 	}
 }

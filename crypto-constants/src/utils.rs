@@ -1,9 +1,11 @@
 use num_bigint::BigUint;
 use std::io::Write;
 
-use std::fs::File;
-use std::io::{self, BufRead};
-use std::path::Path;
+use std::{
+	fs::File,
+	io::{self, BufRead},
+	path::Path,
+};
 
 pub fn print_constants() {
 	for i in 2..10 {
@@ -41,9 +43,7 @@ pub fn print_constants() {
 // The output is wrapped in a Result to allow matching on errors
 // Returns an Iterator to the Reader of the lines of the file.
 pub fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where
-	P: AsRef<Path>,
-{
+where P: AsRef<Path> {
 	let file = File::open(filename)?;
 	Ok(io::BufReader::new(file).lines())
 }
@@ -51,7 +51,8 @@ where
 pub fn write_file<T: std::fmt::Display, P: std::convert::AsRef<std::path::Path>>(
 	filename: P,
 	data: Vec<T>,
-) -> std::io::Result<()> {
+) -> std::io::Result<()>
+{
 	let mut file = File::create(filename).expect("Unable to create file");
 	for i in &data {
 		let _ = write!(file, "{}\n", i);

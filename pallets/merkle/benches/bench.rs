@@ -1,9 +1,11 @@
 #[macro_use]
 extern crate bencher;
 
-use pallet_merkle::merkle::helper::{prove_with_random_leaf, verify};
-use pallet_merkle::merkle::mimc::Mimc;
-use pallet_merkle::merkle::poseidon::Poseidon;
+use pallet_merkle::merkle::{
+	helper::{prove_with_random_leaf, verify},
+	mimc::Mimc,
+	poseidon::Poseidon,
+};
 
 use bencher::Bencher;
 

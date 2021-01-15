@@ -1,13 +1,10 @@
-use crate::poseidon::gen_mds_matrix;
-use crate::poseidon::gen_round_keys;
-use crate::poseidon::sbox::PoseidonSbox;
-use crate::poseidon::PoseidonBuilder;
-use crate::poseidon::Poseidon_hash_2;
+use crate::poseidon::{
+	gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder, Poseidon_hash_2,
+};
 use bulletproofs::BulletproofGens;
 use sp_std::collections::btree_map::BTreeMap;
 
-use crate::smt::smt::DBVal;
-use crate::smt::smt::VanillaSparseMerkleTree;
+use crate::smt::smt::{DBVal, VanillaSparseMerkleTree};
 
 use crate::poseidon::builder::Poseidon;
 
