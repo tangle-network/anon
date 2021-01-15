@@ -103,7 +103,7 @@ fn test_fixed_deposit_tree_verification() {
 		let mut leaf_index_comms = vec![];
 		let mut leaf_index_vars = vec![];
 		let mut leaf_index_alloc_scalars = vec![];
-		for b in get_bits(&expected_output, TREE_DEPTH).iter().take(tree.depth) {
+		for b in get_bits(&k, TREE_DEPTH).iter().take(tree.depth) {
 			let val: Scalar = Scalar::from(*b as u8);
 			let (c, v) = prover.commit(val.clone(), Scalar::random(&mut test_rng));
 			leaf_index_comms.push(c);
@@ -144,8 +144,6 @@ fn test_fixed_deposit_tree_verification() {
 			statics,
 			&p_params,
 		).is_ok());
-
-//            println!("For tree height {} and MiMC rounds {}, no of constraints is {}", tree.depth, &MIMC_ROUNDS, &prover.num_constraints());
 
 		println!("For binary tree of height {} and Poseidon rounds {}, no of multipliers is {} and constraints is {}", tree.depth, total_rounds, &prover.num_multipliers(), &prover.num_constraints());
 

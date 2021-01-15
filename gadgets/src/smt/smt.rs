@@ -56,7 +56,6 @@ impl VanillaSparseMerkleTree {
 	}
 
 	pub fn update(&mut self, idx: Scalar, val: Scalar) -> Scalar {
-
 		// Find path to insert the new key
 		let mut sidenodes_wrap = Some(Vec::<Scalar>::new());
 		self.get(idx, &mut sidenodes_wrap);
