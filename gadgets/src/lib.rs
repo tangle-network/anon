@@ -7,3 +7,4 @@ pub mod utils;
 pub mod transaction;
 pub mod fixed_deposit_tree;
 pub mod variable_deposit_tree;
+pub mod time_based_rewarding;
