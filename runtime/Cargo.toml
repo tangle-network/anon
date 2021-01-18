@@ -27,6 +27,7 @@ static_assertions = "1.1.0"
 
 merkle = { package = "pallet-merkle", version = "2.0.0", default-features = false, path = "../pallets/merkle" }
 mixer = { package = "pallet-mixer", version = "2.0.0", default-features = false, path = "../pallets/mixer" }
+pallet-recursion = { package = "pallet-recursion", version = "2.0.0", default-features = false, path = "../pallets/recursion" }
 
 # Substrate dependencies
 frame-benchmarking = { default-features = false, optional = true, version = "2.0.0" }
@@ -95,4 +96,5 @@ std = [
     "sp-version/std",
 	"merkle/std",
     "mixer/std",
+    "pallet-recursion/std",
 ]

@@ -291,6 +291,7 @@ impl merkle::Config for Runtime {
 
 parameter_types! {
 	pub const MixerModuleId: ModuleId = ModuleId(*b"py/mixer");
+	pub const NewModuleId: ModuleId = ModuleId(*b"py/newww");
 	pub const MinimumDepositLength: BlockNumber = 10 * 60 * 24 * 28;
 }
 
@@ -301,6 +302,12 @@ impl mixer::Config for Runtime {
 	type Group = Merkle;
 	type MaxTreeDepth = MaxTreeDepth;
 	type DepositLength = MinimumDepositLength;
+}
+
+impl pallet_recursion::Config for Runtime {
+	type Event = Event;
+	type Currency = Balances;
+	type ModuleId = NewModuleId;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -321,6 +328,7 @@ construct_runtime!(
 
 		Mixer: mixer::{Module, Call, Storage, Event<T>},
 		Merkle: merkle::{Module, Call, Storage, Event<T>},
+		New: pallet_recursion::{Module, Call, Storage, Event<T>},
 	}
 );
 
