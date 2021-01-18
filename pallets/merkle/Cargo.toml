@@ -33,7 +33,7 @@ sp-runtime = { default-features = false, version = "2.0.0" }
 merlin = { version = "2.0.0", default-features = false }
 sha2 = { version = "0.9.1", default-features = false }
 rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
-bulletproofs = { version = "2.0.0", rev = "160c9ab", git = "https://github.com/edgeware-builders/bulletproofs", default-features = false, features = ["yoloproofs"] }
+bulletproofs = { version = "2.0.0", branch = "main", git = "https://github.com/edgeware-builders/bulletproofs", default-features = false, features = ["yoloproofs"] }
 curve25519-gadgets = { path = "../../gadgets", default-features = false }
 rand = { version = "0.7", optional = true }
 

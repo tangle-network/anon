@@ -22,7 +22,7 @@ use bulletproofs::{
 	BulletproofGens, PedersenGens,
 };
 use codec::{Decode, Encode};
-use curve25519_gadgets::smt::smt::vanilla_merkle_merkle_tree_verif_gadget;
+use curve25519_gadgets::crypto_constants::smt::ZERO_TREE;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter};
 use frame_system::{ensure_root, ensure_signed};
 use merkle::{
@@ -62,19 +62,23 @@ pub struct GroupTree<T: Config> {
 	pub manager_required: bool,
 	pub leaf_count: u32,
 	pub max_leaves: u32,
+	pub depth: u8,
 	pub root_hash: Data,
 	pub edge_nodes: Vec<Data>,
 }
 
 impl<T: Config> GroupTree<T> {
 	pub fn new(mgr: T::AccountId, r_is_mgr: bool, depth: u8) -> Self {
+		let init_edges: Vec<Data> = ZERO_TREE[0..depth as usize].iter().map(|x| Data::from(*x)).collect();
+		let init_root = init_edges.last().unwrap();
 		Self {
 			manager: mgr,
 			manager_required: r_is_mgr,
-			root_hash: Data::zero(),
+			root_hash: *init_root,
 			leaf_count: 0,
+			depth,
 			max_leaves: u32::MAX >> (T::MaxTreeDepth::get() - depth),
-			edge_nodes: vec![Data::zero(); depth as usize],
+			edge_nodes: init_edges,
 		}
 	}
 }
@@ -464,20 +468,20 @@ impl<T: Config> Module<T> {
 
 	pub fn add_leaf<H: Hasher>(tree: &mut GroupTree<T>, data: Data, h: &H) {
 		let mut edge_index = tree.leaf_count;
-		let mut pair_hash = data;
+		let mut hash = data;
 		// Update the tree
 		for i in 0..tree.edge_nodes.len() {
-			if edge_index % 2 == 0 {
-				tree.edge_nodes[i] = pair_hash;
-			}
-
-			let hash = tree.edge_nodes[i];
-			pair_hash = Data::hash(hash, pair_hash, h);
+			hash = if edge_index % 2 == 0 {
+				tree.edge_nodes[i] = hash;
+				Data::hash(hash, Data::from(ZERO_TREE[i]), h)
+			} else {
+				Data::hash(tree.edge_nodes[i], hash, h)
+			};
 
 			edge_index /= 2;
 		}
 
 		tree.leaf_count += 1;
-		tree.root_hash = pair_hash;
+		tree.root_hash = hash;
 	}
 }

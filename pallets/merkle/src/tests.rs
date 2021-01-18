@@ -13,6 +13,7 @@ use bulletproofs::{
 	BulletproofGens, PedersenGens,
 };
 use curve25519_dalek::ristretto::RistrettoPoint;
+use curve25519_gadgets::crypto_constants::smt::ZERO_TREE;
 use frame_support::{assert_err, assert_ok, traits::OnFinalize};
 use merlin::Transcript;
 
@@ -166,12 +167,14 @@ fn should_have_correct_root_hash_after_insertion() {
 		let key0 = Data::from(key_bytes(0));
 		let key1 = Data::from(key_bytes(1));
 		let key2 = Data::from(key_bytes(2));
+		let zero_h0 = Data::from(ZERO_TREE[0]);
+		let zero_h1 = Data::from(ZERO_TREE[1]);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(2),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![key0.clone()]));
 
-		let keyh1 = Data::hash(key0, key0, &h);
-		let keyh2 = Data::hash(keyh1, keyh1, &h);
+		let keyh1 = Data::hash(key0, zero_h0, &h);
+		let keyh2 = Data::hash(keyh1, zero_h1, &h);
 
 		let tree = MerkleGroups::groups(0).unwrap();
 
@@ -180,7 +183,7 @@ fn should_have_correct_root_hash_after_insertion() {
 		assert_ok!(MerkleGroups::add_members(Origin::signed(2), 0, vec![key1.clone()]));
 
 		let keyh1 = Data::hash(key0, key1, &h);
-		let keyh2 = Data::hash(keyh1, keyh1, &h);
+		let keyh2 = Data::hash(keyh1, zero_h1, &h);
 
 		let tree = MerkleGroups::groups(0).unwrap();
 
@@ -189,7 +192,7 @@ fn should_have_correct_root_hash_after_insertion() {
 		assert_ok!(MerkleGroups::add_members(Origin::signed(3), 0, vec![key2.clone()]));
 
 		let keyh1 = Data::hash(key0, key1, &h);
-		let keyh2 = Data::hash(key2, key2, &h);
+		let keyh2 = Data::hash(key2, zero_h0, &h);
 		let keyh3 = Data::hash(keyh1, keyh2, &h);
 
 		let tree = MerkleGroups::groups(0).unwrap();
