@@ -35,8 +35,7 @@ impl Mimc {
 		cs: &mut CS,
 		xl: LinearCombination,
 		xr: LinearCombination,
-	) -> LinearCombination
-	{
+	) -> LinearCombination {
 		let mut xln = xl.clone();
 		let mut xrn = xr.clone();
 
@@ -58,13 +57,7 @@ impl Hasher for Mimc {
 		self.mimc(xl, xr)
 	}
 
-	fn constrain_prover(
-		&self,
-		cs: &mut Prover,
-		xl: LinearCombination,
-		xr: LinearCombination,
-	) -> LinearCombination
-	{
+	fn constrain_prover(&self, cs: &mut Prover, xl: LinearCombination, xr: LinearCombination) -> LinearCombination {
 		self.mimc_constraints(cs, xl, xr)
 	}
 
@@ -74,8 +67,7 @@ impl Hasher for Mimc {
 		_: &PedersenGens,
 		xl: LinearCombination,
 		xr: LinearCombination,
-	) -> LinearCombination
-	{
+	) -> LinearCombination {
 		self.mimc_constraints(cs, xl, xr)
 	}
 }

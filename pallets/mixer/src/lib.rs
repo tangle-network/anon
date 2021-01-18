@@ -29,8 +29,7 @@ use frame_system::ensure_signed;
 use merkle::Group as GroupTrait;
 use sp_std::prelude::*;
 
-pub type BalanceOf<T> =
-	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 /// The pallet's configuration trait.
 pub trait Config: frame_system::Config + merkle::Config {
@@ -91,7 +90,8 @@ decl_event!(
 	where
 		AccountId = <T as frame_system::Config>::AccountId,
 		GroupId = <T as merkle::Config>::GroupId,
-		Nullifier = Data, {
+		Nullifier = Data,
+	{
 		Deposit(GroupId, AccountId, Nullifier),
 		Withdraw(GroupId, AccountId, Nullifier),
 	}
@@ -254,10 +254,7 @@ impl<T: Config> Module<T> {
 		let mixer_info = MixerGroups::<T>::get(mixer_id);
 		// ensure mixer_info has non-zero deposit, otherwise mixer doesn't
 		// really exist for this id
-		ensure!(
-			mixer_info.fixed_deposit_size > Zero::zero(),
-			Error::<T>::NoMixerForId
-		);
+		ensure!(mixer_info.fixed_deposit_size > Zero::zero(), Error::<T>::NoMixerForId);
 		// return the mixer info
 		Ok(mixer_info)
 	}

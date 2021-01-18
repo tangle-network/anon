@@ -39,9 +39,7 @@ fn poseidon_perm(s_params: Poseidon, transcript_label: &'static [u8]) {
 	let total_rounds = s_params.get_total_rounds();
 
 	let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);
-	let input = (0..width)
-		.map(|_| Scalar::random(&mut test_rng))
-		.collect::<Vec<_>>();
+	let input = (0..width).map(|_| Scalar::random(&mut test_rng)).collect::<Vec<_>>();
 	let expected_output = Poseidon_permutation(&input, &s_params);
 
 	/*println!("Input:\n");
@@ -69,9 +67,7 @@ fn poseidon_perm(s_params: Poseidon, transcript_label: &'static [u8]) {
 			});
 		}
 
-		assert!(
-			Poseidon_permutation_gadget(&mut prover, allocs, &s_params, &expected_output).is_ok()
-		);
+		assert!(Poseidon_permutation_gadget(&mut prover, allocs, &s_params, &expected_output).is_ok());
 
 		println!(
 			"For Poseidon permutation rounds {}, no of constraints is {}, no of multipliers is {}",
@@ -96,9 +92,7 @@ fn poseidon_perm(s_params: Poseidon, transcript_label: &'static [u8]) {
 			assignment: None,
 		});
 	}
-	assert!(
-		Poseidon_permutation_gadget(&mut verifier, allocs, &s_params, &expected_output).is_ok()
-	);
+	assert!(Poseidon_permutation_gadget(&mut verifier, allocs, &s_params, &expected_output).is_ok());
 
 	assert!(verifier
 		.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut test_rng)
@@ -149,15 +143,7 @@ fn poseidon_hash_2(s_params: Poseidon, transcript_label: &'static [u8]) {
 		let statics = allocate_statics_for_prover(&mut prover, num_statics);
 
 		let start = Instant::now();
-		assert!(Poseidon_hash_2_gadget(
-			&mut prover,
-			l_alloc,
-			r_alloc,
-			statics,
-			&s_params,
-			&expected_output
-		)
-		.is_ok());
+		assert!(Poseidon_hash_2_gadget(&mut prover, l_alloc, r_alloc, statics, &s_params, &expected_output).is_ok());
 
 		println!(
 			"For Poseidon hash 2:1 rounds {}, no of constraints is {}, no of multipliers is {}",
@@ -194,15 +180,7 @@ fn poseidon_hash_2(s_params: Poseidon, transcript_label: &'static [u8]) {
 	let statics = allocate_statics_for_verifier(&mut verifier, num_statics, &pc_gens);
 
 	let start = Instant::now();
-	assert!(Poseidon_hash_2_gadget(
-		&mut verifier,
-		l_alloc,
-		r_alloc,
-		statics,
-		&s_params,
-		&expected_output
-	)
-	.is_ok());
+	assert!(Poseidon_hash_2_gadget(&mut verifier, l_alloc, r_alloc, statics, &s_params, &expected_output).is_ok());
 
 	assert!(verifier
 		.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut test_rng)
@@ -218,9 +196,7 @@ fn poseidon_hash_4(s_params: Poseidon, transcript_label: &'static [u8]) {
 	let total_rounds = s_params.get_total_rounds();
 
 	let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);
-	let _input = (0..4)
-		.map(|_| Scalar::random(&mut test_rng))
-		.collect::<Vec<_>>();
+	let _input = (0..4).map(|_| Scalar::random(&mut test_rng)).collect::<Vec<_>>();
 	let mut input = [Scalar::zero(); 4];
 	input.copy_from_slice(_input.as_slice());
 	let expected_output = Poseidon_hash_4(input, &s_params);
@@ -255,10 +231,7 @@ fn poseidon_hash_4(s_params: Poseidon, transcript_label: &'static [u8]) {
 		let statics = allocate_statics_for_prover(&mut prover, num_statics);
 
 		let start = Instant::now();
-		assert!(
-			Poseidon_hash_4_gadget(&mut prover, allocs, statics, &s_params, &expected_output)
-				.is_ok()
-		);
+		assert!(Poseidon_hash_4_gadget(&mut prover, allocs, statics, &s_params, &expected_output).is_ok());
 
 		println!(
 			"For Poseidon hash 4:1 rounds {}, no of constraints is {}, no of multipliers is {}",
@@ -294,9 +267,7 @@ fn poseidon_hash_4(s_params: Poseidon, transcript_label: &'static [u8]) {
 	let statics = allocate_statics_for_verifier(&mut verifier, num_statics, &pc_gens);
 
 	let start = Instant::now();
-	assert!(
-		Poseidon_hash_4_gadget(&mut verifier, allocs, statics, &s_params, &expected_output).is_ok()
-	);
+	assert!(Poseidon_hash_4_gadget(&mut verifier, allocs, statics, &s_params, &expected_output).is_ok());
 
 	assert!(verifier
 		.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut test_rng)

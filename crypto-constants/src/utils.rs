@@ -43,7 +43,9 @@ pub fn print_constants() {
 // The output is wrapped in a Result to allow matching on errors
 // Returns an Iterator to the Reader of the lines of the file.
 pub fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where P: AsRef<Path> {
+where
+	P: AsRef<Path>,
+{
 	let file = File::open(filename)?;
 	Ok(io::BufReader::new(file).lines())
 }
@@ -51,8 +53,7 @@ where P: AsRef<Path> {
 pub fn write_file<T: std::fmt::Display, P: std::convert::AsRef<std::path::Path>>(
 	filename: P,
 	data: Vec<T>,
-) -> std::io::Result<()>
-{
+) -> std::io::Result<()> {
 	let mut file = File::create(filename).expect("Unable to create file");
 	for i in &data {
 		let _ = write!(file, "{}\n", i);

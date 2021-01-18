@@ -41,8 +41,7 @@ impl AllocatedCoin {
 		nullifier: AllocatedScalar,
 		sn: Scalar,
 		cm: Scalar,
-	) -> Self
-	{
+	) -> Self {
 		Self {
 			inv_value,
 			value,
@@ -63,12 +62,7 @@ pub struct Transaction {
 }
 
 impl Transaction {
-	fn hash_constraints<CS: ConstraintSystem>(
-		&self,
-		cs: &mut CS,
-		poseidon_params: &Poseidon,
-	) -> Result<(), R1CSError>
-	{
+	fn hash_constraints<CS: ConstraintSystem>(&self, cs: &mut CS, poseidon_params: &Poseidon) -> Result<(), R1CSError> {
 		// check inputs
 		for i in 0..self.inputs.len() {
 			Poseidon_hash_2_gadget(
@@ -159,8 +153,7 @@ pub fn transaction_preimage_gadget<CS: ConstraintSystem>(
 	cs: &mut CS,
 	transactions: Vec<Transaction>,
 	poseidon_params: &Poseidon,
-) -> Result<(), R1CSError>
-{
+) -> Result<(), R1CSError> {
 	let mut sum_inputs = LinearCombination::from(Scalar::zero());
 	let mut sum_outputs = LinearCombination::from(Scalar::zero());
 

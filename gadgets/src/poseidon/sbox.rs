@@ -30,8 +30,7 @@ impl PoseidonSbox {
 		cs: &mut CS,
 		input_var: LinearCombination,
 		round_key: Scalar,
-	) -> Result<Variable, R1CSError>
-	{
+	) -> Result<Variable, R1CSError> {
 		match self {
 			PoseidonSbox::Exponentiation3 => Self::synthesize_exp3_sbox(cs, input_var, round_key),
 			PoseidonSbox::Exponentiation5 => Self::synthesize_exp5_sbox(cs, input_var, round_key),
@@ -44,8 +43,7 @@ impl PoseidonSbox {
 		cs: &mut CS,
 		input_var: LinearCombination,
 		round_key: Scalar,
-	) -> Result<Variable, R1CSError>
-	{
+	) -> Result<Variable, R1CSError> {
 		let inp_plus_const: LinearCombination = input_var + round_key;
 		let (i, _, sqr) = cs.multiply(inp_plus_const.clone(), inp_plus_const);
 		let (_, _, cube) = cs.multiply(sqr.into(), i.into());
@@ -57,8 +55,7 @@ impl PoseidonSbox {
 		cs: &mut CS,
 		input_var: LinearCombination,
 		round_key: Scalar,
-	) -> Result<Variable, R1CSError>
-	{
+	) -> Result<Variable, R1CSError> {
 		let inp_plus_const: LinearCombination = input_var + round_key;
 		let (i, _, sqr) = cs.multiply(inp_plus_const.clone(), inp_plus_const);
 		let (_, _, fourth) = cs.multiply(sqr.into(), sqr.into());
@@ -72,8 +69,7 @@ impl PoseidonSbox {
 		cs: &mut CS,
 		input_var: LinearCombination,
 		round_key: Scalar,
-	) -> Result<Variable, R1CSError>
-	{
+	) -> Result<Variable, R1CSError> {
 		let inp_plus_const: LinearCombination = (input_var + round_key).simplify();
 
 		let val_l = cs.evaluate_lc(&inp_plus_const);

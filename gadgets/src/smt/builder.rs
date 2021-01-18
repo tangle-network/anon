@@ -1,6 +1,4 @@
-use crate::poseidon::{
-	gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder, Poseidon_hash_2,
-};
+use crate::poseidon::{gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder, Poseidon_hash_2};
 use bulletproofs::BulletproofGens;
 use sp_std::collections::btree_map::BTreeMap;
 

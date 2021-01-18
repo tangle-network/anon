@@ -116,22 +116,14 @@ fn should_withdraw_from_each_mixer_successfully() {
 			let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 			let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-			let (s_com, nullifier_com, leaf_com1, leaf_var1) = commit_leaf(
-				&mut test_rng,
-				&mut prover,
-				leaf,
-				s,
-				nullifier,
-				nullifier_hash,
-				&h,
-			);
+			let (s_com, nullifier_com, leaf_com1, leaf_var1) =
+				commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, nullifier_hash, &h);
 
 			let mut lh = leaf;
 			let mut lh_lc: LinearCombination = leaf_var1.into();
 			let mut path = Vec::new();
 			for _ in 0..32 {
-				let (bit_com, leaf_com, node_con) =
-					commit_path_level(&mut test_rng, &mut prover, lh, lh_lc, 1, &h);
+				let (bit_com, leaf_com, node_con) = commit_path_level(&mut test_rng, &mut prover, lh, lh_lc, 1, &h);
 				lh_lc = node_con;
 				lh = Data::hash(lh, lh, &h);
 				path.push((Commitment(bit_com), Commitment(leaf_com)));

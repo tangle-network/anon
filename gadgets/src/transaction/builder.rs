@@ -1,6 +1,4 @@
-use crate::poseidon::{
-	builder::Poseidon, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder,
-};
+use crate::poseidon::{builder::Poseidon, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder};
 
 #[derive(Clone)]
 pub struct TransactionGadget {

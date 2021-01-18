@@ -52,19 +52,13 @@ pub struct Mixer {
 
 impl Mixer {
 	fn get_tree_mut(&mut self, asset: String, id: u8) -> &mut MerkleClient {
-		assert!(
-			self.tree_map.contains_key(&(asset.to_owned(), id)),
-			"Tree not found!"
-		);
+		assert!(self.tree_map.contains_key(&(asset.to_owned(), id)), "Tree not found!");
 		let tree = self.tree_map.get_mut(&(asset.to_owned(), id)).unwrap();
 		tree
 	}
 
 	fn get_tree(&self, asset: String, id: u8) -> &MerkleClient {
-		assert!(
-			self.tree_map.contains_key(&(asset.to_owned(), id)),
-			"Tree not found!"
-		);
+		assert!(self.tree_map.contains_key(&(asset.to_owned(), id)), "Tree not found!");
 		let tree = self.tree_map.get(&(asset.to_owned(), id)).unwrap();
 		tree
 	}
@@ -103,10 +97,7 @@ impl Mixer {
 	// note has a format of `webb.mix-<mixed_id>-<r as hex string><nullifier as
 	// hex string>`
 	pub fn generate_note(&mut self, asset: String, id: u8, block_number: u32) -> JsString {
-		assert!(
-			self.tree_map.contains_key(&(asset.to_owned(), id)),
-			"Tree not found!"
-		);
+		assert!(self.tree_map.contains_key(&(asset.to_owned(), id)), "Tree not found!");
 		let tree = self.tree_map.get_mut(&(asset.to_owned(), id)).unwrap();
 		let (r, nullifier, ..) = tree.generate_leaf_data();
 
@@ -132,10 +123,7 @@ impl Mixer {
 		assert!(parts[0] == NOTE_PREFIX, "Invalid note!");
 		let asset: String = parts[1].to_owned();
 		let id: u8 = parts[2].parse().unwrap();
-		assert!(
-			self.tree_map.contains_key(&(asset.to_owned(), id)),
-			"Tree not found!"
-		);
+		assert!(self.tree_map.contains_key(&(asset.to_owned(), id)), "Tree not found!");
 		let block_number: u32 = parts[3].parse().unwrap();
 		let note_val = parts[4];
 		assert!(note_val.len() == 128, "Invalid note length");
@@ -145,8 +133,7 @@ impl Mixer {
 		let nullifier_bytes = decode_hex(&note_val[64..]);
 
 		let tree = self.tree_map.get_mut(&(asset.to_owned(), id)).unwrap();
-		let (r, nullifier, nullifier_hash, leaf) =
-			tree.leaf_data_from_bytes(r_bytes, nullifier_bytes);
+		let (r, nullifier, nullifier_hash, leaf) = tree.leaf_data_from_bytes(r_bytes, nullifier_bytes);
 		tree.saved_leafs.insert(leaf, LeafData {
 			r,
 			nullifier,
@@ -298,14 +285,7 @@ impl MerkleClient {
 		}
 	}
 
-	pub fn init_data(
-		num_levels: usize,
-	) -> (
-		Data,
-		HashMap<Data, TreeState>,
-		Vec<Vec<Data>>,
-		HashMap<Data, usize>,
-	) {
+	pub fn init_data(num_levels: usize) -> (Data, HashMap<Data, TreeState>, Vec<Vec<Data>>, HashMap<Data, usize>) {
 		let init_root = Data::zero();
 		let init_tree_state = TreeState {
 			edge_nodes: vec![Data::zero(); num_levels],
@@ -327,12 +307,7 @@ impl MerkleClient {
 		leaf_data(&mut rng, &self.hasher)
 	}
 
-	pub fn leaf_data_from_bytes(
-		&self,
-		r_bytes: [u8; 32],
-		nullifier_bytes: [u8; 32],
-	) -> (Scalar, Scalar, Data, Data)
-	{
+	pub fn leaf_data_from_bytes(&self, r_bytes: [u8; 32], nullifier_bytes: [u8; 32]) -> (Scalar, Scalar, Data, Data) {
 		let r = Scalar::from_bytes_mod_order(r_bytes);
 		let nullifier = Scalar::from_bytes_mod_order(nullifier_bytes);
 		// Construct nullifier hash for note
@@ -359,10 +334,7 @@ impl MerkleClient {
 	// Adds a single leaf to the tree
 	// Saves the new state and saves the index of the added leaf
 	pub fn add_leaf(&mut self, leaf: Data) {
-		assert!(
-			self.levels[0].len() < self.max_leaves as usize,
-			"Tree is already full!"
-		);
+		assert!(self.levels[0].len() < self.max_leaves as usize, "Tree is already full!");
 		let curr_state = self.states.get(&self.curr_root).unwrap();
 
 		// There is a new tree state on every insert
@@ -457,10 +429,7 @@ impl MerkleClient {
 	}
 
 	pub fn prove_zk(&self, root: Data, leaf: Data) -> ZkProof {
-		assert!(
-			self.saved_leafs.contains_key(&leaf),
-			"Secret data not found!"
-		);
+		assert!(self.saved_leafs.contains_key(&leaf), "Secret data not found!");
 		let ld = self.saved_leafs.get(&leaf).unwrap();
 
 		// First we create normal proof, then make zk proof against it

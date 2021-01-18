@@ -1,8 +1,5 @@
 use crate::{
-	poseidon::{
-		allocate_statics_for_prover, allocate_statics_for_verifier, Poseidon_hash_2,
-		Poseidon_hash_4,
-	},
+	poseidon::{allocate_statics_for_prover, allocate_statics_for_verifier, Poseidon_hash_2, Poseidon_hash_4},
 	transaction::{AllocatedCoin, Transaction},
 };
 
@@ -68,10 +65,7 @@ fn test_is_valid_transaction_spend() {
 	let output_1_r = Scalar::random(&mut test_rng);
 	let output_1_nullifier = Scalar::random(&mut test_rng);
 	let output_1_sn = Poseidon_hash_2(output_1_r, output_1_nullifier, &params);
-	let output_1_cm = Poseidon_hash_4(
-		[output_1, output_1_rho, output_1_r, output_1_nullifier],
-		&params,
-	);
+	let output_1_cm = Poseidon_hash_4([output_1, output_1_rho, output_1_r, output_1_nullifier], &params);
 
 	let output_2 = Scalar::from(5u32);
 	let output_2_inverse = Scalar::from(5u32).invert();
@@ -79,10 +73,7 @@ fn test_is_valid_transaction_spend() {
 	let output_2_r = Scalar::random(&mut test_rng);
 	let output_2_nullifier = Scalar::random(&mut test_rng);
 	let output_2_sn = Poseidon_hash_2(output_2_r, output_2_nullifier, &params);
-	let output_2_cm = Poseidon_hash_4(
-		[output_2, output_2_rho, output_2_r, output_2_nullifier],
-		&params,
-	);
+	let output_2_cm = Poseidon_hash_4([output_2, output_2_rho, output_2_r, output_2_nullifier], &params);
 
 	{
 		let (proof, commitments) = {
@@ -98,22 +89,19 @@ fn test_is_valid_transaction_spend() {
 				assignment: Some(input_inverse),
 			};
 			coms.push(com_input_inverse_val);
-			let (com_input_val, var_input_val) =
-				prover.commit(input.clone(), Scalar::random(&mut test_rng));
+			let (com_input_val, var_input_val) = prover.commit(input.clone(), Scalar::random(&mut test_rng));
 			let alloc_input_val = AllocatedScalar {
 				variable: var_input_val,
 				assignment: Some(input),
 			};
 			coms.push(com_input_val);
-			let (com_input_rho, var_input_rho) =
-				prover.commit(input_rho.clone(), Scalar::random(&mut test_rng));
+			let (com_input_rho, var_input_rho) = prover.commit(input_rho.clone(), Scalar::random(&mut test_rng));
 			let alloc_input_rho = AllocatedScalar {
 				variable: var_input_rho,
 				assignment: Some(input_rho),
 			};
 			coms.push(com_input_rho);
-			let (com_input_r, var_input_r) =
-				prover.commit(input_r.clone(), Scalar::random(&mut test_rng));
+			let (com_input_r, var_input_r) = prover.commit(input_r.clone(), Scalar::random(&mut test_rng));
 			let alloc_input_r = AllocatedScalar {
 				variable: var_input_r,
 				assignment: Some(input_r),
@@ -143,8 +131,7 @@ fn test_is_valid_transaction_spend() {
 				assignment: Some(output_1_inverse),
 			};
 			coms.push(com_output_1_inverse_val);
-			let (com_output_1_val, var_output_1_val) =
-				prover.commit(output_1.clone(), Scalar::random(&mut test_rng));
+			let (com_output_1_val, var_output_1_val) = prover.commit(output_1.clone(), Scalar::random(&mut test_rng));
 			let alloc_output_1_val = AllocatedScalar {
 				variable: var_output_1_val,
 				assignment: Some(output_1),
@@ -157,8 +144,7 @@ fn test_is_valid_transaction_spend() {
 				assignment: Some(output_1_rho),
 			};
 			coms.push(com_output_1_rho);
-			let (com_output_1_r, var_output_1_r) =
-				prover.commit(output_1_r.clone(), Scalar::random(&mut test_rng));
+			let (com_output_1_r, var_output_1_r) = prover.commit(output_1_r.clone(), Scalar::random(&mut test_rng));
 			let alloc_output_1_r = AllocatedScalar {
 				variable: var_output_1_r,
 				assignment: Some(output_1_r),
@@ -189,8 +175,7 @@ fn test_is_valid_transaction_spend() {
 				assignment: Some(output_2_inverse),
 			};
 			coms.push(com_output_2_inverse_val);
-			let (com_output_2_val, var_output_2_val) =
-				prover.commit(output_2.clone(), Scalar::random(&mut test_rng));
+			let (com_output_2_val, var_output_2_val) = prover.commit(output_2.clone(), Scalar::random(&mut test_rng));
 			let alloc_output_2_val = AllocatedScalar {
 				variable: var_output_2_val,
 				assignment: Some(output_2),
@@ -203,8 +188,7 @@ fn test_is_valid_transaction_spend() {
 				assignment: Some(output_2_rho),
 			};
 			coms.push(com_output_2_rho);
-			let (com_output_2_r, var_output_1_r) =
-				prover.commit(output_2_r.clone(), Scalar::random(&mut test_rng));
+			let (com_output_2_r, var_output_1_r) = prover.commit(output_2_r.clone(), Scalar::random(&mut test_rng));
 			let alloc_output_2_r = AllocatedScalar {
 				variable: var_output_1_r,
 				assignment: Some(output_1_r),

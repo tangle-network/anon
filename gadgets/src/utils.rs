@@ -51,8 +51,7 @@ pub fn positive_no_gadget<CS: ConstraintSystem>(
 	cs: &mut CS,
 	v: AllocatedQuantity,
 	bit_size: usize,
-) -> Result<(), R1CSError>
-{
+) -> Result<(), R1CSError> {
 	let mut constraint_v = vec![(v.variable, -Scalar::one())];
 	let mut exp_2 = Scalar::one();
 	for i in 0..bit_size {
@@ -81,12 +80,7 @@ pub fn positive_no_gadget<CS: ConstraintSystem>(
 }
 
 /// Constrain a linear combination to be equal to a scalar
-pub fn constrain_lc_with_scalar<CS: ConstraintSystem>(
-	cs: &mut CS,
-	lc: LinearCombination,
-	scalar: &Scalar,
-)
-{
+pub fn constrain_lc_with_scalar<CS: ConstraintSystem>(cs: &mut CS, lc: LinearCombination, scalar: &Scalar) {
 	cs.constrain(lc - LinearCombination::from(*scalar));
 }
 
@@ -159,9 +153,7 @@ impl ScalarBits {
 			new_array[i] = self.bit_array[i - 1];
 		}
 		new_array[0] = 0;
-		Self {
-			bit_array: new_array,
-		}
+		Self { bit_array: new_array }
 	}
 
 	/// Return a new bit-array shifted to the right with 1 bit
@@ -173,9 +165,7 @@ impl ScalarBits {
 			new_array[i - 1] = self.bit_array[i];
 		}
 		new_array[size - 1] = 0;
-		Self {
-			bit_array: new_array,
-		}
+		Self { bit_array: new_array }
 	}
 
 	/// Check if most significant bit is set

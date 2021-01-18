@@ -76,9 +76,7 @@ fn test_vsmt_verif() {
 		.mds_matrix(gen_mds_matrix(width))
 		.sbox(PoseidonSbox::Inverse)
 		.build();
-	let mut tree = SparseMerkleTreeBuilder::new()
-		.hash_params(p_params.clone())
-		.build();
+	let mut tree = SparseMerkleTreeBuilder::new().hash_params(p_params.clone()).build();
 
 	for i in 1..=10 {
 		let s = Scalar::from(i as u32);
@@ -232,9 +230,7 @@ fn test_vsmt_prove_verif() {
 		.mds_matrix(gen_mds_matrix(width))
 		.sbox(PoseidonSbox::Inverse)
 		.build();
-	let mut tree = SparseMerkleTreeBuilder::new()
-		.hash_params(p_params.clone())
-		.build();
+	let mut tree = SparseMerkleTreeBuilder::new().hash_params(p_params.clone()).build();
 
 	for i in 1..=10 {
 		let s = Scalar::from(i as u32);

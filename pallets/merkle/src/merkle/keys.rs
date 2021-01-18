@@ -49,9 +49,7 @@ impl EncodeLike for PrivateKey {}
 impl Decode for PrivateKey {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, codec::Error> {
 		match <[u8; SIZE] as Decode>::decode(input) {
-			Ok(elt) => Ok(PrivateKey(
-				Scalar::from_canonical_bytes(elt).unwrap_or(Scalar::zero()),
-			)),
+			Ok(elt) => Ok(PrivateKey(Scalar::from_canonical_bytes(elt).unwrap_or(Scalar::zero()))),
 			Err(e) => Err(e),
 		}
 	}
@@ -109,9 +107,7 @@ impl EncodeLike for Data {}
 impl Decode for Data {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, codec::Error> {
 		match <[u8; SIZE] as Decode>::decode(input) {
-			Ok(elt) => Ok(Data(
-				Scalar::from_canonical_bytes(elt).unwrap_or(Scalar::zero()),
-			)),
+			Ok(elt) => Ok(Data(Scalar::from_canonical_bytes(elt).unwrap_or(Scalar::zero()))),
 			Err(e) => Err(e),
 		}
 	}
@@ -135,8 +131,7 @@ impl Data {
 		xl: LinearCombination,
 		xr: LinearCombination,
 		h: &H,
-	) -> LinearCombination
-	{
+	) -> LinearCombination {
 		h.constrain_prover(cs, xl, xr)
 	}
 
@@ -146,8 +141,7 @@ impl Data {
 		xl: LinearCombination,
 		xr: LinearCombination,
 		h: &H,
-	) -> LinearCombination
-	{
+	) -> LinearCombination {
 		h.constrain_verifier(cs, pc_gens, xl, xr)
 	}
 }

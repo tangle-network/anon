@@ -12,18 +12,12 @@ pub mod tests;
 /// The idea is described in the Pinocchio paper and i first saw it in https://github.com/HarryR/ethsnarks/blob/master/src/gadgets/isnonzero.cpp
 
 /// Enforces that x is 0.
-pub fn is_zero_gadget<CS: ConstraintSystem>(
-	cs: &mut CS,
-	x: AllocatedScalar,
-) -> Result<(), R1CSError>
-{
+pub fn is_zero_gadget<CS: ConstraintSystem>(cs: &mut CS, x: AllocatedScalar) -> Result<(), R1CSError> {
 	let y: u32 = 0;
 	let inv: u32 = 0;
 
 	let x_lc: LinearCombination = vec![(x.variable, Scalar::one())].iter().collect();
-	let one_minus_y_lc: LinearCombination = vec![(Variable::One(), Scalar::from(1 - y))]
-		.iter()
-		.collect();
+	let one_minus_y_lc: LinearCombination = vec![(Variable::One(), Scalar::from(1 - y))].iter().collect();
 	let y_lc: LinearCombination = vec![(Variable::One(), Scalar::from(y))].iter().collect();
 	let inv_lc: LinearCombination = vec![(Variable::One(), Scalar::from(inv))].iter().collect();
 
@@ -44,8 +38,7 @@ pub fn is_nonzero_gadget<CS: ConstraintSystem>(
 	cs: &mut CS,
 	x: AllocatedScalar,
 	x_inv: AllocatedScalar,
-) -> Result<(), R1CSError>
-{
+) -> Result<(), R1CSError> {
 	let x_lc = LinearCombination::from(x.variable);
 	let y_lc = LinearCombination::from(Scalar::one());
 	let one_minus_y_lc = LinearCombination::from(Variable::One()) - y_lc.clone();

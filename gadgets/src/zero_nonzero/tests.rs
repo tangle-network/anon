@@ -46,9 +46,7 @@ fn test_is_zero_non_zero() {
 
 		assert!(is_zero_gadget(&mut verifier, alloc_scal).is_ok());
 
-		verifier
-			.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut rng)
-			.unwrap();
+		verifier.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut rng).unwrap();
 	}
 
 	{
@@ -92,8 +90,6 @@ fn test_is_zero_non_zero() {
 
 		assert!(is_nonzero_gadget(&mut verifier, alloc_scal, alloc_scal_inv).is_ok());
 
-		verifier
-			.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut rng)
-			.unwrap();
+		verifier.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut rng).unwrap();
 	}
 }
