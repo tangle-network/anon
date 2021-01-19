@@ -2,11 +2,10 @@ use crate::{Config, Module};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 use frame_system as system;
 use sp_core::H256;
-use sp_runtime::ModuleId;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
-	Perbill,
+	ModuleId, Perbill,
 };
 pub(crate) type Balance = u64;
 
@@ -40,28 +39,28 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
+	type AccountData = balances::AccountData<u64>;
+	type AccountId = u64;
 	type BaseCallFilter = ();
-	type BlockWeights = ();
+	type BlockHashCount = BlockHashCount;
 	type BlockLength = ();
-	type DbWeight = ();
-	type Origin = Origin;
-	type Index = u64;
-	type Call = ();
 	type BlockNumber = u64;
+	type BlockWeights = ();
+	type Call = ();
+	type DbWeight = ();
+	type Event = Event;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = u64;
-	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = Event;
-	type BlockHashCount = BlockHashCount;
-	type Version = ();
-	type PalletInfo = ();
-	type AccountData = balances::AccountData<u64>;
-	type OnNewAccount = ();
+	type Index = u64;
+	type Lookup = IdentityLookup<Self::AccountId>;
 	type OnKilledAccount = ();
-	type SystemWeightInfo = ();
+	type OnNewAccount = ();
+	type Origin = Origin;
+	type PalletInfo = ();
 	type SS58Prefix = Prefix;
+	type SystemWeightInfo = ();
+	type Version = ();
 }
 
 parameter_types! {
@@ -74,20 +73,20 @@ parameter_types! {
 }
 
 impl balances::Config for Test {
-	type Balance = Balance;
-	type Event = Event;
-	type DustRemoval = ();
-	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
+	type Balance = Balance;
+	type DustRemoval = ();
+	type Event = Event;
+	type ExistentialDeposit = ExistentialDeposit;
 	type MaxLocks = MaxLocks;
 	type WeightInfo = ();
 }
 
 impl merkle::Config for Test {
+	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
 	type GroupId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
-	type CacheBlockLength = CacheBlockLength;
 }
 
 parameter_types! {
@@ -95,12 +94,12 @@ parameter_types! {
 }
 
 impl Config for Test {
-	type Event = Event;
 	type Currency = Balances;
-	type ModuleId = MixerModuleId;
+	type DepositLength = MinimumDepositLength;
+	type Event = Event;
 	type Group = MerkleGroups;
 	type MaxTreeDepth = MaxTreeDepth;
-	type DepositLength = MinimumDepositLength;
+	type ModuleId = MixerModuleId;
 }
 
 pub type Balances = balances::Module<Test>;
@@ -111,9 +110,7 @@ pub type Mixer = Module<Test>;
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	use balances::GenesisConfig as BalancesConfig;
-	let mut t = frame_system::GenesisConfig::default()
-		.build_storage::<Test>()
-		.unwrap();
+	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 	BalancesConfig::<Test> {
 		// Total issuance will be 200 with treasury account initialized at ED.
 		balances: vec![(0, 1_000_000_000), (1, 1_000_000_000), (2, 1_000_000_000)],

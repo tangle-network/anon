@@ -1,3 +1,4 @@
+#[cfg(feature = "std")]
 pub mod builder;
 pub mod smt;
 

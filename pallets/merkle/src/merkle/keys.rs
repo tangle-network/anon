@@ -2,11 +2,15 @@ use sha2::Sha512;
 use sp_std::prelude::*;
 
 use super::hasher::Hasher;
-use bulletproofs::r1cs::{LinearCombination, Prover, Verifier};
-use bulletproofs::PedersenGens;
+use bulletproofs::{
+	r1cs::{LinearCombination, Prover, Verifier},
+	PedersenGens,
+};
 use codec::{Decode, Encode, EncodeLike, Input};
-use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
-use curve25519_dalek::scalar::Scalar;
+use curve25519_dalek::{
+	ristretto::{CompressedRistretto, RistrettoPoint},
+	scalar::Scalar,
+};
 
 #[derive(Eq, PartialEq, Clone, Default, Debug, Copy)]
 pub struct Commitment(pub CompressedRistretto);
@@ -45,9 +49,7 @@ impl EncodeLike for PrivateKey {}
 impl Decode for PrivateKey {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, codec::Error> {
 		match <[u8; SIZE] as Decode>::decode(input) {
-			Ok(elt) => Ok(PrivateKey(
-				Scalar::from_canonical_bytes(elt).unwrap_or(Scalar::zero()),
-			)),
+			Ok(elt) => Ok(PrivateKey(Scalar::from_canonical_bytes(elt).unwrap_or(Scalar::zero()))),
 			Err(e) => Err(e),
 		}
 	}
@@ -59,6 +61,7 @@ impl Commitment {
 		let point: RistrettoPoint = RistrettoPoint::hash_from_bytes::<Sha512>(bytes);
 		Commitment(point.compress())
 	}
+
 	/// Serialize this public key to 32 bytes
 	pub fn as_bytes(&self) -> Vec<u8> {
 		(&self.0.as_bytes()).to_vec()
@@ -104,9 +107,7 @@ impl EncodeLike for Data {}
 impl Decode for Data {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, codec::Error> {
 		match <[u8; SIZE] as Decode>::decode(input) {
-			Ok(elt) => Ok(Data(
-				Scalar::from_canonical_bytes(elt).unwrap_or(Scalar::zero()),
-			)),
+			Ok(elt) => Ok(Data(Scalar::from_canonical_bytes(elt).unwrap_or(Scalar::zero()))),
 			Err(e) => Err(e),
 		}
 	}

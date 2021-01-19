@@ -1,8 +1,4 @@
-use crate::poseidon::gen_mds_matrix;
-use crate::poseidon::gen_round_keys;
-use crate::poseidon::PoseidonBuilder;
-use crate::poseidon::sbox::PoseidonSbox;
-use crate::poseidon::builder::Poseidon;
+use crate::poseidon::{builder::Poseidon, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder};
 
 #[derive(Clone)]
 pub struct TransactionGadget {
@@ -15,9 +11,7 @@ pub struct TransactionGadgetBuilder {
 
 impl TransactionGadgetBuilder {
 	pub fn new() -> Self {
-		Self {
-			hash_params: None,
-		}
+		Self { hash_params: None }
 	}
 
 	pub fn hash_params(&mut self, hash_params: Poseidon) -> &mut Self {
@@ -38,8 +32,6 @@ impl TransactionGadgetBuilder {
 				.build()
 		});
 
-		TransactionGadget {
-			hash_params,
-		}
+		TransactionGadget { hash_params }
 	}
 }

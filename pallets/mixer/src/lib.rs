@@ -3,8 +3,8 @@
 /// A runtime module Groups with necessary imports
 
 /// Feel free to remove or edit this file as needed.
-/// If you change the name of this file, make sure to update its references in runtime/src/lib.rs
-/// If you remove this file, you can remove those references
+/// If you change the name of this file, make sure to update its references in
+/// runtime/src/lib.rs If you remove this file, you can remove those references
 
 /// For more guidance on Substrate modules, see the example module
 /// https://github.com/paritytech/substrate/blob/master/frame/example/src/lib.rs
@@ -15,23 +15,21 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
-use sp_runtime::traits::One;
-use sp_runtime::traits::AccountIdConversion;
-use sp_runtime::ModuleId;
-use merkle::merkle::keys::Commitment;
-use sp_runtime::traits::{Zero};
-use merkle::merkle::keys::Data;
+use merkle::merkle::keys::{Commitment, Data};
+use sp_runtime::{
+	traits::{AccountIdConversion, One, Zero},
+	ModuleId,
+};
 
-use frame_support::traits::{Currency, Get, ExistenceRequirement::{AllowDeath}};
+use frame_support::traits::{Currency, ExistenceRequirement::AllowDeath, Get};
 
 use codec::{Decode, Encode};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
 use frame_system::ensure_signed;
+use merkle::Group as GroupTrait;
 use sp_std::prelude::*;
-use merkle::{Group as GroupTrait};
 
-pub type BalanceOf<T> =
-	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 /// The pallet's configuration trait.
 pub trait Config: frame_system::Config + merkle::Config {
@@ -48,7 +46,6 @@ pub trait Config: frame_system::Config + merkle::Config {
 	type DepositLength: Get<Self::BlockNumber>;
 }
 
-
 #[derive(Encode, Decode, PartialEq)]
 pub struct MixerInfo<T: Config> {
 	pub minimum_deposit_length_for_reward: T::BlockNumber,
@@ -64,15 +61,14 @@ impl<T: Config> core::default::Default for MixerInfo<T> {
 			leaves: Vec::new(),
 		}
 	}
-} 
-
+}
 
 impl<T: Config> MixerInfo<T> {
 	pub fn new(min_dep_length: T::BlockNumber, dep_size: BalanceOf<T>, leaves: Vec<Data>) -> Self {
 		Self {
 			minimum_deposit_length_for_reward: min_dep_length,
 			fixed_deposit_size: dep_size,
-			leaves: leaves,
+			leaves,
 		}
 	}
 }
@@ -143,10 +139,10 @@ decl_module! {
 			// add elements to the mixer group's merkle tree and save the leaves
 			T::Group::add_members(Self::account_id(), mixer_id.into(), data_points.clone())?;
 			for i in 0..data_points.len() {
-				mixer_info.leaves.push(data_points[i]);	
+				mixer_info.leaves.push(data_points[i]);
 			}
 			MixerGroups::<T>::insert(mixer_id, mixer_info);
-			
+
 			Ok(())
 		}
 
@@ -256,7 +252,8 @@ impl<T: Config> Module<T> {
 
 	pub fn get_mixer(mixer_id: T::GroupId) -> Result<MixerInfo<T>, dispatch::DispatchError> {
 		let mixer_info = MixerGroups::<T>::get(mixer_id);
-		// ensure mixer_info has non-zero deposit, otherwise mixer doesn't really exist for this id
+		// ensure mixer_info has non-zero deposit, otherwise mixer doesn't
+		// really exist for this id
 		ensure!(mixer_info.fixed_deposit_size > Zero::zero(), Error::<T>::NoMixerForId);
 		// return the mixer info
 		Ok(mixer_info)

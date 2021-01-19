@@ -1,23 +1,22 @@
 #[cfg(test)]
 pub mod tests;
 
-
+#[cfg(feature = "std")]
 pub mod builder;
 
-use crate::poseidon::Poseidon_hash_4_gadget;
-use crate::zero_nonzero::is_nonzero_gadget;
-use crate::poseidon::Poseidon_hash_4_constraints;
-use crate::poseidon::Poseidon_hash_2_gadget;
-use crate::smt::smt::vanilla_merkle_merkle_tree_verif_gadget;
-
+use crate::{
+	poseidon::{Poseidon_hash_2_gadget, Poseidon_hash_4_constraints, Poseidon_hash_4_gadget},
+	smt::smt::vanilla_merkle_merkle_tree_verif_gadget,
+	zero_nonzero::is_nonzero_gadget,
+};
 
 use crate::poseidon::builder::Poseidon;
+use alloc::vec::Vec;
 use bulletproofs::r1cs::{ConstraintSystem, R1CSError};
 use curve25519_dalek::scalar::Scalar;
 
-
+use crate::utils::AllocatedScalar;
 use bulletproofs::r1cs::LinearCombination;
-use crate::utils::{AllocatedScalar};
 
 #[derive(Clone)]
 pub struct AllocatedInputCoin {
@@ -47,13 +46,13 @@ pub struct AllocatedOutputCoin {
 #[derive(Clone)]
 pub struct Transaction {
 	pub inputs: Vec<AllocatedInputCoin>,
-	pub	outputs: Vec<AllocatedOutputCoin>,
+	pub outputs: Vec<AllocatedOutputCoin>,
 	pub statics_2: Vec<AllocatedScalar>,
 	pub statics_4: Vec<AllocatedScalar>,
 }
 
 impl Transaction {
-	fn hash_constraints<CS: ConstraintSystem>(&self, cs: &mut CS, poseidon_params: &Poseidon) -> Result<(), R1CSError>{
+	fn hash_constraints<CS: ConstraintSystem>(&self, cs: &mut CS, poseidon_params: &Poseidon) -> Result<(), R1CSError> {
 		// check inputs
 		for i in 0..self.inputs.len() {
 			Poseidon_hash_2_gadget(
@@ -82,7 +81,13 @@ impl Transaction {
 		for i in 0..self.outputs.len() {
 			Poseidon_hash_4_gadget(
 				cs,
-				[self.outputs[i].value, self.outputs[i].rho, self.outputs[i].r, self.outputs[i].nullifier].to_vec(),
+				[
+					self.outputs[i].value,
+					self.outputs[i].rho,
+					self.outputs[i].r,
+					self.outputs[i].nullifier,
+				]
+				.to_vec(),
 				self.statics_4.clone(),
 				poseidon_params,
 				&self.outputs[i].leaf_cm,
@@ -128,7 +133,7 @@ pub fn variable_deposit_tree_verif_gadget<CS: ConstraintSystem>(
 	depth: usize,
 	root: &Scalar,
 	txes: Vec<Transaction>,
-	poseidon_params: &Poseidon
+	poseidon_params: &Poseidon,
 ) -> Result<(), R1CSError> {
 	let mut sum_inputs = LinearCombination::from(Scalar::zero());
 	let mut sum_outputs = LinearCombination::from(Scalar::zero());
@@ -140,9 +145,10 @@ pub fn variable_deposit_tree_verif_gadget<CS: ConstraintSystem>(
 		tx.hash_constraints(cs, poseidon_params)?;
 		// ensure all amounts are non-zero
 		tx.non_zero_constraints(cs)?;
-		// ensure all inputs are accumulated correcly in the merkle root		
+		// ensure all inputs are accumulated correcly in the merkle root
 		for j in 0..tx.inputs.len() {
-			// if all is successful, constrain gadget by merkle root construction with merkle proof path
+			// if all is successful, constrain gadget by merkle root construction with
+			// merkle proof path
 			vanilla_merkle_merkle_tree_verif_gadget(
 				cs,
 				depth,
@@ -152,7 +158,7 @@ pub fn variable_deposit_tree_verif_gadget<CS: ConstraintSystem>(
 				tx.inputs[j].leaf_proof_nodes.clone(),
 				// TODO: Do we need to use different statics here for each tx input?
 				tx.statics_2.clone(),
-				poseidon_params
+				poseidon_params,
 			)?;
 
 			sum_inputs = sum_inputs + tx.inputs[j].value.variable;

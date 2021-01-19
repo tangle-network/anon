@@ -1,19 +1,14 @@
-use crate::poseidon::gen_mds_matrix;
-use crate::poseidon::gen_round_keys;
-use crate::poseidon::sbox::PoseidonSbox;
-use crate::poseidon::PoseidonBuilder;
-use crate::poseidon::Poseidon_hash_2;
+use crate::{
+	poseidon::{
+		builder::Poseidon, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder, Poseidon_hash_2,
+	},
+	smt::smt::{DBVal, VanillaSparseMerkleTree},
+	utils::ScalarBytes,
+};
+use alloc::vec::Vec;
 use bulletproofs::BulletproofGens;
-use sp_std::collections::btree_map::BTreeMap;
-
-use crate::smt::smt::DBVal;
-use crate::smt::smt::VanillaSparseMerkleTree;
-
-use crate::poseidon::builder::Poseidon;
-
 use curve25519_dalek::scalar::Scalar;
-
-use crate::utils::ScalarBytes;
+use sp_std::collections::btree_map::BTreeMap;
 
 pub const DEFAULT_TREE_DEPTH: usize = 30;
 

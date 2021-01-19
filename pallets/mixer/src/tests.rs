@@ -1,17 +1,22 @@
-use merkle::HighestCachedBlock;
 use crate::mock::*;
-use bulletproofs::r1cs::LinearCombination;
-use bulletproofs::r1cs::{ConstraintSystem, Prover};
-use bulletproofs::{BulletproofGens, PedersenGens};
+use bulletproofs::{
+	r1cs::{ConstraintSystem, LinearCombination, Prover},
+	BulletproofGens, PedersenGens,
+};
 use curve25519_dalek::scalar::Scalar;
-use merkle::merkle::hasher::Hasher;
-use merkle::merkle::helper::{commit_leaf, commit_path_level, leaf_data};
-use merkle::merkle::keys::{Commitment, Data};
-use merkle::merkle::poseidon::Poseidon;
+use merkle::{
+	merkle::{
+		hasher::Hasher,
+		helper::{commit_leaf, commit_path_level, leaf_data},
+		keys::{Commitment, Data},
+		poseidon::Poseidon,
+	},
+	HighestCachedBlock,
+};
 use rand::rngs::ThreadRng;
 use sp_runtime::DispatchError;
 
-use frame_support::{assert_err, assert_ok, traits::{OnFinalize}, storage::StorageValue};
+use frame_support::{assert_err, assert_ok, storage::StorageValue, traits::OnFinalize};
 use merlin::Transcript;
 
 fn default_hasher() -> impl Hasher {
@@ -118,8 +123,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 			let mut lh_lc: LinearCombination = leaf_var1.into();
 			let mut path = Vec::new();
 			for _ in 0..32 {
-				let (bit_com, leaf_com, node_con) =
-					commit_path_level(&mut test_rng, &mut prover, lh, lh_lc, 1, &h);
+				let (bit_com, leaf_com, node_con) = commit_path_level(&mut test_rng, &mut prover, lh, lh_lc, 1, &h);
 				lh_lc = node_con;
 				lh = Data::hash(lh, lh, &h);
 				path.push((Commitment(bit_com), Commitment(leaf_com)));
@@ -211,22 +215,22 @@ fn should_not_have_cache_once_cache_length_exceeded() {
 		<MerkleGroups as OnFinalize<u64>>::on_finalize(1);
 		// iterate over next 5 blocks
 		for i in 1..6 {
-			System::set_block_number(i+1);
-			<Mixer as OnFinalize<u64>>::on_finalize(i+1);
-			<MerkleGroups as OnFinalize<u64>>::on_finalize(i+1);
+			System::set_block_number(i + 1);
+			<Mixer as OnFinalize<u64>>::on_finalize(i + 1);
+			<MerkleGroups as OnFinalize<u64>>::on_finalize(i + 1);
 			// iterate over each mixer in each block
 			for j in 0u32..4u32 {
-				if i+1 == 6 {
+				if i + 1 == 6 {
 					let old_root = MerkleGroups::cached_roots(1, j);
 					assert_eq!(old_root, vec![]);
 				}
 
 				// get cached root at block i + 1
-				let root = MerkleGroups::cached_roots(i+1, j);
+				let root = MerkleGroups::cached_roots(i + 1, j);
 				// check cached root is same as first updated root
 				assert_eq!(root, vec![merkle_roots[j as usize]]);
 				// check that highest cache block is i + 1
-				assert_eq!(i+1, HighestCachedBlock::<Test>::get());
+				assert_eq!(i + 1, HighestCachedBlock::<Test>::get());
 			}
 		}
 	})

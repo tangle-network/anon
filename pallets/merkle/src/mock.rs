@@ -37,28 +37,28 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
+	type AccountData = balances::AccountData<u64>;
+	type AccountId = u64;
 	type BaseCallFilter = ();
-	type BlockWeights = ();
+	type BlockHashCount = BlockHashCount;
 	type BlockLength = ();
-	type DbWeight = ();
-	type Origin = Origin;
-	type Index = u64;
-	type Call = ();
 	type BlockNumber = u64;
+	type BlockWeights = ();
+	type Call = ();
+	type DbWeight = ();
+	type Event = Event;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = u64;
-	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = Event;
-	type BlockHashCount = BlockHashCount;
-	type Version = ();
-	type PalletInfo = ();
-	type AccountData = balances::AccountData<u64>;
-	type OnNewAccount = ();
+	type Index = u64;
+	type Lookup = IdentityLookup<Self::AccountId>;
 	type OnKilledAccount = ();
-	type SystemWeightInfo = ();
+	type OnNewAccount = ();
+	type Origin = Origin;
+	type PalletInfo = ();
 	type SS58Prefix = Prefix;
+	type SystemWeightInfo = ();
+	type Version = ();
 }
 
 parameter_types! {
@@ -71,20 +71,20 @@ parameter_types! {
 }
 
 impl balances::Config for Test {
-	type Balance = Balance;
-	type Event = Event;
-	type DustRemoval = ();
-	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = System;
+	type Balance = Balance;
+	type DustRemoval = ();
+	type Event = Event;
+	type ExistentialDeposit = ExistentialDeposit;
 	type MaxLocks = MaxLocks;
 	type WeightInfo = ();
 }
 
 impl Config for Test {
+	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
 	type GroupId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
-	type CacheBlockLength = CacheBlockLength;
 }
 
 pub type System = system::Module<Test>;
@@ -92,8 +92,5 @@ pub type MerkleGroups = Module<Test>;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	system::GenesisConfig::default()
-		.build_storage::<Test>()
-		.unwrap()
-		.into()
+	system::GenesisConfig::default().build_storage::<Test>().unwrap().into()
 }

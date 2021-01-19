@@ -1,7 +1,6 @@
-use bulletproofs::r1cs::{ConstraintSystem, R1CSError, Variable};
+use crate::utils::AllocatedScalar;
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSError, Variable};
 use curve25519_dalek::scalar::Scalar;
-use bulletproofs::r1cs::LinearCombination;
-use crate::utils::{AllocatedScalar};
 
 #[cfg(test)]
 pub mod tests;
@@ -13,15 +12,12 @@ pub mod tests;
 /// The idea is described in the Pinocchio paper and i first saw it in https://github.com/HarryR/ethsnarks/blob/master/src/gadgets/isnonzero.cpp
 
 /// Enforces that x is 0.
-pub fn is_zero_gadget<CS: ConstraintSystem>(
-	cs: &mut CS,
-	x: AllocatedScalar
-) -> Result<(), R1CSError> {
+pub fn is_zero_gadget<CS: ConstraintSystem>(cs: &mut CS, x: AllocatedScalar) -> Result<(), R1CSError> {
 	let y: u32 = 0;
 	let inv: u32 = 0;
 
 	let x_lc: LinearCombination = vec![(x.variable, Scalar::one())].iter().collect();
-	let one_minus_y_lc: LinearCombination = vec![(Variable::One(), Scalar::from(1-y))].iter().collect();
+	let one_minus_y_lc: LinearCombination = vec![(Variable::One(), Scalar::from(1 - y))].iter().collect();
 	let y_lc: LinearCombination = vec![(Variable::One(), Scalar::from(y))].iter().collect();
 	let inv_lc: LinearCombination = vec![(Variable::One(), Scalar::from(inv))].iter().collect();
 

@@ -35,12 +35,11 @@ version = "0.1.5"
 [dependencies]
 sp-std = { default-features = false, version = "2.0.0" }
 merlin = { version = "2.0.0", default-features = false }
-num-bigint = { version = "0.3", default-features = false }
 
 rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
 rand = { version = "0.7", optional = true }
 
-crypto-constants = { path = "../crypto-constants" }
+crypto-constants = { path = "../crypto-constants", default-features = false }
 
 [features]
 default = ["std"]
@@ -49,5 +48,4 @@ std = [
     "codec/std",
     "rand/std",
     "rand",
-    "num-bigint/std"
 ]

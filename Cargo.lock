@@ -1025,7 +1025,6 @@ checksum = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
 name = "crypto-constants"
 version = "0.1.0"
 dependencies = [
- "curve25519-dalek 3.0.2",
  "hex",
  "num-bigint 0.3.1",
 ]
@@ -1105,7 +1104,6 @@ dependencies = [
  "crypto-constants",
  "curve25519-dalek 3.0.2",
  "merlin",
- "num-bigint 0.3.1",
  "parity-scale-codec",
  "rand 0.7.3",
  "rand_core 0.5.1",
@@ -3782,6 +3780,7 @@ dependencies = [
  "bencher",
  "bulletproofs 2.0.0 (git+https://github.com/edgeware-builders/bulletproofs?rev=160c9ab)",
  "curve25519-dalek 3.0.2",
+ "curve25519-gadgets",
  "frame-support",
  "frame-system",
  "merlin",

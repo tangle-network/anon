@@ -1,10 +1,7 @@
-use crate::smt::builder::DEFAULT_TREE_DEPTH;
-use crate::smt::smt::VanillaSparseMerkleTree;
-use crate::poseidon::gen_mds_matrix;
-use crate::poseidon::gen_round_keys;
-use crate::poseidon::PoseidonBuilder;
-use crate::poseidon::sbox::PoseidonSbox;
-use crate::poseidon::builder::Poseidon;
+use crate::{
+	poseidon::{builder::Poseidon, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder},
+	smt::{builder::DEFAULT_TREE_DEPTH, smt::VanillaSparseMerkleTree},
+};
 
 #[derive(Clone)]
 pub struct FixedDepositTree {
@@ -57,9 +54,10 @@ impl FixedDepositTreeBuilder {
 				.build()
 		});
 
-		let tree = self.tree.clone().unwrap_or_else(|| {
-			VanillaSparseMerkleTree::new(hash_params.clone(), depth)
-		});
+		let tree = self
+			.tree
+			.clone()
+			.unwrap_or_else(|| VanillaSparseMerkleTree::new(hash_params.clone(), depth));
 
 		FixedDepositTree {
 			depth,

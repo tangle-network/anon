@@ -1,7 +1,8 @@
-use super::constants::{MIMC_CONSTANTS};
-use super::hasher::Hasher;
-use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Prover, Verifier};
-use bulletproofs::PedersenGens;
+use super::{constants::MIMC_CONSTANTS, hasher::Hasher};
+use bulletproofs::{
+	r1cs::{ConstraintSystem, LinearCombination, Prover, Verifier},
+	PedersenGens,
+};
 use curve25519_dalek::scalar::Scalar;
 
 pub struct Mimc {
@@ -13,6 +14,7 @@ impl Mimc {
 		assert!(rounds <= MIMC_CONSTANTS.len());
 		Self { rounds }
 	}
+
 	pub fn mimc(&self, xl: Scalar, xr: Scalar) -> Scalar {
 		let mut xl = xl.clone();
 		let mut xr = xr.clone();
@@ -55,12 +57,7 @@ impl Hasher for Mimc {
 		self.mimc(xl, xr)
 	}
 
-	fn constrain_prover(
-		&self,
-		cs: &mut Prover,
-		xl: LinearCombination,
-		xr: LinearCombination,
-	) -> LinearCombination {
+	fn constrain_prover(&self, cs: &mut Prover, xl: LinearCombination, xr: LinearCombination) -> LinearCombination {
 		self.mimc_constraints(cs, xl, xr)
 	}
 
