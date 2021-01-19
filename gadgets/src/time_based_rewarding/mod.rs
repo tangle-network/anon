@@ -83,7 +83,7 @@ impl Transaction {
 		let statics_lc: Vec<LinearCombination> = self.statics_2.iter().map(|s| s.variable.into()).collect();
 		let computed_deposit_time_cm = Poseidon_hash_2_constraints::<CS>(
 			cs,
-			self.input.nullifier.variable.into(),
+			self.input.leaf_cm_val.variable.into(),
 			self.timed_deposit.deposit_time.variable.into(),
 			statics_lc.clone(),
 			poseidon_params

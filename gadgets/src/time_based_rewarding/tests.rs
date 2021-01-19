@@ -37,7 +37,7 @@ use std::time::{Instant};
 
 
 #[test]
-fn test_variable_deposit_tree_verification() {
+fn test_time_based_reward_gadget_verification() {
 	let width = 6;
 	let (full_b, full_e) = (4, 4);
 	let partial_rounds = 57;
@@ -97,11 +97,10 @@ fn test_variable_deposit_tree_verification() {
 
 	let mut timed_merkle_proof_vec = Vec::<Scalar>::new();
 	let mut timed_merkle_proof = Some(timed_merkle_proof_vec);
-	let k =  Scalar::from(7u32);
-	assert_eq!(expected_output, timed_tree.get(k, &mut timed_merkle_proof));
+	assert_eq!(timed_deposit_leaf_val, timed_tree.get(k, &mut timed_merkle_proof));
 	timed_merkle_proof_vec = timed_merkle_proof.unwrap();
-	assert!(timed_tree.verify_proof(k, expected_output, &timed_merkle_proof_vec, None));
-	assert!(timed_tree.verify_proof(k, expected_output, &timed_merkle_proof_vec, Some(&deposit_tree.root)));
+	assert!(timed_tree.verify_proof(k, timed_deposit_leaf_val, &timed_merkle_proof_vec, None));
+	assert!(timed_tree.verify_proof(k, timed_deposit_leaf_val, &timed_merkle_proof_vec, Some(&timed_tree.root)));
 
 	let output_1 = Scalar::from(5u32);
 	let output_1_inverse = Scalar::from(5u32).invert();
