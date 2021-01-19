@@ -19,7 +19,7 @@ use rand::rngs::OsRng;
 pub type DBVal = (Scalar, Scalar);
 
 // TODO: ABSTRACT HASH FUNCTION BETTER
-
+#[derive(Clone)]
 pub struct VanillaSparseMerkleTree {
 	pub depth: usize,
 	empty_tree_hashes: Vec<Scalar>,

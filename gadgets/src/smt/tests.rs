@@ -79,6 +79,7 @@ fn test_vsmt_verif() {
 		.mds_matrix(gen_mds_matrix(width))
 		.sbox(PoseidonSbox::Inverse)
 		.build();
+
 	let mut tree = SparseMerkleTreeBuilder::new()
 		.hash_params(p_params.clone())
 		.build();
