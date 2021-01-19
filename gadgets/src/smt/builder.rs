@@ -10,7 +10,7 @@ use bulletproofs::BulletproofGens;
 use curve25519_dalek::scalar::Scalar;
 use sp_std::collections::btree_map::BTreeMap;
 
-pub const DEFAULT_TREE_DEPTH: usize = 30;
+pub const DEFAULT_TREE_DEPTH: usize = 31;
 
 pub struct SparseMerkleTreeBuilder {
 	/// The depth of the tree

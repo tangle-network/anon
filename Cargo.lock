@@ -563,14 +563,10 @@ dependencies = [
  "curve25519-dalek 3.0.2",
  "digest 0.9.0",
  "merlin",
- "rand 0.7.3",
  "rand_core 0.5.1",
- "serde",
- "serde_derive",
  "sha3",
  "sp-std",
  "subtle 2.4.0",
- "thiserror",
 ]
 
 [[package]]
@@ -583,10 +579,14 @@ dependencies = [
  "curve25519-dalek 3.0.2",
  "digest 0.9.0",
  "merlin",
+ "rand 0.7.3",
  "rand_core 0.5.1",
+ "serde",
+ "serde_derive",
  "sha3",
  "sp-std",
  "subtle 2.4.0",
+ "thiserror",
 ]
 
 [[package]]
@@ -3778,7 +3778,7 @@ name = "pallet-merkle"
 version = "2.0.0"
 dependencies = [
  "bencher",
- "bulletproofs 2.0.0 (git+https://github.com/edgeware-builders/bulletproofs?rev=160c9ab)",
+ "bulletproofs 2.0.0 (git+https://github.com/edgeware-builders/bulletproofs?branch=main)",
  "curve25519-dalek 3.0.2",
  "curve25519-gadgets",
  "frame-support",
