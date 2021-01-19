@@ -106,6 +106,7 @@ impl Transaction {
 			// sum the outputs for later checking
 			summed_outputs = summed_outputs + self.outputs[i].value.variable;
 		}
+		// TODO: Add better reward calculation
 		// basic reward calculation
 		let reward = self.timed_deposit.multiplier * (deposit_time_length);
 		cs.constrain(summed_outputs - reward);
