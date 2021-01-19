@@ -66,7 +66,7 @@ parameter_types! {
 	pub const ExistentialDeposit: Balance = 0;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxTreeDepth: u8 = 32;
-	pub const CacheBlockLength: u64 = 100;
+	pub const CacheBlockLength: u64 = 5;
 	pub const MinimumDepositLength: u64 = 10;
 }
 

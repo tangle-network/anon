@@ -219,14 +219,16 @@ decl_module! {
 			}
 
 			// initialise lowest block in cache if not already
-			if LowestCachedBlock::<T>::get() <= One::one() {
+			if LowestCachedBlock::<T>::get() < One::one() {
 				LowestCachedBlock::<T>::set(_n);
 			}
 
 			// update and prune database if pruning length has been hit
-			if HighestCachedBlock::<T>::get() - T::CacheBlockLength::get() > LowestCachedBlock::<T>::get() {
-				CachedRoots::<T>::remove_prefix(LowestCachedBlock::<T>::get());
-				LowestCachedBlock::<T>::set(LowestCachedBlock::<T>::get() + One::one());
+			if HighestCachedBlock::<T>::get() > T::CacheBlockLength::get() {
+				if HighestCachedBlock::<T>::get() - T::CacheBlockLength::get() >= LowestCachedBlock::<T>::get() {
+					CachedRoots::<T>::remove_prefix(LowestCachedBlock::<T>::get());
+					LowestCachedBlock::<T>::set(LowestCachedBlock::<T>::get() + One::one());
+				}
 			}
 		}
 	}
@@ -422,9 +424,19 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 }
 
 impl<T: Config> Module<T> {
+	pub fn get_cache(group_id: T::GroupId, block_number: T::BlockNumber) -> Vec<Data> {
+		Self::cached_roots(block_number, group_id)
+	}
+
 	pub fn get_merkle_root(group_id: T::GroupId) -> Result<Data, dispatch::DispatchError> {
 		let group = Self::get_group(group_id)?;
 		Ok(group.root_hash)
+	}
+
+	pub fn add_root_to_cache(group_id: T::GroupId, block_number: T::BlockNumber) -> Result<(), dispatch::DispatchError> {
+		let root = Self::get_merkle_root(group_id)?;
+		CachedRoots::<T>::append(block_number, group_id, root);
+		Ok(())
 	}
 
 	pub fn get_group(group_id: T::GroupId) -> Result<GroupTree<T>, dispatch::DispatchError> {
