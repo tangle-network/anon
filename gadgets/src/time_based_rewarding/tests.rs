@@ -183,7 +183,7 @@ fn test_time_based_reward_gadget_verification() {
 			leaf_cm_val: 		alloc_leaf_val,
 			leaf_index_bits: 	leaf_index_alloc_scalars,
 			leaf_proof_nodes: 	proof_alloc_scalars,
-			sn: 				expected_output,
+			sn: 				nullifier_hash,
 		};
 
 		let (com_deposit_time, var_deposit_time) = prover.commit(deposit_block_number.clone(), Scalar::random(&mut test_rng));
