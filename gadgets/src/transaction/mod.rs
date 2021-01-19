@@ -28,12 +28,12 @@ pub struct AllocatedCoin {
 	r: AllocatedScalar,
 	nullifier: AllocatedScalar,
 	// public
-	sn: Scalar,
+	sn: Option<Scalar>,
 	cm: Scalar,
 }
 
 impl AllocatedCoin {
-	pub fn new(
+	pub fn new_for_input(
 		inv_value: AllocatedScalar,
 		value: AllocatedScalar,
 		rho: AllocatedScalar,
@@ -48,7 +48,26 @@ impl AllocatedCoin {
 			rho,
 			r,
 			nullifier,
-			sn,
+			sn: Some(sn),
+			cm,
+		}
+	}
+
+	pub fn new_for_output(
+		inv_value: AllocatedScalar,
+		value: AllocatedScalar,
+		rho: AllocatedScalar,
+		r: AllocatedScalar,
+		nullifier: AllocatedScalar,
+		cm: Scalar,
+	) -> Self {
+		Self {
+			inv_value,
+			value,
+			rho,
+			r,
+			nullifier,
+			sn: None,
 			cm,
 		}
 	}
@@ -71,7 +90,7 @@ impl Transaction {
 				self.inputs[i].nullifier,
 				self.statics_2.clone(),
 				poseidon_params,
-				&self.inputs[i].sn,
+				&self.inputs[i].sn.unwrap(),
 			)?;
 
 			Poseidon_hash_4_gadget(
@@ -89,17 +108,8 @@ impl Transaction {
 			)?;
 		}
 
-		// check outputs
+		// check output commitment
 		for i in 0..self.outputs.len() {
-			Poseidon_hash_2_gadget(
-				cs,
-				self.outputs[i].r,
-				self.outputs[i].nullifier,
-				self.statics_2.clone(),
-				poseidon_params,
-				&self.outputs[i].sn,
-			)?;
-
 			Poseidon_hash_4_gadget(
 				cs,
 				[

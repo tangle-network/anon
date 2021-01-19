@@ -19,6 +19,7 @@ use std::collections::HashMap;
 pub type DBVal = (Scalar, Scalar);
 
 // TODO: ABSTRACT HASH FUNCTION BETTER
+#[derive(Clone)]
 #[cfg(feature = "std")]
 pub struct VanillaSparseMerkleTree {
 	pub depth: usize,
