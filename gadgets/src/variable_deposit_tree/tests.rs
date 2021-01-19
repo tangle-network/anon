@@ -1,11 +1,10 @@
+use crate::smt::builder::SparseMerkleTreeBuilder;
 use crate::variable_deposit_tree::variable_deposit_tree_verif_gadget;
 use crate::variable_deposit_tree::{AllocatedInputCoin, AllocatedOutputCoin};
 use crate::variable_deposit_tree::Transaction;
 use crate::poseidon::Poseidon_hash_4;
 use crate::fixed_deposit_tree::TREE_DEPTH;
 use crate::poseidon::Poseidon_hash_2;
-use crate::poseidon::builder::Poseidon;
-
 
 use crate::poseidon::PoseidonBuilder;
 use crate::poseidon::gen_round_keys;
@@ -27,7 +26,7 @@ use crate::poseidon::{
 	allocate_statics_for_prover, allocate_statics_for_verifier
 };
 
-use crate::smt::smt::VanillaSparseMerkleTree;
+
 use rand::SeedableRng;
 
 // For benchmarking
@@ -75,7 +74,7 @@ fn test_variable_deposit_tree_verification() {
 	let output_2_cm = Poseidon_hash_4([output_2, output_2_rho, output_2_r, output_2_nullifier], &p_params);
 
 
-	let mut tree = VanillaSparseMerkleTree::new(p_params.clone());
+	let mut tree = SparseMerkleTreeBuilder::new().hash_params(p_params.clone()).build();
 
 	for i in 1..=10 {
 		let index = Scalar::from(i as u32);
@@ -91,7 +90,7 @@ fn test_variable_deposit_tree_verification() {
 	let mut merkle_proof_vec = Vec::<Scalar>::new();
 	let mut merkle_proof = Some(merkle_proof_vec);
 	let k =  Scalar::from(7u32);
-	assert_eq!(input_cm, tree.get(k, &mut merkle_proof));
+	assert_eq!(input_cm, tree.get(k, tree.root, &mut merkle_proof));
 	merkle_proof_vec = merkle_proof.unwrap();
 	assert!(tree.verify_proof(k, input_cm, &merkle_proof_vec, None));
 	assert!(tree.verify_proof(k, input_cm, &merkle_proof_vec, Some(&tree.root)));
@@ -281,7 +280,7 @@ fn test_variable_deposit_tree_verification() {
 			tree.depth,
 			&tree.root,
 			vec![transaction],
-			&p_params,
+			&p_params.clone(),
 		).is_ok());
 
 		println!("For binary tree of height {} and Poseidon rounds {}, no of multipliers is {} and constraints is {}", tree.depth, total_rounds, &prover.num_multipliers(), &prover.num_constraints());
