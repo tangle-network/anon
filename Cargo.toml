@@ -6,7 +6,6 @@ members = [
 	"pallets/merkle",
 	"pallets/mixer",
 	"pallets/recursion",
-	"plonk",
 	"runtime",
 	"wasm-utils"
 ]

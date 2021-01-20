@@ -13,8 +13,8 @@ ark-ec = { git = "https://github.com/arkworks-rs/algebra", default-features = fa
 ark-r1cs-std = {  git = "https://github.com/arkworks-rs/r1cs-std", default-features = false, optional = true }
 ark-std = { git = "https://github.com/arkworks-rs/utils", default-features = false }
 
-ark-marlin = { git = "https://github.com/arkworks-rs/marlin", default-features = false }
-
+ark-marlin = { git = "https://github.com/arkworks-rs/marlin", branch = "constraints", default-features = false, features = [ "density-optimized" ] }
+ark-poly-commit = { git = "https://github.com/arkworks-rs/poly-commit", branch = "constraints", default-features = false, features = [ "r1cs", "density-optimized" ] }
 
 balances = { version = "2.0.0", default-features = false, package = "pallet-balances" }
 frame-support = { default-features = false, version = "2.0.0" }
@@ -41,7 +41,7 @@ std = [
 	"ark-pallas/std",
 	"ark-r1cs-std",
 	"ark-marlin/std",
-
+	"ark-poly-commit/std",
     "codec/std",
     "frame-support/std",
     "frame-system/std",

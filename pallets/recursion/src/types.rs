@@ -1,7 +1,6 @@
 use ark_std::io::{Result as IoResult, Write};
 use sp_std::prelude::*;
 use ark_ff::{PrimeField, ToBytes, BigInteger};
-use ark_pallas::{Affine, PallasParameters, Projective};
 
 use codec::{Decode, Encode, EncodeLike, Input};
 
