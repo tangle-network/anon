@@ -1,16 +1,9 @@
 use super::*;
 use crate::{
-	merkle::{
-		hasher::Hasher,
-		helper::{commit_leaf, commit_path_level, leaf_data},
-		keys::{Commitment, Data},
-	},
+	merkle::keys::{Commitment, Data},
 	mock::*,
 };
-use bulletproofs::{
-	r1cs::{ConstraintSystem, LinearCombination, Prover},
-	BulletproofGens, PedersenGens,
-};
+use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use curve25519_dalek::{ristretto::RistrettoPoint, scalar::Scalar};
 use curve25519_gadgets::{
 	crypto_constants::smt::ZERO_TREE,
@@ -20,7 +13,7 @@ use curve25519_gadgets::{
 		PoseidonSbox, Poseidon_hash_2,
 	},
 };
-use frame_support::{assert_err, assert_ok, traits::OnFinalize};
+use frame_support::{assert_err, assert_ok};
 use merlin::Transcript;
 use rand_core::OsRng;
 

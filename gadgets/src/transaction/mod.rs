@@ -4,7 +4,7 @@ pub mod tests;
 pub mod builder;
 
 use crate::{
-	poseidon::{Poseidon_hash_2, Poseidon_hash_2_gadget, Poseidon_hash_4, Poseidon_hash_4_gadget},
+	poseidon::{Poseidon_hash_2_gadget, Poseidon_hash_4_gadget},
 	zero_nonzero::is_nonzero_gadget,
 };
 

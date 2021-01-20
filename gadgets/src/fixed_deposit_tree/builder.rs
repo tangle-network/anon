@@ -1,15 +1,15 @@
 use crate::{
 	fixed_deposit_tree::fixed_deposit_tree_verif_gadget,
 	poseidon::{
-		allocate_statics_for_prover, allocate_statics_for_verifier, builder::Poseidon, gen_mds_matrix, gen_round_keys,
-		sbox::PoseidonSbox, PoseidonBuilder, Poseidon_hash_2,
+		allocate_statics_for_prover, builder::Poseidon, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox,
+		PoseidonBuilder, Poseidon_hash_2,
 	},
 	smt::{builder::DEFAULT_TREE_DEPTH, smt::VanillaSparseMerkleTree},
 	utils::{get_bits, AllocatedScalar, ScalarBytes},
 };
 use alloc::vec::Vec;
 use bulletproofs::{
-	r1cs::{ConstraintSystem, LinearCombination, Prover, R1CSError, R1CSProof, Variable},
+	r1cs::{Prover, R1CSProof},
 	BulletproofGens,
 };
 use curve25519_dalek::{ristretto::CompressedRistretto, scalar::Scalar};

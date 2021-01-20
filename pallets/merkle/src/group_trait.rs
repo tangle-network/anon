@@ -1,5 +1,5 @@
 use crate::merkle::keys::{Commitment, Data};
-use bulletproofs::{BulletproofGens, PedersenGens};
+use bulletproofs::PedersenGens;
 pub use frame_support::dispatch;
 use sp_std::vec::Vec;
 

@@ -18,7 +18,7 @@ pub mod tests;
 
 pub use crate::group_trait::Group;
 use bulletproofs::{
-	r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Verifier},
+	r1cs::{R1CSProof, Verifier},
 	BulletproofGens, PedersenGens,
 };
 use codec::{Decode, Encode};

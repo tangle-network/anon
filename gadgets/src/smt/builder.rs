@@ -1,5 +1,6 @@
 use crate::{
 	poseidon::{builder::Poseidon, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder},
+	smt::smt::{DBVal, VanillaSparseMerkleTree},
 	utils::ScalarBytes,
 };
 
