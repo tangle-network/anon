@@ -23,7 +23,7 @@ fn key_bytes(x: u8) -> [u8; 32] {
 	]
 }
 
-fn default_hasher() -> Poseidon {
+fn default_hasher(num_gens: usize) -> Poseidon {
 	let width = 6;
 	let (full_b, full_e) = (4, 4);
 	let partial_rounds = 57;
@@ -31,6 +31,7 @@ fn default_hasher() -> Poseidon {
 		.num_rounds(full_b, full_e, partial_rounds)
 		.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
 		.mds_matrix(gen_mds_matrix(width))
+		.bulletproof_gens(BulletproofGens::new(num_gens, 1))
 		.sbox(PoseidonSbox::Inverse)
 		.build()
 }
@@ -170,7 +171,7 @@ fn should_not_have_more_than_max_depth() {
 #[test]
 fn should_have_correct_root_hash_after_insertion() {
 	new_test_ext().execute_with(|| {
-		let h = default_hasher();
+		let h = default_hasher(4096);
 		let key0 = Data::from(key_bytes(0));
 		let key1 = Data::from(key_bytes(1));
 		let key2 = Data::from(key_bytes(2));
@@ -211,7 +212,7 @@ fn should_have_correct_root_hash_after_insertion() {
 #[test]
 fn should_have_correct_root_hash() {
 	new_test_ext().execute_with(|| {
-		let h = default_hasher();
+		let h = default_hasher(4096);
 		let mut keys = Vec::new();
 		for i in 0..15 {
 			keys.push(Scalar::from_bytes_mod_order(key_bytes(i as u8)))
@@ -277,7 +278,7 @@ fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 #[test]
 fn should_not_verify_invalid_proof() {
 	new_test_ext().execute_with(|| {
-		let h = default_hasher();
+		let h = default_hasher(4096);
 		let key0 = Data::from(key_bytes(9));
 		let key1 = Data::from(key_bytes(3));
 		let key2 = Data::from(key_bytes(5));
@@ -320,7 +321,7 @@ fn should_not_verify_invalid_proof() {
 #[test]
 fn should_verify_proof_of_membership() {
 	new_test_ext().execute_with(|| {
-		let h = default_hasher();
+		let h = default_hasher(4096);
 		let mut keys = Vec::new();
 		for i in 0..15 {
 			keys.push(Scalar::from_bytes_mod_order(key_bytes(i as u8)))
@@ -597,20 +598,10 @@ fn should_verify_zk_proof_of_membership() {
 fn should_verify_large_zk_proof_of_membership() {
 	new_test_ext().execute_with(|| {
 		let pc_gens = PedersenGens::default();
-		let bp_gens = BulletproofGens::new(40960, 1);
 
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
-		let width = 6;
-		let (full_b, full_e) = (4, 4);
-		let partial_rounds = 57;
-		let poseidon = PoseidonBuilder::new(width)
-			.num_rounds(full_b, full_e, partial_rounds)
-			.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
-			.mds_matrix(gen_mds_matrix(width))
-			.bulletproof_gens(bp_gens)
-			.sbox(PoseidonSbox::Inverse)
-			.build();
+		let poseidon = default_hasher(40960);
 		let mut ftree = FixedDepositTreeBuilder::new().hash_params(poseidon).depth(32).build();
 
 		let leaf = ftree.add_secrets();
