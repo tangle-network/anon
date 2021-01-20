@@ -10,16 +10,12 @@ use bulletproofs::{
 	BulletproofGens,
 };
 use curve25519_dalek::{ristretto::CompressedRistretto, scalar::Scalar};
+use rand_core::OsRng;
 use sp_std::collections::btree_map::BTreeMap;
-
-#[cfg(feature = "std")]
-use rand::rngs::OsRng;
-#[cfg(feature = "std")]
-use std::collections::HashMap;
 
 pub type DBVal = (Scalar, Scalar);
 
-#[cfg(feature = "std")]
+// TODO: ABSTRACT HASH FUNCTION BETTER
 #[derive(Clone)]
 pub struct VanillaSparseMerkleTree {
 	pub depth: usize,
@@ -29,9 +25,9 @@ pub struct VanillaSparseMerkleTree {
 	hash_params: Poseidon,
 	pub root: Scalar,
 	curr_index: Scalar,
-	leaf_indecies: HashMap<Scalar, Scalar>,
+	leaf_indecies: BTreeMap<ScalarBytes, Scalar>,
 }
-#[cfg(feature = "std")]
+
 impl VanillaSparseMerkleTree {
 	pub fn new(hash_params: Poseidon, depth: usize) -> VanillaSparseMerkleTree {
 		let mut db = BTreeMap::new();
@@ -56,7 +52,7 @@ impl VanillaSparseMerkleTree {
 			hash_params,
 			root,
 			curr_index: Scalar::zero(),
-			leaf_indecies: HashMap::new(),
+			leaf_indecies: BTreeMap::new(),
 		}
 	}
 
@@ -67,7 +63,7 @@ impl VanillaSparseMerkleTree {
 	pub fn add(&mut self, vals: Vec<Scalar>) {
 		for val in vals {
 			self.update(self.curr_index, val);
-			self.leaf_indecies.insert(val, self.curr_index);
+			self.leaf_indecies.insert(val.to_bytes(), self.curr_index);
 			self.curr_index = self.curr_index + Scalar::one();
 		}
 	}
@@ -182,23 +178,21 @@ impl VanillaSparseMerkleTree {
 		let mut test_rng: OsRng = OsRng::default();
 		let mut merkle_proof_vec = Vec::<Scalar>::new();
 		let mut merkle_proof = Some(merkle_proof_vec);
-		self.get(k, root, &mut merkle_proof);
+		let leaf = self.get(k, root, &mut merkle_proof);
 		merkle_proof_vec = merkle_proof.unwrap();
 
-		let (com_leaf, var_leaf) = prover.commit(k, Scalar::random(&mut test_rng));
+		let (com_leaf, var_leaf) = prover.commit(leaf, Scalar::random(&mut test_rng));
 		let leaf_alloc_scalar = AllocatedScalar {
 			variable: var_leaf,
 			assignment: Some(k),
 		};
 
 		let mut leaf_index_comms = vec![];
-		let mut leaf_index_vars = vec![];
 		let mut leaf_index_alloc_scalars = vec![];
 		for b in get_bits(&k, self.depth).iter().take(self.depth) {
 			let val: Scalar = Scalar::from(*b as u8);
 			let (c, v) = prover.commit(val.clone(), Scalar::random(&mut test_rng));
 			leaf_index_comms.push(c);
-			leaf_index_vars.push(v);
 			leaf_index_alloc_scalars.push(AllocatedScalar {
 				variable: v,
 				assignment: Some(val),
@@ -206,12 +200,10 @@ impl VanillaSparseMerkleTree {
 		}
 
 		let mut proof_comms = vec![];
-		let mut proof_vars = vec![];
 		let mut proof_alloc_scalars = vec![];
 		for p in merkle_proof_vec.iter().rev() {
 			let (c, v) = prover.commit(*p, Scalar::random(&mut test_rng));
 			proof_comms.push(c);
-			proof_vars.push(v);
 			proof_alloc_scalars.push(AllocatedScalar {
 				variable: v,
 				assignment: Some(*p),
