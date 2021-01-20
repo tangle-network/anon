@@ -1,7 +1,6 @@
 use crate::{
-	fixed_deposit_tree::TREE_DEPTH,
 	poseidon::{Poseidon_hash_2, Poseidon_hash_4},
-	smt::builder::SparseMerkleTreeBuilder,
+	smt::builder::{SparseMerkleTreeBuilder, DEFAULT_TREE_DEPTH},
 	variable_deposit_tree::{variable_deposit_tree_verif_gadget, AllocatedInputCoin, AllocatedOutputCoin, Transaction},
 };
 
@@ -134,7 +133,7 @@ fn test_variable_deposit_tree_verification() {
 		let mut input_leaf_index_comms = vec![];
 		let mut leaf_index_vars = vec![];
 		let mut leaf_index_alloc_scalars = vec![];
-		for b in get_bits(&k, TREE_DEPTH).iter().take(tree.depth) {
+		for b in get_bits(&k, DEFAULT_TREE_DEPTH).iter().take(tree.depth) {
 			let val: Scalar = Scalar::from(*b as u8);
 			let (c, v) = prover.commit(val.clone(), Scalar::random(&mut test_rng));
 			input_leaf_index_comms.push(c);

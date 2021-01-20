@@ -30,7 +30,6 @@ pub trait Group<AccountId, BlockNumber, GroupId> {
 	) -> Result<(), dispatch::DispatchError>;
 	fn verify_zk(
 		pc_gens: PedersenGens,
-		bp_gens: BulletproofGens,
 		m_root: Data,
 		depth: u8,
 		comms: Vec<Commitment>,

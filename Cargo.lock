@@ -556,22 +556,6 @@ dependencies = [
 [[package]]
 name = "bulletproofs"
 version = "2.0.0"
-source = "git+https://github.com/edgeware-builders/bulletproofs?rev=160c9ab#160c9ab2b2d8b4ae4b8330ab96276d2fab49b5d8"
-dependencies = [
- "byteorder",
- "clear_on_drop",
- "curve25519-dalek 3.0.2",
- "digest 0.9.0",
- "merlin",
- "rand_core 0.5.1",
- "sha3",
- "sp-std",
- "subtle 2.4.0",
-]
-
-[[package]]
-name = "bulletproofs"
-version = "2.0.0"
 source = "git+https://github.com/edgeware-builders/bulletproofs?branch=main#98209e20f329ee9b423e5238f97ef7adc26d9268"
 dependencies = [
  "byteorder",
@@ -1100,7 +1084,7 @@ name = "curve25519-gadgets"
 version = "2.0.0"
 dependencies = [
  "bencher",
- "bulletproofs 2.0.0 (git+https://github.com/edgeware-builders/bulletproofs?branch=main)",
+ "bulletproofs",
  "crypto-constants",
  "curve25519-dalek 3.0.2",
  "merlin",
@@ -3778,7 +3762,7 @@ name = "pallet-merkle"
 version = "2.0.0"
 dependencies = [
  "bencher",
- "bulletproofs 2.0.0 (git+https://github.com/edgeware-builders/bulletproofs?branch=main)",
+ "bulletproofs",
  "curve25519-dalek 3.0.2",
  "curve25519-gadgets",
  "frame-support",
@@ -3800,8 +3784,9 @@ name = "pallet-mixer"
 version = "2.0.0"
 dependencies = [
  "bencher",
- "bulletproofs 2.0.0 (git+https://github.com/edgeware-builders/bulletproofs?rev=160c9ab)",
+ "bulletproofs",
  "curve25519-dalek 3.0.2",
+ "curve25519-gadgets",
  "frame-support",
  "frame-system",
  "merlin",

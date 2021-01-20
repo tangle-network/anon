@@ -1,5 +1,5 @@
 use crate::{
-	fixed_deposit_tree::{fixed_deposit_tree_verif_gadget, TREE_DEPTH},
+	fixed_deposit_tree::fixed_deposit_tree_verif_gadget,
 	poseidon::{
 		allocate_statics_for_prover, allocate_statics_for_verifier, builder::Poseidon, gen_mds_matrix, gen_round_keys,
 		sbox::PoseidonSbox, PoseidonBuilder, Poseidon_hash_2,
@@ -87,7 +87,7 @@ impl FixedDepositTree {
 
 		let mut leaf_index_comms = vec![];
 		let mut leaf_index_alloc_scalars = vec![];
-		for b in get_bits(&k, TREE_DEPTH).iter().take(self.tree.depth) {
+		for b in get_bits(&k, DEFAULT_TREE_DEPTH).iter().take(self.tree.depth) {
 			let val: Scalar = Scalar::from(*b as u8);
 			let (c, v) = prover.commit(val.clone(), Scalar::random(&mut rng));
 			leaf_index_comms.push(c);

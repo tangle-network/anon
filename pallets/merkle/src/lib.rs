@@ -60,10 +60,14 @@ fn default_hasher() -> Poseidon {
 	let width = 6;
 	let (full_b, full_e) = (4, 4);
 	let partial_rounds = 57;
+	// TODO: should be able to pass number of generators
+	// TODO: Initialise these generators with the pallet
+	let bp_gens = BulletproofGens::new(40960, 1);
 	PoseidonBuilder::new(width)
 		.num_rounds(full_b, full_e, partial_rounds)
 		.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
 		.mds_matrix(gen_mds_matrix(width))
+		.bulletproof_gens(bp_gens)
 		.sbox(PoseidonSbox::Inverse)
 		.build()
 }
@@ -373,12 +377,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		);
 		// TODO: Initialise these generators with the pallet
 		let pc_gens = PedersenGens::default();
-		// TODO: should be able to pass number of generators
-		// TODO: Initialise these generators with the pallet
-		let bp_gens = BulletproofGens::new(4096, 1);
 		<Self as Group<_, _, _>>::verify_zk(
 			pc_gens,
-			bp_gens,
 			tree.root_hash,
 			tree.depth,
 			comms,
@@ -391,7 +391,6 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 
 	fn verify_zk(
 		pc_gens: PedersenGens,
-		bp_gens: BulletproofGens,
 		m_root: Data,
 		depth: u8,
 		comms: Vec<Commitment>,
@@ -442,7 +441,7 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 
 		let num_statics = 4;
 		let statics = allocate_statics_for_verifier(&mut verifier, num_statics, &pc_gens);
-		fixed_deposit_tree_verif_gadget(
+		let gadget_res = fixed_deposit_tree_verif_gadget(
 			&mut verifier,
 			depth as usize,
 			&m_root.0,
@@ -454,15 +453,16 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 			proof_alloc_scalars,
 			statics,
 			&h,
-		)
-		.unwrap();
+		);
+		ensure!(gadget_res.is_ok(), Error::<T>::InvalidZkProof);
 
-		let res = R1CSProof::from_bytes(&proof_bytes).unwrap();
+		let proof = R1CSProof::from_bytes(&proof_bytes);
+		ensure!(proof.is_ok(), Error::<T>::InvalidZkProof);
+		let proof = proof.unwrap();
 
 		let mut rng = OsRng::default();
-		verifier
-			.verify_with_rng(&res, &h.pc_gens, &h.bp_gens, &mut rng)
-			.unwrap();
+		let verify_res = verifier.verify_with_rng(&proof, &h.pc_gens, &h.bp_gens, &mut rng);
+		ensure!(verify_res.is_ok(), Error::<T>::ZkVericationFailed);
 		Ok(())
 	}
 }

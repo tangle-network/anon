@@ -152,12 +152,11 @@ decl_module! {
 			mixer_id: T::GroupId,
 			cached_block: T::BlockNumber,
 			cached_root: Data,
-			leaf_com: Commitment,
-			path: Vec<(Commitment, Commitment)>,
-			r_com: Commitment,
-			nullifier_com: Commitment,
+			comms: Vec<Commitment>,
 			nullifier_hash: Data,
-			proof_bytes: Vec<u8>
+			proof_bytes: Vec<u8>,
+			leaf_index_commitments: Vec<Commitment>,
+			proof_commitments: Vec<Commitment>,
 		) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
@@ -169,12 +168,11 @@ decl_module! {
 				mixer_id.into(),
 				cached_block,
 				cached_root,
-				leaf_com,
-				path,
-				r_com,
-				nullifier_com,
+				comms,
 				nullifier_hash,
 				proof_bytes,
+				leaf_index_commitments,
+				proof_commitments
 			)?;
 			// transfer the fixed deposit size to the sender
 			T::Currency::transfer(&Self::account_id(), &sender, mixer_info.fixed_deposit_size, AllowDeath)?;

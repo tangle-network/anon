@@ -1,33 +1,32 @@
 use crate::mock::*;
-use bulletproofs::{
-	r1cs::{ConstraintSystem, LinearCombination, Prover},
-	BulletproofGens, PedersenGens,
-};
+use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use curve25519_dalek::scalar::Scalar;
-use merkle::{
-	merkle::{
-		hasher::Hasher,
-		helper::{commit_leaf, commit_path_level, leaf_data},
-		keys::{Commitment, Data},
-		poseidon::Poseidon,
+use curve25519_gadgets::{
+	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
+	poseidon::{
+		builder::{Poseidon, PoseidonBuilder},
+		gen_mds_matrix, gen_round_keys, PoseidonSbox,
 	},
+};
+use frame_support::{assert_err, assert_ok, storage::StorageValue, traits::OnFinalize};
+use merkle::{
+	merkle::keys::{Commitment, Data},
 	HighestCachedBlock,
 };
-use rand::rngs::ThreadRng;
+use merlin::Transcript;
 use sp_runtime::DispatchError;
 
-use frame_support::{assert_err, assert_ok, storage::StorageValue, traits::OnFinalize};
-use merlin::Transcript;
-
-fn default_hasher() -> impl Hasher {
-	Poseidon::new(4)
-	// Mimc::new(70)
-}
-
-fn create_deposit_info(mut test_rng: &mut ThreadRng) -> (Scalar, Scalar, Data, Data) {
-	let h = default_hasher();
-	let (s, nullifier, nullifier_hash, leaf) = leaf_data(&mut test_rng, &h);
-	(s, nullifier, nullifier_hash, leaf)
+fn default_hasher(num_gens: usize) -> Poseidon {
+	let width = 6;
+	let (full_b, full_e) = (4, 4);
+	let partial_rounds = 57;
+	PoseidonBuilder::new(width)
+		.num_rounds(full_b, full_e, partial_rounds)
+		.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
+		.mds_matrix(gen_mds_matrix(width))
+		.bulletproof_gens(BulletproofGens::new(num_gens, 1))
+		.sbox(PoseidonSbox::Inverse)
+		.build()
 }
 
 #[test]
@@ -51,15 +50,11 @@ fn should_initialize_successfully() {
 fn should_fail_to_deposit_with_insufficient_balance() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize(Origin::signed(1)));
-		let mut test_rng = rand::thread_rng();
-		let mut deposits = vec![];
+		let mut tree = FixedDepositTreeBuilder::new().build();
 		for i in 0..4 {
-			let dep = create_deposit_info(&mut test_rng);
-			deposits.push(dep);
-			// ensure depositing works
-			let (_, _, _, leaf) = dep;
+			let leaf = tree.add_secrets();
 			assert_err!(
-				Mixer::deposit(Origin::signed(4), i, vec![leaf]),
+				Mixer::deposit(Origin::signed(4), i, vec![Data(leaf)]),
 				DispatchError::Module {
 					index: 0,
 					error: 4,
@@ -74,15 +69,11 @@ fn should_fail_to_deposit_with_insufficient_balance() {
 fn should_deposit_into_each_mixer_successfully() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize(Origin::signed(1)));
-		let mut deposits = vec![];
-		let mut test_rng = rand::thread_rng();
+		let mut tree = FixedDepositTreeBuilder::new().build();
 		for i in 0..4 {
-			let dep = create_deposit_info(&mut test_rng);
-			deposits.push(dep);
-			// ensure depositing works
-			let (_, _, _, leaf) = dep;
+			let leaf = tree.add_secrets();
 			let balance_before = Balances::free_balance(1);
-			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![leaf]));
+			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
 			let balance_after = Balances::free_balance(1);
 
 			// ensure state updates
@@ -99,38 +90,29 @@ fn should_deposit_into_each_mixer_successfully() {
 fn should_withdraw_from_each_mixer_successfully() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize(Origin::signed(1)));
-		let mut test_rng = rand::thread_rng();
-		let h = default_hasher();
 		let pc_gens = PedersenGens::default();
-		let bp_gens = BulletproofGens::new(4096, 1);
+		let poseidon = default_hasher(40960);
 
-		let mut deposits = vec![];
 		for i in 0..4 {
-			let dep = create_deposit_info(&mut test_rng);
-			deposits.push(dep);
-			// ensure depositing works
-			let (s, nullifier, nullifier_hash, leaf) = dep;
-			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![leaf]));
-
-			let root = MerkleGroups::get_merkle_root(i);
 			let mut prover_transcript = Transcript::new(b"zk_membership_proof");
-			let mut prover = Prover::new(&pc_gens, &mut prover_transcript);
+			let prover = Prover::new(&pc_gens, &mut prover_transcript);
+			let mut ftree = FixedDepositTreeBuilder::new()
+				.hash_params(poseidon.clone())
+				.depth(32)
+				.build();
 
-			let (s_com, nullifier_com, leaf_com1, leaf_var1) =
-				commit_leaf(&mut test_rng, &mut prover, leaf, s, nullifier, nullifier_hash, &h);
+			let leaf = ftree.add_secrets();
+			ftree.tree.add(vec![leaf]);
 
-			let mut lh = leaf;
-			let mut lh_lc: LinearCombination = leaf_var1.into();
-			let mut path = Vec::new();
-			for _ in 0..32 {
-				let (bit_com, leaf_com, node_con) = commit_path_level(&mut test_rng, &mut prover, lh, lh_lc, 1, &h);
-				lh_lc = node_con;
-				lh = Data::hash(lh, lh, &h);
-				path.push((Commitment(bit_com), Commitment(leaf_com)));
-			}
-			prover.constrain(lh_lc - lh.0);
+			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
 
-			let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
+			let root = MerkleGroups::get_merkle_root(i).unwrap();
+			let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
+				ftree.prove_zk(Scalar::zero(), root.0, &ftree.hash_params.bp_gens, prover);
+
+			let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
+			let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
+			let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
 
 			let m = Mixer::get_mixer(i).unwrap();
 			let balance_before = Balances::free_balance(2);
@@ -139,13 +121,12 @@ fn should_withdraw_from_each_mixer_successfully() {
 				Origin::signed(2),
 				i,
 				0,
-				root.unwrap(),
-				Commitment(leaf_com1),
-				path,
-				Commitment(s_com),
-				Commitment(nullifier_com),
-				nullifier_hash,
+				root,
+				comms,
+				Data(nullifier_hash),
 				proof.to_bytes(),
+				leaf_index_comms,
+				proof_comms
 			));
 			let balance_after = Balances::free_balance(2);
 			assert_eq!(balance_before + m.fixed_deposit_size, balance_after);
@@ -158,15 +139,11 @@ fn should_cache_roots_if_no_new_deposits_show() {
 	new_test_ext().execute_with(|| {
 		System::set_block_number(1);
 		assert_ok!(Mixer::initialize(Origin::signed(1)));
-		let mut deposits = vec![];
-		let mut test_rng = rand::thread_rng();
+		let mut tree = FixedDepositTreeBuilder::new().build();
 		let mut merkle_roots: Vec<Data> = vec![];
 		for i in 0..4 {
-			let dep = create_deposit_info(&mut test_rng);
-			deposits.push(dep);
-			// ensure depositing works
-			let (_, _, _, leaf) = dep;
-			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![leaf]));
+			let leaf = tree.add_secrets();
+			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
 			let root = MerkleGroups::get_merkle_root(i).unwrap();
 			merkle_roots.push(root);
 			let cache = MerkleGroups::cached_roots(1, i);
@@ -196,15 +173,11 @@ fn should_not_have_cache_once_cache_length_exceeded() {
 	new_test_ext().execute_with(|| {
 		System::set_block_number(1);
 		assert_ok!(Mixer::initialize(Origin::signed(1)));
-		let mut deposits = vec![];
-		let mut test_rng = rand::thread_rng();
+		let mut tree = FixedDepositTreeBuilder::new().build();
 		let mut merkle_roots: Vec<Data> = vec![];
 		for i in 0..4 {
-			let dep = create_deposit_info(&mut test_rng);
-			deposits.push(dep);
-			// ensure depositing works
-			let (_, _, _, leaf) = dep;
-			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![leaf]));
+			let leaf = tree.add_secrets();
+			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
 			let root = MerkleGroups::get_merkle_root(i).unwrap();
 			merkle_roots.push(root);
 			let cache = MerkleGroups::cached_roots(1, i);
