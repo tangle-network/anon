@@ -1,7 +1,11 @@
-use super::constants::{MDS_ENTRIES, POSEIDON_FULL_ROUNDS, POSEIDON_PARTIAL_ROUNDS, ROUND_CONSTS};
-use super::hasher::Hasher;
-use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, Prover, Verifier};
-use bulletproofs::PedersenGens;
+use super::{
+	constants::{MDS_ENTRIES, POSEIDON_FULL_ROUNDS, POSEIDON_PARTIAL_ROUNDS, ROUND_CONSTS},
+	hasher::Hasher,
+};
+use bulletproofs::{
+	r1cs::{ConstraintSystem, LinearCombination, Prover, Verifier},
+	PedersenGens,
+};
 use curve25519_dalek::scalar::Scalar;
 use sp_std::prelude::*;
 
@@ -39,11 +43,7 @@ impl Poseidon {
 	fn gen_round_keys(width: usize, total_rounds: usize) -> Vec<Scalar> {
 		let cap = total_rounds * width;
 		if ROUND_CONSTS.len() < cap {
-			panic!(
-				"Not enough round constants, need {}, found {}",
-				cap,
-				ROUND_CONSTS.len()
-			);
+			panic!("Not enough round constants, need {}, found {}", cap, ROUND_CONSTS.len());
 		}
 		let mut rc = vec![];
 		for i in 0..cap {
@@ -111,10 +111,7 @@ impl Poseidon {
 		assert_eq!(inputs.len(), self.width);
 
 		let rounds = self.full_rounds + self.partial_rounds;
-		assert!(
-			self.full_rounds % 2 == 0,
-			"asymmetric permutation configuration"
-		);
+		assert!(self.full_rounds % 2 == 0, "asymmetric permutation configuration");
 		let full_rounds_per_side = self.full_rounds / 2;
 		let mut current = inputs.to_vec();
 		let mut const_num = 0;
@@ -152,10 +149,7 @@ impl Poseidon {
 		assert_eq!(inputs.len(), self.width);
 
 		let rounds = self.full_rounds + self.partial_rounds;
-		assert!(
-			self.full_rounds % 2 == 0,
-			"asymmetric permutation configuration"
-		);
+		assert!(self.full_rounds % 2 == 0, "asymmetric permutation configuration");
 		let full_rounds_per_side = self.full_rounds / 2;
 		let mut current = inputs.to_vec();
 		let mut const_num = 0;
@@ -172,10 +166,7 @@ impl Poseidon {
 				.collect();
 			if full {
 				// Full layer
-				current = current
-					.into_iter()
-					.map(|exp| self.synthesize_sbox(cs, exp))
-					.collect();
+				current = current.into_iter().map(|exp| self.synthesize_sbox(cs, exp)).collect();
 			} else {
 				// Partial layer, only one input is passed to sbox,
 				// The choice is arbitrary
@@ -188,35 +179,19 @@ impl Poseidon {
 		current
 	}
 
-	pub fn constrain<CS: ConstraintSystem>(
-		&self,
-		cs: &mut CS,
-		inputs: Vec<LinearCombination>,
-	) -> LinearCombination {
+	pub fn constrain<CS: ConstraintSystem>(&self, cs: &mut CS, inputs: Vec<LinearCombination>) -> LinearCombination {
 		let permutation_output = self.permute_constraints::<CS>(cs, inputs);
 		permutation_output[1].clone()
 	}
 
 	pub fn hash_2(&self, xl: Scalar, xr: Scalar) -> Scalar {
-		let input = vec![
-			Scalar::from(ZERO_CONST),
-			xl,
-			xr,
-			Scalar::from(PADDING_CONST),
-		];
+		let input = vec![Scalar::from(ZERO_CONST), xl, xr, Scalar::from(PADDING_CONST)];
 		let res = self.permute(&input);
 		res[1]
 	}
 
 	pub fn hash_4(&self, x1: Scalar, x2: Scalar, x3: Scalar, x4: Scalar) -> Scalar {
-		let input = vec![
-			Scalar::from(ZERO_CONST),
-			x1,
-			x2,
-			x3,
-			x4,
-			Scalar::from(PADDING_CONST),
-		];
+		let input = vec![Scalar::from(ZERO_CONST), x1, x2, x3, x4, Scalar::from(PADDING_CONST)];
 
 		self.permute(&input)[1]
 	}
@@ -239,12 +214,8 @@ impl Poseidon {
 		xr: LinearCombination,
 	) -> Vec<LinearCombination> {
 		// TODO use passed commitments instead odd committing again in runtime
-		let com_zero = pc_gens
-			.commit(Scalar::from(ZERO_CONST), Scalar::zero())
-			.compress();
-		let com_pad = pc_gens
-			.commit(Scalar::from(PADDING_CONST), Scalar::zero())
-			.compress();
+		let com_zero = pc_gens.commit(Scalar::from(ZERO_CONST), Scalar::zero()).compress();
+		let com_pad = pc_gens.commit(Scalar::from(PADDING_CONST), Scalar::zero()).compress();
 		let var1 = verifier.commit(com_zero);
 		let var4 = verifier.commit(com_pad);
 		let inputs = vec![var1.into(), xl, xr, var4.into()];
@@ -274,12 +245,7 @@ impl Hasher for Poseidon {
 		self.hash_2(xl, xr)
 	}
 
-	fn constrain_prover(
-		&self,
-		prover: &mut Prover,
-		xl: LinearCombination,
-		xr: LinearCombination,
-	) -> LinearCombination {
+	fn constrain_prover(&self, prover: &mut Prover, xl: LinearCombination, xr: LinearCombination) -> LinearCombination {
 		let inputs = Poseidon::prover_constrain_inputs(prover, xl, xr);
 		self.constrain(prover, inputs)
 	}

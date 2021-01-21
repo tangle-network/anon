@@ -1,39 +1,30 @@
-use crate::variable_deposit_tree::variable_deposit_tree_verif_gadget;
-use crate::variable_deposit_tree::{AllocatedInputCoin, AllocatedOutputCoin};
-use crate::variable_deposit_tree::Transaction;
-use crate::poseidon::Poseidon_hash_4;
-use crate::fixed_deposit_tree::TREE_DEPTH;
-use crate::poseidon::Poseidon_hash_2;
-use crate::poseidon::builder::Poseidon;
+use crate::{
+	fixed_deposit_tree::TREE_DEPTH,
+	poseidon::{Poseidon_hash_2, Poseidon_hash_4},
+	smt::builder::SparseMerkleTreeBuilder,
+	variable_deposit_tree::{variable_deposit_tree_verif_gadget, AllocatedInputCoin, AllocatedOutputCoin, Transaction},
+};
 
-
-use crate::poseidon::PoseidonBuilder;
-use crate::poseidon::gen_round_keys;
-use crate::poseidon::gen_mds_matrix;
-use crate::poseidon::sbox::PoseidonSbox;
+use crate::poseidon::{gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder};
 
 use rand::rngs::StdRng;
 
+use bulletproofs::{
+	r1cs::{Prover, Verifier},
+	BulletproofGens, PedersenGens,
+};
 use curve25519_dalek::scalar::Scalar;
-use bulletproofs::r1cs::{Prover, Verifier};
-use bulletproofs::{BulletproofGens, PedersenGens};
 use merlin::Transcript;
 
-
-use crate::utils::{get_bits};
-use crate::utils::{AllocatedScalar};
+use crate::utils::{get_bits, AllocatedScalar};
 // use crate::gadget_mimc::{mimc, MIMC_ROUNDS, mimc_hash_2, mimc_gadget};
-use crate::poseidon::{
-	allocate_statics_for_prover, allocate_statics_for_verifier
-};
+use crate::poseidon::{allocate_statics_for_prover, allocate_statics_for_verifier};
 
-use crate::smt::smt::VanillaSparseMerkleTree;
 use rand::SeedableRng;
 
 // For benchmarking
-#[cfg(feature="std")]
-use std::time::{Instant};
-
+#[cfg(feature = "std")]
+use std::time::Instant;
 
 #[test]
 fn test_variable_deposit_tree_verification() {
@@ -74,24 +65,19 @@ fn test_variable_deposit_tree_verification() {
 	let _output_2_sn = Poseidon_hash_2(output_2_r, output_2_nullifier, &p_params);
 	let output_2_cm = Poseidon_hash_4([output_2, output_2_rho, output_2_r, output_2_nullifier], &p_params);
 
-
-	let mut tree = VanillaSparseMerkleTree::new(p_params.clone());
+	let mut tree = SparseMerkleTreeBuilder::new().hash_params(p_params.clone()).build();
 
 	for i in 1..=10 {
 		let index = Scalar::from(i as u32);
-		let s = if i == 7 {
-			input_cm
-		} else {
-			index
-		};
-		
+		let s = if i == 7 { input_cm } else { index };
+
 		tree.update(index, s);
 	}
 
 	let mut merkle_proof_vec = Vec::<Scalar>::new();
 	let mut merkle_proof = Some(merkle_proof_vec);
-	let k =  Scalar::from(7u32);
-	assert_eq!(input_cm, tree.get(k, &mut merkle_proof));
+	let k = Scalar::from(7u32);
+	assert_eq!(input_cm, tree.get(k, tree.root, &mut merkle_proof));
 	merkle_proof_vec = merkle_proof.unwrap();
 	assert!(tree.verify_proof(k, input_cm, &merkle_proof_vec, None));
 	assert!(tree.verify_proof(k, input_cm, &merkle_proof_vec, Some(&tree.root)));
@@ -105,7 +91,8 @@ fn test_variable_deposit_tree_verification() {
 
 		let mut input_comms = vec![];
 		let mut output_comms = vec![];
-		let (com_input_inverse_val, var_input_inverse_val) = prover.commit(input_inverse.clone(), Scalar::random(&mut test_rng));
+		let (com_input_inverse_val, var_input_inverse_val) =
+			prover.commit(input_inverse.clone(), Scalar::random(&mut test_rng));
 		let alloc_input_inverse_val = AllocatedScalar {
 			variable: var_input_inverse_val,
 			assignment: Some(input_inverse),
@@ -129,7 +116,8 @@ fn test_variable_deposit_tree_verification() {
 			assignment: Some(input_r),
 		};
 		input_comms.push(com_input_r);
-		let (com_input_nullifier, var_input_nullifier) = prover.commit(input_nullifier.clone(), Scalar::random(&mut test_rng));
+		let (com_input_nullifier, var_input_nullifier) =
+			prover.commit(input_nullifier.clone(), Scalar::random(&mut test_rng));
 		let alloc_input_nullifier = AllocatedScalar {
 			variable: var_input_nullifier,
 			assignment: Some(input_nullifier),
@@ -139,7 +127,7 @@ fn test_variable_deposit_tree_verification() {
 		let (leaf_com, leaf_var) = prover.commit(input_cm, Scalar::random(&mut test_rng));
 		let alloc_leaf_val = AllocatedScalar {
 			variable: leaf_var,
-			assignment: Some(input_cm)
+			assignment: Some(input_cm),
 		};
 		input_comms.push(leaf_com);
 
@@ -171,18 +159,19 @@ fn test_variable_deposit_tree_verification() {
 		}
 
 		let coin = AllocatedInputCoin {
-			inv_value: 			alloc_input_inverse_val,
-			value: 				alloc_input_val,
-			rho: 				alloc_input_rho,
-			r: 					alloc_input_r,
-			nullifier: 			alloc_input_nullifier,
-			leaf_cm_val: 		alloc_leaf_val,
-			leaf_index_bits: 	leaf_index_alloc_scalars,
-			leaf_proof_nodes: 	proof_alloc_scalars,
-			sn: 				input_sn,
+			inv_value: alloc_input_inverse_val,
+			value: alloc_input_val,
+			rho: alloc_input_rho,
+			r: alloc_input_r,
+			nullifier: alloc_input_nullifier,
+			leaf_cm_val: alloc_leaf_val,
+			leaf_index_bits: leaf_index_alloc_scalars,
+			leaf_proof_nodes: proof_alloc_scalars,
+			sn: input_sn,
 		};
 
-		let (com_output_1_inverse_val, var_output_1_inverse_val) = prover.commit(output_1_inverse.clone(), Scalar::random(&mut test_rng));
+		let (com_output_1_inverse_val, var_output_1_inverse_val) =
+			prover.commit(output_1_inverse.clone(), Scalar::random(&mut test_rng));
 		let alloc_output_1_inverse_val = AllocatedScalar {
 			variable: var_output_1_inverse_val,
 			assignment: Some(output_1_inverse),
@@ -206,23 +195,26 @@ fn test_variable_deposit_tree_verification() {
 			assignment: Some(output_1_r),
 		};
 		output_comms.push(com_output_1_r);
-		let (com_output_1_nullifier, var_output_1_nullifier) = prover.commit(output_1_nullifier.clone(), Scalar::random(&mut test_rng));
+		let (com_output_1_nullifier, var_output_1_nullifier) =
+			prover.commit(output_1_nullifier.clone(), Scalar::random(&mut test_rng));
 		let alloc_output_1_nullifier = AllocatedScalar {
 			variable: var_output_1_nullifier,
 			assignment: Some(output_1_nullifier),
 		};
 		output_comms.push(com_output_1_nullifier);
-		
+
 		let output_1_coin = AllocatedOutputCoin {
-			inv_value: 			alloc_output_1_inverse_val,
-			value: 				alloc_output_1_val,
-			rho: 				alloc_output_1_rho,
-			r: 					alloc_output_1_r,
-			nullifier: 			alloc_output_1_nullifier,
-			leaf_cm: 			output_1_cm,
+			inv_value: alloc_output_1_inverse_val,
+			value: alloc_output_1_val,
+			rho: alloc_output_1_rho,
+			r: alloc_output_1_r,
+			nullifier: alloc_output_1_nullifier,
+			leaf_cm: output_1_cm,
 		};
 
-		let (com_output_2_inverse_val, var_output_2_inverse_val) = prover.commit(output_2_inverse.clone(), Scalar::random(&mut test_rng));
+		let (com_output_2_inverse_val, var_output_2_inverse_val) =
+			prover.commit(output_2_inverse.clone(), Scalar::random(&mut test_rng));
+
 		let alloc_output_2_inverse_val = AllocatedScalar {
 			variable: var_output_2_inverse_val,
 			assignment: Some(output_2_inverse),
@@ -246,7 +238,10 @@ fn test_variable_deposit_tree_verification() {
 			assignment: Some(output_1_r),
 		};
 		output_comms.push(com_output_2_r);
-		let (com_output_2_nullifier, var_output_2_nullifier) = prover.commit(output_2_nullifier.clone(), Scalar::random(&mut test_rng));
+
+		let (com_output_2_nullifier, var_output_2_nullifier) =
+			prover.commit(output_2_nullifier.clone(), Scalar::random(&mut test_rng));
+
 		let alloc_output_2_nullifier = AllocatedScalar {
 			variable: var_output_2_nullifier,
 			assignment: Some(output_2_nullifier),
@@ -254,12 +249,12 @@ fn test_variable_deposit_tree_verification() {
 		output_comms.push(com_output_2_nullifier);
 
 		let output_2_coin = AllocatedOutputCoin {
-			inv_value: 		alloc_output_2_inverse_val,
-			value: 			alloc_output_2_val,
-			rho: 			alloc_output_2_rho,
-			r: 				alloc_output_2_r,
-			nullifier: 		alloc_output_2_nullifier,
-			leaf_cm: 		output_2_cm,
+			inv_value: alloc_output_2_inverse_val,
+			value: alloc_output_2_val,
+			rho: alloc_output_2_rho,
+			r: alloc_output_2_r,
+			nullifier: alloc_output_2_nullifier,
+			leaf_cm: output_2_cm,
 		};
 
 		let num_statics = 4;
@@ -281,17 +276,27 @@ fn test_variable_deposit_tree_verification() {
 			tree.depth,
 			&tree.root,
 			vec![transaction],
-			&p_params,
-		).is_ok());
+			&p_params.clone(),
+		)
+		.is_ok());
 
-		println!("For binary tree of height {} and Poseidon rounds {}, no of multipliers is {} and constraints is {}", tree.depth, total_rounds, &prover.num_multipliers(), &prover.num_constraints());
+		println!(
+			"For binary tree of height {} and Poseidon rounds {}, no of multipliers is {} and constraints is {}",
+			tree.depth,
+			total_rounds,
+			&prover.num_multipliers(),
+			&prover.num_constraints()
+		);
 
 		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
 		let end = start.elapsed();
 
 		println!("Proving time is {:?}", end);
 
-		(proof, (input_comms, output_comms, input_leaf_index_comms, input_proof_comms))
+		(
+			proof,
+			(input_comms, output_comms, input_leaf_index_comms, input_proof_comms),
+		)
 	};
 
 	let mut verifier_transcript = Transcript::new(b"FixedDepositTree");
@@ -329,19 +334,17 @@ fn test_variable_deposit_tree_verification() {
 		});
 	}
 
-	let input_coins = vec![
-		AllocatedInputCoin {
-			inv_value: 			input_comms_alloc[0],
-			value: 				input_comms_alloc[1],
-			rho: 				input_comms_alloc[2],
-			r: 					input_comms_alloc[3],
-			nullifier: 			input_comms_alloc[4],
-			leaf_cm_val: 		input_comms_alloc[5],
-			leaf_index_bits: 	leaf_index_alloc_scalars,
-			leaf_proof_nodes: 	proof_alloc_scalars,
-			sn: 				input_sn,
-		}
-	];
+	let input_coins = vec![AllocatedInputCoin {
+		inv_value: input_comms_alloc[0],
+		value: input_comms_alloc[1],
+		rho: input_comms_alloc[2],
+		r: input_comms_alloc[3],
+		nullifier: input_comms_alloc[4],
+		leaf_cm_val: input_comms_alloc[5],
+		leaf_index_bits: leaf_index_alloc_scalars,
+		leaf_proof_nodes: proof_alloc_scalars,
+		sn: input_sn,
+	}];
 
 	let mut output_comms_alloc = vec![];
 	// every 5 elements is another output
@@ -369,7 +372,7 @@ fn test_variable_deposit_tree_verification() {
 			r: output_comms_alloc[8],
 			nullifier: output_comms_alloc[9],
 			leaf_cm: output_2_cm,
-		}
+		},
 	];
 
 	let num_statics = 4;
@@ -378,25 +381,21 @@ fn test_variable_deposit_tree_verification() {
 	let num_statics = 2;
 	let statics_4 = allocate_statics_for_verifier(&mut verifier, num_statics, &pc_gens);
 
-
 	let transaction = Transaction {
 		inputs: input_coins,
 		outputs: output_coins,
-		statics_2: statics_2,
-		statics_4: statics_4,
+		statics_2,
+		statics_4,
 	};
 
-
 	let start = Instant::now();
-	assert!(variable_deposit_tree_verif_gadget(
-		&mut verifier,
-		tree.depth,
-		&tree.root,
-		vec![transaction],
-		&p_params
-	).is_ok());
+	assert!(
+		variable_deposit_tree_verif_gadget(&mut verifier, tree.depth, &tree.root, vec![transaction], &p_params).is_ok()
+	);
 
-	assert!(verifier.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut test_rng).is_ok());
+	assert!(verifier
+		.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut test_rng)
+		.is_ok());
 	let end = start.elapsed();
 
 	println!("Verification time is {:?}", end);

@@ -1,6 +1,8 @@
-use crate::zero_nonzero::is_nonzero_gadget;
-use crate::utils::{AllocatedScalar, constrain_lc_with_scalar};
-use bulletproofs::r1cs::{ConstraintSystem, R1CSError, Variable, LinearCombination};
+use crate::{
+	utils::{constrain_lc_with_scalar, AllocatedScalar},
+	zero_nonzero::is_nonzero_gadget,
+};
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSError, Variable};
 use curve25519_dalek::scalar::Scalar;
 
 /// An S-Box that can be used with Poseidon.
@@ -18,8 +20,8 @@ impl PoseidonSbox {
 			PoseidonSbox::Exponentiation5 => {
 				let sqr = elem * elem;
 				(sqr * sqr) * elem
-			},
-			PoseidonSbox::Inverse => elem.invert()
+			}
+			PoseidonSbox::Inverse => elem.invert(),
 		}
 	}
 
@@ -27,7 +29,7 @@ impl PoseidonSbox {
 		&self,
 		cs: &mut CS,
 		input_var: LinearCombination,
-		round_key: Scalar
+		round_key: Scalar,
 	) -> Result<Variable, R1CSError> {
 		match self {
 			PoseidonSbox::Exponentiation3 => Self::synthesize_exp3_sbox(cs, input_var, round_key),
@@ -40,7 +42,7 @@ impl PoseidonSbox {
 	fn synthesize_exp3_sbox<CS: ConstraintSystem>(
 		cs: &mut CS,
 		input_var: LinearCombination,
-		round_key: Scalar
+		round_key: Scalar,
 	) -> Result<Variable, R1CSError> {
 		let inp_plus_const: LinearCombination = input_var + round_key;
 		let (i, _, sqr) = cs.multiply(inp_plus_const.clone(), inp_plus_const);
@@ -52,7 +54,7 @@ impl PoseidonSbox {
 	fn synthesize_exp5_sbox<CS: ConstraintSystem>(
 		cs: &mut CS,
 		input_var: LinearCombination,
-		round_key: Scalar
+		round_key: Scalar,
 	) -> Result<Variable, R1CSError> {
 		let inp_plus_const: LinearCombination = input_var + round_key;
 		let (i, _, sqr) = cs.multiply(inp_plus_const.clone(), inp_plus_const);
@@ -61,11 +63,12 @@ impl PoseidonSbox {
 		Ok(fifth)
 	}
 
-	// Allocate variables in circuit and enforce constraints when Sbox as inverse
+	// Allocate variables in circuit and enforce constraints when Sbox as
+	// inverse
 	fn synthesize_inverse_sbox<CS: ConstraintSystem>(
 		cs: &mut CS,
 		input_var: LinearCombination,
-		round_key: Scalar
+		round_key: Scalar,
 	) -> Result<Variable, R1CSError> {
 		let inp_plus_const: LinearCombination = (input_var + round_key).simplify();
 
@@ -75,9 +78,17 @@ impl PoseidonSbox {
 		let (var_l, _) = cs.allocate_single(val_l)?;
 		let (var_r, var_o) = cs.allocate_single(val_r)?;
 
-		// Ensure `inp_plus_const` is not zero. As a side effect, `is_nonzero_gadget` also ensures that arguments passes are inverse of each other
-		let l_scalar = AllocatedScalar { variable: var_l, assignment: val_l };
-		let r_scalar = AllocatedScalar { variable: var_r, assignment: val_r };
+		// Ensure `inp_plus_const` is not zero. As a side effect,
+		// `is_nonzero_gadget` also ensures that arguments passes are inverse of
+		// each other
+		let l_scalar = AllocatedScalar {
+			variable: var_l,
+			assignment: val_l,
+		};
+		let r_scalar = AllocatedScalar {
+			variable: var_r,
+			assignment: val_r,
+		};
 		is_nonzero_gadget(cs, l_scalar, r_scalar)?;
 
 		// Constrain product of `inp_plus_const` and its inverse to be 1.

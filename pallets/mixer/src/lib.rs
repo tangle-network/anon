@@ -3,8 +3,8 @@
 /// A runtime module Groups with necessary imports
 
 /// Feel free to remove or edit this file as needed.
-/// If you change the name of this file, make sure to update its references in runtime/src/lib.rs
-/// If you remove this file, you can remove those references
+/// If you change the name of this file, make sure to update its references in
+/// runtime/src/lib.rs If you remove this file, you can remove those references
 
 /// For more guidance on Substrate modules, see the example module
 /// https://github.com/paritytech/substrate/blob/master/frame/example/src/lib.rs
@@ -15,23 +15,21 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
-use sp_runtime::traits::One;
-use sp_runtime::traits::AccountIdConversion;
-use sp_runtime::ModuleId;
-use merkle::merkle::keys::Commitment;
-use sp_runtime::traits::{Zero};
-use merkle::merkle::keys::Data;
+use merkle::merkle::keys::{Commitment, Data};
+use sp_runtime::{
+	traits::{AccountIdConversion, One, Zero},
+	ModuleId,
+};
 
-use frame_support::traits::{Currency, Get, ExistenceRequirement::{AllowDeath}};
+use frame_support::traits::{Currency, ExistenceRequirement::AllowDeath, Get};
 
 use codec::{Decode, Encode};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
 use frame_system::ensure_signed;
+use merkle::Group as GroupTrait;
 use sp_std::prelude::*;
-use merkle::{Group as GroupTrait};
 
-pub type BalanceOf<T> =
-	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 /// The pallet's configuration trait.
 pub trait Config: frame_system::Config + merkle::Config {
@@ -48,7 +46,6 @@ pub trait Config: frame_system::Config + merkle::Config {
 	type DepositLength: Get<Self::BlockNumber>;
 }
 
-
 #[derive(Encode, Decode, PartialEq)]
 pub struct MixerInfo<T: Config> {
 	pub minimum_deposit_length_for_reward: T::BlockNumber,
@@ -64,15 +61,14 @@ impl<T: Config> core::default::Default for MixerInfo<T> {
 			leaves: Vec::new(),
 		}
 	}
-} 
-
+}
 
 impl<T: Config> MixerInfo<T> {
 	pub fn new(min_dep_length: T::BlockNumber, dep_size: BalanceOf<T>, leaves: Vec<Data>) -> Self {
 		Self {
 			minimum_deposit_length_for_reward: min_dep_length,
 			fixed_deposit_size: dep_size,
-			leaves: leaves,
+			leaves,
 		}
 	}
 }
@@ -83,6 +79,8 @@ decl_storage! {
 		pub Initialised get(fn initialised): bool;
 		/// The map of mixer groups to their metadata
 		pub MixerGroups get(fn mixer_groups): map hasher(blake2_128_concat) T::GroupId => MixerInfo<T>;
+		/// The vec of group ids
+		pub MixerGroupIds get(fn mixer_group_ids): Vec<T::GroupId>;
 	}
 }
 
@@ -141,10 +139,10 @@ decl_module! {
 			// add elements to the mixer group's merkle tree and save the leaves
 			T::Group::add_members(Self::account_id(), mixer_id.into(), data_points.clone())?;
 			for i in 0..data_points.len() {
-				mixer_info.leaves.push(data_points[i]);	
+				mixer_info.leaves.push(data_points[i]);
 			}
 			MixerGroups::<T>::insert(mixer_id, mixer_info);
-			
+
 			Ok(())
 		}
 
@@ -165,12 +163,8 @@ decl_module! {
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 			let mixer_info = MixerGroups::<T>::get(mixer_id);
 			// check if the nullifier has been used
-			// Returns `()` if the nullifier has not been used
-			// otherwise returns `Err` from merkle groups pallet
 			T::Group::has_used_nullifier(mixer_id.into(), nullifier_hash)?;
 			// Verify the zero-knowledge proof of membership provided
-			// Returns `()` if verification is successful
-			// Otherwise returns `Err` for failed verification / bad proof from merkle groups pallet
 			T::Group::verify_zk_membership_proof(
 				mixer_id.into(),
 				cached_block,
@@ -227,7 +221,26 @@ decl_module! {
 				leaves: Vec::new(),
 			};
 			MixerGroups::<T>::insert(huge_mixer_id, huge_mixer_info);
+			MixerGroupIds::<T>::set(vec![
+				small_mixer_id,
+				med_mixer_id,
+				large_mixer_id,
+				huge_mixer_id,
+			]);
 			Ok(())
+		}
+
+		fn on_finalize(_n: T::BlockNumber) {
+			// check if any deposits happened (by checked the size of collection at this block)
+			// if none happened, carry over previous merkle roots for the cache.
+			let mixer_ids = MixerGroupIds::<T>::get();
+			for i in 0..mixer_ids.len() {
+				let cached_roots = <merkle::Module<T>>::cached_roots(_n, mixer_ids[i]);
+				// if there are no cached roots, carry forward the current root
+				if cached_roots.len() == 0 {
+					let _ = <merkle::Module<T>>::add_root_to_cache(mixer_ids[i], _n);
+				}
+			}
 		}
 	}
 }
@@ -239,7 +252,8 @@ impl<T: Config> Module<T> {
 
 	pub fn get_mixer(mixer_id: T::GroupId) -> Result<MixerInfo<T>, dispatch::DispatchError> {
 		let mixer_info = MixerGroups::<T>::get(mixer_id);
-		// ensure mixer_info has non-zero deposit, otherwise mixer doesn't really exist for this id
+		// ensure mixer_info has non-zero deposit, otherwise mixer doesn't
+		// really exist for this id
 		ensure!(mixer_info.fixed_deposit_size > Zero::zero(), Error::<T>::NoMixerForId);
 		// return the mixer info
 		Ok(mixer_info)

@@ -1,6 +1,8 @@
 use super::*;
-use bulletproofs::r1cs::{Prover, Verifier};
-use bulletproofs::{BulletproofGens, PedersenGens};
+use bulletproofs::{
+	r1cs::{Prover, Verifier},
+	BulletproofGens, PedersenGens,
+};
 use merlin::Transcript;
 
 #[test]
@@ -49,7 +51,6 @@ fn test_is_zero_non_zero() {
 
 	{
 		let (proof, commitments) = {
-
 			let value = Scalar::random(&mut rng);
 			let inv = value.invert();
 			let mut prover_transcript = Transcript::new(b"NonZeroTest");

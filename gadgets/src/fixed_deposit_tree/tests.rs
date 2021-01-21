@@ -1,32 +1,27 @@
-use crate::fixed_deposit_tree::TREE_DEPTH;
-use crate::poseidon::Poseidon_hash_2;
-use crate::fixed_deposit_tree::fixed_deposit_tree_verif_gadget;
-use crate::poseidon::PoseidonBuilder;
-use crate::poseidon::gen_round_keys;
-use crate::poseidon::gen_mds_matrix;
-use crate::poseidon::sbox::PoseidonSbox;
+use crate::{
+	fixed_deposit_tree::{fixed_deposit_tree_verif_gadget, TREE_DEPTH},
+	poseidon::{gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder, Poseidon_hash_2},
+	smt::builder::SparseMerkleTreeBuilder,
+};
 
 use rand::rngs::StdRng;
 
+use bulletproofs::{
+	r1cs::{Prover, Verifier},
+	BulletproofGens, PedersenGens,
+};
 use curve25519_dalek::scalar::Scalar;
-use bulletproofs::r1cs::{Prover, Verifier};
-use bulletproofs::{BulletproofGens, PedersenGens};
 use merlin::Transcript;
 
-
-use crate::utils::{get_bits};
-use crate::utils::{AllocatedScalar};
+use crate::utils::{get_bits, AllocatedScalar};
 // use crate::gadget_mimc::{mimc, MIMC_ROUNDS, mimc_hash_2, mimc_gadget};
-use crate::poseidon::{
-	allocate_statics_for_prover, allocate_statics_for_verifier
-};
+use crate::poseidon::{allocate_statics_for_prover, allocate_statics_for_verifier};
 
-use crate::smt::smt::VanillaSparseMerkleTree;
 use rand::SeedableRng;
 
 // For benchmarking
-#[cfg(feature="std")]
-use std::time::{Instant};
+#[cfg(feature = "std")]
+use std::time::Instant;
 
 #[test]
 fn test_fixed_deposit_tree_verification() {
@@ -47,23 +42,19 @@ fn test_fixed_deposit_tree_verification() {
 	let expected_output = Poseidon_hash_2(r, nullifier, &p_params);
 	let nullifier_hash = Poseidon_hash_2(nullifier, nullifier, &p_params);
 
-	let mut tree = VanillaSparseMerkleTree::new(p_params.clone());
+	let mut tree = SparseMerkleTreeBuilder::new().hash_params(p_params.clone()).build();
 
 	for i in 1..=10 {
 		let index = Scalar::from(i as u32);
-		let s = if i == 7 {
-			expected_output
-		} else {
-			index
-		};
-		
+		let s = if i == 7 { expected_output } else { index };
+
 		tree.update(index, s);
 	}
 
 	let mut merkle_proof_vec = Vec::<Scalar>::new();
 	let mut merkle_proof = Some(merkle_proof_vec);
-	let k =  Scalar::from(7u32);
-	assert_eq!(expected_output, tree.get(k, &mut merkle_proof));
+	let k = Scalar::from(7u32);
+	assert_eq!(expected_output, tree.get(k, tree.root, &mut merkle_proof));
 	merkle_proof_vec = merkle_proof.unwrap();
 	assert!(tree.verify_proof(k, expected_output, &merkle_proof_vec, None));
 	assert!(tree.verify_proof(k, expected_output, &merkle_proof_vec, Some(&tree.root)));
@@ -140,10 +131,17 @@ fn test_fixed_deposit_tree_verification() {
 			leaf_index_alloc_scalars,
 			proof_alloc_scalars,
 			statics,
-			&p_params,
-		).is_ok());
+			&p_params.clone(),
+		)
+		.is_ok());
 
-		println!("For binary tree of height {} and Poseidon rounds {}, no of multipliers is {} and constraints is {}", tree.depth, total_rounds, &prover.num_multipliers(), &prover.num_constraints());
+		println!(
+			"For binary tree of height {} and Poseidon rounds {}, no of multipliers is {} and constraints is {}",
+			tree.depth,
+			total_rounds,
+			&prover.num_multipliers(),
+			&prover.num_constraints()
+		);
 
 		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
 		let end = start.elapsed();
@@ -206,9 +204,12 @@ fn test_fixed_deposit_tree_verification() {
 		proof_alloc_scalars,
 		statics,
 		&p_params,
-	).is_ok());
+	)
+	.is_ok());
 
-	assert!(verifier.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut test_rng).is_ok());
+	assert!(verifier
+		.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut test_rng)
+		.is_ok());
 	let end = start.elapsed();
 
 	println!("Verification time is {:?}", end);
