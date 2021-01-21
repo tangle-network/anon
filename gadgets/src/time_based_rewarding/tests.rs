@@ -1,40 +1,32 @@
-use crate::time_based_rewarding::time_based_reward_verif_gadget;
+use crate::{smt::builder::SparseMerkleTreeBuilder, time_based_rewarding::time_based_reward_verif_gadget};
 
-use super::{AllocatedInputCoin, AllocatedOutputCoin, AllocatedTimedDeposit};
-use super::Transaction;
-use crate::poseidon::Poseidon_hash_4;
-use crate::fixed_deposit_tree::TREE_DEPTH;
-use crate::poseidon::Poseidon_hash_2;
+use super::{AllocatedInputCoin, AllocatedOutputCoin, AllocatedTimedDeposit, Transaction};
+use crate::{
+	fixed_deposit_tree::TREE_DEPTH,
+	poseidon::{Poseidon_hash_2, Poseidon_hash_4},
+};
 
-
-
-use crate::poseidon::PoseidonBuilder;
-use crate::poseidon::gen_round_keys;
-use crate::poseidon::gen_mds_matrix;
-use crate::poseidon::sbox::PoseidonSbox;
+use crate::poseidon::{gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder};
 
 use rand::rngs::StdRng;
 
+use bulletproofs::{
+	r1cs::{Prover, Verifier},
+	BulletproofGens, PedersenGens,
+};
 use curve25519_dalek::scalar::Scalar;
-use bulletproofs::r1cs::{Prover, Verifier};
-use bulletproofs::{BulletproofGens, PedersenGens};
 use merlin::Transcript;
 
-
-use crate::utils::{get_bits};
-use crate::utils::{AllocatedScalar};
+use crate::utils::{get_bits, AllocatedScalar};
 // use crate::gadget_mimc::{mimc, MIMC_ROUNDS, mimc_hash_2, mimc_gadget};
-use crate::poseidon::{
-	allocate_statics_for_prover, allocate_statics_for_verifier
-};
+use crate::poseidon::{allocate_statics_for_prover, allocate_statics_for_verifier};
 
 use crate::smt::smt::VanillaSparseMerkleTree;
 use rand::SeedableRng;
 
 // For benchmarking
-#[cfg(feature="std")]
-use std::time::{Instant};
-
+#[cfg(feature = "std")]
+use std::time::Instant;
 
 #[test]
 fn test_time_based_reward_gadget_verification() {
@@ -56,23 +48,22 @@ fn test_time_based_reward_gadget_verification() {
 	let expected_output = Poseidon_hash_2(r, nullifier, &p_params);
 	let nullifier_hash = Poseidon_hash_2(nullifier, nullifier, &p_params);
 
-	let mut deposit_tree = VanillaSparseMerkleTree::new(p_params.clone());
+	let mut deposit_tree = SparseMerkleTreeBuilder::new().hash_params(p_params.clone()).build();
 
 	for i in 1..=10 {
 		let index = Scalar::from(i as u32);
-		let s = if i == 7 {
-			expected_output
-		} else {
-			index
-		};
-		
+		let s = if i == 7 { expected_output } else { index };
+
 		deposit_tree.update(index, s);
 	}
 
 	let mut merkle_proof_vec = Vec::<Scalar>::new();
 	let mut merkle_proof = Some(merkle_proof_vec);
-	let k =  Scalar::from(7u32);
-	assert_eq!(expected_output, deposit_tree.get(k, &mut merkle_proof));
+	let k = Scalar::from(7u32);
+	assert_eq!(
+		expected_output,
+		deposit_tree.get(k, deposit_tree.root, &mut merkle_proof)
+	);
 	merkle_proof_vec = merkle_proof.unwrap();
 	assert!(deposit_tree.verify_proof(k, expected_output, &merkle_proof_vec, None));
 	assert!(deposit_tree.verify_proof(k, expected_output, &merkle_proof_vec, Some(&deposit_tree.root)));
@@ -82,25 +73,29 @@ fn test_time_based_reward_gadget_verification() {
 	let current_block_number = Scalar::from(11u32);
 	let timed_deposit_leaf_val = Poseidon_hash_2(expected_output, deposit_block_number, &p_params);
 
-	let mut timed_tree = VanillaSparseMerkleTree::new(p_params.clone());
+	let mut timed_tree = SparseMerkleTreeBuilder::new().hash_params(p_params.clone()).build();
 
 	for i in 1..=10 {
 		let index = Scalar::from(i as u32);
-		let s = if i == 7 {
-			timed_deposit_leaf_val
-		} else {
-			index
-		};
-		
+		let s = if i == 7 { timed_deposit_leaf_val } else { index };
+
 		timed_tree.update(index, s);
 	}
 
 	let mut timed_merkle_proof_vec = Vec::<Scalar>::new();
 	let mut timed_merkle_proof = Some(timed_merkle_proof_vec);
-	assert_eq!(timed_deposit_leaf_val, timed_tree.get(k, &mut timed_merkle_proof));
+	assert_eq!(
+		timed_deposit_leaf_val,
+		timed_tree.get(k, timed_tree.root, &mut timed_merkle_proof)
+	);
 	timed_merkle_proof_vec = timed_merkle_proof.unwrap();
 	assert!(timed_tree.verify_proof(k, timed_deposit_leaf_val, &timed_merkle_proof_vec, None));
-	assert!(timed_tree.verify_proof(k, timed_deposit_leaf_val, &timed_merkle_proof_vec, Some(&timed_tree.root)));
+	assert!(timed_tree.verify_proof(
+		k,
+		timed_deposit_leaf_val,
+		&timed_merkle_proof_vec,
+		Some(&timed_tree.root)
+	));
 
 	let output_1 = Scalar::from(5u32);
 	let output_1_inverse = Scalar::from(5u32).invert();
@@ -117,7 +112,6 @@ fn test_time_based_reward_gadget_verification() {
 	let output_2_nullifier = Scalar::random(&mut test_rng);
 	let _output_2_sn = Poseidon_hash_2(output_2_r, output_2_nullifier, &p_params);
 	let output_2_cm = Poseidon_hash_4([output_2, output_2_rho, output_2_r, output_2_nullifier], &p_params);
-
 
 	let pc_gens = PedersenGens::default();
 	let bp_gens = BulletproofGens::new(40960, 1);
@@ -136,7 +130,8 @@ fn test_time_based_reward_gadget_verification() {
 			assignment: Some(r),
 		};
 		input_comms.push(com_input_r);
-		let (com_input_nullifier, var_input_nullifier) = prover.commit(nullifier.clone(), Scalar::random(&mut test_rng));
+		let (com_input_nullifier, var_input_nullifier) =
+			prover.commit(nullifier.clone(), Scalar::random(&mut test_rng));
 		let alloc_input_nullifier = AllocatedScalar {
 			variable: var_input_nullifier,
 			assignment: Some(nullifier),
@@ -146,7 +141,7 @@ fn test_time_based_reward_gadget_verification() {
 		let (leaf_com, leaf_var) = prover.commit(expected_output, Scalar::random(&mut test_rng));
 		let alloc_leaf_val = AllocatedScalar {
 			variable: leaf_var,
-			assignment: Some(expected_output)
+			assignment: Some(expected_output),
 		};
 		input_comms.push(leaf_com);
 
@@ -178,21 +173,23 @@ fn test_time_based_reward_gadget_verification() {
 		}
 
 		let coin = AllocatedInputCoin {
-			r: 					alloc_input_r,
-			nullifier: 			alloc_input_nullifier,
-			leaf_cm_val: 		alloc_leaf_val,
-			leaf_index_bits: 	leaf_index_alloc_scalars,
-			leaf_proof_nodes: 	proof_alloc_scalars,
-			sn: 				nullifier_hash,
+			r: alloc_input_r,
+			nullifier: alloc_input_nullifier,
+			leaf_cm_val: alloc_leaf_val,
+			leaf_index_bits: leaf_index_alloc_scalars,
+			leaf_proof_nodes: proof_alloc_scalars,
+			sn: nullifier_hash,
 		};
 
-		let (com_deposit_time, var_deposit_time) = prover.commit(deposit_block_number.clone(), Scalar::random(&mut test_rng));
+		let (com_deposit_time, var_deposit_time) =
+			prover.commit(deposit_block_number.clone(), Scalar::random(&mut test_rng));
 		let alloc_deposit_time = AllocatedScalar {
 			variable: var_deposit_time,
 			assignment: Some(deposit_block_number),
 		};
 		timed_comms.push(com_deposit_time);
-		let (com_deposit_time_leaf_val, var_deposit_time_leaf_val) = prover.commit(timed_deposit_leaf_val.clone(), Scalar::random(&mut test_rng));
+		let (com_deposit_time_leaf_val, var_deposit_time_leaf_val) =
+			prover.commit(timed_deposit_leaf_val.clone(), Scalar::random(&mut test_rng));
 		let alloc_deposit_time_leaf_val = AllocatedScalar {
 			variable: var_deposit_time_leaf_val,
 			assignment: Some(timed_deposit_leaf_val),
@@ -236,7 +233,8 @@ fn test_time_based_reward_gadget_verification() {
 			deposit_time_proof_nodes: deposit_time_proof_alloc_scalars,
 		};
 
-		let (com_output_1_inverse_val, var_output_1_inverse_val) = prover.commit(output_1_inverse.clone(), Scalar::random(&mut test_rng));
+		let (com_output_1_inverse_val, var_output_1_inverse_val) =
+			prover.commit(output_1_inverse.clone(), Scalar::random(&mut test_rng));
 		let alloc_output_1_inverse_val = AllocatedScalar {
 			variable: var_output_1_inverse_val,
 			assignment: Some(output_1_inverse),
@@ -260,23 +258,25 @@ fn test_time_based_reward_gadget_verification() {
 			assignment: Some(output_1_r),
 		};
 		output_comms.push(com_output_1_r);
-		let (com_output_1_nullifier, var_output_1_nullifier) = prover.commit(output_1_nullifier.clone(), Scalar::random(&mut test_rng));
+		let (com_output_1_nullifier, var_output_1_nullifier) =
+			prover.commit(output_1_nullifier.clone(), Scalar::random(&mut test_rng));
 		let alloc_output_1_nullifier = AllocatedScalar {
 			variable: var_output_1_nullifier,
 			assignment: Some(output_1_nullifier),
 		};
 		output_comms.push(com_output_1_nullifier);
-		
+
 		let output_1_coin = AllocatedOutputCoin {
-			inv_value: 			alloc_output_1_inverse_val,
-			value: 				alloc_output_1_val,
-			rho: 				alloc_output_1_rho,
-			r: 					alloc_output_1_r,
-			nullifier: 			alloc_output_1_nullifier,
-			leaf_cm: 			output_1_cm,
+			inv_value: alloc_output_1_inverse_val,
+			value: alloc_output_1_val,
+			rho: alloc_output_1_rho,
+			r: alloc_output_1_r,
+			nullifier: alloc_output_1_nullifier,
+			leaf_cm: output_1_cm,
 		};
 
-		let (com_output_2_inverse_val, var_output_2_inverse_val) = prover.commit(output_2_inverse.clone(), Scalar::random(&mut test_rng));
+		let (com_output_2_inverse_val, var_output_2_inverse_val) =
+			prover.commit(output_2_inverse.clone(), Scalar::random(&mut test_rng));
 		let alloc_output_2_inverse_val = AllocatedScalar {
 			variable: var_output_2_inverse_val,
 			assignment: Some(output_2_inverse),
@@ -300,7 +300,8 @@ fn test_time_based_reward_gadget_verification() {
 			assignment: Some(output_1_r),
 		};
 		output_comms.push(com_output_2_r);
-		let (com_output_2_nullifier, var_output_2_nullifier) = prover.commit(output_2_nullifier.clone(), Scalar::random(&mut test_rng));
+		let (com_output_2_nullifier, var_output_2_nullifier) =
+			prover.commit(output_2_nullifier.clone(), Scalar::random(&mut test_rng));
 		let alloc_output_2_nullifier = AllocatedScalar {
 			variable: var_output_2_nullifier,
 			assignment: Some(output_2_nullifier),
@@ -308,12 +309,12 @@ fn test_time_based_reward_gadget_verification() {
 		output_comms.push(com_output_2_nullifier);
 
 		let output_2_coin = AllocatedOutputCoin {
-			inv_value: 		alloc_output_2_inverse_val,
-			value: 			alloc_output_2_val,
-			rho: 			alloc_output_2_rho,
-			r: 				alloc_output_2_r,
-			nullifier: 		alloc_output_2_nullifier,
-			leaf_cm: 		output_2_cm,
+			inv_value: alloc_output_2_inverse_val,
+			value: alloc_output_2_val,
+			rho: alloc_output_2_rho,
+			r: alloc_output_2_r,
+			nullifier: alloc_output_2_nullifier,
+			leaf_cm: output_2_cm,
 		};
 
 		let num_statics = 4;
@@ -326,31 +327,36 @@ fn test_time_based_reward_gadget_verification() {
 			depth: deposit_tree.depth,
 			deposit_root: deposit_tree.root,
 			input: coin,
-			timed_deposit: timed_deposit,
+			timed_deposit,
 			outputs: vec![output_1_coin, output_2_coin],
 			statics_2,
 			statics_4,
 		};
 
 		let start = Instant::now();
-		assert!(time_based_reward_verif_gadget(
-			&mut prover,
-			vec![transaction],
-			&p_params,
-		).is_ok());
+		assert!(time_based_reward_verif_gadget(&mut prover, vec![transaction], &p_params,).is_ok());
 
-		println!("For binary tree of height {} and Poseidon rounds {}, no of multipliers is {} and constraints is {}", deposit_tree.depth, total_rounds, &prover.num_multipliers(), &prover.num_constraints());
+		println!(
+			"For binary tree of height {} and Poseidon rounds {}, no of multipliers is {} and constraints is {}",
+			deposit_tree.depth,
+			total_rounds,
+			&prover.num_multipliers(),
+			&prover.num_constraints()
+		);
 
 		let proof = prover.prove_with_rng(&bp_gens, &mut test_rng).unwrap();
 		let end = start.elapsed();
 
 		println!("Proving time is {:?}", end);
 
-		(proof, (
-			[input_comms, input_leaf_index_comms, input_proof_comms],
-			[timed_comms, deposit_time_index_comms, deposit_time_proof_comms],
-			output_comms
-		))
+		(
+			proof,
+			(
+				[input_comms, input_leaf_index_comms, input_proof_comms],
+				[timed_comms, deposit_time_index_comms, deposit_time_proof_comms],
+				output_comms,
+			),
+		)
 	};
 
 	let mut verifier_transcript = Transcript::new(b"RewardTree");
@@ -392,12 +398,12 @@ fn test_time_based_reward_gadget_verification() {
 	}
 
 	let input_coin = AllocatedInputCoin {
-		r: 					input_comms_alloc[0],
-		nullifier: 			input_comms_alloc[1],
-		leaf_cm_val: 		input_comms_alloc[2],
-		leaf_index_bits: 	leaf_index_alloc_scalars,
-		leaf_proof_nodes: 	proof_alloc_scalars,
-		sn: 				nullifier_hash,
+		r: input_comms_alloc[0],
+		nullifier: input_comms_alloc[1],
+		leaf_cm_val: input_comms_alloc[2],
+		leaf_index_bits: leaf_index_alloc_scalars,
+		leaf_proof_nodes: proof_alloc_scalars,
+		sn: nullifier_hash,
 	};
 
 	let mut timed_comms_alloc = vec![];
@@ -463,7 +469,7 @@ fn test_time_based_reward_gadget_verification() {
 			r: output_comms_alloc[8],
 			nullifier: output_comms_alloc[9],
 			leaf_cm: output_2_cm,
-		}
+		},
 	];
 
 	let num_statics = 4;
@@ -472,26 +478,22 @@ fn test_time_based_reward_gadget_verification() {
 	let num_statics = 2;
 	let statics_4 = allocate_statics_for_verifier(&mut verifier, num_statics, &pc_gens);
 
-
 	let transaction = Transaction {
 		deposit_root: deposit_tree.root,
 		depth: deposit_tree.depth,
 		input: input_coin,
-		timed_deposit:  timed_deposit,
+		timed_deposit,
 		outputs: output_coins,
-		statics_2: statics_2,
-		statics_4: statics_4,
+		statics_2,
+		statics_4,
 	};
 
-
 	let start = Instant::now();
-	assert!(time_based_reward_verif_gadget(
-		&mut verifier,
-		vec![transaction],
-		&p_params,
-	).is_ok());
+	assert!(time_based_reward_verif_gadget(&mut verifier, vec![transaction], &p_params,).is_ok());
 
-	assert!(verifier.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut test_rng).is_ok());
+	assert!(verifier
+		.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut test_rng)
+		.is_ok());
 	let end = start.elapsed();
 
 	println!("Verification time is {:?}", end);

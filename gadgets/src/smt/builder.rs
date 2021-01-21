@@ -1,10 +1,10 @@
 use crate::{
-	poseidon::{
-		builder::Poseidon, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder, Poseidon_hash_2,
-	},
-	smt::smt::{DBVal, VanillaSparseMerkleTree},
+	poseidon::{builder::Poseidon, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder},
 	utils::ScalarBytes,
 };
+
+use crate::smt::{DBVal, VanillaSparseMerkleTree};
+
 use alloc::vec::Vec;
 use bulletproofs::BulletproofGens;
 use curve25519_dalek::scalar::Scalar;

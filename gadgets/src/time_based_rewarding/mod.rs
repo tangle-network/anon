@@ -1,21 +1,22 @@
 #[cfg(test)]
 pub mod tests;
 
-
+#[cfg(feature = "std")]
 pub mod builder;
 
-use crate::poseidon::Poseidon_hash_2_constraints;
-use crate::fixed_deposit_tree::fixed_deposit_tree_verif_gadget;
-use crate::poseidon::Poseidon_hash_4_gadget;
-use crate::zero_nonzero::is_nonzero_gadget;
+use crate::{
+	fixed_deposit_tree::fixed_deposit_tree_verif_gadget,
+	poseidon::{Poseidon_hash_2_constraints, Poseidon_hash_4_gadget},
+	zero_nonzero::is_nonzero_gadget,
+};
+use alloc::vec::Vec;
 
 use crate::poseidon::builder::Poseidon;
 use bulletproofs::r1cs::{ConstraintSystem, R1CSError};
 use curve25519_dalek::scalar::Scalar;
 
-
+use crate::utils::AllocatedScalar;
 use bulletproofs::r1cs::LinearCombination;
-use crate::utils::{AllocatedScalar};
 
 #[derive(Clone)]
 pub struct AllocatedInputCoin {
@@ -57,7 +58,7 @@ pub struct Transaction {
 	pub deposit_root: Scalar,
 	pub input: AllocatedInputCoin,
 	pub timed_deposit: AllocatedTimedDeposit,
-	pub	outputs: Vec<AllocatedOutputCoin>,
+	pub outputs: Vec<AllocatedOutputCoin>,
 	pub statics_2: Vec<AllocatedScalar>,
 	pub statics_4: Vec<AllocatedScalar>,
 }
@@ -79,24 +80,31 @@ impl Transaction {
 			&poseidon_params,
 		)?;
 
-		// check deposit 
+		// check deposit
 		let statics_lc: Vec<LinearCombination> = self.statics_2.iter().map(|s| s.variable.into()).collect();
 		let computed_deposit_time_cm = Poseidon_hash_2_constraints::<CS>(
 			cs,
 			self.input.leaf_cm_val.variable.into(),
 			self.timed_deposit.deposit_time.variable.into(),
 			statics_lc.clone(),
-			poseidon_params
+			poseidon_params,
 		)?;
 		let deposit_time_cm_lc: LinearCombination = self.timed_deposit.deposit_time_cm_val.variable.into();
 		cs.constrain(computed_deposit_time_cm - deposit_time_cm_lc);
 		let deposit_time_length = self.timed_deposit.current_time - self.timed_deposit.deposit_time.variable;
-		// check output commitment is properly formed and reward calculation is properly formed
+		// check output commitment is properly formed and reward calculation is properly
+		// formed
 		let mut summed_outputs: LinearCombination = LinearCombination::from(Scalar::zero());
 		for i in 0..self.outputs.len() {
 			Poseidon_hash_4_gadget(
 				cs,
-				[self.outputs[i].value, self.outputs[i].rho, self.outputs[i].r, self.outputs[i].nullifier].to_vec(),
+				[
+					self.outputs[i].value,
+					self.outputs[i].rho,
+					self.outputs[i].r,
+					self.outputs[i].nullifier,
+				]
+				.to_vec(),
 				self.statics_4.clone(),
 				poseidon_params,
 				&self.outputs[i].leaf_cm,
@@ -117,7 +125,7 @@ impl Transaction {
 pub fn time_based_reward_verif_gadget<CS: ConstraintSystem>(
 	cs: &mut CS,
 	txes: Vec<Transaction>,
-	poseidon_params: &Poseidon
+	poseidon_params: &Poseidon,
 ) -> Result<(), R1CSError> {
 	for t in txes {
 		t.hash_constraints(cs, poseidon_params)?;

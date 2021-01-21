@@ -1,17 +1,17 @@
-use crate::smt::smt::VanillaSparseMerkleTree;
-use crate::poseidon::gen_mds_matrix;
-use crate::poseidon::gen_round_keys;
-use crate::poseidon::PoseidonBuilder;
-use crate::poseidon::sbox::PoseidonSbox;
-use crate::poseidon::builder::Poseidon;
+use crate::{
+	poseidon::{builder::Poseidon, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder},
+	smt::{builder::DEFAULT_TREE_DEPTH, VanillaSparseMerkleTree},
+};
 
 #[derive(Clone)]
 pub struct RewardGadget {
+	depth: usize,
 	hash_params: Poseidon,
 	tree: VanillaSparseMerkleTree,
 }
 
 pub struct RewardGadgetBuilder {
+	depth: Option<usize>,
 	hash_params: Option<Poseidon>,
 	tree: Option<VanillaSparseMerkleTree>,
 }
@@ -19,9 +19,15 @@ pub struct RewardGadgetBuilder {
 impl RewardGadgetBuilder {
 	pub fn new() -> Self {
 		Self {
+			depth: None,
 			hash_params: None,
 			tree: None,
 		}
+	}
+
+	pub fn depth(&mut self, depth: usize) -> &mut Self {
+		self.depth = Some(depth);
+		self
 	}
 
 	pub fn hash_params(&mut self, hash_params: Poseidon) -> &mut Self {
@@ -35,6 +41,7 @@ impl RewardGadgetBuilder {
 	}
 
 	pub fn build(&self) -> RewardGadget {
+		let depth = self.depth.unwrap_or_else(|| DEFAULT_TREE_DEPTH);
 		let hash_params = self.hash_params.clone().unwrap_or_else(|| {
 			let width = 6;
 			let (full_b, full_e) = (4, 4);
@@ -47,11 +54,13 @@ impl RewardGadgetBuilder {
 				.build()
 		});
 
-		let tree = self.tree.clone().unwrap_or_else(|| {
-			VanillaSparseMerkleTree::new(hash_params.clone())
-		});
+		let tree = self
+			.tree
+			.clone()
+			.unwrap_or_else(|| VanillaSparseMerkleTree::new(hash_params.clone(), depth));
 
 		RewardGadget {
+			depth,
 			hash_params,
 			tree,
 		}

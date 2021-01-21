@@ -13,4 +13,5 @@ pub mod utils;
 pub mod zero_nonzero;
 
 pub mod fixed_deposit_tree;
+pub mod time_based_rewarding;
 pub mod variable_deposit_tree;
