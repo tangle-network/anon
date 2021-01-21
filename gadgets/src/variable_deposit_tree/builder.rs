@@ -1,7 +1,11 @@
 use crate::{
 	poseidon::{builder::Poseidon, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder},
-	smt::{builder::DEFAULT_TREE_DEPTH, smt::VanillaSparseMerkleTree},
+	smt::{
+		builder::{SparseMerkleTreeBuilder, DEFAULT_TREE_DEPTH},
+		smt::VanillaSparseMerkleTree,
+	},
 };
+use sp_std::collections::btree_map::BTreeMap;
 
 #[derive(Clone)]
 pub struct VariableDepositTree {
@@ -57,7 +61,7 @@ impl VariableDepositTreeBuilder {
 		let tree = self
 			.tree
 			.clone()
-			.unwrap_or_else(|| VanillaSparseMerkleTree::new(hash_params.clone(), depth));
+			.unwrap_or_else(|| SparseMerkleTreeBuilder::new().depth(depth).db(BTreeMap::new()).build());
 
 		VariableDepositTree {
 			depth,

@@ -16,8 +16,6 @@ pub const DEFAULT_TREE_DEPTH: usize = 32;
 pub struct SparseMerkleTreeBuilder {
 	/// The depth of the tree
 	pub depth: Option<usize>,
-	/// The values of empty hashes hashed with themselves, computed on init
-	empty_tree_hashes: Option<Vec<Scalar>>,
 	/// The DB of leaves
 	db: Option<BTreeMap<ScalarBytes, DBVal>>,
 	/// The hash params, defaults to Poseidon
@@ -31,7 +29,6 @@ impl SparseMerkleTreeBuilder {
 	pub fn new() -> Self {
 		Self {
 			depth: None,
-			empty_tree_hashes: None,
 			db: None,
 			hash_params: None,
 			root: None,
@@ -40,11 +37,6 @@ impl SparseMerkleTreeBuilder {
 
 	pub fn depth(&mut self, depth: usize) -> &mut Self {
 		self.depth = Some(depth);
-		self
-	}
-
-	pub fn empty_tree_hashes(&mut self, hashes: Vec<Scalar>) -> &mut Self {
-		self.empty_tree_hashes = Some(hashes);
 		self
 	}
 
@@ -65,6 +57,7 @@ impl SparseMerkleTreeBuilder {
 
 	pub fn build(&self) -> VanillaSparseMerkleTree {
 		let depth = self.depth.unwrap_or_else(|| DEFAULT_TREE_DEPTH);
+		let db = self.db.clone().unwrap_or_else(|| BTreeMap::new());
 		let hash_params = self.hash_params.clone().unwrap_or_else(|| {
 			let width = 6;
 			let (full_b, full_e) = (4, 4);
@@ -77,6 +70,6 @@ impl SparseMerkleTreeBuilder {
 				.bulletproof_gens(BulletproofGens::new(40096, 1))
 				.build()
 		});
-		VanillaSparseMerkleTree::new(hash_params, depth)
+		VanillaSparseMerkleTree::new(hash_params, depth, Some(db))
 	}
 }

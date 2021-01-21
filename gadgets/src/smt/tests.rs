@@ -122,7 +122,7 @@ fn test_vsmt_verif() {
 		let mut proof_comms = vec![];
 		let mut proof_vars = vec![];
 		let mut proof_alloc_scalars = vec![];
-		for p in merkle_proof_vec.iter().rev() {
+		for p in merkle_proof_vec.iter() {
 			let (c, v) = prover.commit(*p, Scalar::random(&mut test_rng));
 			proof_comms.push(c);
 			proof_vars.push(v);

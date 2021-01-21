@@ -9,6 +9,7 @@ use bulletproofs::{
 	r1cs::{ConstraintSystem, LinearCombination, Prover, R1CSError, R1CSProof, Variable},
 	BulletproofGens,
 };
+use crypto_constants::smt::ZERO_TREE;
 use curve25519_dalek::{ristretto::CompressedRistretto, scalar::Scalar};
 use rand_core::OsRng;
 use sp_std::collections::btree_map::BTreeMap;
@@ -19,40 +20,44 @@ pub type DBVal = (Scalar, Scalar);
 #[derive(Clone)]
 pub struct VanillaSparseMerkleTree {
 	pub depth: usize,
-	empty_tree_hashes: Vec<Scalar>,
-	db: BTreeMap<ScalarBytes, DBVal>,
-	//hash_constants: &'a [Scalar],
+	db: Option<BTreeMap<ScalarBytes, DBVal>>,
 	hash_params: Poseidon,
 	pub root: Scalar,
 	curr_index: Scalar,
-	leaf_indecies: BTreeMap<ScalarBytes, Scalar>,
+	edge_nodes: Vec<Scalar>,
+	leaf_indecies: Option<BTreeMap<ScalarBytes, Scalar>>,
 }
 
 impl VanillaSparseMerkleTree {
-	pub fn new(hash_params: Poseidon, depth: usize) -> VanillaSparseMerkleTree {
-		let mut db = BTreeMap::new();
-		let mut empty_tree_hashes: Vec<Scalar> = vec![];
-		empty_tree_hashes.push(Scalar::zero());
-		for i in 1..=depth {
-			let prev = empty_tree_hashes[i - 1];
-			// Ensure using PoseidonSbox::Inverse
-			let new = Poseidon_hash_2(prev.clone(), prev.clone(), &hash_params);
-			let key = new.to_bytes();
+	pub fn new(
+		hash_params: Poseidon,
+		depth: usize,
+		db_opt: Option<BTreeMap<ScalarBytes, DBVal>>,
+	) -> VanillaSparseMerkleTree {
+		let root = Scalar::from_bytes_mod_order(ZERO_TREE[depth].clone());
 
-			db.insert(key, (prev, prev));
-			empty_tree_hashes.push(new);
-		}
+		let db = db_opt.map(|mut db_val| {
+			for i in 1..=depth {
+				let prev = Scalar::from_bytes_mod_order(ZERO_TREE[i - 1]);
+				// Ensure using PoseidonSbox::Inverse
+				let new = Poseidon_hash_2(prev.clone(), prev.clone(), &hash_params);
+				let key = new.to_bytes();
 
-		let root = empty_tree_hashes[depth].clone();
+				db_val.insert(key, (prev, prev));
+			}
+			db_val
+		});
+
+		let li = if db.is_some() { Some(BTreeMap::new()) } else { None };
 
 		VanillaSparseMerkleTree {
 			depth,
-			empty_tree_hashes,
 			db,
 			hash_params,
 			root,
 			curr_index: Scalar::zero(),
-			leaf_indecies: BTreeMap::new(),
+			edge_nodes: Vec::new(),
+			leaf_indecies: li,
 		}
 	}
 
@@ -61,40 +66,49 @@ impl VanillaSparseMerkleTree {
 	// Should be deleted in the future if we opt out to use sparse tree
 	// that support non-membership proofs
 	pub fn add(&mut self, vals: Vec<Scalar>) {
+		assert!(self.leaf_indecies.is_some());
 		for val in vals {
 			self.update(self.curr_index, val);
-			self.leaf_indecies.insert(val.to_bytes(), self.curr_index);
+			let li = self.leaf_indecies.as_mut().unwrap();
+			li.insert(val.to_bytes(), self.curr_index);
+			self.curr_index = self.curr_index + Scalar::one();
+		}
+	}
+
+	pub fn add_light(&mut self, vals: Vec<Scalar>) {
+		let edges = self.edge_nodes.clone();
+		for val in vals {
+			self.update_with_path(self.curr_index, val, &edges);
 			self.curr_index = self.curr_index + Scalar::one();
 		}
 	}
 
 	pub fn update(&mut self, idx: Scalar, val: Scalar) -> Scalar {
-		// Find path to insert the new key
 		let mut sidenodes_wrap = Some(Vec::<Scalar>::new());
 		self.get(idx, self.root, &mut sidenodes_wrap);
-		let mut sidenodes: Vec<Scalar> = sidenodes_wrap.unwrap();
+		self.update_with_path(idx, val, &mut sidenodes_wrap.unwrap())
+	}
 
+	pub fn update_with_path(&mut self, idx: Scalar, val: Scalar, path: &Vec<Scalar>) -> Scalar {
+		// Find path to insert the new key
 		let mut cur_idx = ScalarBits::from_scalar(&idx, self.depth);
 		let mut cur_val = val.clone();
 
-		for _i in 0..self.depth {
-			let side_elem = sidenodes.pop().unwrap();
-			let new_val = {
-				if cur_idx.is_lsb_set() {
-					// LSB is set, so put new value on right
-					let h = Poseidon_hash_2(side_elem.clone(), cur_val.clone(), &self.hash_params);
-					self.update_db_with_key_val(h, (side_elem, cur_val));
-					h
-				} else {
-					// LSB is unset, so put new value on left
-					let h = Poseidon_hash_2(cur_val.clone(), side_elem.clone(), &self.hash_params);
-					self.update_db_with_key_val(h, (cur_val, side_elem));
-					h
-				}
+		for i in 0..self.depth {
+			let side_elem = path[i];
+			let (l, r) = if cur_idx.is_lsb_set() {
+				// LSB is set, so put new value on right
+				(side_elem, cur_val)
+			} else {
+				// LSB is unset, so put new value on left
+				(cur_val, side_elem)
 			};
-			//println!("Root at level {} is {:?}", i, &cur_val);
+			let h = Poseidon_hash_2(l, r, &self.hash_params);
+			if self.db.is_some() {
+				self.update_db_with_key_val(h, (l, r));
+			}
 			cur_idx.shr();
-			cur_val = new_val;
+			cur_val = h;
 		}
 
 		self.root = cur_val;
@@ -105,6 +119,8 @@ impl VanillaSparseMerkleTree {
 	/// Get a value from tree, if `proof` is not None, populate `proof` with the
 	/// merkle proof
 	pub fn get(&self, idx: Scalar, root: Scalar, proof: &mut Option<Vec<Scalar>>) -> Scalar {
+		assert!(self.db.is_some());
+		let db = self.db.as_ref().unwrap();
 		let mut cur_idx = ScalarBits::from_scalar(&idx, self.depth);
 		let mut cur_node = root.clone();
 
@@ -113,7 +129,7 @@ impl VanillaSparseMerkleTree {
 
 		for _i in 0..self.depth {
 			let k = cur_node.to_bytes();
-			let v = self.db.get(&k).unwrap();
+			let v = db.get(&k).unwrap();
 			if cur_idx.is_msb_set() {
 				// MSB is set, traverse to right subtree
 				cur_node = v.1;
@@ -129,7 +145,7 @@ impl VanillaSparseMerkleTree {
 			}
 			cur_idx.shl();
 		}
-
+		proof_vec.reverse();
 		match proof {
 			Some(v) => {
 				v.extend_from_slice(&proof_vec);
@@ -149,9 +165,9 @@ impl VanillaSparseMerkleTree {
 		for i in 0..self.depth {
 			cur_val = {
 				if cur_idx.is_lsb_set() {
-					Poseidon_hash_2(proof[self.depth - 1 - i].clone(), cur_val.clone(), &self.hash_params)
+					Poseidon_hash_2(proof[i].clone(), cur_val.clone(), &self.hash_params)
 				} else {
-					Poseidon_hash_2(cur_val.clone(), proof[self.depth - 1 - i].clone(), &self.hash_params)
+					Poseidon_hash_2(cur_val.clone(), proof[i].clone(), &self.hash_params)
 				}
 			};
 
@@ -201,7 +217,7 @@ impl VanillaSparseMerkleTree {
 
 		let mut proof_comms = vec![];
 		let mut proof_alloc_scalars = vec![];
-		for p in merkle_proof_vec.iter().rev() {
+		for p in merkle_proof_vec.iter() {
 			let (c, v) = prover.commit(*p, Scalar::random(&mut test_rng));
 			proof_comms.push(c);
 			proof_alloc_scalars.push(AllocatedScalar {
@@ -230,7 +246,9 @@ impl VanillaSparseMerkleTree {
 	}
 
 	fn update_db_with_key_val(&mut self, key: Scalar, val: DBVal) {
-		self.db.insert(key.to_bytes(), val);
+		assert!(self.db.is_some());
+		let db = self.db.as_mut().unwrap();
+		db.insert(key.to_bytes(), val);
 	}
 }
 

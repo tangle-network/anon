@@ -147,7 +147,7 @@ fn test_variable_deposit_tree_verification() {
 		let mut input_proof_comms = vec![];
 		let mut proof_vars = vec![];
 		let mut proof_alloc_scalars = vec![];
-		for p in merkle_proof_vec.iter().rev() {
+		for p in merkle_proof_vec.iter() {
 			let (c, v) = prover.commit(*p, Scalar::random(&mut test_rng));
 			input_proof_comms.push(c);
 			proof_vars.push(v);

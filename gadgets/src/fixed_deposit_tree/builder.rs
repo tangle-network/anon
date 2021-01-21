@@ -4,7 +4,10 @@ use crate::{
 		allocate_statics_for_prover, builder::Poseidon, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox,
 		PoseidonBuilder, Poseidon_hash_2,
 	},
-	smt::{builder::DEFAULT_TREE_DEPTH, smt::VanillaSparseMerkleTree},
+	smt::{
+		builder::{SparseMerkleTreeBuilder, DEFAULT_TREE_DEPTH},
+		smt::VanillaSparseMerkleTree,
+	},
 	utils::{get_bits, AllocatedScalar, ScalarBytes},
 };
 use alloc::vec::Vec;
@@ -99,7 +102,7 @@ impl FixedDepositTree {
 
 		let mut proof_comms = vec![];
 		let mut proof_alloc_scalars = vec![];
-		for p in merkle_proof_vec.iter().rev() {
+		for p in merkle_proof_vec.iter() {
 			let (c, v) = prover.commit(*p, Scalar::random(&mut rng));
 			proof_comms.push(c);
 			proof_alloc_scalars.push(AllocatedScalar {
@@ -178,7 +181,7 @@ impl FixedDepositTreeBuilder {
 		let tree = self
 			.tree
 			.clone()
-			.unwrap_or_else(|| VanillaSparseMerkleTree::new(hash_params.clone(), depth));
+			.unwrap_or_else(|| SparseMerkleTreeBuilder::new().depth(depth).db(BTreeMap::new()).build());
 
 		FixedDepositTree {
 			depth,
