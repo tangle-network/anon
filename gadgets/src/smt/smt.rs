@@ -10,17 +10,17 @@ use bulletproofs::{
 	BulletproofGens,
 };
 use curve25519_dalek::{ristretto::CompressedRistretto, scalar::Scalar};
+use sp_std::collections::btree_map::BTreeMap;
+
 #[cfg(feature = "std")]
 use rand::rngs::OsRng;
-use sp_std::collections::btree_map::BTreeMap;
 #[cfg(feature = "std")]
 use std::collections::HashMap;
 
 pub type DBVal = (Scalar, Scalar);
 
-// TODO: ABSTRACT HASH FUNCTION BETTER
-#[derive(Clone)]
 #[cfg(feature = "std")]
+#[derive(Clone)]
 pub struct VanillaSparseMerkleTree {
 	pub depth: usize,
 	empty_tree_hashes: Vec<Scalar>,
