@@ -36,11 +36,13 @@ impl VanillaSparseMerkleTree {
 	) -> VanillaSparseMerkleTree {
 		let root = Scalar::from_bytes_mod_order(ZERO_TREE[depth].clone());
 
+		let mut edge_nodes = vec![Scalar::from_bytes_mod_order(ZERO_TREE[0].clone())];
 		let db = db_opt.map(|mut db_val| {
 			for i in 1..=depth {
 				let prev = Scalar::from_bytes_mod_order(ZERO_TREE[i - 1]);
 				// Ensure using PoseidonSbox::Inverse
 				let new = Poseidon_hash_2(prev.clone(), prev.clone(), &hash_params);
+				edge_nodes.push(new);
 				let key = new.to_bytes();
 
 				db_val.insert(key, (prev, prev));
@@ -56,7 +58,7 @@ impl VanillaSparseMerkleTree {
 			hash_params,
 			root,
 			curr_index: Scalar::zero(),
-			edge_nodes: Vec::new(),
+			edge_nodes,
 			leaf_indecies: li,
 		}
 	}
@@ -66,33 +68,25 @@ impl VanillaSparseMerkleTree {
 	// Should be deleted in the future if we opt out to use sparse tree
 	// that support non-membership proofs
 	pub fn add(&mut self, vals: Vec<Scalar>) {
-		assert!(self.leaf_indecies.is_some());
 		for val in vals {
-			self.update(self.curr_index, val);
-			let li = self.leaf_indecies.as_mut().unwrap();
-			li.insert(val.to_bytes(), self.curr_index);
-			self.curr_index = self.curr_index + Scalar::one();
-		}
-	}
-
-	pub fn add_light(&mut self, vals: Vec<Scalar>) {
-		let edges = self.edge_nodes.clone();
-		for val in vals {
-			self.update_with_path(self.curr_index, val, &edges);
+			if self.db.is_some() {
+				self.update(self.curr_index, val);
+				let li = self.leaf_indecies.as_mut().unwrap();
+				li.insert(val.to_bytes(), self.curr_index);
+			} else {
+				self.update_on_edge(self.curr_index, val);
+			}
 			self.curr_index = self.curr_index + Scalar::one();
 		}
 	}
 
 	pub fn update(&mut self, idx: Scalar, val: Scalar) -> Scalar {
-		let mut sidenodes_wrap = Some(Vec::<Scalar>::new());
-		self.get(idx, self.root, &mut sidenodes_wrap);
-		self.update_with_path(idx, val, &mut sidenodes_wrap.unwrap())
-	}
-
-	pub fn update_with_path(&mut self, idx: Scalar, val: Scalar, path: &Vec<Scalar>) -> Scalar {
 		// Find path to insert the new key
 		let mut cur_idx = ScalarBits::from_scalar(&idx, self.depth);
 		let mut cur_val = val.clone();
+		let mut sidenodes_wrap = Some(Vec::<Scalar>::new());
+		self.get(idx, self.root, &mut sidenodes_wrap);
+		let path = sidenodes_wrap.unwrap();
 
 		for i in 0..self.depth {
 			let side_elem = path[i];
@@ -104,9 +98,32 @@ impl VanillaSparseMerkleTree {
 				(cur_val, side_elem)
 			};
 			let h = Poseidon_hash_2(l, r, &self.hash_params);
-			if self.db.is_some() {
-				self.update_db_with_key_val(h, (l, r));
-			}
+			self.update_db_with_key_val(h, (l, r));
+			cur_idx.shr();
+			cur_val = h;
+		}
+
+		self.root = cur_val;
+
+		cur_val
+	}
+
+	pub fn update_on_edge(&mut self, idx: Scalar, val: Scalar) -> Scalar {
+		// Find path to insert the new key
+		let mut cur_idx = ScalarBits::from_scalar(&idx, self.depth);
+		let mut cur_val = val.clone();
+
+		for i in 0..self.depth {
+			let (l, r) = if cur_idx.is_lsb_set() {
+				// LSB is set, so put new value on right
+				(self.edge_nodes[i], cur_val)
+			} else {
+				// LSB is unset, so put new value on left
+				self.edge_nodes[i] = cur_val;
+				let zero_h = Scalar::from_bytes_mod_order(ZERO_TREE[i]);
+				(cur_val, zero_h)
+			};
+			let h = Poseidon_hash_2(l, r, &self.hash_params);
 			cur_idx.shr();
 			cur_val = h;
 		}
