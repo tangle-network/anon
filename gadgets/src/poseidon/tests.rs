@@ -11,11 +11,7 @@ use merlin::Transcript;
 #[cfg(feature = "std")]
 use std::time::Instant;
 
-#[cfg(feature = "std")]
-use rand::SeedableRng;
-
-#[cfg(feature = "std")]
-use rand::rngs::StdRng;
+use rand_core::OsRng;
 
 #[cfg(feature = "std")]
 fn get_poseidon_params(sbox: Option<PoseidonSbox>) -> Poseidon {
@@ -38,7 +34,7 @@ fn poseidon_perm(s_params: Poseidon, transcript_label: &'static [u8]) {
 	let width = s_params.width;
 	let total_rounds = s_params.get_total_rounds();
 
-	let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);
+	let mut test_rng = OsRng::default();
 	let input = (0..width).map(|_| Scalar::random(&mut test_rng)).collect::<Vec<_>>();
 	let expected_output = Poseidon_permutation(&input, &s_params);
 
@@ -104,7 +100,7 @@ fn poseidon_hash_2(s_params: Poseidon, transcript_label: &'static [u8]) {
 	let _width = s_params.width;
 	let total_rounds = s_params.get_total_rounds();
 
-	let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);
+	let mut test_rng = OsRng::default();
 	let xl = Scalar::random(&mut test_rng);
 	let xr = Scalar::random(&mut test_rng);
 	let expected_output = Poseidon_hash_2(xl, xr, &s_params);
@@ -195,7 +191,7 @@ fn poseidon_hash_4(s_params: Poseidon, transcript_label: &'static [u8]) {
 	let _width = s_params.width;
 	let total_rounds = s_params.get_total_rounds();
 
-	let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);
+	let mut test_rng = OsRng::default();
 	let _input = (0..4).map(|_| Scalar::random(&mut test_rng)).collect::<Vec<_>>();
 	let mut input = [Scalar::zero(); 4];
 	input.copy_from_slice(_input.as_slice());

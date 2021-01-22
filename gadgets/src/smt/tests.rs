@@ -1,20 +1,20 @@
 use super::smt::*;
-use crate::poseidon::{gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder};
-use rand::rngs::StdRng;
-
+use crate::{
+	poseidon::{
+		allocate_statics_for_prover, allocate_statics_for_verifier, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox,
+		PoseidonBuilder,
+	},
+	smt::builder::{SparseMerkleTreeBuilder, DEFAULT_TREE_DEPTH},
+	utils::{get_bits, AllocatedScalar},
+};
 use bulletproofs::{
 	r1cs::{Prover, Verifier},
 	BulletproofGens, PedersenGens,
 };
 use curve25519_dalek::scalar::Scalar;
 use merlin::Transcript;
+use rand_core::OsRng;
 
-use crate::utils::{get_bits, AllocatedScalar};
-// use crate::gadget_mimc::{mimc, MIMC_ROUNDS, mimc_hash_2, mimc_gadget};
-use crate::poseidon::{allocate_statics_for_prover, allocate_statics_for_verifier};
-
-use crate::smt::builder::{SparseMerkleTreeBuilder, DEFAULT_TREE_DEPTH};
-use rand::{rngs::OsRng, SeedableRng};
 // For benchmarking
 #[cfg(feature = "std")]
 use std::time::Instant;
@@ -64,7 +64,7 @@ fn test_vanilla_sparse_merkle_tree() {
 
 #[test]
 fn test_vsmt_verif() {
-	let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);
+	let mut test_rng = OsRng::default();
 
 	let width = 6;
 	let (full_b, full_e) = (4, 4);
@@ -220,7 +220,7 @@ fn test_vsmt_verif() {
 
 #[test]
 fn test_vsmt_prove_verif() {
-	let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);
+	let mut test_rng = OsRng::default();
 
 	let width = 6;
 	let (full_b, full_e) = (4, 4);

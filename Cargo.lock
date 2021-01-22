@@ -1089,7 +1089,6 @@ dependencies = [
  "curve25519-dalek 3.0.2",
  "merlin",
  "parity-scale-codec",
- "rand 0.7.3",
  "rand_core 0.5.1",
  "sp-std",
 ]

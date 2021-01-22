@@ -5,7 +5,6 @@ use crate::{
 		smt::VanillaSparseMerkleTree,
 	},
 };
-use sp_std::collections::btree_map::BTreeMap;
 
 #[derive(Clone)]
 pub struct VariableDepositTree {

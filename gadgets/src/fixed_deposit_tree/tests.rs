@@ -1,23 +1,19 @@
 use crate::{
 	fixed_deposit_tree::fixed_deposit_tree_verif_gadget,
-	poseidon::{gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder, Poseidon_hash_2},
+	poseidon::{
+		allocate_statics_for_prover, allocate_statics_for_verifier, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox,
+		PoseidonBuilder, Poseidon_hash_2,
+	},
 	smt::builder::{SparseMerkleTreeBuilder, DEFAULT_TREE_DEPTH},
+	utils::{get_bits, AllocatedScalar},
 };
-
-use rand::rngs::StdRng;
-
 use bulletproofs::{
 	r1cs::{Prover, Verifier},
 	BulletproofGens, PedersenGens,
 };
 use curve25519_dalek::scalar::Scalar;
 use merlin::Transcript;
-
-use crate::utils::{get_bits, AllocatedScalar};
-// use crate::gadget_mimc::{mimc, MIMC_ROUNDS, mimc_hash_2, mimc_gadget};
-use crate::poseidon::{allocate_statics_for_prover, allocate_statics_for_verifier};
-
-use rand::SeedableRng;
+use rand_core::OsRng;
 
 // For benchmarking
 #[cfg(feature = "std")]
@@ -36,7 +32,7 @@ fn test_fixed_deposit_tree_verification() {
 		.sbox(PoseidonSbox::Inverse)
 		.build();
 
-	let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);
+	let mut test_rng = OsRng::default();
 	let r = Scalar::random(&mut test_rng);
 	let nullifier = Scalar::random(&mut test_rng);
 	let expected_output = Poseidon_hash_2(r, nullifier, &p_params);
