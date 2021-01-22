@@ -181,7 +181,7 @@ impl FixedDepositTreeBuilder {
 		let tree = self
 			.tree
 			.clone()
-			.unwrap_or_else(|| SparseMerkleTreeBuilder::new().depth(depth).db(BTreeMap::new()).build());
+			.unwrap_or_else(|| SparseMerkleTreeBuilder::new().depth(depth).build());
 
 		FixedDepositTree {
 			depth,
