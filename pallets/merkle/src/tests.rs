@@ -400,8 +400,8 @@ fn should_verify_simple_zk_proof_of_membership() {
 
 		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
 
-		let leaf = ftree.add_secrets();
-		ftree.tree.add(vec![leaf]);
+		let leaf = ftree.generate_secrets();
+		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
@@ -437,8 +437,8 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 
 		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
 
-		let leaf = ftree.add_secrets();
-		ftree.tree.add(vec![leaf]);
+		let leaf = ftree.generate_secrets();
+		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
@@ -479,8 +479,8 @@ fn should_not_verify_invalid_commitments_for_membership() {
 
 		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
 
-		let leaf = ftree.add_secrets();
-		ftree.tree.add(vec![leaf]);
+		let leaf = ftree.generate_secrets();
+		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
@@ -522,8 +522,8 @@ fn should_not_verify_invalid_transcript() {
 
 		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
 
-		let leaf = ftree.add_secrets();
-		ftree.tree.add(vec![leaf]);
+		let leaf = ftree.generate_secrets();
+		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
@@ -560,17 +560,25 @@ fn should_verify_zk_proof_of_membership() {
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 		let mut ftree = FixedDepositTreeBuilder::new().depth(3).build();
 
-		let leaf0 = ftree.add_secrets();
-		let leaf1 = ftree.add_secrets();
-		let leaf2 = ftree.add_secrets();
-		let leaf3 = ftree.add_secrets();
-		let leaf4 = ftree.add_secrets();
-		let leaf5 = ftree.add_secrets();
-		let leaf6 = ftree.add_secrets();
-		let keys = vec![leaf0, leaf1, leaf2, leaf3, leaf4, leaf5, leaf6];
-		ftree.tree.add(keys.clone());
+		let leaf0 = ftree.generate_secrets();
+		let leaf1 = ftree.generate_secrets();
+		let leaf2 = ftree.generate_secrets();
+		let leaf3 = ftree.generate_secrets();
+		let leaf4 = ftree.generate_secrets();
+		let leaf5 = ftree.generate_secrets();
+		let leaf6 = ftree.generate_secrets();
+		let keys = vec![
+			leaf0.to_bytes(),
+			leaf1.to_bytes(),
+			leaf2.to_bytes(),
+			leaf3.to_bytes(),
+			leaf4.to_bytes(),
+			leaf5.to_bytes(),
+			leaf6.to_bytes(),
+		];
+		ftree.tree.add_leaves(keys.clone());
 
-		let keys_data: Vec<Data> = keys.iter().map(|x| Data(*x)).collect();
+		let keys_data: Vec<Data> = keys.iter().map(|x| Data(Scalar::from_bytes_mod_order(*x))).collect();
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(3),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, keys_data));
 
@@ -604,8 +612,8 @@ fn should_verify_large_zk_proof_of_membership() {
 		let poseidon = default_hasher(40960);
 		let mut ftree = FixedDepositTreeBuilder::new().hash_params(poseidon).depth(32).build();
 
-		let leaf = ftree.add_secrets();
-		ftree.tree.add(vec![leaf]);
+		let leaf = ftree.generate_secrets();
+		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(32),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
