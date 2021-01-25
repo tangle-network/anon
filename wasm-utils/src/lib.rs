@@ -1,11 +1,8 @@
+use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use curve25519_dalek::scalar::Scalar;
+use curve25519_gadgets::fixed_deposit_tree::builder::{FixedDepositTree, FixedDepositTreeBuilder};
 use js_sys::{Array, JsString, Map, JSON};
-use pallet_merkle::merkle::{
-	helper::{leaf_data, prove_with_path, verify, ZkProof},
-	keys::Data,
-	poseidon::Poseidon,
-};
-use rand::rngs::OsRng;
+use merlin::Transcript;
 use std::collections::hash_map::HashMap;
 use wasm_bindgen::prelude::*;
 use web_sys::{window, Storage};
@@ -46,18 +43,18 @@ const NOTE_PREFIX: &str = "webb.mix";
 
 #[wasm_bindgen]
 pub struct Mixer {
-	tree_map: HashMap<(String, u8), MerkleClient>,
+	tree_map: HashMap<(String, u8), FixedDepositTree>,
 	store: Storage,
 }
 
 impl Mixer {
-	fn get_tree_mut(&mut self, asset: String, id: u8) -> &mut MerkleClient {
+	fn get_tree_mut(&mut self, asset: String, id: u8) -> &mut FixedDepositTree {
 		assert!(self.tree_map.contains_key(&(asset.to_owned(), id)), "Tree not found!");
 		let tree = self.tree_map.get_mut(&(asset.to_owned(), id)).unwrap();
 		tree
 	}
 
-	fn get_tree(&self, asset: String, id: u8) -> &MerkleClient {
+	fn get_tree(&self, asset: String, id: u8) -> &FixedDepositTree {
 		assert!(self.tree_map.contains_key(&(asset.to_owned(), id)), "Tree not found!");
 		let tree = self.tree_map.get(&(asset.to_owned(), id)).unwrap();
 		tree
@@ -70,8 +67,8 @@ impl Mixer {
 	pub fn new(trees_js: JsValue) -> Self {
 		let trees: Vec<(String, u8, usize)> = trees_js.into_serde().unwrap();
 		let mut tree_map = HashMap::new();
-		for (asset, id, height) in trees {
-			tree_map.insert((asset, id), MerkleClient::init(height));
+		for (asset, id, depth) in trees {
+			tree_map.insert((asset, id), FixedDepositTreeBuilder::new().depth(depth).build());
 		}
 		let win = window().unwrap();
 		let store = win.local_storage().unwrap().unwrap();
@@ -79,34 +76,28 @@ impl Mixer {
 	}
 
 	pub fn add_leaves(&mut self, asset: String, id: u8, leaves: JsValue) {
-		let tree = self.get_tree_mut(asset, id);
-		tree.add_leaves(leaves);
-	}
-
-	pub fn generate_proof(&self, asset: String, id: u8, root: JsValue, leaf: JsValue) -> Map {
-		let tree = self.get_tree(asset, id);
-		tree.generate_proof(root, leaf)
+		let fixed_tree = self.get_tree_mut(asset, id);
+		let leaves_bytes: Vec<[u8; 32]> = leaves.into_serde().unwrap();
+		fixed_tree.tree.add_leaves(leaves_bytes);
 	}
 
 	pub fn get_root(&self, asset: String, id: u8) -> JsValue {
-		let tree = self.get_tree(asset, id);
-		tree.get_root()
+		let fixed_tree = self.get_tree(asset, id);
+		JsValue::from_serde(&fixed_tree.tree.root.to_bytes()).unwrap()
 	}
 
 	// Generates a new note with random samples
 	// note has a format of `webb.mix-<mixed_id>-<r as hex string><nullifier as
 	// hex string>`
-	pub fn generate_note(&mut self, asset: String, id: u8, block_number: u32) -> JsString {
+	pub fn generate_note(&mut self, asset: String, id: u8) -> JsString {
 		assert!(self.tree_map.contains_key(&(asset.to_owned(), id)), "Tree not found!");
-		let tree = self.tree_map.get_mut(&(asset.to_owned(), id)).unwrap();
-		let (r, nullifier, ..) = tree.generate_leaf_data();
+		let fixed_tree = self.get_tree_mut(asset.to_owned(), id);
+		let leaf = fixed_tree.generate_secrets();
+		let (r, nullifier, ..) = fixed_tree.get_secrets(leaf);
 
 		let encoded_r = encode_hex(r.to_bytes());
 		let encoded_nullifier = encode_hex(nullifier.to_bytes());
-		let note = format!(
-			"{}-{}-{}-{}-{}{}",
-			NOTE_PREFIX, asset, id, block_number, encoded_r, encoded_nullifier
-		);
+		let note = format!("{}-{}-{}-{}{}", NOTE_PREFIX, asset, id, encoded_r, encoded_nullifier);
 		let note_js = JsString::from(note);
 
 		note_js
@@ -120,36 +111,31 @@ impl Mixer {
 		let note: String = note_js.into();
 
 		let parts: Vec<&str> = note.split("-").collect();
-		assert!(parts[0] == NOTE_PREFIX, "Invalid note!");
+
+		assert!(parts[0] == NOTE_PREFIX, "Invalid note prefix!");
 		let asset: String = parts[1].to_owned();
 		let id: u8 = parts[2].parse().unwrap();
-		assert!(self.tree_map.contains_key(&(asset.to_owned(), id)), "Tree not found!");
-		let block_number: u32 = parts[3].parse().unwrap();
-		let note_val = parts[4];
+		let note_val = parts[3];
 		assert!(note_val.len() == 128, "Invalid note length");
+
+		assert!(self.tree_map.contains_key(&(asset.to_owned(), id)), "Tree not found!");
 
 		// Checking the validity
 		let r_bytes = decode_hex(&note_val[..64]);
 		let nullifier_bytes = decode_hex(&note_val[64..]);
 
-		let tree = self.tree_map.get_mut(&(asset.to_owned(), id)).unwrap();
+		let tree = self.get_tree_mut(asset.to_owned(), id);
 		let (r, nullifier, nullifier_hash, leaf) = tree.leaf_data_from_bytes(r_bytes, nullifier_bytes);
-		tree.saved_leafs.insert(leaf, LeafData {
-			r,
-			nullifier,
-			nullifier_hash,
-		});
+		tree.add_secrets(leaf, r, nullifier, nullifier_hash);
 
-		let leaf_js = JsValue::from_serde(&leaf.0.to_bytes()).unwrap();
+		let leaf_js = JsValue::from_serde(&leaf.to_bytes()).unwrap();
 		let asset_js = JsValue::from(&asset);
 		let id_js = JsValue::from(id);
-		let block_number_js = JsValue::from(block_number);
 
 		let map = Map::new();
 		map.set(&JsValue::from_str("leaf"), &leaf_js);
 		map.set(&JsValue::from_str("asset"), &asset_js);
 		map.set(&JsValue::from_str("id"), &id_js);
-		map.set(&JsValue::from_str("block_number"), &block_number_js);
 		map
 	}
 
@@ -182,286 +168,63 @@ impl Mixer {
 			}
 		};
 	}
-}
-
-pub struct LeafData {
-	r: Scalar,
-	nullifier: Scalar,
-	nullifier_hash: Data,
-}
-
-// State of the tree which includes its size + current edge nodes
-pub struct TreeState {
-	edge_nodes: Vec<Data>,
-	leaf_count: usize,
-}
-
-#[wasm_bindgen]
-pub struct MerkleClient {
-	curr_root: Data,
-	states: HashMap<Data, TreeState>,
-	saved_leafs: HashMap<Data, LeafData>,
-	leaf_indicies: HashMap<Data, usize>,
-	levels: Vec<Vec<Data>>,
-	max_leaves: u32,
-	num_levels: usize,
-	hasher: Poseidon,
-}
-
-#[wasm_bindgen]
-impl MerkleClient {
-	// Get the current root, mostly used for testing
-	pub fn get_root(&self) -> JsValue {
-		JsValue::from_serde(&self.curr_root.0.to_bytes()).unwrap()
-	}
-
-	// Add array of leaves fetched from the chain
-	pub fn add_leaves(&mut self, leaves: JsValue) {
-		let elements: Vec<[u8; 32]> = leaves.into_serde().unwrap();
-		let (root, states, levels, leaf_indicies) = MerkleClient::init_data(self.num_levels);
-		self.curr_root = root;
-		self.states = states;
-		self.levels = levels;
-		self.leaf_indicies = leaf_indicies;
-		for elem in elements {
-			let leaf = Data::from(elem);
-			self.add_leaf(leaf);
-		}
-	}
 
 	// Generates zk proof
-	pub fn generate_proof(&self, root_json: JsValue, leaf_json: JsValue) -> Map {
+	pub fn generate_proof(&self, asset: String, id: u8, root_json: JsValue, leaf_json: JsValue) -> Map {
 		let root_bytes: [u8; 32] = root_json.into_serde().unwrap();
 		let leaf_bytes: [u8; 32] = leaf_json.into_serde().unwrap();
-		let root = Data::from(root_bytes);
-		let leaf = Data::from(leaf_bytes);
+		let tree = self.get_tree(asset, id);
+		let root = Scalar::from_bytes_mod_order(root_bytes);
+		let leaf = Scalar::from_bytes_mod_order(leaf_bytes);
 
-		let proof = self.prove_zk(root, leaf);
+		let pc_gens = PedersenGens::default();
+		let bp_gens = BulletproofGens::new(40960, 1);
+		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
+		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-		let path = Array::new();
-		for (bit, node) in proof.path {
-			let level_arr = Array::new();
-			let bit_js = JsValue::from_serde(&(bit.0).0).unwrap();
-			let node_js = JsValue::from_serde(&(node.0).0).unwrap();
+		let (proof, (comms, nullifier_hash, leaf_index_comms, proof_comms)) =
+			tree.prove_zk(root, leaf, &bp_gens, prover);
 
-			level_arr.push(&bit_js);
-			level_arr.push(&node_js);
-
-			path.push(&level_arr);
+		let leaf_index_comms_js = Array::new();
+		for com in leaf_index_comms {
+			let bit_js = JsValue::from_serde(&com.0).unwrap();
+			leaf_index_comms_js.push(&bit_js);
 		}
-		let leaf_com = JsValue::from_serde(&proof.leaf_com.0.to_bytes()).unwrap();
-		let r_com = JsValue::from_serde(&proof.r_com.0.to_bytes()).unwrap();
-		let nullifier_com = JsValue::from_serde(&proof.nullifier_com.0.to_bytes()).unwrap();
-		let nullifier_hash = JsValue::from_serde(&proof.nullifier_hash.0.to_bytes()).unwrap();
-		let bytes = JsValue::from_serde(&proof.bytes).unwrap();
+		let proof_comms_js = Array::new();
+		for com in proof_comms {
+			let node = JsValue::from_serde(&com.0).unwrap();
+			proof_comms_js.push(&node);
+		}
+		let comms_js = Array::new();
+		for com in comms {
+			let val = JsValue::from_serde(&com.0).unwrap();
+			comms_js.push(&val);
+		}
+
+		let nullifier_hash = JsValue::from_serde(&nullifier_hash.to_bytes()).unwrap();
+		let bytes = JsValue::from_serde(&proof.to_bytes()).unwrap();
 
 		let map = Map::new();
-		map.set(&JsValue::from_str("path"), &path);
-		map.set(&JsValue::from_str("leaf_com"), &leaf_com);
-		map.set(&JsValue::from_str("r_com"), &r_com);
-		map.set(&JsValue::from_str("nullifier_com"), &nullifier_com);
+		map.set(&JsValue::from_str("comms"), &comms_js);
 		map.set(&JsValue::from_str("nullifier_hash"), &nullifier_hash);
-		map.set(&JsValue::from_str("bytes"), &bytes);
+		map.set(&JsValue::from_str("leaf_index_comms"), &leaf_index_comms_js);
+		map.set(&JsValue::from_str("proof_comms"), &proof_comms_js);
+		map.set(&JsValue::from_str("proof"), &bytes);
 
 		map
-	}
-}
-
-impl MerkleClient {
-	// Separated from `new` method for testing purposes
-	pub fn init(num_levels: usize) -> Self {
-		assert!(num_levels <= 32 && num_levels > 0, "Invalid tree height!");
-		let max_levels = 32;
-		let (root, states, levels, leaf_indicies) = MerkleClient::init_data(num_levels);
-		Self {
-			num_levels,
-			curr_root: root,
-			states,
-			saved_leafs: HashMap::new(),
-			levels,
-			leaf_indicies,
-			max_leaves: u32::MAX >> (max_levels - num_levels),
-			hasher: Poseidon::new(4),
-		}
-	}
-
-	pub fn init_data(num_levels: usize) -> (Data, HashMap<Data, TreeState>, Vec<Vec<Data>>, HashMap<Data, usize>) {
-		let init_root = Data::zero();
-		let init_tree_state = TreeState {
-			edge_nodes: vec![Data::zero(); num_levels],
-			leaf_count: 0,
-		};
-		let mut init_states = HashMap::new();
-		init_states.insert(init_root, init_tree_state);
-		(
-			init_root,
-			init_states,
-			vec![vec![Data::zero()]; num_levels],
-			HashMap::new(),
-		)
-	}
-
-	pub fn generate_leaf_data(&self) -> (Scalar, Scalar, Data, Data) {
-		let mut rng = OsRng::default();
-
-		leaf_data(&mut rng, &self.hasher)
-	}
-
-	pub fn leaf_data_from_bytes(&self, r_bytes: [u8; 32], nullifier_bytes: [u8; 32]) -> (Scalar, Scalar, Data, Data) {
-		let r = Scalar::from_bytes_mod_order(r_bytes);
-		let nullifier = Scalar::from_bytes_mod_order(nullifier_bytes);
-		// Construct nullifier hash for note
-		let nullifier_hash = Data::hash(Data(nullifier), Data(nullifier), &self.hasher);
-		// Constructing a leaf from the scalars
-		let leaf = Data::hash(Data(r), Data(nullifier), &self.hasher);
-		(r, nullifier, nullifier_hash, leaf)
-	}
-
-	// Used for testing purposes
-	pub fn deposit(&mut self) -> Data {
-		let mut rng = OsRng::default();
-		let (r, nullifier, nullifier_hash, leaf) = leaf_data(&mut rng, &self.hasher);
-		let ld = LeafData {
-			r,
-			nullifier,
-			nullifier_hash,
-		};
-		self.saved_leafs.insert(leaf, ld);
-		self.add_leaf(leaf);
-		leaf
-	}
-
-	// Adds a single leaf to the tree
-	// Saves the new state and saves the index of the added leaf
-	pub fn add_leaf(&mut self, leaf: Data) {
-		assert!(self.levels[0].len() < self.max_leaves as usize, "Tree is already full!");
-		let curr_state = self.states.get(&self.curr_root).unwrap();
-
-		// There is a new tree state on every insert
-		// It consists of edge nodes, since they change on every insert
-		// And they are needed for creating proofs of membership in the past
-		// trees
-		let mut new_state = TreeState {
-			edge_nodes: curr_state.edge_nodes.clone(),
-			leaf_count: curr_state.leaf_count + 1,
-		};
-		let mut edge_index = curr_state.leaf_count;
-		let data = leaf;
-		let mut pair_hash = data.clone();
-
-		for i in 0..curr_state.edge_nodes.len() {
-			let level = self.levels.get_mut(i).unwrap();
-			// Update the edges if leaf index is uneven number
-			if edge_index % 2 == 0 {
-				new_state.edge_nodes[i] = pair_hash;
-			}
-			// Push new node on the current level or replace the last one
-			if edge_index >= level.len() {
-				level.push(pair_hash);
-			} else {
-				level[edge_index] = pair_hash;
-			}
-
-			let hash = new_state.edge_nodes[i];
-			pair_hash = Data::hash(hash, pair_hash, &self.hasher);
-
-			edge_index /= 2;
-		}
-
-		self.curr_root = pair_hash;
-		self.leaf_indicies.insert(data, curr_state.leaf_count);
-		self.states.insert(pair_hash, new_state);
-	}
-
-	// Membership proofs
-	pub fn prove(&self, root: Data, leaf: Data) -> Vec<(bool, Data)> {
-		assert!(self.states.contains_key(&root), "Root not found!");
-		assert!(self.leaf_indicies.contains_key(&leaf), "Leaf not found!");
-
-		let state = self.states.get(&root).unwrap();
-		assert!(state.leaf_count > 0, "Tree is empty!");
-		let mut last_index = state.leaf_count - 1;
-		let mut node_index = self.leaf_indicies.get(&leaf).cloned().unwrap();
-
-		assert!(
-			node_index <= last_index,
-			"Current tree state doesn't contain specified leaf."
-		);
-		let mut path = Vec::new();
-		for (i, level) in self.levels.iter().enumerate() {
-			let is_right = node_index % 2 == 0;
-			let node = match is_right {
-				true => {
-					if node_index == last_index {
-						state.edge_nodes[i]
-					} else {
-						level[node_index + 1]
-					}
-				}
-				false => level[node_index - 1],
-			};
-
-			path.push((is_right, node));
-			node_index /= 2;
-			last_index /= 2;
-		}
-
-		path
-	}
-
-	// Mostly used for testing purposes
-	pub fn verify(&self, root: Data, leaf: Data, path: Vec<(bool, Data)>) -> bool {
-		let mut hash = leaf;
-		for (right, pair) in path {
-			hash = if right {
-				Data::hash(hash, pair, &self.hasher)
-			} else {
-				Data::hash(pair, hash, &self.hasher)
-			}
-		}
-		root == hash
-	}
-
-	pub fn verify_zk(&self, root: Data, zk_proof: ZkProof) -> bool {
-		let res = verify(root, zk_proof, &self.hasher);
-
-		res.is_ok()
-	}
-
-	pub fn prove_zk(&self, root: Data, leaf: Data) -> ZkProof {
-		assert!(self.saved_leafs.contains_key(&leaf), "Secret data not found!");
-		let ld = self.saved_leafs.get(&leaf).unwrap();
-
-		// First we create normal proof, then make zk proof against it
-		let path = self.prove(root, leaf);
-		let valid = self.verify(root, leaf, path.clone());
-		assert!(valid, "Could not make proof!");
-		let path_data: Vec<(bool, Data)> = path
-			.into_iter()
-			// Our gadget calculates the sides inversely
-			.map(|(side, d)| (!side, d))
-			.collect();
-
-		let zk_proof = prove_with_path(
-			root,
-			leaf,
-			ld.nullifier_hash,
-			ld.nullifier,
-			ld.r,
-			path_data,
-			&self.hasher,
-		);
-		assert!(zk_proof.is_ok(), "Could not make proof!");
-
-		zk_proof.unwrap()
 	}
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use curve25519_gadgets::poseidon::Poseidon_hash_2;
+	use rand::rngs::OsRng;
+	use wasm_bindgen_test::*;
 
-	#[test]
+	wasm_bindgen_test_configure!(run_in_browser);
+
+	#[wasm_bindgen_test]
 	fn should_encode_and_decode_hex() {
 		let mut rng = OsRng::default();
 		let num = Scalar::random(&mut rng);
@@ -472,150 +235,37 @@ mod tests {
 		assert!(dec == num.to_bytes());
 	}
 
-	#[test]
+	#[wasm_bindgen_test]
 	fn should_have_correct_root() {
-		let mut tree = MerkleClient::init(2);
-		let leaf1 = Data(Scalar::from(1u32));
-		let leaf2 = Data(Scalar::from(2u32));
-		let leaf3 = Data(Scalar::from(3u32));
+		let arr = Array::new();
+		arr.push(&JsString::from("EDG"));
+		arr.push(&JsValue::from(0));
+		arr.push(&JsValue::from(2));
+		let top_level_arr = Array::new();
+		top_level_arr.push(&arr);
+		let js_trees = JsValue::from(top_level_arr);
+		let asset = "EDG";
+		let id = 0;
+		let mut mixer = Mixer::new(js_trees);
+		let leaf1 = Scalar::from(1u32);
+		let leaf2 = Scalar::from(2u32);
+		let leaf3 = Scalar::from(3u32);
+		let zero = Scalar::zero();
 
-		tree.add_leaf(leaf1);
-		let node1 = Data::hash(leaf1, leaf1, &tree.hasher);
-		let root = Data::hash(node1, node1, &tree.hasher);
-		assert_eq!(tree.curr_root, root);
+		let arr = Array::new();
+		arr.push(&JsValue::from_serde(&leaf1.to_bytes()).unwrap());
+		arr.push(&JsValue::from_serde(&leaf2.to_bytes()).unwrap());
+		arr.push(&JsValue::from_serde(&leaf3.to_bytes()).unwrap());
+		let list = JsValue::from(arr);
 
-		tree.add_leaf(leaf2);
-		let node1 = Data::hash(leaf1, leaf2, &tree.hasher);
-		let root = Data::hash(node1, node1, &tree.hasher);
-		assert_eq!(tree.curr_root, root);
+		mixer.add_leaves(asset.to_owned(), id, list);
+		let tree = mixer.get_tree(asset.to_owned(), id);
+		let node1 = Poseidon_hash_2(leaf1, leaf2, &tree.hash_params);
+		let node2 = Poseidon_hash_2(leaf3, zero, &tree.hash_params);
+		let root = Poseidon_hash_2(node1, node2, &tree.hash_params);
 
-		tree.add_leaf(leaf3);
-		let node1 = Data::hash(leaf1, leaf2, &tree.hasher);
-		let node2 = Data::hash(leaf3, leaf3, &tree.hasher);
-		let root = Data::hash(node1, node2, &tree.hasher);
-
-		assert_eq!(tree.curr_root, root);
-	}
-
-	#[test]
-	fn should_have_correct_levels() {
-		let mut tree = MerkleClient::init(2);
-		let leaf1 = Data(Scalar::from(1u32));
-		let leaf2 = Data(Scalar::from(2u32));
-		let leaf3 = Data(Scalar::from(3u32));
-
-		tree.add_leaf(leaf1);
-		let node1 = Data::hash(leaf1, leaf1, &tree.hasher);
-		let level0 = vec![leaf1];
-		let level1 = vec![node1];
-		assert_eq!(tree.levels, vec![level0, level1]);
-
-		tree.add_leaf(leaf2);
-		let node1 = Data::hash(leaf1, leaf2, &tree.hasher);
-		let level0 = vec![leaf1, leaf2];
-		let level1 = vec![node1];
-		assert_eq!(tree.levels, vec![level0, level1]);
-
-		tree.add_leaf(leaf3);
-		let node1 = Data::hash(leaf1, leaf2, &tree.hasher);
-		let node2 = Data::hash(leaf3, leaf3, &tree.hasher);
-		let level0 = vec![leaf1, leaf2, leaf3];
-		let level1 = vec![node1, node2];
-
-		assert_eq!(tree.levels, vec![level0, level1]);
-	}
-
-	#[test]
-	fn should_have_correct_state() {
-		let mut tree = MerkleClient::init(2);
-		let leaf1 = Data(Scalar::from(1u32));
-		let leaf2 = Data(Scalar::from(2u32));
-		let leaf3 = Data(Scalar::from(3u32));
-
-		tree.add_leaf(leaf1);
-		let node1 = Data::hash(leaf1, leaf1, &tree.hasher);
-		let edge_nodes = vec![leaf1, node1];
-		let last_state = tree.states.get(&tree.curr_root).unwrap();
-		assert_eq!(edge_nodes, last_state.edge_nodes);
-
-		tree.add_leaf(leaf2);
-		let node1 = Data::hash(leaf1, leaf2, &tree.hasher);
-		let edge_nodes = vec![leaf1, node1];
-		let last_state = tree.states.get(&tree.curr_root).unwrap();
-		assert_eq!(edge_nodes, last_state.edge_nodes);
-
-		tree.add_leaf(leaf3);
-		let node1 = Data::hash(leaf1, leaf2, &tree.hasher);
-		let edge_nodes = vec![leaf3, node1];
-		let last_state = tree.states.get(&tree.curr_root).unwrap();
-		assert_eq!(edge_nodes, last_state.edge_nodes);
-	}
-
-	#[test]
-	fn should_make_correct_proof() {
-		let mut tree = MerkleClient::init(2);
-		let leaf1 = tree.deposit();
-		let leaf2 = tree.deposit();
-		let leaf3 = tree.deposit();
-
-		let path = tree.prove(tree.curr_root, leaf1);
-		let valid = tree.verify(tree.curr_root, leaf1, path.clone());
-		assert!(valid);
-
-		let path = tree.prove(tree.curr_root, leaf2);
-		let valid = tree.verify(tree.curr_root, leaf2, path.clone());
-		assert!(valid);
-
-		let path = tree.prove(tree.curr_root, leaf3);
-		let valid = tree.verify(tree.curr_root, leaf3, path.clone());
-		assert!(valid);
-	}
-
-	#[test]
-	fn should_not_verify_incorrect_proof() {
-		let mut tree = MerkleClient::init(2);
-		let leaf1 = tree.deposit();
-		let leaf2 = Data(Scalar::from(2u32));
-		let leaf3 = Data(Scalar::from(3u32));
-
-		let path = tree.prove(tree.curr_root, leaf1);
-		let valid = tree.verify(tree.curr_root, leaf2, path.clone());
-		assert!(!valid);
-
-		let path = tree.prove(tree.curr_root, leaf1);
-		let valid = tree.verify(tree.curr_root, leaf3, path.clone());
-		assert!(!valid);
-	}
-
-	#[test]
-	fn should_make_correct_zk_proof() {
-		let mut tree = MerkleClient::init(2);
-		let leaf1 = tree.deposit();
-		let leaf2 = tree.deposit();
-		let leaf3 = tree.deposit();
-
-		let proof = tree.prove_zk(tree.curr_root, leaf1);
-		let valid = tree.verify_zk(tree.curr_root, proof);
-		assert!(valid);
-
-		let proof = tree.prove_zk(tree.curr_root, leaf2);
-		let valid = tree.verify_zk(tree.curr_root, proof);
-		assert!(valid);
-
-		let proof = tree.prove_zk(tree.curr_root, leaf3);
-		let valid = tree.verify_zk(tree.curr_root, proof);
-		assert!(valid);
-	}
-
-	#[test]
-	fn should_not_verify_incorrect_zk_proof() {
-		let mut tree = MerkleClient::init(2);
-
-		tree.deposit();
-		let old_root = tree.curr_root;
-		let leaf = tree.deposit();
-		let proof = tree.prove_zk(tree.curr_root, leaf);
-		let valid = tree.verify_zk(old_root, proof);
-		assert!(!valid);
+		let calc_root_js = mixer.get_root(asset.to_owned(), id);
+		let calc_root: [u8; 32] = calc_root_js.into_serde().unwrap();
+		assert_eq!(calc_root, root.to_bytes());
 	}
 }

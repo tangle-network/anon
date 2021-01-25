@@ -8,11 +8,20 @@ edition = "2018"
 
 [dependencies]
 wasm-bindgen = { version = "0.2.69", features = ["serde-serialize"] }
-pallet-merkle = { path = "../pallets/merkle" }
+curve25519-gadgets = { path = "../gadgets" }
 js-sys = "0.3.46"
 console_error_panic_hook = "0.1.6"
 rand = { version = "0.7", features = ["wasm-bindgen"] }
+merlin = { version = "2.0.0", default-features = false }
 getrandom = { version = "0.2", features = ["js"] }
+wasm-bindgen-test = "0.3.20"
+
+[dependencies.bulletproofs]
+branch = "main"
+version = "2.0.0"
+git = "https://github.com/edgeware-builders/bulletproofs"
+default-features = false
+features = ["yoloproofs"]
 
 [dependencies.curve25519-dalek]
 version = "3.0.0"
