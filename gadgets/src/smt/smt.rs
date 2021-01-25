@@ -25,7 +25,7 @@ pub struct VanillaSparseMerkleTree {
 	pub root: Scalar,
 	curr_index: Scalar,
 	edge_nodes: Vec<Scalar>,
-	leaf_indecies: BTreeMap<ScalarBytes, Scalar>,
+	pub leaf_indecies: BTreeMap<ScalarBytes, Scalar>,
 }
 
 impl VanillaSparseMerkleTree {
@@ -59,10 +59,10 @@ impl VanillaSparseMerkleTree {
 	// This function allows this tree to work as a normal tree
 	// Should be deleted in the future if we opt out to use sparse tree
 	// that support non-membership proofs
-	pub fn add(&mut self, vals: Vec<Scalar>) {
+	pub fn add_leaves(&mut self, vals: Vec<[u8; 32]>) {
 		for val in vals {
-			self.update(self.curr_index, val);
-			self.leaf_indecies.insert(val.to_bytes(), self.curr_index);
+			self.update(self.curr_index, Scalar::from_bytes_mod_order(val));
+			self.leaf_indecies.insert(val, self.curr_index);
 			self.curr_index = self.curr_index + Scalar::one();
 		}
 	}
@@ -160,8 +160,8 @@ impl VanillaSparseMerkleTree {
 
 	pub fn prove_zk(
 		&self,
-		k: Scalar,
 		root: Scalar,
+		leaf: Scalar,
 		bp_gens: &BulletproofGens,
 		mut prover: Prover,
 	) -> (
@@ -171,13 +171,15 @@ impl VanillaSparseMerkleTree {
 		let mut test_rng: OsRng = OsRng::default();
 		let mut merkle_proof_vec = Vec::<Scalar>::new();
 		let mut merkle_proof = Some(merkle_proof_vec);
-		let leaf = self.get(k, root, &mut merkle_proof);
+
+		let k = self.leaf_indecies.get(&leaf.to_bytes()).unwrap();
+		let leaf = self.get(*k, root, &mut merkle_proof);
 		merkle_proof_vec = merkle_proof.unwrap();
 
 		let (com_leaf, var_leaf) = prover.commit(leaf, Scalar::random(&mut test_rng));
 		let leaf_alloc_scalar = AllocatedScalar {
 			variable: var_leaf,
-			assignment: Some(k),
+			assignment: Some(*k),
 		};
 
 		let mut leaf_index_comms = vec![];
