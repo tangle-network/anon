@@ -1,24 +1,15 @@
 use crate::{
 	poseidon::{builder::Poseidon, gen_mds_matrix, gen_round_keys, sbox::PoseidonSbox, PoseidonBuilder},
-	utils::ScalarBytes,
+	smt::smt::VanillaSparseMerkleTree,
 };
-
-use crate::smt::{DBVal, VanillaSparseMerkleTree};
-
-use alloc::vec::Vec;
 use bulletproofs::BulletproofGens;
 use curve25519_dalek::scalar::Scalar;
-use sp_std::collections::btree_map::BTreeMap;
 
-pub const DEFAULT_TREE_DEPTH: usize = 30;
+pub const DEFAULT_TREE_DEPTH: usize = 32;
 
 pub struct SparseMerkleTreeBuilder {
 	/// The depth of the tree
 	pub depth: Option<usize>,
-	/// The values of empty hashes hashed with themselves, computed on init
-	empty_tree_hashes: Option<Vec<Scalar>>,
-	/// The DB of leaves
-	db: Option<BTreeMap<ScalarBytes, DBVal>>,
 	/// The hash params, defaults to Poseidon
 	/// TODO: Add abstract hasher
 	hash_params: Option<Poseidon>,
@@ -30,8 +21,6 @@ impl SparseMerkleTreeBuilder {
 	pub fn new() -> Self {
 		Self {
 			depth: None,
-			empty_tree_hashes: None,
-			db: None,
 			hash_params: None,
 			root: None,
 		}
@@ -39,16 +28,6 @@ impl SparseMerkleTreeBuilder {
 
 	pub fn depth(&mut self, depth: usize) -> &mut Self {
 		self.depth = Some(depth);
-		self
-	}
-
-	pub fn empty_tree_hashes(&mut self, hashes: Vec<Scalar>) -> &mut Self {
-		self.empty_tree_hashes = Some(hashes);
-		self
-	}
-
-	pub fn db(&mut self, db: BTreeMap<ScalarBytes, DBVal>) -> &mut Self {
-		self.db = Some(db);
 		self
 	}
 

@@ -37,7 +37,6 @@ sp-std = { default-features = false, version = "2.0.0" }
 merlin = { version = "2.0.0", default-features = false }
 
 rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
-rand = { version = "0.7", optional = true }
 
 crypto-constants = { path = "../crypto-constants", default-features = false }
 
@@ -46,6 +45,4 @@ default = ["std"]
 verify = []
 std = [
     "codec/std",
-    "rand/std",
-    "rand",
 ]

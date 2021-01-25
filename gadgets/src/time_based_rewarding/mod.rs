@@ -1,22 +1,17 @@
 #[cfg(test)]
 pub mod tests;
 
-#[cfg(feature = "std")]
 pub mod builder;
 
 use crate::{
 	fixed_deposit_tree::fixed_deposit_tree_verif_gadget,
-	poseidon::{Poseidon_hash_2_constraints, Poseidon_hash_4_gadget},
+	poseidon::{builder::Poseidon, Poseidon_hash_2_constraints, Poseidon_hash_4_gadget},
+	utils::AllocatedScalar,
 	zero_nonzero::is_nonzero_gadget,
 };
 use alloc::vec::Vec;
-
-use crate::poseidon::builder::Poseidon;
-use bulletproofs::r1cs::{ConstraintSystem, R1CSError};
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSError};
 use curve25519_dalek::scalar::Scalar;
-
-use crate::utils::AllocatedScalar;
-use bulletproofs::r1cs::LinearCombination;
 
 #[derive(Clone)]
 pub struct AllocatedInputCoin {

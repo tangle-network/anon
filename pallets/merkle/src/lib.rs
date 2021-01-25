@@ -18,18 +18,24 @@ pub mod tests;
 
 pub use crate::group_trait::Group;
 use bulletproofs::{
-	r1cs::{ConstraintSystem, LinearCombination, R1CSProof, Verifier},
+	r1cs::{R1CSProof, Verifier},
 	BulletproofGens, PedersenGens,
 };
 use codec::{Decode, Encode};
-use curve25519_gadgets::smt::smt::vanilla_merkle_merkle_tree_verif_gadget;
+use curve25519_dalek::scalar::Scalar;
+use curve25519_gadgets::{
+	crypto_constants::smt::ZERO_TREE,
+	fixed_deposit_tree::fixed_deposit_tree_verif_gadget,
+	poseidon::{
+		allocate_statics_for_verifier,
+		builder::{Poseidon, PoseidonBuilder},
+		gen_mds_matrix, gen_round_keys, PoseidonSbox, Poseidon_hash_2,
+	},
+	utils::AllocatedScalar,
+};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter};
 use frame_system::{ensure_root, ensure_signed};
-use merkle::{
-	hasher::Hasher,
-	keys::{Commitment, Data},
-	poseidon::Poseidon,
-};
+use merkle::keys::{Commitment, Data};
 use merlin::Transcript;
 use rand_core::OsRng;
 use sp_runtime::traits::{AtLeast32Bit, One};
@@ -50,9 +56,20 @@ pub trait Config: frame_system::Config + balances::Config {
 }
 
 // TODO find better way to have default hasher without saving it inside storage
-fn default_hasher() -> impl Hasher {
-	Poseidon::new(4)
-	// Mimc::new(70)
+fn default_hasher() -> Poseidon {
+	let width = 6;
+	let (full_b, full_e) = (4, 4);
+	let partial_rounds = 57;
+	// TODO: should be able to pass number of generators
+	// TODO: Initialise these generators with the pallet
+	let bp_gens = BulletproofGens::new(40960, 1);
+	PoseidonBuilder::new(width)
+		.num_rounds(full_b, full_e, partial_rounds)
+		.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
+		.mds_matrix(gen_mds_matrix(width))
+		.bulletproof_gens(bp_gens)
+		.sbox(PoseidonSbox::Inverse)
+		.build()
 }
 
 #[cfg_attr(feature = "std", derive(Debug))]
@@ -62,19 +79,23 @@ pub struct GroupTree<T: Config> {
 	pub manager_required: bool,
 	pub leaf_count: u32,
 	pub max_leaves: u32,
+	pub depth: u8,
 	pub root_hash: Data,
 	pub edge_nodes: Vec<Data>,
 }
 
 impl<T: Config> GroupTree<T> {
 	pub fn new(mgr: T::AccountId, r_is_mgr: bool, depth: u8) -> Self {
+		let init_edges: Vec<Data> = ZERO_TREE[0..depth as usize].iter().map(|x| Data::from(*x)).collect();
+		let init_root = Data::from(ZERO_TREE[depth as usize]);
 		Self {
 			manager: mgr,
 			manager_required: r_is_mgr,
-			root_hash: Data::zero(),
+			root_hash: init_root,
 			leaf_count: 0,
+			depth,
 			max_leaves: u32::MAX >> (T::MaxTreeDepth::get() - depth),
-			edge_nodes: vec![Data::zero(); depth as usize],
+			edge_nodes: init_edges,
 		}
 	}
 }
@@ -321,15 +342,15 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 
 		ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
 		let h = default_hasher();
-		let mut hash = leaf;
+		let mut hash = leaf.0;
 		for (is_right, node) in path {
 			hash = match is_right {
-				true => Data::hash(hash, node, &h),
-				false => Data::hash(node, hash, &h),
+				true => Poseidon_hash_2(hash, node.0, &h),
+				false => Poseidon_hash_2(node.0, hash, &h),
 			}
 		}
 
-		ensure!(hash == tree.root_hash, Error::<T>::InvalidMembershipProof);
+		ensure!(hash == tree.root_hash.0, Error::<T>::InvalidMembershipProof);
 		Ok(())
 	}
 
@@ -337,15 +358,17 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		group_id: T::GroupId,
 		cached_block: T::BlockNumber,
 		cached_root: Data,
-		leaf_com: Commitment,
-		path: Vec<(Commitment, Commitment)>,
-		r_com: Commitment,
-		nullifier_com: Commitment,
+		comms: Vec<Commitment>,
 		nullifier_hash: Data,
 		proof_bytes: Vec<u8>,
+		leaf_index_commitments: Vec<Commitment>,
+		proof_commitments: Vec<Commitment>,
 	) -> Result<(), dispatch::DispatchError> {
 		let tree = <Groups<T>>::get(group_id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
-		ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
+		ensure!(
+			tree.edge_nodes.len() == proof_commitments.len(),
+			Error::<T>::InvalidPathLength
+		);
 		// Ensure that root being checked against is in the cache
 		let old_roots = Self::cached_roots(cached_block, group_id);
 		ensure!(
@@ -354,78 +377,92 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		);
 		// TODO: Initialise these generators with the pallet
 		let pc_gens = PedersenGens::default();
-		// TODO: should be able to pass number of generators
-		// TODO: Initialise these generators with the pallet
-		let bp_gens = BulletproofGens::new(4096, 1);
 		<Self as Group<_, _, _>>::verify_zk(
 			pc_gens,
-			bp_gens,
 			tree.root_hash,
-			leaf_com,
-			path,
-			r_com,
-			nullifier_com,
+			tree.depth,
+			comms,
 			nullifier_hash,
 			proof_bytes,
+			leaf_index_commitments,
+			proof_commitments,
 		)
 	}
 
 	fn verify_zk(
 		pc_gens: PedersenGens,
-		bp_gens: BulletproofGens,
 		m_root: Data,
-		leaf_com: Commitment,
-		path: Vec<(Commitment, Commitment)>,
-		r_com: Commitment,
-		nullifier_com: Commitment,
+		depth: u8,
+		comms: Vec<Commitment>,
 		nullifier_hash: Data,
 		proof_bytes: Vec<u8>,
+		leaf_index_commitments: Vec<Commitment>,
+		proof_commitments: Vec<Commitment>,
 	) -> Result<(), dispatch::DispatchError> {
+		let label = b"zk_membership_proof";
 		let h = default_hasher();
-		let mut verifier_transcript = Transcript::new(b"zk_membership_proof");
+		let mut verifier_transcript = Transcript::new(label);
 		let mut verifier = Verifier::new(&mut verifier_transcript);
 
-		let var_leaf = verifier.commit(leaf_com.0);
-		let var_r = verifier.commit(r_com.0);
-		let var_nullifier = verifier.commit(nullifier_com.0);
-		let leaf_lc = Data::constrain_verifier(&mut verifier, &pc_gens, var_r.into(), var_nullifier.into(), &h);
-		// Commited leaf value should be the same as calculated
-		verifier.constrain(leaf_lc - var_leaf);
-		// committed nullifier into a hash should match hash of nullifier
-		let nullifier_hash_lc =
-			Data::constrain_verifier(&mut verifier, &pc_gens, var_nullifier.into(), var_nullifier.into(), &h);
-		verifier.constrain(nullifier_hash_lc - LinearCombination::from(nullifier_hash.0));
+		let r_val = verifier.commit(comms[0].0);
+		let r_alloc = AllocatedScalar {
+			variable: r_val,
+			assignment: None,
+		};
+		let nullifier_val = verifier.commit(comms[1].0);
+		let nullifier_alloc = AllocatedScalar {
+			variable: nullifier_val,
+			assignment: None,
+		};
 
-		// Check of path proof is correct
-		// hash = 5
-		let mut hash: LinearCombination = var_leaf.into();
-		for (bit, pair) in path {
-			// e.g. If bit is 1 that means pair is on the right side
-			// var_bit = 1
-			let var_bit = verifier.commit(bit.0);
-			// pair = 3
-			let var_pair = verifier.commit(pair.0);
+		let var_leaf = verifier.commit(comms[2].0);
+		let leaf_alloc_scalar = AllocatedScalar {
+			variable: var_leaf,
+			assignment: None,
+		};
 
-			// temp = 1 * 3 - 5 = -2
-			let (_, _, var_temp) = verifier.multiply(var_bit.into(), var_pair - hash.clone());
-			// left = 5 - 2 = 3
-			let left = hash.clone() + var_temp;
-			// right = 3 + 5 - 3 = 5
-			let right = var_pair + hash - left.clone();
-
-			hash = Data::constrain_verifier(&mut verifier, &pc_gens, left, right, &h);
+		let mut leaf_index_alloc_scalars = vec![];
+		for l in leaf_index_commitments {
+			let v = verifier.commit(l.0);
+			leaf_index_alloc_scalars.push(AllocatedScalar {
+				variable: v,
+				assignment: None,
+			});
 		}
-		// Commited path evaluate to correct root
-		verifier.constrain(hash - m_root.0);
+
+		let mut proof_alloc_scalars = vec![];
+		for p in proof_commitments {
+			let v = verifier.commit(p.0);
+			proof_alloc_scalars.push(AllocatedScalar {
+				variable: v,
+				assignment: None,
+			});
+		}
+
+		let num_statics = 4;
+		let statics = allocate_statics_for_verifier(&mut verifier, num_statics, &pc_gens);
+		let gadget_res = fixed_deposit_tree_verif_gadget(
+			&mut verifier,
+			depth as usize,
+			&m_root.0,
+			&nullifier_hash.0,
+			r_alloc,
+			nullifier_alloc,
+			leaf_alloc_scalar,
+			leaf_index_alloc_scalars,
+			proof_alloc_scalars,
+			statics,
+			&h,
+		);
+		ensure!(gadget_res.is_ok(), Error::<T>::InvalidZkProof);
 
 		let proof = R1CSProof::from_bytes(&proof_bytes);
 		ensure!(proof.is_ok(), Error::<T>::InvalidZkProof);
 		let proof = proof.unwrap();
 
-		let mut rng = OsRng {};
-		// Final verification
-		let res = verifier.verify_with_rng(&proof, &pc_gens, &bp_gens, &mut rng);
-		ensure!(res.is_ok(), Error::<T>::ZkVericationFailed);
+		let mut rng = OsRng::default();
+		let verify_res = verifier.verify_with_rng(&proof, &h.pc_gens, &h.bp_gens, &mut rng);
+		ensure!(verify_res.is_ok(), Error::<T>::ZkVericationFailed);
 		Ok(())
 	}
 }
@@ -462,22 +499,23 @@ impl<T: Config> Module<T> {
 		}
 	}
 
-	pub fn add_leaf<H: Hasher>(tree: &mut GroupTree<T>, data: Data, h: &H) {
+	pub fn add_leaf(tree: &mut GroupTree<T>, data: Data, h: &Poseidon) {
 		let mut edge_index = tree.leaf_count;
-		let mut pair_hash = data;
+		let mut hash = data.0;
 		// Update the tree
 		for i in 0..tree.edge_nodes.len() {
-			if edge_index % 2 == 0 {
-				tree.edge_nodes[i] = pair_hash;
-			}
-
-			let hash = tree.edge_nodes[i];
-			pair_hash = Data::hash(hash, pair_hash, h);
+			hash = if edge_index % 2 == 0 {
+				tree.edge_nodes[i] = Data(hash);
+				let zero_h = Scalar::from_bytes_mod_order(ZERO_TREE[i]);
+				Poseidon_hash_2(hash, zero_h, h)
+			} else {
+				Poseidon_hash_2(tree.edge_nodes[i].0, hash, h)
+			};
 
 			edge_index /= 2;
 		}
 
 		tree.leaf_count += 1;
-		tree.root_hash = pair_hash;
+		tree.root_hash = Data(hash);
 	}
 }

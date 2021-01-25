@@ -1,22 +1,18 @@
 use crate::{
-	poseidon::{allocate_statics_for_prover, Poseidon_hash_2_gadget},
-	utils::get_scalar_from_hex,
+	poseidon::{allocate_statics_for_prover, sbox::PoseidonSbox, Poseidon_hash_2_gadget},
+	utils::{get_scalar_from_hex, AllocatedScalar},
 };
 use alloc::{string::String, vec::Vec};
-use rand_core::{CryptoRng, RngCore};
-
-use crate::{poseidon::sbox::PoseidonSbox, utils::AllocatedScalar};
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
-use merlin::Transcript;
-
 use crypto_constants::poseidon::{
 	constants_3, constants_4, constants_5, constants_6, constants_7, constants_8, constants_9,
 };
+use curve25519_dalek::scalar::Scalar;
+use merlin::Transcript;
+use rand_core::{CryptoRng, RngCore};
 
 #[cfg(feature = "std")]
 use std::time::Instant;
-
-use curve25519_dalek::scalar::Scalar;
 
 // const DEFAULT_SECURITY_BITS: usize = 128;
 

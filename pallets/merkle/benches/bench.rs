@@ -3,7 +3,6 @@ extern crate bencher;
 
 use pallet_merkle::merkle::{
 	helper::{prove_with_random_leaf, verify},
-	mimc::Mimc,
 	poseidon::Poseidon,
 };
 

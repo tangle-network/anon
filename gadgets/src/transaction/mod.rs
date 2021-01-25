@@ -4,16 +4,13 @@ pub mod tests;
 pub mod builder;
 
 use crate::{
-	poseidon::{Poseidon_hash_2, Poseidon_hash_2_gadget, Poseidon_hash_4, Poseidon_hash_4_gadget},
+	poseidon::{builder::Poseidon, Poseidon_hash_2_gadget, Poseidon_hash_4_gadget},
+	utils::AllocatedScalar,
 	zero_nonzero::is_nonzero_gadget,
 };
-
-use crate::poseidon::builder::Poseidon;
-use bulletproofs::r1cs::{ConstraintSystem, R1CSError};
+use alloc::vec::Vec;
+use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSError};
 use curve25519_dalek::scalar::Scalar;
-
-use crate::utils::AllocatedScalar;
-use bulletproofs::r1cs::LinearCombination;
 
 pub enum HashSize {
 	Two,

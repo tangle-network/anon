@@ -1,4 +1,3 @@
-#[cfg(feature = "std")]
 pub mod builder;
 
 #[cfg(test)]
@@ -12,8 +11,6 @@ use crate::{
 use alloc::vec::Vec;
 use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSError};
 use curve25519_dalek::scalar::Scalar;
-
-pub const TREE_DEPTH: usize = 30;
 
 pub fn fixed_deposit_tree_verif_gadget<CS: ConstraintSystem>(
 	cs: &mut CS,

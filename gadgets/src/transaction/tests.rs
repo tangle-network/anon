@@ -1,31 +1,21 @@
 use crate::{
-	poseidon::{allocate_statics_for_prover, allocate_statics_for_verifier, Poseidon_hash_2, Poseidon_hash_4},
-	transaction::{AllocatedCoin, Transaction},
+	poseidon::{
+		allocate_statics_for_prover, allocate_statics_for_verifier,
+		builder::{gen_mds_matrix, gen_round_keys, Poseidon},
+		PoseidonBuilder, PoseidonSbox, Poseidon_hash_2, Poseidon_hash_4,
+	},
+	transaction::{transaction_preimage_gadget, AllocatedCoin, Transaction},
+	utils::AllocatedScalar,
 };
-
-use crate::{
-	poseidon::{builder::Poseidon, PoseidonBuilder, PoseidonSbox},
-	transaction::transaction_preimage_gadget,
-};
-
-use crate::utils::AllocatedScalar;
-
-use crate::poseidon::builder::{gen_mds_matrix, gen_round_keys};
 use bulletproofs::{
 	r1cs::{Prover, Verifier},
 	BulletproofGens, PedersenGens,
 };
 use curve25519_dalek::scalar::Scalar;
 use merlin::Transcript;
-
+use rand_core::OsRng;
 #[cfg(feature = "std")]
 use std::time::Instant;
-
-#[cfg(feature = "std")]
-use rand::SeedableRng;
-
-#[cfg(feature = "std")]
-use rand::rngs::StdRng;
 
 #[cfg(feature = "std")]
 fn get_poseidon_params(sbox: Option<PoseidonSbox>) -> Poseidon {
@@ -49,7 +39,7 @@ fn test_is_valid_transaction_spend() {
 	let pc_gens = PedersenGens::default();
 	let bp_gens = BulletproofGens::new(4096, 1);
 
-	let mut test_rng: StdRng = SeedableRng::from_seed([24u8; 32]);
+	let mut test_rng = OsRng::default();
 
 	let input = Scalar::from(10u32);
 	let input_inverse = input.invert();
