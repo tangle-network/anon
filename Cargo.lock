@@ -3344,8 +3344,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "mixer-cl"
-version = "0.1.11"
+name = "mixer-client"
+version = "0.0.1"
 dependencies = [
  "console_error_panic_hook",
  "curve25519-dalek 3.0.2",
