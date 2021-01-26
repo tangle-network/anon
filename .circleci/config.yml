@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: phusion/baseimage:0.11
+      - image: 'cimg/node:13.12-browser'
         environment:
           DEBUG_BUILD: true
           DEBIAN_FRONTEND: noninteractive
@@ -10,8 +10,18 @@ jobs:
     working_directory: ~/anon
 
     steps:
+      - browser-tools/install-chrome
+        - browser-tools/install-chromedriver
+        - run:
+            command: |
+              google-chrome --version
+              chromedriver --version
+            name: Check install
       - checkout
       - run: ~/anon/scripts/init.sh
       - run: source ~/.cargo/env && ~/anon/scripts/test.sh
       - run: source ~/.cargo/env && ~/anon/scripts/bench.sh
       - run: source ~/.cargo/env && ~/anon/scripts/build.sh
+orbs:
+  browser-tools: circleci/browser-tools@x.y
+version: 2.1
