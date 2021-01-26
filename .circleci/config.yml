@@ -1,8 +1,8 @@
-version: 2
+version: 2.1
 jobs:
   build:
     docker:
-      - image: 'cimg/node:13.12-browser'
+      - image: "cimg/node:13.12-browser"
         environment:
           DEBUG_BUILD: true
           DEBIAN_FRONTEND: noninteractive
@@ -23,5 +23,4 @@ jobs:
       - run: source ~/.cargo/env && ~/anon/scripts/bench.sh
       - run: source ~/.cargo/env && ~/anon/scripts/build.sh
 orbs:
-  browser-tools: circleci/browser-tools@x.y
-version: 2.1
+  browser-tools: circleci/browser-tools@1.1.1
