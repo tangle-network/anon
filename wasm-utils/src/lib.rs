@@ -1,11 +1,10 @@
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_gadgets::fixed_deposit_tree::builder::{FixedDepositTree, FixedDepositTreeBuilder};
-use js_sys::{Array, JsString, Map, JSON};
+use js_sys::{Array, JsString, Map};
 use merlin::Transcript;
 use std::collections::hash_map::HashMap;
 use wasm_bindgen::prelude::*;
-use web_sys::{window, Storage};
 
 #[wasm_bindgen]
 extern "C" {
@@ -37,14 +36,11 @@ pub fn encode_hex(bytes: [u8; 32]) -> String {
 	bytes.iter().map(|&b| format!("{:02x}", b)).collect()
 }
 
-// Keys used for saving things in storage and generating notes
-const STORAGE_SECRETS_PREFIX: &str = "webb-mix-secrets";
 const NOTE_PREFIX: &str = "webb.mix";
 
 #[wasm_bindgen]
 pub struct Mixer {
 	tree_map: HashMap<(String, u8), FixedDepositTree>,
-	store: Storage,
 }
 
 impl Mixer {
@@ -70,9 +66,7 @@ impl Mixer {
 		for (asset, id, depth) in trees {
 			tree_map.insert((asset, id), FixedDepositTreeBuilder::new().depth(depth).build());
 		}
-		let win = window().unwrap();
-		let store = win.local_storage().unwrap().unwrap();
-		Mixer { tree_map, store }
+		Mixer { tree_map }
 	}
 
 	pub fn add_leaves(&mut self, asset: String, id: u8, leaves: JsValue) {
@@ -89,7 +83,7 @@ impl Mixer {
 	// Generates a new note with random samples
 	// note has a format of `webb.mix-<mixed_id>-<r as hex string><nullifier as
 	// hex string>`
-	pub fn generate_note(&mut self, asset: String, id: u8) -> JsString {
+	pub fn generate_note(&mut self, asset: String, id: u8, block_number: Option<u32>) -> JsString {
 		assert!(self.tree_map.contains_key(&(asset.to_owned(), id)), "Tree not found!");
 		let fixed_tree = self.get_tree_mut(asset.to_owned(), id);
 		let leaf = fixed_tree.generate_secrets();
@@ -97,7 +91,16 @@ impl Mixer {
 
 		let encoded_r = encode_hex(r.to_bytes());
 		let encoded_nullifier = encode_hex(nullifier.to_bytes());
-		let note = format!("{}-{}-{}-{}{}", NOTE_PREFIX, asset, id, encoded_r, encoded_nullifier);
+		let mut parts: Vec<String> = Vec::new();
+		parts.push(NOTE_PREFIX.to_string());
+		parts.push(format!("{}", asset));
+		parts.push(format!("{}", id));
+		if block_number.is_some() {
+			let bn: u32 = block_number.unwrap();
+			parts.push(format!("{}", bn));
+		}
+		parts.push(format!("{}{}", encoded_r, encoded_nullifier));
+		let note = parts.join("-");
 		let note_js = JsString::from(note);
 
 		note_js
@@ -111,12 +114,22 @@ impl Mixer {
 		let note: String = note_js.into();
 
 		let parts: Vec<&str> = note.split("-").collect();
+		let partial = parts.len() == 4;
 
 		assert!(parts[0] == NOTE_PREFIX, "Invalid note prefix!");
-		let asset: String = parts[1].to_owned();
-		let id: u8 = parts[2].parse().unwrap();
-		let note_val = parts[3];
-		assert!(note_val.len() == 128, "Invalid note length");
+		let asset: String = parts.get(1).expect("Unable to get asset!").to_string();
+		let id: u8 = parts.get(2).expect("Unable to get id!").parse().expect("Invalid id!");
+		let (block_number, note_val): (Option<u32>, _) = if partial {
+			(None, parts.get(3).expect("Unable to get secrets!"))
+		} else {
+			let bn: u32 = parts
+				.get(3)
+				.expect("Unable to get block number!")
+				.parse()
+				.expect("Invalid block number!");
+			(Some(bn), parts.get(4).expect("Unable to get secrets!"))
+		};
+		assert!(note_val.len() == 128, "Invalid note length!");
 
 		assert!(self.tree_map.contains_key(&(asset.to_owned(), id)), "Tree not found!");
 
@@ -128,45 +141,20 @@ impl Mixer {
 		let (r, nullifier, nullifier_hash, leaf) = tree.leaf_data_from_bytes(r_bytes, nullifier_bytes);
 		tree.add_secrets(leaf, r, nullifier, nullifier_hash);
 
+		let map = Map::new();
 		let leaf_js = JsValue::from_serde(&leaf.to_bytes()).unwrap();
 		let asset_js = JsValue::from(&asset);
 		let id_js = JsValue::from(id);
 
-		let map = Map::new();
+		if block_number.is_some() {
+			let block_number_js = JsValue::from(block_number.unwrap());
+			map.set(&JsValue::from_str("block_number"), &block_number_js);
+		}
+
 		map.set(&JsValue::from_str("leaf"), &leaf_js);
 		map.set(&JsValue::from_str("asset"), &asset_js);
 		map.set(&JsValue::from_str("id"), &id_js);
 		map
-	}
-
-	// Saving to storage which is an option with users consent
-	// All saved notes are stored into one array
-	pub fn save_note_to_storage(&self, note: &JsValue) {
-		let key = STORAGE_SECRETS_PREFIX;
-		let arr = if let Ok(Some(value)) = self.store.get_item(&key) {
-			let data = JSON::parse(&value).ok().unwrap();
-			Array::from(&data)
-		} else {
-			Array::new()
-		};
-		arr.push(note);
-		let storage_string: String = JSON::stringify(&arr).unwrap().into();
-		self.store.set_item(&key, &storage_string).unwrap();
-	}
-
-	// Loads saved notes from the storage and saves them to memory
-	// to be used for constructing the tree
-	pub fn load_notes_from_storage(&mut self) {
-		let key = STORAGE_SECRETS_PREFIX;
-		if let Ok(Some(value)) = self.store.get_item(&key) {
-			let data = JSON::parse(&value).ok().unwrap();
-			let arr = Array::from(&data);
-			let arr_iter = arr.iter();
-			for item in arr_iter {
-				let note_string = JsString::from(item);
-				self.save_note(note_string);
-			}
-		};
 	}
 
 	// Generates zk proof
@@ -267,5 +255,97 @@ mod tests {
 		let calc_root_js = mixer.get_root(asset.to_owned(), id);
 		let calc_root: [u8; 32] = calc_root_js.into_serde().unwrap();
 		assert_eq!(calc_root, root.to_bytes());
+	}
+
+	#[wasm_bindgen_test]
+	fn should_generate_and_save_note() {
+		let arr = Array::new();
+		arr.push(&JsString::from("EDG"));
+		arr.push(&JsValue::from(0));
+		arr.push(&JsValue::from(2));
+		let top_level_arr = Array::new();
+		top_level_arr.push(&arr);
+		let js_trees = JsValue::from(top_level_arr);
+		let asset = "EDG";
+		let id = 0;
+		let mut mixer = Mixer::new(js_trees);
+
+		// Partial note
+		let note_js = mixer.generate_note(asset.to_owned(), id, None);
+		let note_map = mixer.save_note(note_js);
+
+		let id_js = note_map.get(&JsValue::from("id"));
+		let asset_js = note_map.get(&JsValue::from("asset"));
+		let block_number_js = note_map.get(&JsValue::from("block_number"));
+
+		let id_res: u8 = id_js.into_serde().unwrap();
+		let asset_res: String = asset_js.into_serde().unwrap();
+
+		assert_eq!(id_res, id);
+		assert_eq!(asset_res, asset);
+		assert!(block_number_js.is_undefined());
+
+		// Complete note
+		let note_js = mixer.generate_note(asset.to_owned(), id, Some(1));
+		let note_map = mixer.save_note(note_js);
+
+		let id_js = note_map.get(&JsValue::from("id"));
+		let asset_js = note_map.get(&JsValue::from("asset"));
+		let block_number_js = note_map.get(&JsValue::from("block_number"));
+
+		let id_res: u8 = id_js.into_serde().unwrap();
+		let asset_res: String = asset_js.into_serde().unwrap();
+		let block_number_res: u32 = block_number_js.into_serde().unwrap();
+
+		assert_eq!(id_res, id);
+		assert_eq!(asset_res, asset);
+		assert_eq!(block_number_res, 1);
+	}
+
+	#[wasm_bindgen_test]
+	fn should_create_proof() {
+		let arr = Array::new();
+		arr.push(&JsString::from("EDG"));
+		arr.push(&JsValue::from(0));
+		arr.push(&JsValue::from(2));
+		let top_level_arr = Array::new();
+		top_level_arr.push(&arr);
+		let js_trees = JsValue::from(top_level_arr);
+		let asset = "EDG";
+		let id = 0;
+		let mut mixer = Mixer::new(js_trees);
+		let tree = mixer.get_tree_mut(asset.to_owned(), id);
+		let leaf1 = tree.generate_secrets();
+		let leaf2 = Scalar::from(2u32);
+		let leaf3 = Scalar::from(3u32);
+		let leaf1_js = JsValue::from_serde(&leaf1.to_bytes()).unwrap();
+
+		let arr = Array::new();
+		arr.push(&leaf1_js);
+		arr.push(&JsValue::from_serde(&leaf2.to_bytes()).unwrap());
+		arr.push(&JsValue::from_serde(&leaf3.to_bytes()).unwrap());
+		let list = JsValue::from(arr);
+
+		mixer.add_leaves(asset.to_owned(), id, list);
+		let root = mixer.get_root(asset.to_owned(), id);
+
+		let proof = mixer.generate_proof(asset.to_owned(), id, root, leaf1_js);
+		let comms = proof.get(&JsValue::from_str("comms"));
+		// let nullifier_hash = proof.get(&JsValue::from_str("nullifier_hash"));
+		let leaf_index_comms = proof.get(&JsValue::from_str("leaf_index_comms"));
+		let proof_comms = proof.get(&JsValue::from_str("proof_comms"));
+		// let proof = proof.get(&JsValue::from_str("proof"));
+
+		let comms_arr = Array::from(&comms);
+		let leaf_index_comms_arr = Array::from(&leaf_index_comms);
+		let proof_comms_arr = Array::from(&proof_comms);
+
+		assert_eq!(comms_arr.length(), 3);
+		assert_eq!(leaf_index_comms_arr.length(), 2);
+		assert_eq!(proof_comms_arr.length(), 2);
+
+		// Left for debugging purposes
+		// assert_eq!(nullifier_hash, 0);
+		// assert_eq!(proof, 0);
 	}
 }

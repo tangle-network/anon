@@ -28,12 +28,5 @@ version = "3.0.0"
 default-features = false
 features = ["u64_backend", "alloc"]
 
-[dependencies.web-sys]
-version = "0.3.46"
-features = [
-	"Storage",
-	"Window",
-]
-
 [lib]
 crate-type = ["cdylib", "rlib"]

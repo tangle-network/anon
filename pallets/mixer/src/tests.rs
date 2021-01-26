@@ -52,7 +52,7 @@ fn should_fail_to_deposit_with_insufficient_balance() {
 		assert_ok!(Mixer::initialize(Origin::signed(1)));
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		for i in 0..4 {
-			let leaf = tree.add_secrets();
+			let leaf = tree.generate_secrets();
 			assert_err!(
 				Mixer::deposit(Origin::signed(4), i, vec![Data(leaf)]),
 				DispatchError::Module {
@@ -71,7 +71,7 @@ fn should_deposit_into_each_mixer_successfully() {
 		assert_ok!(Mixer::initialize(Origin::signed(1)));
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		for i in 0..4 {
-			let leaf = tree.add_secrets();
+			let leaf = tree.generate_secrets();
 			let balance_before = Balances::free_balance(1);
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
 			let balance_after = Balances::free_balance(1);
@@ -101,14 +101,14 @@ fn should_withdraw_from_each_mixer_successfully() {
 				.depth(32)
 				.build();
 
-			let leaf = ftree.add_secrets();
-			ftree.tree.add(vec![leaf]);
+			let leaf = ftree.generate_secrets();
+			ftree.tree.add_leaves(vec![leaf.to_bytes()]);
 
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
 
 			let root = MerkleGroups::get_merkle_root(i).unwrap();
 			let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-				ftree.prove_zk(Scalar::zero(), root.0, &ftree.hash_params.bp_gens, prover);
+				ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
 
 			let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 			let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
@@ -142,7 +142,7 @@ fn should_cache_roots_if_no_new_deposits_show() {
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		let mut merkle_roots: Vec<Data> = vec![];
 		for i in 0..4 {
-			let leaf = tree.add_secrets();
+			let leaf = tree.generate_secrets();
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
 			let root = MerkleGroups::get_merkle_root(i).unwrap();
 			merkle_roots.push(root);
@@ -176,7 +176,7 @@ fn should_not_have_cache_once_cache_length_exceeded() {
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		let mut merkle_roots: Vec<Data> = vec![];
 		for i in 0..4 {
-			let leaf = tree.add_secrets();
+			let leaf = tree.generate_secrets();
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
 			let root = MerkleGroups::get_merkle_root(i).unwrap();
 			merkle_roots.push(root);
