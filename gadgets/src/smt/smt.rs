@@ -25,7 +25,7 @@ pub struct VanillaSparseMerkleTree {
 	pub root: Scalar,
 	curr_index: Scalar,
 	edge_nodes: Vec<Scalar>,
-	pub leaf_indecies: BTreeMap<ScalarBytes, Scalar>,
+	pub(crate) leaf_indices: BTreeMap<ScalarBytes, Scalar>,
 }
 
 impl VanillaSparseMerkleTree {
@@ -51,7 +51,7 @@ impl VanillaSparseMerkleTree {
 			root,
 			curr_index: Scalar::zero(),
 			edge_nodes,
-			leaf_indecies: BTreeMap::new(),
+			leaf_indices: BTreeMap::new(),
 		}
 	}
 
@@ -62,7 +62,7 @@ impl VanillaSparseMerkleTree {
 	pub fn add_leaves(&mut self, vals: Vec<[u8; 32]>) {
 		for val in vals {
 			self.update(self.curr_index, Scalar::from_bytes_mod_order(val));
-			self.leaf_indecies.insert(val, self.curr_index);
+			self.leaf_indices.insert(val, self.curr_index);
 			self.curr_index = self.curr_index + Scalar::one();
 		}
 	}
@@ -172,7 +172,7 @@ impl VanillaSparseMerkleTree {
 		let mut merkle_proof_vec = Vec::<Scalar>::new();
 		let mut merkle_proof = Some(merkle_proof_vec);
 
-		let k = self.leaf_indecies.get(&leaf.to_bytes()).unwrap();
+		let k = self.leaf_indices.get(&leaf.to_bytes()).unwrap();
 		let leaf = self.get(*k, root, &mut merkle_proof);
 		merkle_proof_vec = merkle_proof.unwrap();
 

@@ -79,7 +79,7 @@ impl FixedDepositTree {
 		let mut merkle_proof_vec = Vec::<Scalar>::new();
 		let mut merkle_proof = Some(merkle_proof_vec);
 
-		let k = self.tree.leaf_indecies.get(&leaf.to_bytes()).unwrap();
+		let k = self.tree.leaf_indices.get(&leaf.to_bytes()).unwrap();
 		let leaf = self.tree.get(*k, root, &mut merkle_proof);
 		merkle_proof_vec = merkle_proof.unwrap();
 

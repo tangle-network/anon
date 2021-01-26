@@ -37,6 +37,7 @@ pub fn encode_hex(bytes: [u8; 32]) -> String {
 }
 
 const NOTE_PREFIX: &str = "webb.mix";
+const VERSION: &str = "v1";
 
 #[wasm_bindgen]
 pub struct Mixer {
@@ -81,8 +82,8 @@ impl Mixer {
 	}
 
 	// Generates a new note with random samples
-	// note has a format of `webb.mix-<mixed_id>-<r as hex string><nullifier as
-	// hex string>`
+	// note has a format of:
+	// `webb.mix-[version]-[asset]-[mixed_id]-[block_number]-[r_hex][nullifier_hex]`
 	pub fn generate_note(&mut self, asset: String, id: u8, block_number: Option<u32>) -> JsString {
 		assert!(self.tree_map.contains_key(&(asset.to_owned(), id)), "Tree not found!");
 		let fixed_tree = self.get_tree_mut(asset.to_owned(), id);
@@ -93,6 +94,7 @@ impl Mixer {
 		let encoded_nullifier = encode_hex(nullifier.to_bytes());
 		let mut parts: Vec<String> = Vec::new();
 		parts.push(NOTE_PREFIX.to_string());
+		parts.push(VERSION.to_string());
 		parts.push(format!("{}", asset));
 		parts.push(format!("{}", id));
 		if block_number.is_some() {
@@ -114,20 +116,21 @@ impl Mixer {
 		let note: String = note_js.into();
 
 		let parts: Vec<&str> = note.split("-").collect();
-		let partial = parts.len() == 4;
+		let partial = parts.len() == 5;
 
 		assert!(parts[0] == NOTE_PREFIX, "Invalid note prefix!");
-		let asset: String = parts.get(1).expect("Unable to get asset!").to_string();
-		let id: u8 = parts.get(2).expect("Unable to get id!").parse().expect("Invalid id!");
+		assert!(parts[1] == VERSION, "Invalid version!");
+		let asset: String = parts.get(2).expect("Unable to get asset!").to_string();
+		let id: u8 = parts.get(3).expect("Unable to get id!").parse().expect("Invalid id!");
 		let (block_number, note_val): (Option<u32>, _) = if partial {
-			(None, parts.get(3).expect("Unable to get secrets!"))
+			(None, parts.get(4).expect("Unable to get secrets!"))
 		} else {
 			let bn: u32 = parts
-				.get(3)
+				.get(4)
 				.expect("Unable to get block number!")
 				.parse()
 				.expect("Invalid block number!");
-			(Some(bn), parts.get(4).expect("Unable to get secrets!"))
+			(Some(bn), parts.get(5).expect("Unable to get secrets!"))
 		};
 		assert!(note_val.len() == 128, "Invalid note length!");
 
