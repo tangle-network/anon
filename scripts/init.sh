@@ -26,3 +26,4 @@ fi
 rustup install nightly-2020-10-05
 rustup target add wasm32-unknown-unknown --toolchain nightly-2020-10-05
 rustup default nightly-2020-10-05
+curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh

@@ -21,21 +21,38 @@ use sp_std::collections::btree_map::BTreeMap;
 
 #[derive(Clone)]
 pub struct FixedDepositTree {
-	pub depth: usize,
 	secrets: BTreeMap<ScalarBytes, (Scalar, Scalar, Scalar)>,
 	pub hash_params: Poseidon,
 	pub tree: VanillaSparseMerkleTree,
 }
 
 impl FixedDepositTree {
-	pub fn add_secrets(&mut self) -> Scalar {
+	pub fn generate_secrets(&mut self) -> Scalar {
 		let mut rng = OsRng::default();
 		let r = Scalar::random(&mut rng);
 		let nullifier = Scalar::random(&mut rng);
 		let leaf = Poseidon_hash_2(r, nullifier, &self.hash_params);
 		let nullifier_hash = Poseidon_hash_2(nullifier, nullifier, &self.hash_params);
-		self.secrets.insert(leaf.to_bytes(), (r, nullifier, nullifier_hash));
+		self.add_secrets(leaf, r, nullifier, nullifier_hash);
 		leaf
+	}
+
+	pub fn add_secrets(&mut self, leaf: Scalar, r: Scalar, nullifier: Scalar, nullifier_hash: Scalar) {
+		self.secrets.insert(leaf.to_bytes(), (r, nullifier, nullifier_hash));
+	}
+
+	pub fn leaf_data_from_bytes(
+		&self,
+		r_bytes: [u8; 32],
+		nullifier_bytes: [u8; 32],
+	) -> (Scalar, Scalar, Scalar, Scalar) {
+		let r = Scalar::from_bytes_mod_order(r_bytes);
+		let nullifier = Scalar::from_bytes_mod_order(nullifier_bytes);
+		// Construct nullifier hash for note
+		let nullifier_hash = Poseidon_hash_2(nullifier, nullifier, &self.hash_params);
+		// Constructing a leaf from the scalars
+		let leaf = Poseidon_hash_2(r, nullifier, &self.hash_params);
+		(r, nullifier, nullifier_hash, leaf)
 	}
 
 	pub fn get_secrets(&self, leaf: Scalar) -> (Scalar, Scalar, Scalar) {
@@ -45,8 +62,8 @@ impl FixedDepositTree {
 
 	pub fn prove_zk(
 		&self,
-		k: Scalar,
 		root: Scalar,
+		leaf: Scalar,
 		bp_gens: &BulletproofGens,
 		mut prover: Prover,
 	) -> (
@@ -61,7 +78,9 @@ impl FixedDepositTree {
 		let mut rng: OsRng = OsRng::default();
 		let mut merkle_proof_vec = Vec::<Scalar>::new();
 		let mut merkle_proof = Some(merkle_proof_vec);
-		let leaf = self.tree.get(k, root, &mut merkle_proof);
+
+		let k = self.tree.leaf_indices.get(&leaf.to_bytes()).unwrap();
+		let leaf = self.tree.get(*k, root, &mut merkle_proof);
 		merkle_proof_vec = merkle_proof.unwrap();
 
 		let (r, nullifier, nullifier_hash) = self.get_secrets(leaf);
@@ -184,7 +203,6 @@ impl FixedDepositTreeBuilder {
 			.unwrap_or_else(|| SparseMerkleTreeBuilder::new().depth(depth).build());
 
 		FixedDepositTree {
-			depth,
 			secrets,
 			hash_params,
 			tree,
