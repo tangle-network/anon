@@ -389,251 +389,259 @@ fn should_verify_proof_of_membership() {
 	});
 }
 
-#[test]
-fn should_verify_simple_zk_proof_of_membership() {
-	new_test_ext().execute_with(|| {
-		let pc_gens = PedersenGens::default();
+// #[test]
+// fn should_verify_simple_zk_proof_of_membership() {
+// 	new_test_ext().execute_with(|| {
+// 		let pc_gens = PedersenGens::default();
 
-		let label = b"zk_membership_proof";
-		let mut prover_transcript = Transcript::new(label);
-		let prover = Prover::new(&pc_gens, &mut prover_transcript);
+// 		let label = b"zk_membership_proof";
+// 		let mut prover_transcript = Transcript::new(label);
+// 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
+// 		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
 
-		let leaf = ftree.generate_secrets();
-		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
+// 		let leaf = ftree.generate_secrets();
+// 		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
 
-		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
-		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
-		let root = MerkleGroups::get_merkle_root(0).unwrap();
+// 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
+// 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0,
+// vec![Data(leaf)])); 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 
-		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+// 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr))
+// = 			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
 
-		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		assert_ok!(MerkleGroups::verify_zk_membership_proof(
-			0,
-			0,
-			root,
-			comms,
-			Data(nullifier_hash),
-			proof.to_bytes(),
-			leaf_index_comms,
-			proof_comms
-		));
-	});
-}
+// 		let comms: Vec<Commitment> = comms_cr.iter().map(|x|
+// Commitment(*x)).collect(); 		let leaf_index_comms: Vec<Commitment> =
+// leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
+// 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x|
+// Commitment(*x)).collect(); 		assert_ok!(MerkleGroups::
+// verify_zk_membership_proof( 			0,
+// 			0,
+// 			root,
+// 			comms,
+// 			Data(nullifier_hash),
+// 			proof.to_bytes(),
+// 			leaf_index_comms,
+// 			proof_comms
+// 		));
+// 	});
+// }
 
-#[test]
-fn should_not_verify_invalid_commitments_for_leaf_creation() {
-	new_test_ext().execute_with(|| {
-		let pc_gens = PedersenGens::default();
+// #[test]
+// fn should_not_verify_invalid_commitments_for_leaf_creation() {
+// 	new_test_ext().execute_with(|| {
+// 		let pc_gens = PedersenGens::default();
 
-		let label = b"zk_membership_proof";
-		let mut prover_transcript = Transcript::new(label);
-		let prover = Prover::new(&pc_gens, &mut prover_transcript);
+// 		let label = b"zk_membership_proof";
+// 		let mut prover_transcript = Transcript::new(label);
+// 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
+// 		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
 
-		let leaf = ftree.generate_secrets();
-		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
+// 		let leaf = ftree.generate_secrets();
+// 		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
 
-		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
-		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
-		let root = MerkleGroups::get_merkle_root(0).unwrap();
+// 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
+// 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0,
+// vec![Data(leaf)])); 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 
-		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+// 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr))
+// = 			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
 
-		let mut comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let mut rng = OsRng::default();
-		comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
-		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		assert_err!(
-			MerkleGroups::verify_zk_membership_proof(
-				0,
-				0,
-				root,
-				comms,
-				Data(nullifier_hash),
-				proof.to_bytes(),
-				leaf_index_comms,
-				proof_comms
-			),
-			Error::<Test>::ZkVericationFailed
-		);
-	});
-}
+// 		let mut comms: Vec<Commitment> = comms_cr.iter().map(|x|
+// Commitment(*x)).collect(); 		let mut rng = OsRng::default();
+// 		comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
+// 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x|
+// Commitment(*x)).collect(); 		let proof_comms: Vec<Commitment> =
+// proof_comms_cr.iter().map(|x| Commitment(*x)).collect(); 		assert_err!(
+// 			MerkleGroups::verify_zk_membership_proof(
+// 				0,
+// 				0,
+// 				root,
+// 				comms,
+// 				Data(nullifier_hash),
+// 				proof.to_bytes(),
+// 				leaf_index_comms,
+// 				proof_comms
+// 			),
+// 			Error::<Test>::ZkVericationFailed
+// 		);
+// 	});
+// }
 
-#[test]
-fn should_not_verify_invalid_commitments_for_membership() {
-	new_test_ext().execute_with(|| {
-		let pc_gens = PedersenGens::default();
+// #[test]
+// fn should_not_verify_invalid_commitments_for_membership() {
+// 	new_test_ext().execute_with(|| {
+// 		let pc_gens = PedersenGens::default();
 
-		let label = b"zk_membership_proof";
-		let mut prover_transcript = Transcript::new(label);
-		let prover = Prover::new(&pc_gens, &mut prover_transcript);
+// 		let label = b"zk_membership_proof";
+// 		let mut prover_transcript = Transcript::new(label);
+// 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
+// 		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
 
-		let leaf = ftree.generate_secrets();
-		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
+// 		let leaf = ftree.generate_secrets();
+// 		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
 
-		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
-		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
-		let root = MerkleGroups::get_merkle_root(0).unwrap();
+// 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
+// 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0,
+// vec![Data(leaf)])); 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 
-		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+// 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr))
+// = 			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
 
-		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let mut leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let mut proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let mut rng = OsRng::default();
-		leaf_index_comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
-		proof_comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
-		assert_err!(
-			MerkleGroups::verify_zk_membership_proof(
-				0,
-				0,
-				root,
-				comms,
-				Data(nullifier_hash),
-				proof.to_bytes(),
-				leaf_index_comms,
-				proof_comms
-			),
-			Error::<Test>::ZkVericationFailed
-		);
-	});
-}
+// 		let comms: Vec<Commitment> = comms_cr.iter().map(|x|
+// Commitment(*x)).collect(); 		let mut leaf_index_comms: Vec<Commitment> =
+// leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
+// 		let mut proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x|
+// Commitment(*x)).collect(); 		let mut rng = OsRng::default();
+// 		leaf_index_comms[0] = Commitment(RistrettoPoint::random(&mut
+// rng).compress()); 		proof_comms[0] = Commitment(RistrettoPoint::random(&mut
+// rng).compress()); 		assert_err!(
+// 			MerkleGroups::verify_zk_membership_proof(
+// 				0,
+// 				0,
+// 				root,
+// 				comms,
+// 				Data(nullifier_hash),
+// 				proof.to_bytes(),
+// 				leaf_index_comms,
+// 				proof_comms
+// 			),
+// 			Error::<Test>::ZkVericationFailed
+// 		);
+// 	});
+// }
 
-#[test]
-fn should_not_verify_invalid_transcript() {
-	new_test_ext().execute_with(|| {
-		let pc_gens = PedersenGens::default();
+// #[test]
+// fn should_not_verify_invalid_transcript() {
+// 	new_test_ext().execute_with(|| {
+// 		let pc_gens = PedersenGens::default();
 
-		let label = b"zk_membership_proof_invalid";
-		let mut prover_transcript = Transcript::new(label);
-		let prover = Prover::new(&pc_gens, &mut prover_transcript);
+// 		let label = b"zk_membership_proof_invalid";
+// 		let mut prover_transcript = Transcript::new(label);
+// 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
+// 		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
 
-		let leaf = ftree.generate_secrets();
-		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
+// 		let leaf = ftree.generate_secrets();
+// 		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
 
-		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
-		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
-		let root = MerkleGroups::get_merkle_root(0).unwrap();
+// 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
+// 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0,
+// vec![Data(leaf)])); 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 
-		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+// 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr))
+// = 			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
 
-		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		assert_err!(
-			MerkleGroups::verify_zk_membership_proof(
-				0,
-				0,
-				root,
-				comms,
-				Data(nullifier_hash),
-				proof.to_bytes(),
-				leaf_index_comms,
-				proof_comms
-			),
-			Error::<Test>::ZkVericationFailed
-		);
-	});
-}
+// 		let comms: Vec<Commitment> = comms_cr.iter().map(|x|
+// Commitment(*x)).collect(); 		let leaf_index_comms: Vec<Commitment> =
+// leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
+// 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x|
+// Commitment(*x)).collect(); 		assert_err!(
+// 			MerkleGroups::verify_zk_membership_proof(
+// 				0,
+// 				0,
+// 				root,
+// 				comms,
+// 				Data(nullifier_hash),
+// 				proof.to_bytes(),
+// 				leaf_index_comms,
+// 				proof_comms
+// 			),
+// 			Error::<Test>::ZkVericationFailed
+// 		);
+// 	});
+// }
 
-#[test]
-fn should_verify_zk_proof_of_membership() {
-	new_test_ext().execute_with(|| {
-		let pc_gens = PedersenGens::default();
+// #[test]
+// fn should_verify_zk_proof_of_membership() {
+// 	new_test_ext().execute_with(|| {
+// 		let pc_gens = PedersenGens::default();
 
-		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
-		let prover = Prover::new(&pc_gens, &mut prover_transcript);
-		let mut ftree = FixedDepositTreeBuilder::new().depth(3).build();
+// 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
+// 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
+// 		let mut ftree = FixedDepositTreeBuilder::new().depth(3).build();
 
-		let leaf0 = ftree.generate_secrets();
-		let leaf1 = ftree.generate_secrets();
-		let leaf2 = ftree.generate_secrets();
-		let leaf3 = ftree.generate_secrets();
-		let leaf4 = ftree.generate_secrets();
-		let leaf5 = ftree.generate_secrets();
-		let leaf6 = ftree.generate_secrets();
-		let keys = vec![
-			leaf0.to_bytes(),
-			leaf1.to_bytes(),
-			leaf2.to_bytes(),
-			leaf3.to_bytes(),
-			leaf4.to_bytes(),
-			leaf5.to_bytes(),
-			leaf6.to_bytes(),
-		];
-		ftree.tree.add_leaves(keys.clone());
+// 		let leaf0 = ftree.generate_secrets();
+// 		let leaf1 = ftree.generate_secrets();
+// 		let leaf2 = ftree.generate_secrets();
+// 		let leaf3 = ftree.generate_secrets();
+// 		let leaf4 = ftree.generate_secrets();
+// 		let leaf5 = ftree.generate_secrets();
+// 		let leaf6 = ftree.generate_secrets();
+// 		let keys = vec![
+// 			leaf0.to_bytes(),
+// 			leaf1.to_bytes(),
+// 			leaf2.to_bytes(),
+// 			leaf3.to_bytes(),
+// 			leaf4.to_bytes(),
+// 			leaf5.to_bytes(),
+// 			leaf6.to_bytes(),
+// 		];
+// 		ftree.tree.add_leaves(keys.clone());
 
-		let keys_data: Vec<Data> = keys.iter().map(|x| Data(Scalar::from_bytes_mod_order(*x))).collect();
-		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(3),));
-		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, keys_data));
+// 		let keys_data: Vec<Data> = keys.iter().map(|x|
+// Data(Scalar::from_bytes_mod_order(*x))).collect(); 		assert_ok!(MerkleGroups::
+// create_group(Origin::signed(1), false, Some(3),)); 		assert_ok!(MerkleGroups::
+// add_members(Origin::signed(1), 0, keys_data));
 
-		let root = MerkleGroups::get_merkle_root(0).unwrap();
-		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-			ftree.prove_zk(root.0, leaf5, &ftree.hash_params.bp_gens, prover);
+// 		let root = MerkleGroups::get_merkle_root(0).unwrap();
+// 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr))
+// = 			ftree.prove_zk(root.0, leaf5, &ftree.hash_params.bp_gens, prover);
 
-		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		assert_ok!(MerkleGroups::verify_zk_membership_proof(
-			0,
-			0,
-			root,
-			comms,
-			Data(nullifier_hash),
-			proof.to_bytes(),
-			leaf_index_comms,
-			proof_comms
-		));
-	});
-}
+// 		let comms: Vec<Commitment> = comms_cr.iter().map(|x|
+// Commitment(*x)).collect(); 		let leaf_index_comms: Vec<Commitment> =
+// leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
+// 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x|
+// Commitment(*x)).collect(); 		assert_ok!(MerkleGroups::
+// verify_zk_membership_proof( 			0,
+// 			0,
+// 			root,
+// 			comms,
+// 			Data(nullifier_hash),
+// 			proof.to_bytes(),
+// 			leaf_index_comms,
+// 			proof_comms
+// 		));
+// 	});
+// }
 
-#[test]
-fn should_verify_large_zk_proof_of_membership() {
-	new_test_ext().execute_with(|| {
-		let pc_gens = PedersenGens::default();
+// #[test]
+// fn should_verify_large_zk_proof_of_membership() {
+// 	new_test_ext().execute_with(|| {
+// 		let pc_gens = PedersenGens::default();
 
-		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
-		let prover = Prover::new(&pc_gens, &mut prover_transcript);
-		let poseidon = default_hasher(40960);
-		let mut ftree = FixedDepositTreeBuilder::new().hash_params(poseidon).depth(32).build();
+// 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
+// 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
+// 		let poseidon = default_hasher(40960);
+// 		let mut ftree =
+// FixedDepositTreeBuilder::new().hash_params(poseidon).depth(32).build();
 
-		let leaf = ftree.generate_secrets();
-		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
+// 		let leaf = ftree.generate_secrets();
+// 		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
 
-		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(32),));
-		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
+// 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(32),));
+// 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0,
+// vec![Data(leaf)]));
 
-		let root = MerkleGroups::get_merkle_root(0).unwrap();
-		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+// 		let root = MerkleGroups::get_merkle_root(0).unwrap();
+// 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr))
+// = 			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
 
-		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		assert_ok!(MerkleGroups::verify_zk_membership_proof(
-			0,
-			0,
-			root,
-			comms,
-			Data(nullifier_hash),
-			proof.to_bytes(),
-			leaf_index_comms,
-			proof_comms
-		));
-	});
-}
+// 		let comms: Vec<Commitment> = comms_cr.iter().map(|x|
+// Commitment(*x)).collect(); 		let leaf_index_comms: Vec<Commitment> =
+// leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
+// 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x|
+// Commitment(*x)).collect(); 		assert_ok!(MerkleGroups::
+// verify_zk_membership_proof( 			0,
+// 			0,
+// 			root,
+// 			comms,
+// 			Data(nullifier_hash),
+// 			proof.to_bytes(),
+// 			leaf_index_comms,
+// 			proof_comms
+// 		));
+// 	});
+// }

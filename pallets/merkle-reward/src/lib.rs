@@ -18,7 +18,7 @@ pub mod tests;
 
 pub use crate::group_trait::Group;
 use bulletproofs::{
-	r1cs::{R1CSProof, Verifier},
+	r1cs::{R1CSProof, Variable, Verifier},
 	BulletproofGens, PedersenGens,
 };
 use codec::{Decode, Encode};
@@ -38,7 +38,10 @@ use frame_system::{ensure_root, ensure_signed};
 use merkle::keys::{Commitment, Data};
 use merlin::Transcript;
 use rand_core::OsRng;
-use sp_runtime::traits::{AtLeast32Bit, One};
+use sp_runtime::{
+	traits::{AtLeast32Bit, One},
+	SaturatedConversion,
+};
 use sp_std::prelude::*;
 
 pub mod group_trait;
@@ -51,8 +54,6 @@ pub trait Config: frame_system::Config + balances::Config {
 	type GroupId: Encode + Decode + Parameter + AtLeast32Bit + Default + Copy;
 	/// The max depth of trees
 	type MaxTreeDepth: Get<u8>;
-	/// The amount of blocks to cache roots over
-	type CacheBlockLength: Get<Self::BlockNumber>;
 }
 
 // TODO find better way to have default hasher without saving it inside storage
@@ -107,11 +108,6 @@ decl_storage! {
 		pub NextGroupId get(fn next_group_id): T::GroupId;
 		/// The map of groups to their metadata
 		pub Groups get(fn groups): map hasher(blake2_128_concat) T::GroupId => Option<GroupTree<T>>;
-		/// Map of cached/past merkle roots at each blocknumber and group. There can be more than one root update in a single block.
-		/// Allows for easy pruning since we can remove all keys of first map past a certain point.
-		pub CachedRoots get(fn cached_roots): double_map hasher(blake2_128_concat) T::BlockNumber, hasher(blake2_128_concat) T::GroupId => Vec<Data>;
-		pub LowestCachedBlock get(fn lowest_cached_block): T::BlockNumber;
-		pub HighestCachedBlock get(fn highest_cached_block): T::BlockNumber;
 		/// Map of used nullifiers (Data) for each tree.
 		pub UsedNullifiers get(fn used_nullifiers): map hasher(blake2_128_concat) (T::GroupId, Data) => bool;
 	}
@@ -230,26 +226,6 @@ decl_module! {
 			let _sender = ensure_signed(origin)?;
 			<Self as Group<_,_,_>>::verify(group_id, leaf, path)
 		}
-
-		fn on_finalize(_n: T::BlockNumber) {
-			// update highest block in cache
-			if HighestCachedBlock::<T>::get() < _n {
-				HighestCachedBlock::<T>::set(_n);
-			}
-
-			// initialise lowest block in cache if not already
-			if LowestCachedBlock::<T>::get() < One::one() {
-				LowestCachedBlock::<T>::set(_n);
-			}
-
-			// update and prune database if pruning length has been hit
-			if HighestCachedBlock::<T>::get() > T::CacheBlockLength::get() {
-				if HighestCachedBlock::<T>::get() - T::CacheBlockLength::get() >= LowestCachedBlock::<T>::get() {
-					CachedRoots::<T>::remove_prefix(LowestCachedBlock::<T>::get());
-					LowestCachedBlock::<T>::set(LowestCachedBlock::<T>::get() + One::one());
-				}
-			}
-		}
 	}
 }
 
@@ -299,12 +275,15 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 			Error::<T>::ExceedsMaxDepth
 		);
 
+		let block_number = <frame_system::Module<T>>::block_number();
+		// TODO: Check the safety of this conversion
+		let bn_primitive: u128 = block_number.saturated_into();
 		let h = default_hasher();
 		for data in &members {
-			Self::add_leaf(&mut tree, *data, &h);
+			let bn_scalar = Scalar::from(bn_primitive);
+			let leaf_with_block_number = Poseidon_hash_2(data.0, bn_scalar, &h);
+			Self::add_leaf(&mut tree, Data(leaf_with_block_number), &h);
 		}
-		let block_number: T::BlockNumber = <frame_system::Module<T>>::block_number();
-		CachedRoots::<T>::append(block_number, id, tree.root_hash);
 		Groups::<T>::insert(id, tree);
 
 		// Raising the New Member event for the client to build a tree locally
@@ -356,8 +335,6 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 
 	fn verify_zk_membership_proof(
 		group_id: T::GroupId,
-		cached_block: T::BlockNumber,
-		cached_root: Data,
 		comms: Vec<Commitment>,
 		nullifier_hash: Data,
 		proof_bytes: Vec<u8>,
@@ -368,12 +345,6 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		ensure!(
 			tree.edge_nodes.len() == proof_commitments.len(),
 			Error::<T>::InvalidPathLength
-		);
-		// Ensure that root being checked against is in the cache
-		let old_roots = Self::cached_roots(cached_block, group_id);
-		ensure!(
-			old_roots.iter().any(|r| *r == cached_root),
-			Error::<T>::InvalidMerkleRoot
 		);
 		// TODO: Initialise these generators with the pallet
 		let pc_gens = PedersenGens::default();
@@ -409,13 +380,20 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 			variable: r_val,
 			assignment: None,
 		};
+
 		let nullifier_val = verifier.commit(comms[1].0);
 		let nullifier_alloc = AllocatedScalar {
 			variable: nullifier_val,
 			assignment: None,
 		};
 
-		let var_leaf = verifier.commit(comms[2].0);
+		let block_number_val = verifier.commit(comms[2].0);
+		let block_number_alloc = AllocatedScalar {
+			variable: block_number_val,
+			assignment: None,
+		};
+
+		let var_leaf = verifier.commit(comms[3].0);
 		let leaf_alloc_scalar = AllocatedScalar {
 			variable: var_leaf,
 			assignment: None,
@@ -468,22 +446,9 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 }
 
 impl<T: Config> Module<T> {
-	pub fn get_cache(group_id: T::GroupId, block_number: T::BlockNumber) -> Vec<Data> {
-		Self::cached_roots(block_number, group_id)
-	}
-
 	pub fn get_merkle_root(group_id: T::GroupId) -> Result<Data, dispatch::DispatchError> {
 		let group = Self::get_group(group_id)?;
 		Ok(group.root_hash)
-	}
-
-	pub fn add_root_to_cache(
-		group_id: T::GroupId,
-		block_number: T::BlockNumber,
-	) -> Result<(), dispatch::DispatchError> {
-		let root = Self::get_merkle_root(group_id)?;
-		CachedRoots::<T>::append(block_number, group_id, root);
-		Ok(())
 	}
 
 	pub fn get_group(group_id: T::GroupId) -> Result<GroupTree<T>, dispatch::DispatchError> {

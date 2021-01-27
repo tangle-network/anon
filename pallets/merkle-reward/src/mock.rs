@@ -66,7 +66,6 @@ parameter_types! {
 	pub const ExistentialDeposit: Balance = 0;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxTreeDepth: u8 = 32;
-	pub const CacheBlockLength: u64 = 5;
 	pub const MinimumDepositLength: u64 = 10;
 }
 
@@ -81,7 +80,6 @@ impl balances::Config for Test {
 }
 
 impl Config for Test {
-	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
 	type GroupId = u32;
 	type MaxTreeDepth = MaxTreeDepth;

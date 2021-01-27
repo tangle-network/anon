@@ -3,7 +3,7 @@ authors = ["Drew Stone <drew@commonwealth.im>, Filip Lazovic"]
 description = "Merkle tree membership pallet with zero-knowledge membership proof verification"
 edition = "2018"
 license = "Unlicense"
-name = "pallet-merkle"
+name = "pallet-merkle-reward"
 version = "2.0.0"
 
 [package.metadata.docs.rs]

@@ -4,6 +4,7 @@ members = [
 	"gadgets",
 	"node",
 	"pallets/merkle",
+	"pallets/merkle-reward",
 	"pallets/mixer",
 	"runtime",
 	"wasm-utils"
