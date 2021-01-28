@@ -379,7 +379,7 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		let pc_gens = PedersenGens::default();
 		<Self as Group<_, _, _>>::verify_zk(
 			pc_gens,
-			tree.root_hash,
+			cached_root,
 			tree.depth,
 			comms,
 			nullifier_hash,
