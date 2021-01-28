@@ -150,8 +150,6 @@ decl_module! {
 		pub fn withdraw(
 			origin,
 			mixer_id: T::GroupId,
-			cached_block: T::BlockNumber,
-			cached_root: Data,
 			comms: Vec<Commitment>,
 			nullifier_hash: Data,
 			proof_bytes: Vec<u8>,
@@ -166,8 +164,6 @@ decl_module! {
 			// Verify the zero-knowledge proof of membership provided
 			T::Group::verify_zk_membership_proof(
 				mixer_id.into(),
-				cached_block,
-				cached_root,
 				comms,
 				nullifier_hash,
 				proof_bytes,
@@ -229,15 +225,10 @@ decl_module! {
 		}
 
 		fn on_finalize(_n: T::BlockNumber) {
-			// check if any deposits happened (by checked the size of collection at this block)
-			// if none happened, carry over previous merkle roots for the cache.
 			let mixer_ids = MixerGroupIds::<T>::get();
 			for i in 0..mixer_ids.len() {
-				let cached_roots = <merkle::Module<T>>::cached_roots(_n, mixer_ids[i]);
-				// if there are no cached roots, carry forward the current root
-				if cached_roots.len() == 0 {
-					let _ = <merkle::Module<T>>::add_root_to_cache(mixer_ids[i], _n);
-				}
+				let id = mixer_ids[i];
+				let _ = T::Group::update_cached_state(id);
 			}
 		}
 	}

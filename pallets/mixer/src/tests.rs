@@ -1,6 +1,5 @@
 use crate::mock::*;
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
-use curve25519_dalek::scalar::Scalar;
 use curve25519_gadgets::{
 	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
 	poseidon::{
@@ -9,10 +8,7 @@ use curve25519_gadgets::{
 	},
 };
 use frame_support::{assert_err, assert_ok, storage::StorageValue, traits::OnFinalize};
-use merkle::{
-	merkle::keys::{Commitment, Data},
-	HighestCachedBlock,
-};
+use merkle::merkle::keys::{Commitment, Data};
 use merlin::Transcript;
 use sp_runtime::DispatchError;
 
@@ -105,8 +101,10 @@ fn should_withdraw_from_each_mixer_successfully() {
 			ftree.tree.add_leaves(vec![leaf.to_bytes()]);
 
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
+			assert_ok!(MerkleGroups::update_cached_state(Origin::signed(1), i));
 
-			let root = MerkleGroups::get_merkle_root(i).unwrap();
+			let state = MerkleGroups::cached_state(i).unwrap();
+			let root = state.root_hash;
 			let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
 				ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
 
@@ -120,8 +118,6 @@ fn should_withdraw_from_each_mixer_successfully() {
 			assert_ok!(Mixer::withdraw(
 				Origin::signed(2),
 				i,
-				0,
-				root,
 				comms,
 				Data(nullifier_hash),
 				proof.to_bytes(),
@@ -130,81 +126,6 @@ fn should_withdraw_from_each_mixer_successfully() {
 			));
 			let balance_after = Balances::free_balance(2);
 			assert_eq!(balance_before + m.fixed_deposit_size, balance_after);
-		}
-	})
-}
-
-#[test]
-fn should_cache_roots_if_no_new_deposits_show() {
-	new_test_ext().execute_with(|| {
-		System::set_block_number(1);
-		assert_ok!(Mixer::initialize(Origin::signed(1)));
-		let mut tree = FixedDepositTreeBuilder::new().build();
-		let mut merkle_roots: Vec<Data> = vec![];
-		for i in 0..4 {
-			let leaf = tree.generate_secrets();
-			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
-			let root = MerkleGroups::get_merkle_root(i).unwrap();
-			merkle_roots.push(root);
-			let cache = MerkleGroups::cached_roots(1, i);
-			assert_eq!(cache.len(), 1);
-		}
-
-		System::set_block_number(2);
-		<Mixer as OnFinalize<u64>>::on_finalize(2);
-		for i in 0..4 {
-			let cache_prev = MerkleGroups::cached_roots(1, i);
-			let cache = MerkleGroups::cached_roots(2, i);
-			assert_eq!(cache, cache_prev);
-		}
-
-		System::set_block_number(3);
-		<Mixer as OnFinalize<u64>>::on_finalize(3);
-		for i in 0..4 {
-			let cache_prev = MerkleGroups::cached_roots(2, i);
-			let cache = MerkleGroups::cached_roots(3, i);
-			assert_eq!(cache, cache_prev);
-		}
-	})
-}
-
-#[test]
-fn should_not_have_cache_once_cache_length_exceeded() {
-	new_test_ext().execute_with(|| {
-		System::set_block_number(1);
-		assert_ok!(Mixer::initialize(Origin::signed(1)));
-		let mut tree = FixedDepositTreeBuilder::new().build();
-		let mut merkle_roots: Vec<Data> = vec![];
-		for i in 0..4 {
-			let leaf = tree.generate_secrets();
-			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
-			let root = MerkleGroups::get_merkle_root(i).unwrap();
-			merkle_roots.push(root);
-			let cache = MerkleGroups::cached_roots(1, i);
-			assert_eq!(cache.len(), 1);
-		}
-
-		<Mixer as OnFinalize<u64>>::on_finalize(1);
-		<MerkleGroups as OnFinalize<u64>>::on_finalize(1);
-		// iterate over next 5 blocks
-		for i in 1..6 {
-			System::set_block_number(i + 1);
-			<Mixer as OnFinalize<u64>>::on_finalize(i + 1);
-			<MerkleGroups as OnFinalize<u64>>::on_finalize(i + 1);
-			// iterate over each mixer in each block
-			for j in 0u32..4u32 {
-				if i + 1 == 6 {
-					let old_root = MerkleGroups::cached_roots(1, j);
-					assert_eq!(old_root, vec![]);
-				}
-
-				// get cached root at block i + 1
-				let root = MerkleGroups::cached_roots(i + 1, j);
-				// check cached root is same as first updated root
-				assert_eq!(root, vec![merkle_roots[j as usize]]);
-				// check that highest cache block is i + 1
-				assert_eq!(i + 1, HighestCachedBlock::<Test>::get());
-			}
 		}
 	})
 }

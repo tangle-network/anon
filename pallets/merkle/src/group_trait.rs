@@ -17,11 +17,10 @@ pub trait Group<AccountId, BlockNumber, GroupId> {
 	) -> Result<GroupId, dispatch::DispatchError>;
 	fn add_members(sender: AccountId, id: GroupId, members: Vec<Data>) -> Result<(), dispatch::DispatchError>;
 	fn add_nullifier(sender: AccountId, id: GroupId, nullifier: Data) -> Result<(), dispatch::DispatchError>;
+	fn update_cached_state(group_id: GroupId) -> Result<(), dispatch::DispatchError>;
 	fn verify(id: GroupId, leaf: Data, path: Vec<(bool, Data)>) -> Result<(), dispatch::DispatchError>;
 	fn verify_zk_membership_proof(
 		group_id: GroupId,
-		cached_block: BlockNumber,
-		cached_root: Data,
 		comms: Vec<Commitment>,
 		nullifier_hash: Data,
 		proof_bytes: Vec<u8>,

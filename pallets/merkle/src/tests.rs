@@ -405,7 +405,10 @@ fn should_verify_simple_zk_proof_of_membership() {
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
-		let root = MerkleGroups::get_merkle_root(0).unwrap();
+		assert_ok!(MerkleGroups::update_cached_state(Origin::signed(1), 0));
+
+		let state = MerkleGroups::cached_state(0).unwrap();
+		let root = state.root_hash;
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
 			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
@@ -415,8 +418,6 @@ fn should_verify_simple_zk_proof_of_membership() {
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		assert_ok!(MerkleGroups::verify_zk_membership_proof(
 			0,
-			0,
-			root,
 			comms,
 			Data(nullifier_hash),
 			proof.to_bytes(),
@@ -442,7 +443,10 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
-		let root = MerkleGroups::get_merkle_root(0).unwrap();
+		assert_ok!(MerkleGroups::update_cached_state(Origin::signed(1), 0));
+
+		let state = MerkleGroups::cached_state(0).unwrap();
+		let root = state.root_hash;
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
 			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
@@ -455,8 +459,6 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		assert_err!(
 			MerkleGroups::verify_zk_membership_proof(
 				0,
-				0,
-				root,
 				comms,
 				Data(nullifier_hash),
 				proof.to_bytes(),
@@ -484,7 +486,10 @@ fn should_not_verify_invalid_commitments_for_membership() {
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
-		let root = MerkleGroups::get_merkle_root(0).unwrap();
+		assert_ok!(MerkleGroups::update_cached_state(Origin::signed(1), 0));
+
+		let state = MerkleGroups::cached_state(0).unwrap();
+		let root = state.root_hash;
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
 			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
@@ -498,8 +503,6 @@ fn should_not_verify_invalid_commitments_for_membership() {
 		assert_err!(
 			MerkleGroups::verify_zk_membership_proof(
 				0,
-				0,
-				root,
 				comms,
 				Data(nullifier_hash),
 				proof.to_bytes(),
@@ -527,7 +530,10 @@ fn should_not_verify_invalid_transcript() {
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
-		let root = MerkleGroups::get_merkle_root(0).unwrap();
+		assert_ok!(MerkleGroups::update_cached_state(Origin::signed(1), 0));
+
+		let state = MerkleGroups::cached_state(0).unwrap();
+		let root = state.root_hash;
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
 			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
@@ -538,8 +544,6 @@ fn should_not_verify_invalid_transcript() {
 		assert_err!(
 			MerkleGroups::verify_zk_membership_proof(
 				0,
-				0,
-				root,
 				comms,
 				Data(nullifier_hash),
 				proof.to_bytes(),
@@ -581,8 +585,10 @@ fn should_verify_zk_proof_of_membership() {
 		let keys_data: Vec<Data> = keys.iter().map(|x| Data(Scalar::from_bytes_mod_order(*x))).collect();
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(3),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, keys_data));
+		assert_ok!(MerkleGroups::update_cached_state(Origin::signed(1), 0));
 
-		let root = MerkleGroups::get_merkle_root(0).unwrap();
+		let state = MerkleGroups::cached_state(0).unwrap();
+		let root = state.root_hash;
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
 			ftree.prove_zk(root.0, leaf5, &ftree.hash_params.bp_gens, prover);
 
@@ -591,8 +597,6 @@ fn should_verify_zk_proof_of_membership() {
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		assert_ok!(MerkleGroups::verify_zk_membership_proof(
 			0,
-			0,
-			root,
 			comms,
 			Data(nullifier_hash),
 			proof.to_bytes(),
@@ -617,8 +621,10 @@ fn should_verify_large_zk_proof_of_membership() {
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(32),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
+		assert_ok!(MerkleGroups::update_cached_state(Origin::signed(1), 0));
 
-		let root = MerkleGroups::get_merkle_root(0).unwrap();
+		let state = MerkleGroups::cached_state(0).unwrap();
+		let root = state.root_hash;
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
 			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
 
@@ -627,8 +633,6 @@ fn should_verify_large_zk_proof_of_membership() {
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		assert_ok!(MerkleGroups::verify_zk_membership_proof(
 			0,
-			0,
-			root,
 			comms,
 			Data(nullifier_hash),
 			proof.to_bytes(),

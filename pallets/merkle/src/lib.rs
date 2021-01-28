@@ -51,7 +51,7 @@ pub trait Config: frame_system::Config + balances::Config {
 	type GroupId: Encode + Decode + Parameter + AtLeast32Bit + Default + Copy;
 	/// The max depth of trees
 	type MaxTreeDepth: Get<u8>;
-	/// The amount of blocks to cache roots over
+	/// The amount of blocks to cache root over
 	type CacheBlockLength: Get<Self::BlockNumber>;
 }
 
@@ -100,6 +100,21 @@ impl<T: Config> GroupTree<T> {
 	}
 }
 
+#[derive(Clone, Encode, Decode, PartialEq)]
+pub struct State<T: Config> {
+	pub block_number: T::BlockNumber,
+	pub root_hash: Data,
+}
+
+impl<T: Config> State<T> {
+	pub fn new(block_number: T::BlockNumber, root_hash: Data) -> Self {
+		Self {
+			block_number,
+			root_hash,
+		}
+	}
+}
+
 // This pallet's storage items.
 decl_storage! {
 	trait Store for Module<T: Config> as MerkleGroups {
@@ -107,11 +122,7 @@ decl_storage! {
 		pub NextGroupId get(fn next_group_id): T::GroupId;
 		/// The map of groups to their metadata
 		pub Groups get(fn groups): map hasher(blake2_128_concat) T::GroupId => Option<GroupTree<T>>;
-		/// Map of cached/past merkle roots at each blocknumber and group. There can be more than one root update in a single block.
-		/// Allows for easy pruning since we can remove all keys of first map past a certain point.
-		pub CachedRoots get(fn cached_roots): double_map hasher(blake2_128_concat) T::BlockNumber, hasher(blake2_128_concat) T::GroupId => Vec<Data>;
-		pub LowestCachedBlock get(fn lowest_cached_block): T::BlockNumber;
-		pub HighestCachedBlock get(fn highest_cached_block): T::BlockNumber;
+		pub CachedState get(fn cached_state): map hasher(blake2_128_concat) T::GroupId => Option<State<T>>;
 		/// Map of used nullifiers (Data) for each tree.
 		pub UsedNullifiers get(fn used_nullifiers): map hasher(blake2_128_concat) (T::GroupId, Data) => bool;
 	}
@@ -161,6 +172,8 @@ decl_error! {
 		DepositLengthTooSmall,
 		///
 		ManagerIsRequired,
+		///
+		CachedStateNotInitialized
 	}
 }
 
@@ -231,24 +244,10 @@ decl_module! {
 			<Self as Group<_,_,_>>::verify(group_id, leaf, path)
 		}
 
-		fn on_finalize(_n: T::BlockNumber) {
-			// update highest block in cache
-			if HighestCachedBlock::<T>::get() < _n {
-				HighestCachedBlock::<T>::set(_n);
-			}
-
-			// initialise lowest block in cache if not already
-			if LowestCachedBlock::<T>::get() < One::one() {
-				LowestCachedBlock::<T>::set(_n);
-			}
-
-			// update and prune database if pruning length has been hit
-			if HighestCachedBlock::<T>::get() > T::CacheBlockLength::get() {
-				if HighestCachedBlock::<T>::get() - T::CacheBlockLength::get() >= LowestCachedBlock::<T>::get() {
-					CachedRoots::<T>::remove_prefix(LowestCachedBlock::<T>::get());
-					LowestCachedBlock::<T>::set(LowestCachedBlock::<T>::get() + One::one());
-				}
-			}
+		#[weight = 0]
+		pub fn update_cached_state(origin, group_id: T::GroupId) -> dispatch::DispatchResult {
+			let _sender = ensure_signed(origin)?;
+			<Self as Group<_,_,_>>::update_cached_state(group_id)
 		}
 	}
 }
@@ -303,8 +302,6 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		for data in &members {
 			Self::add_leaf(&mut tree, *data, &h);
 		}
-		let block_number: T::BlockNumber = <frame_system::Module<T>>::block_number();
-		CachedRoots::<T>::append(block_number, id, tree.root_hash);
 		Groups::<T>::insert(id, tree);
 
 		// Raising the New Member event for the client to build a tree locally
@@ -337,6 +334,24 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		Ok(())
 	}
 
+	fn update_cached_state(group_id: T::GroupId) -> dispatch::DispatchResult {
+		let block_number: T::BlockNumber = <frame_system::Module<T>>::block_number();
+		let latest_state = Self::cached_state(group_id);
+		let cache_block_len = T::CacheBlockLength::get();
+
+		let should_update = match latest_state {
+			Some(state) => block_number - state.block_number > cache_block_len,
+			None => true,
+		};
+
+		if should_update {
+			let tree = <Groups<T>>::get(group_id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
+			CachedState::insert(group_id, State::<T>::new(block_number, tree.root_hash));
+		}
+
+		Ok(())
+	}
+
 	fn verify(id: T::GroupId, leaf: Data, path: Vec<(bool, Data)>) -> Result<(), dispatch::DispatchError> {
 		let tree = <Groups<T>>::get(id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
 
@@ -356,8 +371,6 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 
 	fn verify_zk_membership_proof(
 		group_id: T::GroupId,
-		cached_block: T::BlockNumber,
-		cached_root: Data,
 		comms: Vec<Commitment>,
 		nullifier_hash: Data,
 		proof_bytes: Vec<u8>,
@@ -370,16 +383,14 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 			Error::<T>::InvalidPathLength
 		);
 		// Ensure that root being checked against is in the cache
-		let old_roots = Self::cached_roots(cached_block, group_id);
-		ensure!(
-			old_roots.iter().any(|r| *r == cached_root),
-			Error::<T>::InvalidMerkleRoot
-		);
+		let latest_state = Self::cached_state(group_id)
+			.ok_or(Error::<T>::CachedStateNotInitialized)
+			.unwrap();
 		// TODO: Initialise these generators with the pallet
 		let pc_gens = PedersenGens::default();
 		<Self as Group<_, _, _>>::verify_zk(
 			pc_gens,
-			tree.root_hash,
+			latest_state.root_hash,
 			tree.depth,
 			comms,
 			nullifier_hash,
@@ -468,22 +479,9 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 }
 
 impl<T: Config> Module<T> {
-	pub fn get_cache(group_id: T::GroupId, block_number: T::BlockNumber) -> Vec<Data> {
-		Self::cached_roots(block_number, group_id)
-	}
-
 	pub fn get_merkle_root(group_id: T::GroupId) -> Result<Data, dispatch::DispatchError> {
 		let group = Self::get_group(group_id)?;
 		Ok(group.root_hash)
-	}
-
-	pub fn add_root_to_cache(
-		group_id: T::GroupId,
-		block_number: T::BlockNumber,
-	) -> Result<(), dispatch::DispatchError> {
-		let root = Self::get_merkle_root(group_id)?;
-		CachedRoots::<T>::append(block_number, group_id, root);
-		Ok(())
 	}
 
 	pub fn get_group(group_id: T::GroupId) -> Result<GroupTree<T>, dispatch::DispatchError> {
