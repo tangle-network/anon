@@ -30,7 +30,7 @@ use merkle::{
 	},
 	Group as GroupTrait, Module as MerkleModule,
 };
-use mixer::authentication::ensure_admin;
+use mixer::permissions::ensure_admin;
 use sp_runtime::{
 	traits::{AccountIdConversion, One, Zero},
 	ModuleId,

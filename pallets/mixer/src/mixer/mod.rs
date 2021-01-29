@@ -1,1 +1,1 @@
-pub mod authentication;
+pub mod permissions;
