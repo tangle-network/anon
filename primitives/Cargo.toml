@@ -1,6 +1,6 @@
 [package]
-name = "pallet-recursion"
-version = "2.0.0"
+name = "crypto-primitives"
+version = "0.1.0"
 authors = ["Drew Stone <drewstone329@gmail.com>"]
 edition = "2018"
 
@@ -16,9 +16,7 @@ ark-std = { git = "https://github.com/arkworks-rs/utils", default-features = fal
 ark-marlin = { git = "https://github.com/arkworks-rs/marlin", default-features = false }
 ark-poly-commit = { git = "https://github.com/arkworks-rs/poly-commit", default-features = false }
 
-merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
 
-balances = { version = "2.0.0", default-features = false, package = "pallet-balances" }
 frame-support = { default-features = false, version = "2.0.0" }
 frame-system = { default-features = false, version = "2.0.0" }
 sp-std = { default-features = false, version = "2.0.0" }
@@ -47,5 +45,4 @@ std = [
     "codec/std",
     "frame-support/std",
     "frame-system/std",
-    "merkle/std",
 ]

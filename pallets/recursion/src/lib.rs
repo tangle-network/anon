@@ -11,9 +11,6 @@
 
 mod types;
 
-#[cfg(feature = "std")]
-mod pcd;
-
 use sp_runtime::traits::One;
 use sp_runtime::traits::AccountIdConversion;
 use sp_runtime::ModuleId;
