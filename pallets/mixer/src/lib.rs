@@ -27,7 +27,7 @@ use merkle::{
 	merkle::keys::{Commitment, Data},
 	Group as GroupTrait,
 };
-use mixer::authentication::ensure_admin;
+use mixer::permissions::ensure_admin;
 use sp_runtime::{
 	traits::{AccountIdConversion, One, Zero},
 	ModuleId,
