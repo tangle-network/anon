@@ -15,39 +15,24 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
+pub mod mixer;
+
 use codec::{Decode, Encode};
 use frame_support::{
 	decl_error, decl_event, decl_module, decl_storage, dispatch, ensure,
 	traits::{Currency, ExistenceRequirement::AllowDeath, Get},
 };
-use frame_system::{ensure_signed, RawOrigin};
+use frame_system::ensure_signed;
 use merkle::{
 	merkle::keys::{Commitment, Data},
 	Group as GroupTrait,
 };
+use mixer::authentication::ensure_admin;
 use sp_runtime::{
-	traits::{AccountIdConversion, BadOrigin, One, Zero},
+	traits::{AccountIdConversion, One, Zero},
 	ModuleId,
 };
 use sp_std::prelude::*;
-
-pub fn ensure_admin<OuterOrigin, AccountId>(o: OuterOrigin, admin: &AccountId) -> Result<(), BadOrigin>
-where
-	OuterOrigin: Into<Result<RawOrigin<AccountId>, OuterOrigin>>,
-	AccountId: PartialEq,
-{
-	match o.into() {
-		Ok(RawOrigin::Root) => Ok(()),
-		Ok(RawOrigin::Signed(acc)) => {
-			if acc == *admin {
-				Ok(())
-			} else {
-				Err(BadOrigin)
-			}
-		}
-		_ => Err(BadOrigin),
-	}
-}
 
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 

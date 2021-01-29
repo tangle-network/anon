@@ -26,7 +26,6 @@ version = "0.1.5"
 
 [dependencies]
 balances = { version = "2.0.0", default-features = false, package = "pallet-balances" }
-sudo = { version = "2.0.0", default-features = false, package = "pallet-sudo" }
 frame-support = { default-features = false, version = '2.0.0' }
 frame-system = { default-features = false, version = '2.0.0' }
 sp-std = { default-features = false, version = "2.0.0" }
@@ -46,7 +45,6 @@ default = ['std']
 std = [
     'codec/std',
     'balances/std',
-	"sudo/std",
     'frame-support/std',
     'frame-system/std',
     "merkle/std",

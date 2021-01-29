@@ -1,4 +1,4 @@
-use crate::{Call, Config, Module};
+use crate::{Config, Module};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 use frame_system as system;
 use sp_core::H256;
@@ -19,7 +19,6 @@ impl_outer_event! {
 		balances<T>,
 		merkle<T>,
 		pallet_mixer<T>,
-		sudo<T>,
 	}
 }
 
@@ -81,11 +80,6 @@ impl balances::Config for Test {
 	type ExistentialDeposit = ExistentialDeposit;
 	type MaxLocks = MaxLocks;
 	type WeightInfo = ();
-}
-
-impl sudo::Config for Test {
-	type Call = Call<Test>;
-	type Event = Event;
 }
 
 impl merkle::Config for Test {
