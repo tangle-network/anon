@@ -280,10 +280,12 @@ impl merkle::Config for Runtime {
 parameter_types! {
 	pub const MixerModuleId: ModuleId = ModuleId(*b"py/mixer");
 	pub const MinimumDepositLength: BlockNumber = 10 * 60 * 24 * 28;
+	pub const DefaultAdminKey: AccountId = 0;
 }
 
 impl mixer::Config for Runtime {
 	type Currency = Balances;
+	type DefaultAdmin = DefaultAdminKey;
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
 	type Group = Merkle;

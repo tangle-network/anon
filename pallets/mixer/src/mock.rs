@@ -1,4 +1,4 @@
-use crate::{Config, Module};
+use crate::{Call, Config, Module};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
 use frame_system as system;
 use sp_core::H256;
@@ -19,6 +19,7 @@ impl_outer_event! {
 		balances<T>,
 		merkle<T>,
 		pallet_mixer<T>,
+		sudo<T>,
 	}
 }
 
@@ -82,6 +83,11 @@ impl balances::Config for Test {
 	type WeightInfo = ();
 }
 
+impl sudo::Config for Test {
+	type Call = Call<Test>;
+	type Event = Event;
+}
+
 impl merkle::Config for Test {
 	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
@@ -91,10 +97,12 @@ impl merkle::Config for Test {
 
 parameter_types! {
 	pub const MixerModuleId: ModuleId = ModuleId(*b"py/mixer");
+	pub const DefaultAdmin: u64 = 0;
 }
 
 impl Config for Test {
 	type Currency = Balances;
+	type DefaultAdmin = DefaultAdmin;
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
 	type Group = MerkleGroups;
