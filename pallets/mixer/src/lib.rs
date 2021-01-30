@@ -202,11 +202,10 @@ decl_module! {
 		#[weight = 0]
 		pub fn initialize(origin) -> dispatch::DispatchResult {
 			ensure!(!Self::initialised(), Error::<T>::AlreadyInitialised);
+			let _ = ensure_signed(origin)?;
 
 			// Taking a default account from pallets config trait
 			let default_admin = T::DefaultAdmin::get();
-			// Making sure that origin is either root or admin
-			ensure_admin(origin, &default_admin)?;
 			// Moving the default admin from config to the storage
 			Admin::<T>::set(default_admin);
 

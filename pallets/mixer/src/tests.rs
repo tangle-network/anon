@@ -1,5 +1,5 @@
 use super::*;
-use crate::mock::*;
+use crate::mock::{new_test_ext, Balances, MerkleGroups, Mixer, Origin, System, Test};
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use curve25519_gadgets::{
 	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
@@ -8,7 +8,12 @@ use curve25519_gadgets::{
 		gen_mds_matrix, gen_round_keys, PoseidonSbox,
 	},
 };
-use frame_support::{assert_err, assert_ok, storage::StorageValue, traits::OnFinalize};
+use frame_support::{
+	assert_err, assert_ok,
+	storage::StorageValue,
+	traits::{OnFinalize, UnfilteredDispatchable},
+};
+use frame_system::RawOrigin;
 use merkle::{
 	merkle::keys::{Commitment, Data},
 	HighestCachedBlock,
@@ -47,11 +52,17 @@ fn should_initialize_successfully() {
 }
 
 #[test]
-fn should_not_be_able_initialize_with_non_root() {
+fn should_be_able_to_change_admin_with_root() {
 	new_test_ext().execute_with(|| {
-		assert_err!(Mixer::initialize(Origin::signed(1)), BadOrigin);
-		assert_ok!(Mixer::initialize(Origin::signed(0)));
-		assert_err!(Mixer::initialize(Origin::signed(0)), Error::<Test>::AlreadyInitialised);
+		let call = Box::new(Call::<Test>::transfer_admin(2));
+		let res = call.dispatch_bypass_filter(RawOrigin::Root.into());
+		assert_ok!(res);
+		let admin = Mixer::admin();
+		assert_eq!(admin, 2);
+
+		let call = Box::new(Call::<Test>::transfer_admin(3));
+		let res = call.dispatch_bypass_filter(RawOrigin::Signed(0).into());
+		assert_err!(res, BadOrigin);
 	})
 }
 
@@ -64,6 +75,42 @@ fn should_be_able_to_change_admin() {
 		let admin = Mixer::admin();
 
 		assert_eq!(admin, 2);
+	})
+}
+
+#[test]
+fn should_stop_and_start_mixer() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(Mixer::initialize(Origin::signed(0)));
+		let mut tree = FixedDepositTreeBuilder::new().build();
+		let leaf = tree.generate_secrets();
+		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![Data(leaf)]));
+
+		// Stopping deposits and withdrawal
+		assert_ok!(Mixer::set_stopped(Origin::signed(0), true));
+		assert_err!(
+			Mixer::deposit(Origin::signed(0), 0, vec![]),
+			Error::<Test>::MixerStopped
+		);
+		assert_err!(
+			Mixer::withdraw(
+				Origin::signed(0),
+				0,
+				0,
+				Data::zero(),
+				Vec::new(),
+				Data::zero(),
+				Vec::new(),
+				Vec::new(),
+				Vec::new()
+			),
+			Error::<Test>::MixerStopped
+		);
+
+		// Starting mixer
+		assert_ok!(Mixer::set_stopped(Origin::signed(0), false));
+		let leaf = tree.generate_secrets();
+		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![Data(leaf)]));
 	})
 }
 
