@@ -102,7 +102,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 				.build();
 
 			let leaf = ftree.generate_secrets();
-			ftree.tree.add_leaves(vec![leaf.to_bytes()]);
+			ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
 

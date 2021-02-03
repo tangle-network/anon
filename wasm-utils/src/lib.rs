@@ -70,10 +70,17 @@ impl Mixer {
 		Mixer { tree_map }
 	}
 
-	pub fn add_leaves(&mut self, asset: String, id: u8, leaves: JsValue) {
+	pub fn add_leaves(&mut self, asset: String, id: u8, leaves: JsValue, target_root: JsValue) {
 		let fixed_tree = self.get_tree_mut(asset, id);
 		let leaves_bytes: Vec<[u8; 32]> = leaves.into_serde().unwrap();
-		fixed_tree.tree.add_leaves(leaves_bytes);
+		let target_root_bytes: [u8; 32] = target_root.into_serde().unwrap();
+		let root_option: Option<[u8; 32]> = if target_root_bytes == Scalar::from(0u32).to_bytes() {
+			None
+		} else {
+			Some(target_root_bytes)
+		};
+
+		fixed_tree.tree.add_leaves(leaves_bytes, root_option);
 	}
 
 	pub fn get_root(&self, asset: String, id: u8) -> JsValue {
@@ -249,7 +256,12 @@ mod tests {
 		arr.push(&JsValue::from_serde(&leaf3.to_bytes()).unwrap());
 		let list = JsValue::from(arr);
 
-		mixer.add_leaves(asset.to_owned(), id, list);
+		mixer.add_leaves(
+			asset.to_owned(),
+			id,
+			list,
+			JsValue::from_serde(&Scalar::from(0u32).to_bytes()).unwrap()
+		);
 		let tree = mixer.get_tree(asset.to_owned(), id);
 		let node1 = Poseidon_hash_2(leaf1, leaf2, &tree.hash_params);
 		let node2 = Poseidon_hash_2(leaf3, zero, &tree.hash_params);
@@ -329,7 +341,12 @@ mod tests {
 		arr.push(&JsValue::from_serde(&leaf3.to_bytes()).unwrap());
 		let list = JsValue::from(arr);
 
-		mixer.add_leaves(asset.to_owned(), id, list);
+		mixer.add_leaves(
+			asset.to_owned(),
+			id,
+			list,
+			JsValue::from_serde(&Scalar::from(0u32).to_bytes()).unwrap()
+		);
 		let root = mixer.get_root(asset.to_owned(), id);
 
 		let proof = mixer.generate_proof(asset.to_owned(), id, root, leaf1_js);
@@ -350,5 +367,68 @@ mod tests {
 		// Left for debugging purposes
 		// assert_eq!(nullifier_hash, 0);
 		// assert_eq!(proof, 0);
+	}
+
+	#[wasm_bindgen_test]
+	fn should_create_proof_with_older_target_root() {
+		let arr = Array::new();
+		arr.push(&JsString::from("EDG"));
+		arr.push(&JsValue::from(0));
+		arr.push(&JsValue::from(2));
+		let top_level_arr = Array::new();
+		top_level_arr.push(&arr);
+		let js_trees = JsValue::from(top_level_arr);
+		let asset = "EDG";
+		let id = 0;
+		let mut mixer = Mixer::new(js_trees);
+		let tree = mixer.get_tree_mut(asset.to_owned(), id);
+		let leaf1 = tree.generate_secrets();
+		let leaf2 = Scalar::from(2u32);
+		let leaf3 = Scalar::from(3u32);
+		let leaf1_js = JsValue::from_serde(&leaf1.to_bytes()).unwrap();
+
+		let arr = Array::new();
+		arr.push(&leaf1_js);
+		arr.push(&JsValue::from_serde(&leaf2.to_bytes()).unwrap());
+		arr.push(&JsValue::from_serde(&leaf3.to_bytes()).unwrap());
+		let list = JsValue::from(arr);
+
+		mixer.add_leaves(
+			asset.to_owned(),
+			id,
+			list,
+			JsValue::from_serde(&Scalar::from(0u32).to_bytes()).unwrap()
+		);
+		let root = mixer.get_root(asset.to_owned(), id);
+
+		let arr = Array::new();
+		arr.push(&JsValue::from_serde(&Scalar::from(4u32).to_bytes()).unwrap());
+		arr.push(&JsValue::from_serde(&Scalar::from(5u32).to_bytes()).unwrap());
+		let list = JsValue::from(arr);
+		// Attempt to add more leaves even with older target root
+		mixer.add_leaves(
+			asset.to_owned(),
+			id,
+			list,
+			root.clone(),
+		);
+
+		let should_be_same_root = mixer.get_root(asset.to_owned(), id);
+		assert_eq!(root.into_serde::<[u8; 32]>().unwrap(), should_be_same_root.into_serde::<[u8; 32]>().unwrap());
+
+		let proof = mixer.generate_proof(asset.to_owned(), id, root, leaf1_js);
+		let comms = proof.get(&JsValue::from_str("comms"));
+		// let nullifier_hash = proof.get(&JsValue::from_str("nullifier_hash"));
+		let leaf_index_comms = proof.get(&JsValue::from_str("leaf_index_comms"));
+		let proof_comms = proof.get(&JsValue::from_str("proof_comms"));
+		// let proof = proof.get(&JsValue::from_str("proof"));
+
+		let comms_arr = Array::from(&comms);
+		let leaf_index_comms_arr = Array::from(&leaf_index_comms);
+		let proof_comms_arr = Array::from(&proof_comms);
+
+		assert_eq!(comms_arr.length(), 3);
+		assert_eq!(leaf_index_comms_arr.length(), 2);
+		assert_eq!(proof_comms_arr.length(), 2);
 	}
 }
