@@ -179,8 +179,6 @@ impl VanillaSparseMerkleTree {
 		let mut test_rng: OsRng = OsRng::default();
 		let mut merkle_proof_vec = Vec::<Scalar>::new();
 		let mut merkle_proof = Some(merkle_proof_vec);
-		#[cfg(feature = "std")]
-		println!("{:?}, {:?}", leaf, self.leaf_indices);
 		let k = self.leaf_indices.get(&leaf.to_bytes()).unwrap();
 		let leaf = self.get(*k, root, &mut merkle_proof);
 		merkle_proof_vec = merkle_proof.unwrap();
