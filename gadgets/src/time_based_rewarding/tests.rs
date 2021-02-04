@@ -191,7 +191,7 @@ fn test_time_based_reward_gadget_verification() {
 		let mut deposit_time_index_comms = vec![];
 		let mut deposit_time_index_vars = vec![];
 		let mut deposit_time_index_alloc_scalars = vec![];
-		for b in get_bits(&k, DEFAULT_TREE_DEPTH).iter().take(deposit_tree.depth) {
+		for b in get_bits(&k, DEFAULT_TREE_DEPTH).iter().take(timed_tree.depth) {
 			let val: Scalar = Scalar::from(*b as u8);
 			let (c, v) = prover.commit(val.clone(), Scalar::random(&mut test_rng));
 			deposit_time_index_comms.push(c);

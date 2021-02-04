@@ -13,7 +13,7 @@ use alloc::vec::Vec;
 use bulletproofs::r1cs::{ConstraintSystem, LinearCombination, R1CSError};
 use curve25519_dalek::scalar::Scalar;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct AllocatedInputCoin {
 	// private
 	r: AllocatedScalar,
@@ -25,7 +25,7 @@ pub struct AllocatedInputCoin {
 	sn: Scalar,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct AllocatedTimedDeposit {
 	time_root: Scalar,
 	multiplier: Scalar,
@@ -36,7 +36,7 @@ pub struct AllocatedTimedDeposit {
 	deposit_time_proof_nodes: Vec<AllocatedScalar>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct AllocatedOutputCoin {
 	// private
 	inv_value: AllocatedScalar,
@@ -47,7 +47,7 @@ pub struct AllocatedOutputCoin {
 	leaf_cm: Scalar,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Transaction {
 	pub depth: usize,
 	pub deposit_root: Scalar,
