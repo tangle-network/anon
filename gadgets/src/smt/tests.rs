@@ -237,7 +237,6 @@ fn test_vsmt_prove_verif() {
 		let s = Scalar::from(i as u32);
 		tree.update(s, s);
 	}
-	println!("Tree: {:?}", tree.leaf_indices);
 
 	let mut merkle_proof_vec = Vec::<Scalar>::new();
 	let mut merkle_proof = Some(merkle_proof_vec);
@@ -251,8 +250,8 @@ fn test_vsmt_prove_verif() {
 	let bp_gens = BulletproofGens::new(40960, 1);
 	let mut prover_transcript = Transcript::new(b"VSMT");
 	let prover = Prover::new(&pc_gens, &mut prover_transcript);
-	println!("Tree: {:?}", tree.leaf_indices);
-	let (proof, commitments) = tree.prove_zk(k, tree.root, &bp_gens, prover);
+
+	let (proof, commitments) = tree.prove_zk(tree.root, k, &bp_gens, prover);
 
 	// Verify part
 	let mut verifier_transcript = Transcript::new(b"VSMT");
