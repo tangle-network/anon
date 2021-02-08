@@ -104,7 +104,9 @@ impl Mixer {
 		let root_option = if target_root.is_null() || target_root.is_undefined() {
 			None
 		} else {
-			target_root.into_serde().unwrap()
+			target_root
+				.into_serde()
+				.map_err(|_| OperationCode::DeserializationFailed.into_js())?
 		};
 		fixed_tree.tree.add_leaves(leaves_bytes, root_option);
 		Ok(())
@@ -303,7 +305,7 @@ mod tests {
 		arr.push(&JsValue::from_serde(&leaf3.to_bytes()).unwrap());
 		let list = JsValue::from(arr);
 
-		mixer.add_leaves(asset.to_owned(), id, list, JsValue::NULL);
+		mixer.add_leaves(asset.to_owned(), id, list, JsValue::NULL).unwrap();
 		let tree = mixer.get_tree(asset.to_owned(), id).unwrap();
 		let node1 = Poseidon_hash_2(leaf1, leaf2, &tree.hash_params);
 		let node2 = Poseidon_hash_2(leaf3, zero, &tree.hash_params);
@@ -383,7 +385,7 @@ mod tests {
 		arr.push(&JsValue::from_serde(&leaf3.to_bytes()).unwrap());
 		let list = JsValue::from(arr);
 
-		mixer.add_leaves(asset.to_owned(), id, list, JsValue::NULL);
+		mixer.add_leaves(asset.to_owned(), id, list, JsValue::NULL).unwrap();
 		let root = mixer.get_root(asset.to_owned(), id).unwrap();
 
 		let proof = mixer.generate_proof(asset.to_owned(), id, root, leaf1_js).unwrap();
@@ -430,12 +432,7 @@ mod tests {
 		arr.push(&JsValue::from_serde(&leaf3.to_bytes()).unwrap());
 		let list = JsValue::from(arr);
 
-		mixer.add_leaves(
-			asset.to_owned(),
-			id,
-			list,
-			JsValue::from_serde(&Scalar::from(0u32).to_bytes()).unwrap(),
-		);
+		mixer.add_leaves(asset.to_owned(), id, list, JsValue::NULL).unwrap();
 		let root = mixer.get_root(asset.to_owned(), id).unwrap();
 
 		let arr = Array::new();
@@ -443,7 +440,7 @@ mod tests {
 		arr.push(&JsValue::from_serde(&Scalar::from(5u32).to_bytes()).unwrap());
 		let list = JsValue::from(arr);
 		// Attempt to add more leaves even with older target root
-		mixer.add_leaves(asset.to_owned(), id, list, root.clone());
+		mixer.add_leaves(asset.to_owned(), id, list, root.clone()).unwrap();
 
 		let should_be_same_root = mixer.get_root(asset.to_owned(), id).unwrap();
 		assert_eq!(
