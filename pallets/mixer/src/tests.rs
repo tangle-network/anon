@@ -47,6 +47,23 @@ fn should_initialize_successfully() {
 }
 
 #[test]
+fn should_initialize_successfully_on_finalize() {
+	new_test_ext().execute_with(|| {
+		<Mixer as OnFinalize<u64>>::on_finalize(1);
+		// the mixer creates 4 groups, they should all initialise to 0
+		let val = 1_000;
+		for i in 0..4 {
+			let g = MerkleGroups::get_group(i).unwrap();
+			let m = Mixer::get_mixer(i).unwrap();
+			assert_eq!(g.leaf_count, 0);
+			assert_eq!(g.manager_required, true);
+			assert_eq!(m.leaves.len(), 0);
+			assert_eq!(m.fixed_deposit_size, val * 10_u64.pow(i))
+		}
+	})
+}
+
+#[test]
 fn should_fail_to_deposit_with_insufficient_balance() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize());
