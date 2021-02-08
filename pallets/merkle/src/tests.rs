@@ -469,7 +469,51 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 }
 
 #[test]
-fn should_not_verify_invalid_commitments_for_membership() {
+fn should_not_verify_invalid_private_inputs() {
+	new_test_ext().execute_with(|| {
+		let pc_gens = PedersenGens::default();
+
+		let label = b"zk_membership_proof";
+		let mut prover_transcript = Transcript::new(label);
+		let prover = Prover::new(&pc_gens, &mut prover_transcript);
+
+		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
+
+		let leaf = ftree.generate_secrets();
+		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
+
+		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
+		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
+		let root = MerkleGroups::get_merkle_root(0).unwrap();
+
+		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
+			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+
+		let mut comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
+		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
+		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
+
+		let mut rng = OsRng::default();
+		comms.push(Commitment(RistrettoPoint::random(&mut rng).compress()));
+
+		assert_err!(
+			MerkleGroups::verify_zk_membership_proof(
+				0,
+				0,
+				root,
+				comms,
+				Data(nullifier_hash),
+				proof.to_bytes(),
+				leaf_index_comms,
+				proof_comms
+			),
+			Error::<Test>::InvalidPrivateInputs
+		);
+	});
+}
+
+#[test]
+fn should_not_verify_invalid_path_commitments_for_membership() {
 	new_test_ext().execute_with(|| {
 		let pc_gens = PedersenGens::default();
 

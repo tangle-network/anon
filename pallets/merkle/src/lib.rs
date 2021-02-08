@@ -148,6 +148,8 @@ decl_error! {
 		///
 		InvalidPathLength,
 		///
+		InvalidPrivateInputs,
+		///
 		AlreadyUsedNullifier,
 		///
 		ZkVericationFailed,
@@ -404,6 +406,7 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		let mut verifier_transcript = Transcript::new(label);
 		let mut verifier = Verifier::new(&mut verifier_transcript);
 
+		ensure!(comms.len() == 3, Error::<T>::InvalidPrivateInputs);
 		let r_val = verifier.commit(comms[0].0);
 		let r_alloc = AllocatedScalar {
 			variable: r_val,

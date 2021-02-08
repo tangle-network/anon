@@ -257,14 +257,18 @@ decl_module! {
 		fn set_stopped(origin, stopped: bool) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let curr_admin = Self::admin();
+			// Ensure the caller is admin
 			ensure!(sender == curr_admin, Error::<T>::UnauthorizedCall);
+			// Set the mixer state, `stopped` can be true or false
 			Stopped::set(stopped);
 			Ok(())
 		}
 
 		#[weight = 0]
 		fn transfer_admin(origin, to: T::AccountId) -> dispatch::DispatchResult {
+			// Ensures that the caller is the root or the current admin
 			ensure_admin(origin, &Self::admin())?;
+			// Updating the admin
 			Admin::<T>::set(to);
 			Ok(())
 		}
