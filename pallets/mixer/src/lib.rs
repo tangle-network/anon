@@ -24,7 +24,7 @@ use sp_runtime::{
 use frame_support::traits::{Currency, ExistenceRequirement::AllowDeath, Get};
 
 use codec::{Decode, Encode};
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
+use frame_support::{debug, decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
 use frame_system::ensure_signed;
 use merkle::Group as GroupTrait;
 use sp_std::prelude::*;
@@ -180,63 +180,22 @@ decl_module! {
 			T::Group::add_nullifier(Self::account_id(), mixer_id.into(), nullifier_hash)
 		}
 
-		#[weight = 0]
-		pub fn initialize(origin) -> dispatch::DispatchResult {
-			ensure!(!Self::initialised(), Error::<T>::AlreadyInitialised);
-			let _ = ensure_signed(origin)?;
-			Initialised::set(true);
-			let one: BalanceOf<T> = One::one();
-			let depth: u8 = <T as Config>::MaxTreeDepth::get();
-			// create small mixer and assign the module as the manager
-			let small_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
-			let small_mixer_info = MixerInfo::<T> {
-				fixed_deposit_size: one * 1_000.into(),
-				minimum_deposit_length_for_reward: T::DepositLength::get(),
-				leaves: Vec::new(),
-			};
-			MixerGroups::<T>::insert(small_mixer_id, small_mixer_info);
-			// create medium mixer and assign the module as the manager
-			let med_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
-			let med_mixer_info = MixerInfo::<T> {
-				fixed_deposit_size: one * 10_000.into(),
-				minimum_deposit_length_for_reward: T::DepositLength::get(),
-				leaves: Vec::new(),
-			};
-			MixerGroups::<T>::insert(med_mixer_id, med_mixer_info);
-			// create large mixer and assign the module as the manager
-			let large_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
-			let large_mixer_info = MixerInfo::<T> {
-				fixed_deposit_size: one * 100_000.into(),
-				minimum_deposit_length_for_reward: T::DepositLength::get(),
-				leaves: Vec::new(),
-			};
-			MixerGroups::<T>::insert(large_mixer_id, large_mixer_info);
-			// create larger mixer and assign the module as the manager
-			let huge_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
-			let huge_mixer_info = MixerInfo::<T> {
-				fixed_deposit_size: one * 1_000_000.into(),
-				minimum_deposit_length_for_reward: T::DepositLength::get(),
-				leaves: Vec::new(),
-			};
-			MixerGroups::<T>::insert(huge_mixer_id, huge_mixer_info);
-			MixerGroupIds::<T>::set(vec![
-				small_mixer_id,
-				med_mixer_id,
-				large_mixer_id,
-				huge_mixer_id,
-			]);
-			Ok(())
-		}
-
 		fn on_finalize(_n: T::BlockNumber) {
-			// check if any deposits happened (by checked the size of collection at this block)
-			// if none happened, carry over previous merkle roots for the cache.
-			let mixer_ids = MixerGroupIds::<T>::get();
-			for i in 0..mixer_ids.len() {
-				let cached_roots = <merkle::Module<T>>::cached_roots(_n, mixer_ids[i]);
-				// if there are no cached roots, carry forward the current root
-				if cached_roots.len() == 0 {
-					let _ = <merkle::Module<T>>::add_root_to_cache(mixer_ids[i], _n);
+			if Self::initialised() {
+				// check if any deposits happened (by checked the size of collection at this block)
+				// if none happened, carry over previous merkle roots for the cache.
+				let mixer_ids = MixerGroupIds::<T>::get();
+				for i in 0..mixer_ids.len() {
+					let cached_roots = <merkle::Module<T>>::cached_roots(_n, mixer_ids[i]);
+					// if there are no cached roots, carry forward the current root
+					if cached_roots.len() == 0 {
+						let _ = <merkle::Module<T>>::add_root_to_cache(mixer_ids[i], _n);
+					}
+				}
+			} else {
+				match Self::initialize() {
+					Ok(_) => {},
+					Err(e) => { debug::native::error!("Error initialising: {:?}", e); },
 				}
 			}
 		}
@@ -255,5 +214,52 @@ impl<T: Config> Module<T> {
 		ensure!(mixer_info.fixed_deposit_size > Zero::zero(), Error::<T>::NoMixerForId);
 		// return the mixer info
 		Ok(mixer_info)
+	}
+
+	pub fn initialize() -> dispatch::DispatchResult {
+		ensure!(!Self::initialised(), Error::<T>::AlreadyInitialised);
+		let one: BalanceOf<T> = One::one();
+		let depth: u8 = <T as Config>::MaxTreeDepth::get();
+		// create small mixer and assign the module as the manager
+		let small_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
+		let small_mixer_info = MixerInfo::<T> {
+			fixed_deposit_size: one * 1_000.into(),
+			minimum_deposit_length_for_reward: T::DepositLength::get(),
+			leaves: Vec::new(),
+		};
+		MixerGroups::<T>::insert(small_mixer_id, small_mixer_info);
+		// create medium mixer and assign the module as the manager
+		let med_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
+		let med_mixer_info = MixerInfo::<T> {
+			fixed_deposit_size: one * 10_000.into(),
+			minimum_deposit_length_for_reward: T::DepositLength::get(),
+			leaves: Vec::new(),
+		};
+		MixerGroups::<T>::insert(med_mixer_id, med_mixer_info);
+		// create large mixer and assign the module as the manager
+		let large_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
+		let large_mixer_info = MixerInfo::<T> {
+			fixed_deposit_size: one * 100_000.into(),
+			minimum_deposit_length_for_reward: T::DepositLength::get(),
+			leaves: Vec::new(),
+		};
+		MixerGroups::<T>::insert(large_mixer_id, large_mixer_info);
+		// create larger mixer and assign the module as the manager
+		let huge_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
+		let huge_mixer_info = MixerInfo::<T> {
+			fixed_deposit_size: one * 1_000_000.into(),
+			minimum_deposit_length_for_reward: T::DepositLength::get(),
+			leaves: Vec::new(),
+		};
+		MixerGroups::<T>::insert(huge_mixer_id, huge_mixer_info);
+		MixerGroupIds::<T>::set(vec![
+			small_mixer_id,
+			med_mixer_id,
+			large_mixer_id,
+			huge_mixer_id,
+		]);
+
+		Initialised::set(true);
+		Ok(())
 	}
 }
