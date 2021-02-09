@@ -20,7 +20,7 @@ use frame_support::{
 	decl_error, decl_event, decl_module, decl_storage, dispatch, ensure,
 	traits::{Currency, ExistenceRequirement::AllowDeath, Get},
 };
-use frame_system::ensure_signed;
+use frame_system::{ensure_signed, RawOrigin};
 use merkle::{
 	merkle::{
 		keys::{Commitment, Data},
@@ -91,9 +91,6 @@ decl_storage! {
 		/// Administrator of the mixer pallet.
 		/// This account that can stop/start operations of the mixer
 		pub Admin get(fn admin): T::AccountId;
-		/// Indicates whether the mixer is running or not
-		pub Stopped get(fn stopped): bool;
-
 	}
 }
 
@@ -140,7 +137,7 @@ decl_module! {
 		pub fn deposit(origin, mixer_id: T::GroupId, data_points: Vec<Data>) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
-			ensure!(!Self::stopped(), Error::<T>::MixerStopped);
+			ensure!(!<merkle::Module<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
 			// get mixer info, should always exist if module is initialised
 			let mut mixer_info = Self::get_mixer(mixer_id)?;
 			// ensure the sender has enough balance to cover deposit
@@ -178,7 +175,7 @@ decl_module! {
 		) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
-			ensure!(!Self::stopped(), Error::<T>::MixerStopped);
+			ensure!(!<merkle::Module<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
 			let mixer_info = MixerGroups::<T>::get(mixer_id);
 			// check if the nullifier has been used
 			T::Group::has_used_nullifier(mixer_id.into(), nullifier_hash)?;
@@ -260,7 +257,10 @@ decl_module! {
 			// Ensure the caller is admin
 			ensure!(sender == curr_admin, Error::<T>::UnauthorizedCall);
 			// Set the mixer state, `stopped` can be true or false
-			Stopped::set(stopped);
+			let mixer_ids = MixerGroupIds::<T>::get();
+			for i in 0..mixer_ids.len() {
+				<merkle::Module<T>>::set_stopped(RawOrigin::Signed(Self::account_id()).into(), mixer_ids[i], stopped)?;
+			}
 			Ok(())
 		}
 

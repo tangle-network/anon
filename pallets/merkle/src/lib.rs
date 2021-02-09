@@ -177,8 +177,6 @@ decl_error! {
 		///
 		ManagerIsRequired,
 		///
-		InsertionsStopped,
-		///
 		ManagerDoesntExist
 	}
 }
@@ -228,7 +226,7 @@ decl_module! {
 				.ok_or(Error::<T>::ManagerDoesntExist)
 				.unwrap();
 			ensure_admin(origin, &manager_data.account_id)?;
-			Stopped::<T>::insert(group_id, true);
+			Stopped::<T>::insert(group_id, stopped);
 			Ok(())
 		}
 
@@ -313,8 +311,6 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 	fn add_members(sender: T::AccountId, id: T::GroupId, members: Vec<Data>) -> Result<(), dispatch::DispatchError> {
 		let mut tree = <Groups<T>>::get(id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
 		let manager_data = <Managers<T>>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
-
-		ensure!(!Self::stopped(id), Error::<T>::InsertionsStopped);
 		// Check if the tree requires extrinsics to be called from a manager
 		ensure!(
 			Self::is_manager_required(sender.clone(), &manager_data),
