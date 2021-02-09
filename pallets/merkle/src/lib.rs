@@ -209,15 +209,14 @@ decl_module! {
 
 		#[weight = 0]
 		pub fn set_manager(origin, group_id: T::GroupId, new_manager: T::AccountId) -> dispatch::DispatchResult {
-			let mut manager_data = <Managers<T>>::get(group_id)
+			let manager_data = <Managers<T>>::get(group_id)
 				.ok_or(Error::<T>::ManagerDoesntExist)
 				.unwrap();
 			// Changing manager should always require an extrinsic from the manager or root even
 			// if the group doesn't explicitly require managers for other calls.
 			ensure_admin(origin, &manager_data.account_id)?;
-			manager_data.account_id = new_manager;
-			<Managers<T>>::insert(group_id, manager_data);
-			Ok(())
+			// We are passing manager always, since we wont have account id when calling from root origin
+			<Self as Group<_,_,_>>::set_manager(manager_data.account_id, group_id, new_manager)
 		}
 
 		#[weight = 0]
@@ -226,8 +225,7 @@ decl_module! {
 				.ok_or(Error::<T>::ManagerDoesntExist)
 				.unwrap();
 			ensure_admin(origin, &manager_data.account_id)?;
-			Stopped::<T>::insert(group_id, stopped);
-			Ok(())
+			<Self as Group<_,_,_>>::set_stopped(manager_data.account_id, group_id, stopped)
 		}
 
 		#[weight = 0]
@@ -293,6 +291,13 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		Ok(group_id)
 	}
 
+	fn set_stopped(sender: T::AccountId, id: T::GroupId, stopped: bool) -> Result<(), dispatch::DispatchError> {
+		let manager_data = <Managers<T>>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		ensure!(sender == manager_data.account_id, Error::<T>::ManagerIsRequired);
+		Stopped::<T>::insert(id, stopped);
+		Ok(())
+	}
+
 	fn set_manager_required(
 		sender: T::AccountId,
 		id: T::GroupId,
@@ -304,6 +309,18 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		// other calls.
 		ensure!(sender == manager_data.account_id, Error::<T>::ManagerIsRequired);
 		manager_data.required = manager_required;
+		<Managers<T>>::insert(id, manager_data);
+		Ok(())
+	}
+
+	fn set_manager(
+		sender: T::AccountId,
+		id: T::GroupId,
+		new_manager: T::AccountId,
+	) -> Result<(), dispatch::DispatchError> {
+		let mut manager_data = <Managers<T>>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		ensure!(sender == manager_data.account_id, Error::<T>::ManagerIsRequired);
+		manager_data.account_id = new_manager;
 		<Managers<T>>::insert(id, manager_data);
 		Ok(())
 	}

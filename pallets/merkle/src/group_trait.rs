@@ -5,11 +5,13 @@ use sp_std::vec::Vec;
 
 pub trait Group<AccountId, BlockNumber, GroupId> {
 	fn has_used_nullifier(id: GroupId, nullifier: Data) -> Result<(), dispatch::DispatchError>;
+	fn set_stopped(sender: AccountId, group_id: GroupId, stopped: bool) -> Result<(), dispatch::DispatchError>;
 	fn set_manager_required(
 		sender: AccountId,
 		id: GroupId,
 		is_manager_required: bool,
 	) -> Result<(), dispatch::DispatchError>;
+	fn set_manager(sender: AccountId, id: GroupId, new_manager: AccountId) -> Result<(), dispatch::DispatchError>;
 	fn create_group(
 		sender: AccountId,
 		is_manager_required: bool,

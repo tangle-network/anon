@@ -20,7 +20,7 @@ use frame_support::{
 	decl_error, decl_event, decl_module, decl_storage, dispatch, ensure,
 	traits::{Currency, ExistenceRequirement::AllowDeath, Get},
 };
-use frame_system::{ensure_signed, RawOrigin};
+use frame_system::ensure_signed;
 use merkle::{
 	merkle::{
 		keys::{Commitment, Data},
@@ -257,7 +257,7 @@ decl_module! {
 			// Set the mixer state, `stopped` can be true or false
 			let mixer_ids = MixerGroupIds::<T>::get();
 			for i in 0..mixer_ids.len() {
-				<MerkleModule<T>>::set_stopped(RawOrigin::Signed(Self::account_id()).into(), mixer_ids[i], stopped)?;
+				T::Group::set_stopped(Self::account_id(), mixer_ids[i], stopped)?;
 			}
 			Ok(())
 		}
