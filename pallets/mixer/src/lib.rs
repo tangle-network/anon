@@ -81,6 +81,8 @@ decl_storage! {
 		pub MixerGroups get(fn mixer_groups): map hasher(blake2_128_concat) T::GroupId => MixerInfo<T>;
 		/// The vec of group ids
 		pub MixerGroupIds get(fn mixer_group_ids): Vec<T::GroupId>;
+		/// The TVL per group
+		pub TotalValueLocked get(fn total_value_locked): map hasher(blake2_128_concat) T::GroupId => BalanceOf<T>;
 	}
 }
 
@@ -136,11 +138,12 @@ decl_module! {
 			ensure!(balance >= deposit, Error::<T>::InsufficientBalance);
 			// transfer the deposit to the module
 			T::Currency::transfer(&sender, &Self::account_id(), deposit, AllowDeath)?;
+			// update the total value locked
+			let tvl = Self::total_value_locked(mixer_id);
+			<TotalValueLocked<T>>::insert(mixer_id, tvl + deposit);
 			// add elements to the mixer group's merkle tree and save the leaves
 			T::Group::add_members(Self::account_id(), mixer_id.into(), data_points.clone())?;
-			for i in 0..data_points.len() {
-				mixer_info.leaves.push(data_points[i]);
-			}
+			mixer_info.leaves.extend(data_points);
 			MixerGroups::<T>::insert(mixer_id, mixer_info);
 
 			Ok(())
@@ -176,6 +179,9 @@ decl_module! {
 			)?;
 			// transfer the fixed deposit size to the sender
 			T::Currency::transfer(&Self::account_id(), &sender, mixer_info.fixed_deposit_size, AllowDeath)?;
+			// update the total value locked
+			let tvl = Self::total_value_locked(mixer_id);
+			<TotalValueLocked<T>>::insert(mixer_id, tvl - mixer_info.fixed_deposit_size);
 			// Add the nullifier on behalf of the module
 			T::Group::add_nullifier(Self::account_id(), mixer_id.into(), nullifier_hash)
 		}

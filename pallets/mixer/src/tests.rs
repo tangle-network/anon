@@ -96,6 +96,8 @@ fn should_deposit_into_each_mixer_successfully() {
 			// ensure state updates
 			let g = MerkleGroups::get_group(i).unwrap();
 			let m = Mixer::get_mixer(i).unwrap();
+			let tvl = Mixer::total_value_locked(i);
+			assert_eq!(tvl, m.fixed_deposit_size);
 			assert_eq!(balance_before, balance_after + m.fixed_deposit_size);
 			assert_eq!(g.leaf_count, 1);
 			assert_eq!(m.leaves.len(), 1);
@@ -133,6 +135,9 @@ fn should_withdraw_from_each_mixer_successfully() {
 
 			let m = Mixer::get_mixer(i).unwrap();
 			let balance_before = Balances::free_balance(2);
+			// check TVL after depositing
+			let tvl = Mixer::total_value_locked(i);
+			assert_eq!(tvl, m.fixed_deposit_size);
 			// withdraw from another account
 			assert_ok!(Mixer::withdraw(
 				Origin::signed(2),
@@ -147,6 +152,9 @@ fn should_withdraw_from_each_mixer_successfully() {
 			));
 			let balance_after = Balances::free_balance(2);
 			assert_eq!(balance_before + m.fixed_deposit_size, balance_after);
+			// ensure TVL is 0 after withdrawing
+			let tvl = Mixer::total_value_locked(i);
+			assert_eq!(tvl, 0);
 		}
 	})
 }
