@@ -1,6 +1,6 @@
 use crate::mock::*;
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
-use curve25519_dalek::scalar::Scalar;
+
 use curve25519_gadgets::{
 	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
 	poseidon::{
@@ -32,7 +32,24 @@ fn default_hasher(num_gens: usize) -> Poseidon {
 #[test]
 fn should_initialize_successfully() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(Mixer::initialize(Origin::signed(1)));
+		assert_ok!(Mixer::initialize());
+		// the mixer creates 4 groups, they should all initialise to 0
+		let val = 1_000;
+		for i in 0..4 {
+			let g = MerkleGroups::get_group(i).unwrap();
+			let m = Mixer::get_mixer(i).unwrap();
+			assert_eq!(g.leaf_count, 0);
+			assert_eq!(g.manager_required, true);
+			assert_eq!(m.leaves.len(), 0);
+			assert_eq!(m.fixed_deposit_size, val * 10_u64.pow(i))
+		}
+	})
+}
+
+#[test]
+fn should_initialize_successfully_on_finalize() {
+	new_test_ext().execute_with(|| {
+		<Mixer as OnFinalize<u64>>::on_finalize(1);
 		// the mixer creates 4 groups, they should all initialise to 0
 		let val = 1_000;
 		for i in 0..4 {
@@ -49,7 +66,7 @@ fn should_initialize_successfully() {
 #[test]
 fn should_fail_to_deposit_with_insufficient_balance() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(Mixer::initialize(Origin::signed(1)));
+		assert_ok!(Mixer::initialize());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		for i in 0..4 {
 			let leaf = tree.generate_secrets();
@@ -68,7 +85,7 @@ fn should_fail_to_deposit_with_insufficient_balance() {
 #[test]
 fn should_deposit_into_each_mixer_successfully() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(Mixer::initialize(Origin::signed(1)));
+		assert_ok!(Mixer::initialize());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		for i in 0..4 {
 			let leaf = tree.generate_secrets();
@@ -89,7 +106,7 @@ fn should_deposit_into_each_mixer_successfully() {
 #[test]
 fn should_withdraw_from_each_mixer_successfully() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(Mixer::initialize(Origin::signed(1)));
+		assert_ok!(Mixer::initialize());
 		let pc_gens = PedersenGens::default();
 		let poseidon = default_hasher(40960);
 
@@ -138,7 +155,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 fn should_cache_roots_if_no_new_deposits_show() {
 	new_test_ext().execute_with(|| {
 		System::set_block_number(1);
-		assert_ok!(Mixer::initialize(Origin::signed(1)));
+		assert_ok!(Mixer::initialize());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		let mut merkle_roots: Vec<Data> = vec![];
 		for i in 0..4 {
@@ -172,7 +189,7 @@ fn should_cache_roots_if_no_new_deposits_show() {
 fn should_not_have_cache_once_cache_length_exceeded() {
 	new_test_ext().execute_with(|| {
 		System::set_block_number(1);
-		assert_ok!(Mixer::initialize(Origin::signed(1)));
+		assert_ok!(Mixer::initialize());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		let mut merkle_roots: Vec<Data> = vec![];
 		for i in 0..4 {
