@@ -42,9 +42,10 @@ fn should_initialize_successfully() {
 		let val = 1_000;
 		for i in 0..4 {
 			let g = MerkleGroups::get_group(i).unwrap();
+			let mng = MerkleGroups::get_manager(i).unwrap();
 			let m = Mixer::get_mixer(i).unwrap();
 			assert_eq!(g.leaf_count, 0);
-			assert_eq!(g.manager_required, true);
+			assert_eq!(mng.required, true);
 			assert_eq!(m.leaves.len(), 0);
 			assert_eq!(m.fixed_deposit_size, val * 10_u64.pow(i))
 		}

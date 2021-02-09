@@ -16,6 +16,7 @@ use curve25519_gadgets::{
 use frame_support::{assert_err, assert_ok};
 use merlin::Transcript;
 use rand_core::OsRng;
+use sp_runtime::traits::BadOrigin;
 
 fn key_bytes(x: u8) -> [u8; 32] {
 	[
@@ -49,6 +50,9 @@ fn can_update_manager_when_required() {
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), true, Some(3),));
 
 		assert_ok!(MerkleGroups::set_manager(Origin::signed(1), 0, 2,));
+
+		let mng = MerkleGroups::get_manager(0).unwrap();
+		assert_eq!(mng.account_id, 2);
 	});
 }
 
@@ -58,6 +62,9 @@ fn can_update_manager_when_not_required() {
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(3),));
 
 		assert_ok!(MerkleGroups::set_manager(Origin::signed(1), 0, 2,));
+
+		let mng = MerkleGroups::get_manager(0).unwrap();
+		assert_eq!(mng.account_id, 2);
 	});
 }
 
@@ -66,10 +73,7 @@ fn cannot_update_manager_as_not_manager() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(3),));
 
-		assert_err!(
-			MerkleGroups::set_manager(Origin::signed(2), 0, 2,),
-			Error::<Test>::ManagerIsRequired
-		);
+		assert_err!(MerkleGroups::set_manager(Origin::signed(2), 0, 2,), BadOrigin);
 	});
 }
 

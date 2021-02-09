@@ -15,8 +15,6 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
-pub mod mixer;
-
 use codec::{Decode, Encode};
 use frame_support::{
 	decl_error, decl_event, decl_module, decl_storage, dispatch, ensure,
@@ -24,10 +22,12 @@ use frame_support::{
 };
 use frame_system::ensure_signed;
 use merkle::{
-	merkle::keys::{Commitment, Data},
+	merkle::{
+		keys::{Commitment, Data},
+		permissions::ensure_admin,
+	},
 	Group as GroupTrait,
 };
-use mixer::permissions::ensure_admin;
 use sp_runtime::{
 	traits::{AccountIdConversion, One, Zero},
 	ModuleId,
