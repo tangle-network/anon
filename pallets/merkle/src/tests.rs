@@ -13,7 +13,8 @@ use curve25519_gadgets::{
 		PoseidonSbox, Poseidon_hash_2,
 	},
 };
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_ok, traits::UnfilteredDispatchable};
+use frame_system::RawOrigin;
 use merlin::Transcript;
 use rand_core::OsRng;
 use sp_runtime::traits::BadOrigin;
@@ -83,6 +84,9 @@ fn can_update_manager_required_manager() {
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(3),));
 
 		assert_ok!(MerkleGroups::set_manager_required(Origin::signed(1), 0, true,));
+
+		let mng = MerkleGroups::get_manager(0).unwrap();
+		assert_eq!(mng.required, true);
 	});
 }
 
@@ -129,6 +133,40 @@ fn cannot_add_member_as_not_manager() {
 			Error::<Test>::ManagerIsRequired
 		);
 	});
+}
+
+#[test]
+fn should_be_able_to_set_stopped_merkle() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(Origin::signed(1), true, Some(1),));
+		assert_ok!(MerkleGroups::set_stopped(Origin::signed(1), 0, true));
+
+		// stopping merkle, stopped == true
+		let stopped = MerkleGroups::stopped(0);
+		assert!(stopped);
+
+		assert_ok!(MerkleGroups::set_stopped(Origin::signed(1), 0, false));
+
+		// starting merkle again, stopped == false
+		let stopped = MerkleGroups::stopped(0);
+		assert!(!stopped);
+	});
+}
+
+#[test]
+fn should_be_able_to_change_manager_with_root() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(Origin::signed(1), true, Some(3),));
+		let call = Box::new(Call::<Test>::set_manager(0, 2));
+		let res = call.dispatch_bypass_filter(RawOrigin::Root.into());
+		assert_ok!(res);
+		let mng = MerkleGroups::get_manager(0).unwrap();
+		assert_eq!(mng.account_id, 2);
+
+		let call = Box::new(Call::<Test>::set_manager(0, 3));
+		let res = call.dispatch_bypass_filter(RawOrigin::Signed(0).into());
+		assert_err!(res, BadOrigin);
+	})
 }
 
 #[test]

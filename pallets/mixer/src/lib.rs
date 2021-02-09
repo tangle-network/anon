@@ -26,7 +26,7 @@ use merkle::{
 		keys::{Commitment, Data},
 		permissions::ensure_admin,
 	},
-	Group as GroupTrait,
+	Group as GroupTrait, Module as MerkleModule,
 };
 use sp_runtime::{
 	traits::{AccountIdConversion, One, Zero},
@@ -137,7 +137,7 @@ decl_module! {
 		pub fn deposit(origin, mixer_id: T::GroupId, data_points: Vec<Data>) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
-			ensure!(!<merkle::Module<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
+			ensure!(!<MerkleModule<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
 			// get mixer info, should always exist if module is initialised
 			let mut mixer_info = Self::get_mixer(mixer_id)?;
 			// ensure the sender has enough balance to cover deposit
@@ -175,7 +175,7 @@ decl_module! {
 		) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
-			ensure!(!<merkle::Module<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
+			ensure!(!<MerkleModule<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
 			let mixer_info = MixerGroups::<T>::get(mixer_id);
 			// check if the nullifier has been used
 			T::Group::has_used_nullifier(mixer_id.into(), nullifier_hash)?;
@@ -252,14 +252,12 @@ decl_module! {
 
 		#[weight = 0]
 		fn set_stopped(origin, stopped: bool) -> dispatch::DispatchResult {
-			let sender = ensure_signed(origin)?;
-			let curr_admin = Self::admin();
-			// Ensure the caller is admin
-			ensure!(sender == curr_admin, Error::<T>::UnauthorizedCall);
+			// Ensure the caller is admin or root
+			ensure_admin(origin, &Self::admin())?;
 			// Set the mixer state, `stopped` can be true or false
 			let mixer_ids = MixerGroupIds::<T>::get();
 			for i in 0..mixer_ids.len() {
-				<merkle::Module<T>>::set_stopped(RawOrigin::Signed(Self::account_id()).into(), mixer_ids[i], stopped)?;
+				<MerkleModule<T>>::set_stopped(RawOrigin::Signed(Self::account_id()).into(), mixer_ids[i], stopped)?;
 			}
 			Ok(())
 		}
@@ -278,10 +276,10 @@ decl_module! {
 			// if none happened, carry over previous merkle roots for the cache.
 			let mixer_ids = MixerGroupIds::<T>::get();
 			for i in 0..mixer_ids.len() {
-				let cached_roots = <merkle::Module<T>>::cached_roots(_n, mixer_ids[i]);
+				let cached_roots = <MerkleModule<T>>::cached_roots(_n, mixer_ids[i]);
 				// if there are no cached roots, carry forward the current root
 				if cached_roots.len() == 0 {
-					let _ = <merkle::Module<T>>::add_root_to_cache(mixer_ids[i], _n);
+					let _ = <MerkleModule<T>>::add_root_to_cache(mixer_ids[i], _n);
 				}
 			}
 		}

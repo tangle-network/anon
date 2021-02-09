@@ -9,7 +9,7 @@ where
 	match o.into() {
 		Ok(RawOrigin::Root) => Ok(()),
 		Ok(RawOrigin::Signed(acc)) => {
-			if acc == *admin {
+			if &acc == admin {
 				Ok(())
 			} else {
 				Err(BadOrigin)

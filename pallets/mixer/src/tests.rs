@@ -68,6 +68,21 @@ fn should_be_able_to_change_admin_with_root() {
 }
 
 #[test]
+fn should_be_able_to_stop_mixers_with_root() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(Mixer::initialize(Origin::signed(0)));
+		let call = Box::new(Call::<Test>::set_stopped(true));
+		let res = call.dispatch_bypass_filter(RawOrigin::Root.into());
+		assert_ok!(res);
+
+		for i in 0..4 {
+			let stopped = MerkleGroups::stopped(i);
+			assert!(stopped);
+		}
+	})
+}
+
+#[test]
 fn should_be_able_to_change_admin() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize(Origin::signed(0)));
