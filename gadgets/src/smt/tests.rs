@@ -251,7 +251,7 @@ fn test_vsmt_prove_verif() {
 	let mut prover_transcript = Transcript::new(b"VSMT");
 	let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-	let (proof, commitments) = tree.prove_zk(k, tree.root, &bp_gens, prover);
+	let (proof, commitments) = tree.prove_zk(tree.root, k, &bp_gens, prover);
 
 	// Verify part
 	let mut verifier_transcript = Transcript::new(b"VSMT");

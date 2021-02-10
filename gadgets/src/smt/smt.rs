@@ -59,8 +59,16 @@ impl VanillaSparseMerkleTree {
 	// This function allows this tree to work as a normal tree
 	// Should be deleted in the future if we opt out to use sparse tree
 	// that support non-membership proofs
-	pub fn add_leaves(&mut self, vals: Vec<[u8; 32]>) {
+	pub fn add_leaves(&mut self, vals: Vec<[u8; 32]>, target_root: Option<[u8; 32]>) {
 		for val in vals {
+			// check if current root equals target root before inserting
+			// more leaves. This is necessary to prevent inconsistencies
+			// between building a tree with more leaves than is being targeted.
+			if let Some(root) = target_root {
+				if self.root.to_bytes() == root {
+					break;
+				}
+			}
 			self.update(self.curr_index, Scalar::from_bytes_mod_order(val));
 			self.leaf_indices.insert(val, self.curr_index);
 			self.curr_index = self.curr_index + Scalar::one();
@@ -91,7 +99,7 @@ impl VanillaSparseMerkleTree {
 		}
 
 		self.root = cur_val;
-
+		self.leaf_indices.insert(val.to_bytes(), idx);
 		cur_val
 	}
 
@@ -171,7 +179,6 @@ impl VanillaSparseMerkleTree {
 		let mut test_rng: OsRng = OsRng::default();
 		let mut merkle_proof_vec = Vec::<Scalar>::new();
 		let mut merkle_proof = Some(merkle_proof_vec);
-
 		let k = self.leaf_indices.get(&leaf.to_bytes()).unwrap();
 		let leaf = self.get(*k, root, &mut merkle_proof);
 		merkle_proof_vec = merkle_proof.unwrap();

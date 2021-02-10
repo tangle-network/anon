@@ -104,15 +104,6 @@ impl Transaction {
 		Ok(())
 	}
 
-	fn input_amount(&self) -> LinearCombination {
-		let mut sum_inputs = LinearCombination::from(Scalar::zero());
-		for i in 0..self.inputs.len() {
-			sum_inputs = sum_inputs + self.inputs[i].value.variable;
-		}
-
-		sum_inputs
-	}
-
 	fn output_amount(&self) -> LinearCombination {
 		let mut sum_outputs = LinearCombination::from(Scalar::zero());
 		for i in 0..self.outputs.len() {

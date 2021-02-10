@@ -54,7 +54,7 @@ fn test_is_valid_transaction_spend() {
 	let output_1_rho = Scalar::random(&mut test_rng);
 	let output_1_r = Scalar::random(&mut test_rng);
 	let output_1_nullifier = Scalar::random(&mut test_rng);
-	let output_1_sn = Poseidon_hash_2(output_1_r, output_1_nullifier, &params);
+	let _output_1_sn = Poseidon_hash_2(output_1_r, output_1_nullifier, &params);
 	let output_1_cm = Poseidon_hash_4([output_1, output_1_rho, output_1_r, output_1_nullifier], &params);
 
 	let output_2 = Scalar::from(5u32);
@@ -62,7 +62,7 @@ fn test_is_valid_transaction_spend() {
 	let output_2_rho = Scalar::random(&mut test_rng);
 	let output_2_r = Scalar::random(&mut test_rng);
 	let output_2_nullifier = Scalar::random(&mut test_rng);
-	let output_2_sn = Poseidon_hash_2(output_2_r, output_2_nullifier, &params);
+	let _output_2_sn = Poseidon_hash_2(output_2_r, output_2_nullifier, &params);
 	let output_2_cm = Poseidon_hash_4([output_2, output_2_rho, output_2_r, output_2_nullifier], &params);
 
 	{
