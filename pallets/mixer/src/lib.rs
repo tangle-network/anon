@@ -261,6 +261,12 @@ impl<T: Config> Module<T> {
 
 	pub fn initialize() -> dispatch::DispatchResult {
 		ensure!(!Self::initialised(), Error::<T>::AlreadyInitialised);
+
+		// Get default admin from trait params
+		let default_admin = T::DefaultAdmin::get();
+		// Initialize the admin in storage with default one
+		Admin::<T>::set(default_admin);
+
 		let one: BalanceOf<T> = One::one();
 		let depth: u8 = <T as Config>::MaxTreeDepth::get();
 		// create small mixer and assign the module as the manager

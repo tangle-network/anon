@@ -91,7 +91,7 @@ impl merkle::Config for Test {
 
 parameter_types! {
 	pub const MixerModuleId: ModuleId = ModuleId(*b"py/mixer");
-	pub const DefaultAdmin: u64 = 0;
+	pub const DefaultAdmin: u64 = 4;
 }
 
 impl Config for Test {
