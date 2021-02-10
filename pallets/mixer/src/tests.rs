@@ -104,9 +104,10 @@ fn should_be_able_to_stop_mixers_with_root() {
 #[test]
 fn should_be_able_to_change_admin() {
 	new_test_ext().execute_with(|| {
+		let default_admin = 4;
 		assert_ok!(Mixer::initialize());
 		assert_err!(Mixer::transfer_admin(Origin::signed(1), 2), BadOrigin);
-		assert_ok!(Mixer::transfer_admin(Origin::signed(0), 2));
+		assert_ok!(Mixer::transfer_admin(Origin::signed(default_admin), 2));
 		let admin = Mixer::admin();
 
 		assert_eq!(admin, 2);
@@ -116,13 +117,14 @@ fn should_be_able_to_change_admin() {
 #[test]
 fn should_stop_and_start_mixer() {
 	new_test_ext().execute_with(|| {
+		let default_admin = 4;
 		assert_ok!(Mixer::initialize());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		let leaf = tree.generate_secrets();
 		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![Data(leaf)]));
 
 		// Stopping deposits and withdrawal
-		assert_ok!(Mixer::set_stopped(Origin::signed(0), true));
+		assert_ok!(Mixer::set_stopped(Origin::signed(default_admin), true));
 		assert_err!(
 			Mixer::deposit(Origin::signed(0), 0, vec![]),
 			Error::<Test>::MixerStopped
@@ -143,7 +145,7 @@ fn should_stop_and_start_mixer() {
 		);
 
 		// Starting mixer
-		assert_ok!(Mixer::set_stopped(Origin::signed(0), false));
+		assert_ok!(Mixer::set_stopped(Origin::signed(default_admin), false));
 		let leaf = tree.generate_secrets();
 		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![Data(leaf)]));
 	})
