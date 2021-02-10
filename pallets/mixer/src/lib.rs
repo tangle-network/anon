@@ -22,7 +22,7 @@ use frame_support::{
 };
 use frame_system::ensure_signed;
 use merkle::{
-	merkle::{
+	utils::{
 		keys::{Commitment, Data},
 		permissions::ensure_admin,
 	},

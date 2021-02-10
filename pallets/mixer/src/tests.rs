@@ -16,7 +16,7 @@ use frame_support::{
 };
 use frame_system::RawOrigin;
 use merkle::{
-	merkle::keys::{Commitment, Data},
+	utils::keys::{Commitment, Data},
 	HighestCachedBlock,
 };
 use merlin::Transcript;

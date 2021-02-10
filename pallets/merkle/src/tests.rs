@@ -1,6 +1,6 @@
 use super::*;
 use crate::{
-	merkle::keys::{Commitment, Data},
+	utils::keys::{Commitment, Data},
 	mock::*,
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
