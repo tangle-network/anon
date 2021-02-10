@@ -43,9 +43,10 @@ fn should_initialize_successfully() {
 		let val = 1_000;
 		for i in 0..4 {
 			let g = MerkleGroups::get_group(i).unwrap();
+			let mng = MerkleGroups::get_manager(i).unwrap();
 			let m = Mixer::get_mixer(i).unwrap();
 			assert_eq!(g.leaf_count, 0);
-			assert_eq!(g.manager_required, true);
+			assert_eq!(mng.required, true);
 			assert_eq!(m.leaves.len(), 0);
 			assert_eq!(m.fixed_deposit_size, val * 10_u64.pow(i))
 		}
@@ -88,7 +89,7 @@ fn should_be_able_to_change_admin_with_root() {
 #[test]
 fn should_be_able_to_stop_mixers_with_root() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(Mixer::initialize(Origin::signed(0)));
+		assert_ok!(Mixer::initialize());
 		let call = Box::new(Call::<Test>::set_stopped(true));
 		let res = call.dispatch_bypass_filter(RawOrigin::Root.into());
 		assert_ok!(res);
@@ -103,7 +104,7 @@ fn should_be_able_to_stop_mixers_with_root() {
 #[test]
 fn should_be_able_to_change_admin() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(Mixer::initialize(Origin::signed(0)));
+		assert_ok!(Mixer::initialize());
 		assert_err!(Mixer::transfer_admin(Origin::signed(1), 2), BadOrigin);
 		assert_ok!(Mixer::transfer_admin(Origin::signed(0), 2));
 		let admin = Mixer::admin();
@@ -115,7 +116,7 @@ fn should_be_able_to_change_admin() {
 #[test]
 fn should_stop_and_start_mixer() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(Mixer::initialize(Origin::signed(0)));
+		assert_ok!(Mixer::initialize());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		let leaf = tree.generate_secrets();
 		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![Data(leaf)]));

@@ -17,7 +17,7 @@ pub mod tests;
 
 use codec::{Decode, Encode};
 use frame_support::{
-	decl_error, decl_event, decl_module, decl_storage, dispatch, ensure,
+	debug, decl_error, decl_event, decl_module, decl_storage, dispatch, ensure,
 	traits::{Currency, ExistenceRequirement::AllowDeath, Get},
 };
 use frame_system::ensure_signed;
@@ -295,12 +295,7 @@ impl<T: Config> Module<T> {
 			leaves: Vec::new(),
 		};
 		MixerGroups::<T>::insert(huge_mixer_id, huge_mixer_info);
-		MixerGroupIds::<T>::set(vec![
-			small_mixer_id,
-			med_mixer_id,
-			large_mixer_id,
-			huge_mixer_id,
-		]);
+		MixerGroupIds::<T>::set(vec![small_mixer_id, med_mixer_id, large_mixer_id, huge_mixer_id]);
 
 		Initialised::set(true);
 		Ok(())

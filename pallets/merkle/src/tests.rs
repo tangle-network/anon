@@ -522,7 +522,7 @@ fn should_not_verify_invalid_private_inputs() {
 		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
 
 		let leaf = ftree.generate_secrets();
-		ftree.tree.add_leaves(vec![leaf.to_bytes()]);
+		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
