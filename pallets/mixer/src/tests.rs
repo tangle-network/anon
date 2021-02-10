@@ -1,4 +1,5 @@
-use crate::mock::*;
+use super::*;
+use crate::mock::{new_test_ext, Balances, MerkleGroups, Mixer, Origin, System, Test};
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 
 use curve25519_gadgets::{
@@ -8,13 +9,18 @@ use curve25519_gadgets::{
 		gen_mds_matrix, gen_round_keys, PoseidonSbox,
 	},
 };
-use frame_support::{assert_err, assert_ok, storage::StorageValue, traits::OnFinalize};
+use frame_support::{
+	assert_err, assert_ok,
+	storage::StorageValue,
+	traits::{OnFinalize, UnfilteredDispatchable},
+};
+use frame_system::RawOrigin;
 use merkle::{
 	merkle::keys::{Commitment, Data},
 	HighestCachedBlock,
 };
 use merlin::Transcript;
-use sp_runtime::DispatchError;
+use sp_runtime::{traits::BadOrigin, DispatchError};
 
 fn default_hasher(num_gens: usize) -> Poseidon {
 	let width = 6;
@@ -37,9 +43,10 @@ fn should_initialize_successfully() {
 		let val = 1_000;
 		for i in 0..4 {
 			let g = MerkleGroups::get_group(i).unwrap();
+			let mng = MerkleGroups::get_manager(i).unwrap();
 			let m = Mixer::get_mixer(i).unwrap();
 			assert_eq!(g.leaf_count, 0);
-			assert_eq!(g.manager_required, true);
+			assert_eq!(mng.required, true);
 			assert_eq!(m.leaves.len(), 0);
 			assert_eq!(m.fixed_deposit_size, val * 10_u64.pow(i))
 		}
@@ -54,12 +61,91 @@ fn should_initialize_successfully_on_finalize() {
 		let val = 1_000;
 		for i in 0..4 {
 			let g = MerkleGroups::get_group(i).unwrap();
+			let mng = MerkleGroups::get_manager(i).unwrap();
 			let m = Mixer::get_mixer(i).unwrap();
 			assert_eq!(g.leaf_count, 0);
-			assert_eq!(g.manager_required, true);
+			assert_eq!(mng.required, true);
 			assert_eq!(m.leaves.len(), 0);
 			assert_eq!(m.fixed_deposit_size, val * 10_u64.pow(i))
 		}
+	})
+}
+
+#[test]
+fn should_be_able_to_change_admin_with_root() {
+	new_test_ext().execute_with(|| {
+		let call = Box::new(Call::<Test>::transfer_admin(2));
+		let res = call.dispatch_bypass_filter(RawOrigin::Root.into());
+		assert_ok!(res);
+		let admin = Mixer::admin();
+		assert_eq!(admin, 2);
+
+		let call = Box::new(Call::<Test>::transfer_admin(3));
+		let res = call.dispatch_bypass_filter(RawOrigin::Signed(0).into());
+		assert_err!(res, BadOrigin);
+	})
+}
+
+#[test]
+fn should_be_able_to_stop_mixers_with_root() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(Mixer::initialize());
+		let call = Box::new(Call::<Test>::set_stopped(true));
+		let res = call.dispatch_bypass_filter(RawOrigin::Root.into());
+		assert_ok!(res);
+
+		for i in 0..4 {
+			let stopped = MerkleGroups::stopped(i);
+			assert!(stopped);
+		}
+	})
+}
+
+#[test]
+fn should_be_able_to_change_admin() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(Mixer::initialize());
+		assert_err!(Mixer::transfer_admin(Origin::signed(1), 2), BadOrigin);
+		assert_ok!(Mixer::transfer_admin(Origin::signed(0), 2));
+		let admin = Mixer::admin();
+
+		assert_eq!(admin, 2);
+	})
+}
+
+#[test]
+fn should_stop_and_start_mixer() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(Mixer::initialize());
+		let mut tree = FixedDepositTreeBuilder::new().build();
+		let leaf = tree.generate_secrets();
+		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![Data(leaf)]));
+
+		// Stopping deposits and withdrawal
+		assert_ok!(Mixer::set_stopped(Origin::signed(0), true));
+		assert_err!(
+			Mixer::deposit(Origin::signed(0), 0, vec![]),
+			Error::<Test>::MixerStopped
+		);
+		assert_err!(
+			Mixer::withdraw(
+				Origin::signed(0),
+				0,
+				0,
+				Data::zero(),
+				Vec::new(),
+				Data::zero(),
+				Vec::new(),
+				Vec::new(),
+				Vec::new()
+			),
+			Error::<Test>::MixerStopped
+		);
+
+		// Starting mixer
+		assert_ok!(Mixer::set_stopped(Origin::signed(0), false));
+		let leaf = tree.generate_secrets();
+		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![Data(leaf)]));
 	})
 }
 

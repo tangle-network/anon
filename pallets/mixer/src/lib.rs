@@ -15,18 +15,23 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
-use merkle::merkle::keys::{Commitment, Data};
+use codec::{Decode, Encode};
+use frame_support::{
+	debug, decl_error, decl_event, decl_module, decl_storage, dispatch, ensure,
+	traits::{Currency, ExistenceRequirement::AllowDeath, Get},
+};
+use frame_system::ensure_signed;
+use merkle::{
+	merkle::{
+		keys::{Commitment, Data},
+		permissions::ensure_admin,
+	},
+	Group as GroupTrait, Module as MerkleModule,
+};
 use sp_runtime::{
 	traits::{AccountIdConversion, One, Zero},
 	ModuleId,
 };
-
-use frame_support::traits::{Currency, ExistenceRequirement::AllowDeath, Get};
-
-use codec::{Decode, Encode};
-use frame_support::{debug, decl_error, decl_event, decl_module, decl_storage, dispatch, ensure};
-use frame_system::ensure_signed;
-use merkle::Group as GroupTrait;
 use sp_std::prelude::*;
 
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -44,6 +49,8 @@ pub trait Config: frame_system::Config + merkle::Config {
 	type MaxTreeDepth: Get<u8>;
 	/// The small deposit length
 	type DepositLength: Get<Self::BlockNumber>;
+	/// Default admin key
+	type DefaultAdmin: Get<Self::AccountId>;
 }
 
 #[derive(Encode, Decode, PartialEq)]
@@ -81,6 +88,9 @@ decl_storage! {
 		pub MixerGroups get(fn mixer_groups): map hasher(blake2_128_concat) T::GroupId => MixerInfo<T>;
 		/// The vec of group ids
 		pub MixerGroupIds get(fn mixer_group_ids): Vec<T::GroupId>;
+		/// Administrator of the mixer pallet.
+		/// This account that can stop/start operations of the mixer
+		pub Admin get(fn admin): T::AccountId;
 		/// The TVL per group
 		pub TotalValueLocked get(fn total_value_locked): map hasher(blake2_128_concat) T::GroupId => BalanceOf<T>;
 	}
@@ -112,6 +122,10 @@ decl_error! {
 		AlreadyInitialised,
 		///
 		InsufficientBalance,
+		///
+		UnauthorizedCall,
+		///
+		MixerStopped,
 	}
 }
 
@@ -125,6 +139,7 @@ decl_module! {
 		pub fn deposit(origin, mixer_id: T::GroupId, data_points: Vec<Data>) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+			ensure!(!<MerkleModule<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
 			// get mixer info, should always exist if module is initialised
 			let mut mixer_info = Self::get_mixer(mixer_id)?;
 			// ensure the sender has enough balance to cover deposit
@@ -163,6 +178,7 @@ decl_module! {
 		) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+			ensure!(!<MerkleModule<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
 			let mixer_info = MixerGroups::<T>::get(mixer_id);
 			// check if the nullifier has been used
 			T::Group::has_used_nullifier(mixer_id.into(), nullifier_hash)?;
@@ -184,6 +200,27 @@ decl_module! {
 			<TotalValueLocked<T>>::insert(mixer_id, tvl - mixer_info.fixed_deposit_size);
 			// Add the nullifier on behalf of the module
 			T::Group::add_nullifier(Self::account_id(), mixer_id.into(), nullifier_hash)
+		}
+
+		#[weight = 0]
+		fn set_stopped(origin, stopped: bool) -> dispatch::DispatchResult {
+			// Ensure the caller is admin or root
+			ensure_admin(origin, &Self::admin())?;
+			// Set the mixer state, `stopped` can be true or false
+			let mixer_ids = MixerGroupIds::<T>::get();
+			for i in 0..mixer_ids.len() {
+				T::Group::set_stopped(Self::account_id(), mixer_ids[i], stopped)?;
+			}
+			Ok(())
+		}
+
+		#[weight = 0]
+		fn transfer_admin(origin, to: T::AccountId) -> dispatch::DispatchResult {
+			// Ensures that the caller is the root or the current admin
+			ensure_admin(origin, &Self::admin())?;
+			// Updating the admin
+			Admin::<T>::set(to);
+			Ok(())
 		}
 
 		fn on_finalize(_n: T::BlockNumber) {
@@ -258,12 +295,7 @@ impl<T: Config> Module<T> {
 			leaves: Vec::new(),
 		};
 		MixerGroups::<T>::insert(huge_mixer_id, huge_mixer_info);
-		MixerGroupIds::<T>::set(vec![
-			small_mixer_id,
-			med_mixer_id,
-			large_mixer_id,
-			huge_mixer_id,
-		]);
+		MixerGroupIds::<T>::set(vec![small_mixer_id, med_mixer_id, large_mixer_id, huge_mixer_id]);
 
 		Initialised::set(true);
 		Ok(())

@@ -13,9 +13,11 @@ use curve25519_gadgets::{
 		PoseidonSbox, Poseidon_hash_2,
 	},
 };
-use frame_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_ok, traits::UnfilteredDispatchable};
+use frame_system::RawOrigin;
 use merlin::Transcript;
 use rand_core::OsRng;
+use sp_runtime::traits::BadOrigin;
 
 fn key_bytes(x: u8) -> [u8; 32] {
 	[
@@ -49,6 +51,9 @@ fn can_update_manager_when_required() {
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), true, Some(3),));
 
 		assert_ok!(MerkleGroups::set_manager(Origin::signed(1), 0, 2,));
+
+		let mng = MerkleGroups::get_manager(0).unwrap();
+		assert_eq!(mng.account_id, 2);
 	});
 }
 
@@ -58,6 +63,9 @@ fn can_update_manager_when_not_required() {
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(3),));
 
 		assert_ok!(MerkleGroups::set_manager(Origin::signed(1), 0, 2,));
+
+		let mng = MerkleGroups::get_manager(0).unwrap();
+		assert_eq!(mng.account_id, 2);
 	});
 }
 
@@ -66,10 +74,7 @@ fn cannot_update_manager_as_not_manager() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(3),));
 
-		assert_err!(
-			MerkleGroups::set_manager(Origin::signed(2), 0, 2,),
-			Error::<Test>::ManagerIsRequired
-		);
+		assert_err!(MerkleGroups::set_manager(Origin::signed(2), 0, 2,), BadOrigin);
 	});
 }
 
@@ -79,6 +84,9 @@ fn can_update_manager_required_manager() {
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(3),));
 
 		assert_ok!(MerkleGroups::set_manager_required(Origin::signed(1), 0, true,));
+
+		let mng = MerkleGroups::get_manager(0).unwrap();
+		assert_eq!(mng.required, true);
 	});
 }
 
@@ -125,6 +133,40 @@ fn cannot_add_member_as_not_manager() {
 			Error::<Test>::ManagerIsRequired
 		);
 	});
+}
+
+#[test]
+fn should_be_able_to_set_stopped_merkle() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(Origin::signed(1), true, Some(1),));
+		assert_ok!(MerkleGroups::set_stopped(Origin::signed(1), 0, true));
+
+		// stopping merkle, stopped == true
+		let stopped = MerkleGroups::stopped(0);
+		assert!(stopped);
+
+		assert_ok!(MerkleGroups::set_stopped(Origin::signed(1), 0, false));
+
+		// starting merkle again, stopped == false
+		let stopped = MerkleGroups::stopped(0);
+		assert!(!stopped);
+	});
+}
+
+#[test]
+fn should_be_able_to_change_manager_with_root() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(MerkleGroups::create_group(Origin::signed(1), true, Some(3),));
+		let call = Box::new(Call::<Test>::set_manager(0, 2));
+		let res = call.dispatch_bypass_filter(RawOrigin::Root.into());
+		assert_ok!(res);
+		let mng = MerkleGroups::get_manager(0).unwrap();
+		assert_eq!(mng.account_id, 2);
+
+		let call = Box::new(Call::<Test>::set_manager(0, 3));
+		let res = call.dispatch_bypass_filter(RawOrigin::Signed(0).into());
+		assert_err!(res, BadOrigin);
+	})
 }
 
 #[test]
@@ -469,7 +511,51 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 }
 
 #[test]
-fn should_not_verify_invalid_commitments_for_membership() {
+fn should_not_verify_invalid_private_inputs() {
+	new_test_ext().execute_with(|| {
+		let pc_gens = PedersenGens::default();
+
+		let label = b"zk_membership_proof";
+		let mut prover_transcript = Transcript::new(label);
+		let prover = Prover::new(&pc_gens, &mut prover_transcript);
+
+		let mut ftree = FixedDepositTreeBuilder::new().depth(1).build();
+
+		let leaf = ftree.generate_secrets();
+		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
+
+		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
+		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
+		let root = MerkleGroups::get_merkle_root(0).unwrap();
+
+		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
+			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+
+		let mut comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
+		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
+		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
+
+		let mut rng = OsRng::default();
+		comms.push(Commitment(RistrettoPoint::random(&mut rng).compress()));
+
+		assert_err!(
+			MerkleGroups::verify_zk_membership_proof(
+				0,
+				0,
+				root,
+				comms,
+				Data(nullifier_hash),
+				proof.to_bytes(),
+				leaf_index_comms,
+				proof_comms
+			),
+			Error::<Test>::InvalidPrivateInputs
+		);
+	});
+}
+
+#[test]
+fn should_not_verify_invalid_path_commitments_for_membership() {
 	new_test_ext().execute_with(|| {
 		let pc_gens = PedersenGens::default();
 

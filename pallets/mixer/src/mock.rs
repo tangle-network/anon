@@ -91,10 +91,12 @@ impl merkle::Config for Test {
 
 parameter_types! {
 	pub const MixerModuleId: ModuleId = ModuleId(*b"py/mixer");
+	pub const DefaultAdmin: u64 = 0;
 }
 
 impl Config for Test {
 	type Currency = Balances;
+	type DefaultAdmin = DefaultAdmin;
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
 	type Group = MerkleGroups;
