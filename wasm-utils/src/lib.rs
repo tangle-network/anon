@@ -19,22 +19,32 @@ pub fn set_panic_hook() {
 	console_error_panic_hook::set_once();
 }
 
-#[derive(Debug)]
-#[repr(u8)]
+#[derive(Debug, PartialEq)]
 pub enum OperationCode {
 	Unknown = 0,
+	// Invalid hex string length when decoding
 	InvalidHexLength = 1,
-	MerkleTreeFull = 2,
-	HexParsingFailed = 3,
-	InvalidNoteLength = 4,
-	InvalidNotePrefix = 5,
-	InvalidNoteVersion = 6,
-	IdParsingFailed = 7,
-	BlockNumberParsingFailed = 8,
-	InvalidNoteSecretsLength = 9,
-	MerkleTreeNotFound = 10,
-	SerializationFailed = 11,
-	DeserializationFailed = 12,
+	// Failed to parse hex string
+	HexParsingFailed = 2,
+	// Invalid number of note parts when decoding
+	InvalidNoteLength = 3,
+	// Invalid note prefix
+	InvalidNotePrefix = 4,
+	// Invalid note version
+	InvalidNoteVersion = 5,
+	// Invalid note id when parsing
+	InvalidNoteId = 6,
+	// Invalid note block number when parsing
+	InvalidNoteBlockNumber = 7,
+	// Invalid note secrets
+	InvalidNoteSecrets = 8,
+	// Unable to find merkle tree
+	MerkleTreeNotFound = 9,
+	// Failed serialization of passed params
+	// Error for failing to parse rust type into JsValue
+	SerializationFailed = 10,
+	// Failed deserialization of JsValue into rust type
+	DeserializationFailed = 11,
 }
 
 impl OperationCode {
@@ -45,7 +55,9 @@ impl OperationCode {
 
 // Decodes hex string into byte array
 pub fn decode_hex(s: &str) -> Result<[u8; 32], OperationCode> {
-	assert!(s.len() == 64, "Invalid hex length!");
+	if s.len() != 64 {
+		return Err(OperationCode::InvalidHexLength);
+	}
 	let arr: Result<Vec<u8>, OperationCode> = (0..s.len())
 		.step_by(2)
 		.map(|i| u8::from_str_radix(&s[i..i + 2], 16).map_err(|_| OperationCode::HexParsingFailed))
@@ -163,21 +175,21 @@ impl Mixer {
 			return Err(OperationCode::InvalidNoteVersion.into_js());
 		}
 		let asset: String = parts[2].to_string();
-		let id = parts[3].parse().map_err(|_| OperationCode::IdParsingFailed.into_js())?;
+		let id = parts[3].parse().map_err(|_| OperationCode::InvalidNoteId.into_js())?;
 		let (block_number, note_val) = match partial {
 			true => (None, parts[4]),
 			false => {
 				let bn = parts[4]
 					.parse::<u32>()
-					.map_err(|_| OperationCode::BlockNumberParsingFailed.into_js())?;
+					.map_err(|_| OperationCode::InvalidNoteBlockNumber.into_js())?;
 				(Some(bn), parts[5])
 			}
 		};
 		if note_val.len() != 128 {
-			return Err(OperationCode::InvalidNoteSecretsLength.into_js());
+			return Err(OperationCode::InvalidNoteSecrets.into_js());
 		}
 		if !self.tree_map.contains_key(&(asset.to_owned(), id)) {
-			return Err(OperationCode::InvalidNoteSecretsLength.into_js());
+			return Err(OperationCode::InvalidNoteSecrets.into_js());
 		}
 
 		// Checking the validity
@@ -283,16 +295,40 @@ mod tests {
 	}
 
 	#[wasm_bindgen_test]
-	fn should_have_correct_root() {
+	fn should_return_proper_errors() {
+		let asset = "EDG";
+		let id = 0;
+		let depth = 2;
 		let arr = Array::new();
-		arr.push(&JsString::from("EDG"));
-		arr.push(&JsValue::from(0));
-		arr.push(&JsValue::from(2));
+		arr.push(&JsString::from(asset));
+		arr.push(&JsValue::from(id));
+		arr.push(&JsValue::from(depth));
 		let top_level_arr = Array::new();
 		top_level_arr.push(&arr);
 		let js_trees = JsValue::from(top_level_arr);
+		let mut mixer = Mixer::new(js_trees).unwrap();
+
+		let invalid_leafs = JsValue::from(1);
+		let leaf_res = mixer.add_leaves(asset.to_string(), id, invalid_leafs, JsValue::NULL);
+		assert_eq!(leaf_res.err().unwrap(), JsValue::from(11));
+
+		let invalid_asset = "foo".to_string();
+		let tree_res = mixer.get_tree(invalid_asset, id);
+		assert_eq!(tree_res.err().unwrap(), OperationCode::MerkleTreeNotFound);
+	}
+
+	#[wasm_bindgen_test]
+	fn should_have_correct_root() {
 		let asset = "EDG";
 		let id = 0;
+		let depth = 2;
+		let arr = Array::new();
+		arr.push(&JsString::from(asset));
+		arr.push(&JsValue::from(id));
+		arr.push(&JsValue::from(depth));
+		let top_level_arr = Array::new();
+		top_level_arr.push(&arr);
+		let js_trees = JsValue::from(top_level_arr);
 		let mut mixer = Mixer::new(js_trees).unwrap();
 		let leaf1 = Scalar::from(1u32);
 		let leaf2 = Scalar::from(2u32);
@@ -318,15 +354,16 @@ mod tests {
 
 	#[wasm_bindgen_test]
 	fn should_generate_and_save_note() {
+		let asset = "EDG";
+		let id = 0;
+		let depth = 2;
 		let arr = Array::new();
-		arr.push(&JsString::from("EDG"));
-		arr.push(&JsValue::from(0));
-		arr.push(&JsValue::from(2));
+		arr.push(&JsString::from(asset));
+		arr.push(&JsValue::from(id));
+		arr.push(&JsValue::from(depth));
 		let top_level_arr = Array::new();
 		top_level_arr.push(&arr);
 		let js_trees = JsValue::from(top_level_arr);
-		let asset = "EDG";
-		let id = 0;
 		let mut mixer = Mixer::new(js_trees).unwrap();
 
 		// Partial note
@@ -363,15 +400,16 @@ mod tests {
 
 	#[wasm_bindgen_test]
 	fn should_create_proof() {
+		let asset = "EDG";
+		let id = 0;
+		let depth = 2;
 		let arr = Array::new();
-		arr.push(&JsString::from("EDG"));
-		arr.push(&JsValue::from(0));
-		arr.push(&JsValue::from(2));
+		arr.push(&JsString::from(asset));
+		arr.push(&JsValue::from(id));
+		arr.push(&JsValue::from(depth));
 		let top_level_arr = Array::new();
 		top_level_arr.push(&arr);
 		let js_trees = JsValue::from(top_level_arr);
-		let asset = "EDG";
-		let id = 0;
 		let mut mixer = Mixer::new(js_trees).unwrap();
 		let tree = mixer.get_tree_mut(asset.to_owned(), id).unwrap();
 		let leaf1 = tree.generate_secrets();
@@ -410,15 +448,16 @@ mod tests {
 
 	#[wasm_bindgen_test]
 	fn should_create_proof_with_older_target_root() {
+		let asset = "EDG";
+		let id = 0;
+		let depth = 2;
 		let arr = Array::new();
-		arr.push(&JsString::from("EDG"));
-		arr.push(&JsValue::from(0));
-		arr.push(&JsValue::from(2));
+		arr.push(&JsString::from(asset));
+		arr.push(&JsValue::from(id));
+		arr.push(&JsValue::from(depth));
 		let top_level_arr = Array::new();
 		top_level_arr.push(&arr);
 		let js_trees = JsValue::from(top_level_arr);
-		let asset = "EDG";
-		let id = 0;
 		let mut mixer = Mixer::new(js_trees).unwrap();
 		let tree = mixer.get_tree_mut(asset.to_owned(), id).unwrap();
 		let leaf1 = tree.generate_secrets();
