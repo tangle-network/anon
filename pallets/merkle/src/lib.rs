@@ -8,7 +8,7 @@
 
 /// For more guidance on Substrate modules, see the example module
 /// https://github.com/paritytech/substrate/blob/master/frame/example/src/lib.rs
-pub mod merkle;
+pub mod utils;
 
 #[cfg(test)]
 pub mod mock;
@@ -35,7 +35,7 @@ use curve25519_gadgets::{
 };
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter};
 use frame_system::ensure_signed;
-use merkle::{
+use utils::{
 	keys::{Commitment, Data},
 	permissions::ensure_admin,
 };

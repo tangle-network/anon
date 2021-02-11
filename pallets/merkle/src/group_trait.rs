@@ -1,4 +1,4 @@
-use crate::merkle::keys::{Commitment, Data};
+use crate::utils::keys::{Commitment, Data};
 use bulletproofs::PedersenGens;
 pub use frame_support::dispatch;
 use sp_std::vec::Vec;
