@@ -15,7 +15,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 default-features = false
 features = ["derive"]
 package = "parity-scale-codec"
-version = "1.3.4"
+version = "2.0.0"
 
 [dependencies.curve25519-dalek]
 version = "3.0.0"
@@ -33,7 +33,7 @@ features = ["yoloproofs"]
 version = "0.1.5"
 
 [dependencies]
-sp-std = { default-features = false, version = "2.0.0" }
+sp-std = { default-features = false, version = "3.0.0" }
 merlin = { version = "2.0.0", default-features = false }
 
 rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
