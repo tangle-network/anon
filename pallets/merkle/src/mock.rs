@@ -1,5 +1,6 @@
-use crate::{Config, Module};
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
+use super::*;
+use crate as pallet_merkle;
+use frame_support::{construct_runtime, parameter_types, weights::Weight};
 use frame_system as system;
 use sp_core::H256;
 use sp_runtime::{
@@ -7,28 +8,25 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	Perbill,
 };
+use system::mocking::{MockBlock, MockUncheckedExtrinsic};
 pub(crate) type Balance = u64;
 
-mod pallet_merkle {
-	pub use crate::Event;
-}
-
-impl_outer_event! {
-	pub enum Event for Test {
-		frame_system<T>,
-		balances<T>,
-		pallet_merkle<T>,
-	}
-}
-
-impl_outer_origin! {
-	pub enum Origin for Test {}
-}
-
 // Configure a mock runtime to test the pallet.
+type UncheckedExtrinsic = MockUncheckedExtrinsic<Test>;
+type Block = MockBlock<Test>;
 
-#[derive(Clone, Eq, PartialEq)]
-pub struct Test;
+construct_runtime!(
+	pub enum Test where
+		Block = Block,
+		NodeBlock = Block,
+		UncheckedExtrinsic = UncheckedExtrinsic,
+	{
+		System: system::{Module, Call, Config, Storage, Event<T>},
+		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
+		MerkleGroups: pallet_merkle::{Module, Call, Storage, Event<T>},
+	}
+);
+
 parameter_types! {
 	pub const BlockHashCount: u64 = 250;
 	pub const MaximumBlockWeight: Weight = 1024;
@@ -44,7 +42,7 @@ impl frame_system::Config for Test {
 	type BlockLength = ();
 	type BlockNumber = u64;
 	type BlockWeights = ();
-	type Call = ();
+	type Call = Call;
 	type DbWeight = ();
 	type Event = Event;
 	type Hash = H256;
@@ -55,7 +53,7 @@ impl frame_system::Config for Test {
 	type OnKilledAccount = ();
 	type OnNewAccount = ();
 	type Origin = Origin;
-	type PalletInfo = ();
+	type PalletInfo = PalletInfo;
 	type SS58Prefix = Prefix;
 	type SystemWeightInfo = ();
 	type Version = ();
@@ -87,8 +85,7 @@ impl Config for Test {
 	type MaxTreeDepth = MaxTreeDepth;
 }
 
-pub type System = system::Module<Test>;
-pub type MerkleGroups = Module<Test>;
+pub type MerkleCall = pallet_merkle::Call<Test>;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {

@@ -1,7 +1,6 @@
 use super::*;
-use crate::mock::{new_test_ext, Balances, MerkleGroups, Mixer, Origin, System, Test};
+use crate::mock::{new_test_ext, Balances, MerkleGroups, Mixer, MixerCall, Origin, System, Test};
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
-
 use curve25519_gadgets::{
 	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
 	poseidon::{
@@ -74,13 +73,13 @@ fn should_initialize_successfully_on_finalize() {
 #[test]
 fn should_be_able_to_change_admin_with_root() {
 	new_test_ext().execute_with(|| {
-		let call = Box::new(Call::<Test>::transfer_admin(2));
+		let call = Box::new(MixerCall::transfer_admin(2));
 		let res = call.dispatch_bypass_filter(RawOrigin::Root.into());
 		assert_ok!(res);
 		let admin = Mixer::admin();
 		assert_eq!(admin, 2);
 
-		let call = Box::new(Call::<Test>::transfer_admin(3));
+		let call = Box::new(MixerCall::transfer_admin(3));
 		let res = call.dispatch_bypass_filter(RawOrigin::Signed(0).into());
 		assert_err!(res, BadOrigin);
 	})
@@ -90,7 +89,7 @@ fn should_be_able_to_change_admin_with_root() {
 fn should_be_able_to_stop_mixers_with_root() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize());
-		let call = Box::new(Call::<Test>::set_stopped(true));
+		let call = Box::new(MixerCall::set_stopped(true));
 		let res = call.dispatch_bypass_filter(RawOrigin::Root.into());
 		assert_ok!(res);
 
@@ -161,7 +160,7 @@ fn should_fail_to_deposit_with_insufficient_balance() {
 			assert_err!(
 				Mixer::deposit(Origin::signed(4), i, vec![Data(leaf)]),
 				DispatchError::Module {
-					index: 0,
+					index: 3,
 					error: 4,
 					message: Some("InsufficientBalance")
 				}

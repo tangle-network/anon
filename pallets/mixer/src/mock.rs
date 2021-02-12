@@ -1,5 +1,6 @@
-use crate::{Config, Module};
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, weights::Weight};
+use super::*;
+use crate as pallet_mixer;
+use frame_support::{construct_runtime, parameter_types, weights::Weight};
 use frame_system as system;
 use sp_core::H256;
 use sp_runtime::{
@@ -7,29 +8,26 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	ModuleId, Perbill,
 };
+use system::mocking::{MockBlock, MockUncheckedExtrinsic};
 pub(crate) type Balance = u64;
 
-mod pallet_mixer {
-	pub use crate::Event;
-}
-
-impl_outer_event! {
-	pub enum Event for Test {
-		frame_system<T>,
-		balances<T>,
-		merkle<T>,
-		pallet_mixer<T>,
-	}
-}
-
-impl_outer_origin! {
-	pub enum Origin for Test {}
-}
-
 // Configure a mock runtime to test the pallet.
+type UncheckedExtrinsic = MockUncheckedExtrinsic<Test>;
+type Block = MockBlock<Test>;
 
-#[derive(Clone, Eq, PartialEq)]
-pub struct Test;
+construct_runtime!(
+	pub enum Test where
+		Block = Block,
+		NodeBlock = Block,
+		UncheckedExtrinsic = UncheckedExtrinsic,
+	{
+		System: system::{Module, Call, Config, Storage, Event<T>},
+		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
+		MerkleGroups: merkle::{Module, Call, Storage, Event<T>},
+		Mixer: pallet_mixer::{Module, Call, Storage, Event<T>},
+	}
+);
+
 parameter_types! {
 	pub Prefix: u8 = 100;
 	pub const BlockHashCount: u64 = 250;
@@ -46,7 +44,7 @@ impl frame_system::Config for Test {
 	type BlockLength = ();
 	type BlockNumber = u64;
 	type BlockWeights = ();
-	type Call = ();
+	type Call = Call;
 	type DbWeight = ();
 	type Event = Event;
 	type Hash = H256;
@@ -57,7 +55,7 @@ impl frame_system::Config for Test {
 	type OnKilledAccount = ();
 	type OnNewAccount = ();
 	type Origin = Origin;
-	type PalletInfo = ();
+	type PalletInfo = PalletInfo;
 	type SS58Prefix = Prefix;
 	type SystemWeightInfo = ();
 	type Version = ();
@@ -104,10 +102,7 @@ impl Config for Test {
 	type ModuleId = MixerModuleId;
 }
 
-pub type Balances = balances::Module<Test>;
-pub type System = system::Module<Test>;
-pub type MerkleGroups = merkle::Module<Test>;
-pub type Mixer = Module<Test>;
+pub type MixerCall = pallet_mixer::Call<Test>;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
