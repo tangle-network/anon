@@ -3,6 +3,7 @@
 use super::*;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_system::RawOrigin;
+use utils::keys::Data;
 
 use crate::Module as Merkle;
 
@@ -28,8 +29,9 @@ benchmarks! {
 		let caller: T::AccountId = whitelisted_caller();
 		// Tree is setup with manager required
 		setup_tree::<T>(caller.clone());
-		// Then we are setting in to false
-	}: _(RawOrigin::Signed(caller.clone()), 0.into(), false)
+	}:
+	// Manager is not required initially
+	_(RawOrigin::Signed(caller.clone()), 0.into(), false)
 	verify {
 		// Checking if manager is caller and is not required
 		let group_id: T::GroupId = 0.into();
@@ -38,25 +40,46 @@ benchmarks! {
 		assert_eq!(manager.account_id, caller.into());
 	}
 
-	// TBD
 	set_manager {
 		let caller: T::AccountId = whitelisted_caller();
-	}: _(RawOrigin::Signed(caller.clone()), 0.into(), caller.clone())
+		// Making an account id for new admin
+		let new_admin: T::AccountId = account("new_admin", 0, 0);
+		setup_tree::<T>(caller.clone());
+	}:
+	// Transfering the admin role to `new_admin`
+	_(RawOrigin::Signed(caller), 0.into(), new_admin.clone())
 	verify {
+		let group_id: T::GroupId = 0.into();
+		let manager = Managers::<T>::get(group_id).unwrap();
+		assert_eq!(manager.required, true);
+		assert_eq!(manager.account_id, new_admin);
 	}
 
-	// TBD
 	set_stopped {
 		let caller: T::AccountId = whitelisted_caller();
-	}: _(RawOrigin::Signed(caller.clone()), 0.into(), false)
+		setup_tree::<T>(caller.clone());
+	}:
+	// Setting the stopped storage item, this doesnt't effect
+	// any other functionality of the tree
+	_(RawOrigin::Signed(caller.clone()), 0.into(), true)
 	verify {
+		let group_id: T::GroupId = 0.into();
+		let stopped = Stopped::<T>::get(group_id);
+		assert!(stopped);
 	}
 
-	// TBD
 	add_members {
 		let caller: T::AccountId = whitelisted_caller();
-	}: _(RawOrigin::Signed(caller.clone()), 0.into(), vec![])
+		let leaf_data = Data::zero();
+
+		setup_tree::<T>(caller.clone());
+	}:
+	// TODO: weight depends on number of leaves we are inserting
+	_(RawOrigin::Signed(caller.clone()), 0.into(), vec![leaf_data])
 	verify {
+		let group_id: T::GroupId = 0.into();
+		let group_tree: GroupTree = Groups::<T>::get(group_id).unwrap();
+		assert_eq!(group_tree.leaf_count, 1);
 	}
 }
 
