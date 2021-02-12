@@ -32,6 +32,7 @@ sp-std = { default-features = false, version = "3.0.0" }
 sp-runtime = { default-features = false, version = '3.0.0' }
 merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
 rand = { version = "0.7", optional = true }
+serde = { version = "1.0.101", optional = true, features = ["derive"] }
 
 [dev-dependencies]
 curve25519-gadgets = { path = "../../gadgets", default-features = false }
@@ -43,10 +44,11 @@ sp-io = { default-features = false, version = '3.0.0' }
 [features]
 default = ['std']
 std = [
-    'codec/std',
-    'balances/std',
-    'frame-support/std',
-    'frame-system/std',
+    "serde",
+    "codec/std",
+    "balances/std",
+    "frame-support/std",
+    "frame-system/std",
     "merkle/std",
     "rand/std",
     "rand"

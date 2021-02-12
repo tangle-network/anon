@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
-	utils::keys::{Commitment, Data},
 	mock::*,
+	utils::keys::{Commitment, Data},
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use curve25519_dalek::{ristretto::RistrettoPoint, scalar::Scalar};
@@ -157,13 +157,13 @@ fn should_be_able_to_set_stopped_merkle() {
 fn should_be_able_to_change_manager_with_root() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), true, Some(3),));
-		let call = Box::new(Call::<Test>::set_manager(0, 2));
+		let call = Box::new(MerkleCall::set_manager(0, 2));
 		let res = call.dispatch_bypass_filter(RawOrigin::Root.into());
 		assert_ok!(res);
 		let mng = MerkleGroups::get_manager(0).unwrap();
 		assert_eq!(mng.account_id, 2);
 
-		let call = Box::new(Call::<Test>::set_manager(0, 3));
+		let call = Box::new(MerkleCall::set_manager(0, 3));
 		let res = call.dispatch_bypass_filter(RawOrigin::Signed(0).into());
 		assert_err!(res, BadOrigin);
 	})

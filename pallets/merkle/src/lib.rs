@@ -35,14 +35,14 @@ use curve25519_gadgets::{
 };
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter};
 use frame_system::ensure_signed;
-use utils::{
-	keys::{Commitment, Data},
-	permissions::ensure_admin,
-};
 use merlin::Transcript;
 use rand_core::OsRng;
 use sp_runtime::traits::{AtLeast32Bit, One};
 use sp_std::prelude::*;
+use utils::{
+	keys::{Commitment, Data},
+	permissions::ensure_admin,
+};
 
 pub mod group_trait;
 
