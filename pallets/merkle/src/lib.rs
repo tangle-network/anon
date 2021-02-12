@@ -16,6 +16,8 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
+mod benchmarking;
+
 pub use crate::group_trait::Group;
 use bulletproofs::{
 	r1cs::{R1CSProof, Verifier},

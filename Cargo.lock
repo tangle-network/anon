@@ -3820,6 +3820,7 @@ dependencies = [
  "bulletproofs",
  "curve25519-dalek 3.0.2",
  "curve25519-gadgets",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "merlin",
