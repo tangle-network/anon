@@ -278,6 +278,7 @@ impl merkle::Config for Runtime {
 	type Event = Event;
 	type GroupId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
+	type WeightInfo = ();
 }
 
 parameter_types! {

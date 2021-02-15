@@ -83,6 +83,7 @@ impl Config for Test {
 	type Event = Event;
 	type GroupId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
+	type WeightInfo = ();
 }
 
 pub type MerkleCall = pallet_merkle::Call<Test>;

@@ -85,6 +85,7 @@ impl merkle::Config for Test {
 	type Event = Event;
 	type GroupId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
+	type WeightInfo = ();
 }
 
 parameter_types! {
