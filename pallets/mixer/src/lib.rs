@@ -15,6 +15,8 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
+mod benchmarking;
+
 use codec::{Decode, Encode};
 use frame_support::{
 	debug, decl_error, decl_event, decl_module, decl_storage, dispatch, ensure,

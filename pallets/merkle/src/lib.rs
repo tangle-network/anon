@@ -65,7 +65,7 @@ pub trait Config: frame_system::Config + balances::Config {
 }
 
 // TODO find better way to have default hasher without saving it inside storage
-fn default_hasher() -> Poseidon {
+pub fn default_hasher() -> Poseidon {
 	let width = 6;
 	let (full_b, full_e) = (4, 4);
 	let partial_rounds = 57;
