@@ -154,4 +154,11 @@ mod bench_tests {
 			assert_ok!(test_benchmark_add_members::<Test>());
 		});
 	}
+
+	#[test]
+	fn test_verify_path() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(test_benchmark_verify_path::<Test>());
+		});
+	}
 }
