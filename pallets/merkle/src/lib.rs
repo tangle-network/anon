@@ -71,7 +71,7 @@ pub fn default_hasher() -> Poseidon {
 	let partial_rounds = 57;
 	// TODO: should be able to pass number of generators
 	// TODO: Initialise these generators with the pallet
-	let bp_gens = BulletproofGens::new(40960, 1);
+	let bp_gens = BulletproofGens::new(16400, 1);
 	PoseidonBuilder::new(width)
 		.num_rounds(full_b, full_e, partial_rounds)
 		.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))

@@ -101,6 +101,7 @@ impl Config for Test {
 	type Group = MerkleGroups;
 	type MaxTreeDepth = MaxTreeDepth;
 	type ModuleId = MixerModuleId;
+	type WeightInfo = ();
 }
 
 pub type MixerCall = pallet_mixer::Call<Test>;

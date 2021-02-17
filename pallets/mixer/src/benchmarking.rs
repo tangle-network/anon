@@ -52,7 +52,7 @@ benchmarks! {
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 		let mut ftree = FixedDepositTreeBuilder::new()
 			.hash_params(poseidon.clone())
-			.depth(32)
+			.depth(<T as Config>::MaxTreeDepth::get().into())
 			.build();
 
 		let leaf = ftree.generate_secrets();

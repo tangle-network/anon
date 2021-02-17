@@ -66,6 +66,7 @@ runtime-benchmarks = [
     "pallet-balances/runtime-benchmarks",
     "pallet-timestamp/runtime-benchmarks",
     "merkle/runtime-benchmarks",
+	"mixer/runtime-benchmarks",
     "sp-runtime/runtime-benchmarks",
 ]
 std = [

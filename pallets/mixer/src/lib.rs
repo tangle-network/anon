@@ -16,6 +16,7 @@ pub mod mock;
 pub mod tests;
 
 mod benchmarking;
+mod weights;
 
 use codec::{Decode, Encode};
 use frame_support::{
@@ -35,6 +36,7 @@ use sp_runtime::{
 	ModuleId,
 };
 use sp_std::prelude::*;
+use weights::WeightInfo;
 
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
@@ -53,6 +55,8 @@ pub trait Config: frame_system::Config + merkle::Config {
 	type DepositLength: Get<Self::BlockNumber>;
 	/// Default admin key
 	type DefaultAdmin: Get<Self::AccountId>;
+	/// Weight information for extrinsics in this pallet.
+	type WeightInfo: WeightInfo;
 }
 
 #[derive(Encode, Decode, PartialEq)]
@@ -137,7 +141,7 @@ decl_module! {
 
 		fn deposit_event() = default;
 
-		#[weight = 0]
+		#[weight = <T as Config>::WeightInfo::deposit(data_points.len() as u32)]
 		pub fn deposit(origin, mixer_id: T::GroupId, data_points: Vec<Data>) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
@@ -166,7 +170,7 @@ decl_module! {
 			Ok(())
 		}
 
-		#[weight = 0]
+		#[weight = <T as Config>::WeightInfo::withdraw()]
 		pub fn withdraw(
 			origin,
 			mixer_id: T::GroupId,

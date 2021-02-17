@@ -85,6 +85,7 @@ impl<T: frame_system::Config + Config> WeightInfo for Weights<T> {
 	}
 }
 
+// Implementation used for development
 impl WeightInfo for () {
 	fn create_group(_: u32) -> Weight {
 		(60_000_000 as Weight)

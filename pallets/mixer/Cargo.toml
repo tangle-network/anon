@@ -31,7 +31,6 @@ frame-system = { default-features = false, version = '3.0.0' }
 sp-std = { default-features = false, version = "3.0.0" }
 sp-runtime = { default-features = false, version = '3.0.0' }
 merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
-rand = { version = "0.7", optional = true }
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 curve25519-gadgets = { path = "../../gadgets", default-features = false }
 bulletproofs = { version = "2.0.0", branch = "main", git = "https://github.com/edgeware-builders/bulletproofs", default-features = false, features = ["yoloproofs"] }
@@ -50,9 +49,8 @@ std = [
     "balances/std",
     "frame-support/std",
     "frame-system/std",
+    "frame-benchmarking/std",
     "merkle/std",
-    "rand/std",
-    "rand"
 ]
 runtime-benchmarks = [
     "frame-benchmarking",
