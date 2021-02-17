@@ -2,6 +2,8 @@ use super::*;
 use crate as pallet_mixer;
 use frame_support::{construct_runtime, parameter_types, weights::Weight};
 use frame_system as system;
+use merkle::weights::Weights as MerkleWeights;
+use pallet_mixer::weights::Weights;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
@@ -85,7 +87,7 @@ impl merkle::Config for Test {
 	type Event = Event;
 	type GroupId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
-	type WeightInfo = ();
+	type WeightInfo = MerkleWeights<Self>;
 }
 
 parameter_types! {
@@ -101,7 +103,7 @@ impl Config for Test {
 	type Group = MerkleGroups;
 	type MaxTreeDepth = MaxTreeDepth;
 	type ModuleId = MixerModuleId;
-	type WeightInfo = ();
+	type WeightInfo = Weights<Self>;
 }
 
 pub type MixerCall = pallet_mixer::Call<Test>;

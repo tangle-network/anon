@@ -36,7 +36,9 @@ use curve25519_gadgets::{
 	},
 	utils::AllocatedScalar,
 };
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter};
+use frame_support::{
+	decl_error, decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, weights::Weight, Parameter,
+};
 use frame_system::ensure_signed;
 use merlin::Transcript;
 use rand_core::OsRng;
@@ -250,15 +252,20 @@ decl_module! {
 			<Self as Group<_,_,_>>::verify(group_id, leaf, path)
 		}
 
-		fn on_finalize(_n: T::BlockNumber) {
+		fn on_initialize() -> Weight {
+			// Returning the weights for `on_finalize` in worst-case scenario where all if branches are hit
+			<T as Config>::WeightInfo::on_finalize()
+		}
+
+		fn on_finalize(n: T::BlockNumber) {
 			// update highest block in cache
-			if HighestCachedBlock::<T>::get() < _n {
-				HighestCachedBlock::<T>::set(_n);
+			if HighestCachedBlock::<T>::get() < n {
+				HighestCachedBlock::<T>::set(n);
 			}
 
 			// initialise lowest block in cache if not already
 			if LowestCachedBlock::<T>::get() < One::one() {
-				LowestCachedBlock::<T>::set(_n);
+				LowestCachedBlock::<T>::set(n);
 			}
 
 			// update and prune database if pruning length has been hit

@@ -2,6 +2,7 @@ use super::*;
 use crate as pallet_merkle;
 use frame_support::{construct_runtime, parameter_types, weights::Weight};
 use frame_system as system;
+use pallet_merkle::weights::Weights;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
@@ -83,7 +84,7 @@ impl Config for Test {
 	type Event = Event;
 	type GroupId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
-	type WeightInfo = ();
+	type WeightInfo = Weights<Self>;
 }
 
 pub type MerkleCall = pallet_merkle::Call<Test>;

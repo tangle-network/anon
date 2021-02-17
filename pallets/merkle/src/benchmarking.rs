@@ -3,6 +3,7 @@
 use super::*;
 use curve25519_gadgets::poseidon::Poseidon_hash_2;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
+use frame_support::traits::OnFinalize;
 use frame_system::RawOrigin;
 use utils::keys::Data;
 
@@ -10,11 +11,12 @@ use crate::Module as Merkle;
 
 const MAX_DEPTH: u8 = 32;
 const NUM_LEAVES: u32 = 10;
-const VERIFY_DEPT: u8 = 10;
+const VERIFY_DEPTH: u8 = 10;
 
 fn setup_tree<T: Config>(caller: T::AccountId, depth: u32) {
 	let manager_required = true;
-	<Merkle<T> as Group<T::AccountId, T::BlockNumber, T::GroupId>>::create_group(caller, manager_required, depth as u8);
+	<Merkle<T> as Group<T::AccountId, T::BlockNumber, T::GroupId>>::create_group(caller, manager_required, depth as u8)
+		.unwrap();
 }
 
 fn get_proof(depth: u32) -> Vec<(bool, Data)> {
@@ -104,7 +106,7 @@ benchmarks! {
 	}
 
 	verify_path {
-		let d in 1 .. VERIFY_DEPT as u32;
+		let d in 1 .. VERIFY_DEPTH as u32;
 		let caller: T::AccountId = whitelisted_caller();
 		let leaf_data = Data::zero();
 		setup_tree::<T>(caller.clone(), d);
@@ -112,8 +114,38 @@ benchmarks! {
 	}: verify(RawOrigin::Signed(caller), 0.into(), leaf_data, path)
 	verify {
 	}
+
+	on_finalize {
+		// For this test, runtime config has `CacheBlockLength` set to 10
+		// We are running on_finalize more that 10 times to make sure
+		// highest_block - lowest_block is > 10 so that
+		// CachedRoots::<T>::remove_prefix is called
+		let num_blocks = 13;
+		for n in 0..num_blocks {
+			let block_number: T::BlockNumber = n.into();
+
+			Merkle::<T>::on_finalize(block_number);
+			let caller: T::AccountId = whitelisted_caller();
+			// Adding 100 leaves every block
+			let leaves = vec![Data::from([42; 32]); 100];
+			setup_tree::<T>(caller.clone(), 32);
+			Merkle::<T>::add_members(RawOrigin::Signed(caller.clone()).into(), 0.into(), leaves).unwrap();
+		}
+	}: {
+		// Calling on finalize
+		let last_block: T::BlockNumber = num_blocks.into();
+		Merkle::<T>::on_finalize(last_block);
+	}
+	verify {
+		let latest_block: T::BlockNumber = HighestCachedBlock::<T>::get();
+		let block_number: T::BlockNumber = num_blocks.into();
+		assert_eq!(latest_block, block_number);
+	}
+
 }
 
+// TODO: replace with impl_benchmark_test_suite macro:
+// https://github.com/paritytech/substrate/blob/master/frame/lottery/src/benchmarking.rs#L173-L177
 #[cfg(test)]
 mod bench_tests {
 	use super::*;
@@ -159,6 +191,13 @@ mod bench_tests {
 	fn test_verify_path() {
 		new_test_ext().execute_with(|| {
 			assert_ok!(test_benchmark_verify_path::<Test>());
+		});
+	}
+
+	#[test]
+	fn test_on_finalize() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(test_benchmark_on_finalize::<Test>());
 		});
 	}
 }

@@ -272,7 +272,7 @@ impl pallet_sudo::Config for Runtime {
 
 parameter_types! {
 	pub const MaxTreeDepth: u8 = 32;
-	pub const CacheBlockLength: BlockNumber = 100;
+	pub const CacheBlockLength: BlockNumber = 10;
 }
 
 impl merkle::Config for Runtime {

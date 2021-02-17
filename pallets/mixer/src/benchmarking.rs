@@ -9,6 +9,7 @@ use curve25519_gadgets::{
 	},
 };
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
+use frame_support::traits::OnFinalize;
 use frame_system::RawOrigin;
 use merkle::{default_hasher, utils::keys::Data};
 use merlin::Transcript;
@@ -62,7 +63,7 @@ benchmarks! {
 		let leaf = ftree.generate_secrets();
 		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
-		Mixer::<T>::deposit(RawOrigin::Signed(caller.clone()).into(), mixer_id, vec![Data(leaf)]);
+		Mixer::<T>::deposit(RawOrigin::Signed(caller.clone()).into(), mixer_id, vec![Data(leaf)]).unwrap();
 
 		let root = Merkle::<T>::get_merkle_root(mixer_id).unwrap();
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
@@ -105,6 +106,7 @@ benchmarks! {
 
 	transfer_admin {
 		Mixer::<T>::initialize().unwrap();
+		// This account will be a new admin
 		let new_admin: T::AccountId = account("new_admin", 0, 0);
 	}:
 	// Calling the function with the root origin
@@ -113,8 +115,34 @@ benchmarks! {
 		let admin: T::AccountId = Mixer::<T>::admin();
 		assert_eq!(admin, new_admin);
 	}
+
+	on_finalize_uninitialized {
+		let first_block: T::BlockNumber = 0.into();
+	}: {
+		Mixer::<T>::on_finalize(first_block);
+	}
+	verify {
+		let initialized = Mixer::<T>::initialised();
+		assert!(initialized);
+	}
+
+	on_finalize_initialized {
+		// We first initialize to reach the first branch of if statement inside `on_finalize`
+		let first_block: T::BlockNumber = 0.into();
+		Mixer::<T>::on_finalize(first_block);
+		let second_block: T::BlockNumber = 1.into();
+	}: {
+		Mixer::<T>::on_finalize(second_block);
+	}
+	verify {
+		let first_group: T::GroupId = 0.into();
+		let data = Merkle::<T>::get_cache(first_group, second_block);
+		assert_eq!(data.len(), 1);
+	}
 }
 
+// TODO: replace with impl_benchmark_test_suite macro:
+// https://github.com/paritytech/substrate/blob/master/frame/lottery/src/benchmarking.rs#L173-L177
 #[cfg(test)]
 mod bench_tests {
 	use super::*;
@@ -146,6 +174,20 @@ mod bench_tests {
 	fn test_transfer_admin() {
 		new_test_ext().execute_with(|| {
 			assert_ok!(test_benchmark_transfer_admin::<Test>());
+		});
+	}
+
+	#[test]
+	fn test_on_finalize_uninitialized() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(test_benchmark_on_finalize_uninitialized::<Test>());
+		});
+	}
+
+	#[test]
+	fn test_on_finalize_initialized() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(test_benchmark_on_finalize_initialized::<Test>());
 		});
 	}
 }
