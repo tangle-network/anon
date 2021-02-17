@@ -17,7 +17,7 @@ pub mod mock;
 pub mod tests;
 
 mod benchmarking;
-mod weights;
+pub mod weights;
 
 pub use crate::group_trait::Group;
 use bulletproofs::{

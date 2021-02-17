@@ -16,7 +16,7 @@ pub mod mock;
 pub mod tests;
 
 mod benchmarking;
-mod weights;
+pub mod weights;
 
 use codec::{Decode, Encode};
 use frame_support::{

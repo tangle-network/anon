@@ -22,17 +22,21 @@ const NUM_WITHDRAWALS: u32 = 5;
 
 benchmarks! {
 	deposit {
+		// Benchmarking from 1 to `NUM_DEPOSITS`
 		let d in 1 .. NUM_DEPOSITS;
 		let caller = whitelisted_caller();
 
 		Mixer::<T>::initialize().unwrap();
 		let mixer_id: T::GroupId = 0.into();
 		let balance: T::Balance = 10_000.into();
+		// Adding initial balance to the `caller` in order to make the deposit
 		let _ = <Balances<T> as Currency<_>>::make_free_balance_be(&caller, balance);
 
+		// Making `d` leaves/data points
 		let data_points = vec![Data::zero(); d as usize];
 	}: _(RawOrigin::Signed(caller), mixer_id, data_points)
 	verify {
+		// Checking if deposit is sucessfull by checking number of leaves
 		let mixer_info = Mixer::<T>::get_mixer(mixer_id).unwrap();
 		assert_eq!(mixer_info.leaves.len(), d as usize);
 	}
@@ -84,6 +88,31 @@ benchmarks! {
 		let balance_after: T::Balance = <Balances<T> as Currency<_>>::free_balance(&caller);
 		assert_eq!(balance_after, balance);
 	}
+
+	set_stopped {
+		Mixer::<T>::initialize().unwrap();
+	}:
+	// Calling the function with the root origin
+	_(RawOrigin::Root, true)
+	verify {
+		let mixer_ids = MixerGroupIds::<T>::get();
+		for i in 0..mixer_ids.len() {
+			let group_id: T::GroupId = (i as u32).into();
+			let stopped = Merkle::<T>::stopped(group_id);
+			assert!(stopped);
+		}
+	}
+
+	transfer_admin {
+		Mixer::<T>::initialize().unwrap();
+		let new_admin: T::AccountId = account("new_admin", 0, 0);
+	}:
+	// Calling the function with the root origin
+	_(RawOrigin::Root, new_admin.clone())
+	verify {
+		let admin: T::AccountId = Mixer::<T>::admin();
+		assert_eq!(admin, new_admin);
+	}
 }
 
 #[cfg(test)]
@@ -103,6 +132,20 @@ mod bench_tests {
 	fn test_withdraw() {
 		new_test_ext().execute_with(|| {
 			assert_ok!(test_benchmark_withdraw::<Test>());
+		});
+	}
+
+	#[test]
+	fn test_set_stopped() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(test_benchmark_set_stopped::<Test>());
+		});
+	}
+
+	#[test]
+	fn test_transfer_admin() {
+		new_test_ext().execute_with(|| {
+			assert_ok!(test_benchmark_transfer_admin::<Test>());
 		});
 	}
 }

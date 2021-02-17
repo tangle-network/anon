@@ -59,8 +59,10 @@ use currency::*;
 
 /// Importing a groups pallet
 pub use merkle;
+use merkle::weights::Weights as MerkleWeights;
 /// Importing a groups pallet
 pub use mixer;
+use mixer::weights::Weights as MixerWeights;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -278,7 +280,7 @@ impl merkle::Config for Runtime {
 	type Event = Event;
 	type GroupId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
-	type WeightInfo = ();
+	type WeightInfo = MerkleWeights<Self>;
 }
 
 parameter_types! {
@@ -295,6 +297,7 @@ impl mixer::Config for Runtime {
 	type Group = Merkle;
 	type MaxTreeDepth = MaxTreeDepth;
 	type ModuleId = MixerModuleId;
+	type WeightInfo = MixerWeights<Self>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously
