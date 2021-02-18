@@ -87,8 +87,8 @@ impl<T: frame_system::Config + Config> WeightInfo for Weights<T> {
 	}
 
 	fn on_finalize() -> Weight {
-		(27_000_000 as Weight)
+		(14_000_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
 }

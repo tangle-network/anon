@@ -4,7 +4,7 @@ use super::*;
 use curve25519_gadgets::poseidon::Poseidon_hash_2;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::OnFinalize;
-use frame_system::RawOrigin;
+use frame_system::{Module as System, RawOrigin};
 use utils::keys::Data;
 
 use crate::Module as Merkle;
@@ -121,14 +121,20 @@ benchmarks! {
 		// highest_block - lowest_block is > 10 so that
 		// CachedRoots::<T>::remove_prefix is called
 		let num_blocks = 13;
-		for n in 0..num_blocks {
-			let block_number: T::BlockNumber = n.into();
 
-			Merkle::<T>::on_finalize(block_number);
-			let caller: T::AccountId = whitelisted_caller();
+		let caller: T::AccountId = whitelisted_caller();
+		setup_tree::<T>(caller.clone(), 32);
+		for n in 0..num_blocks {
+			let last_block_number: T::BlockNumber = n.into();
+			let curr_block_number: T::BlockNumber = (n + 1).into();
+
+			// We are doing on_finalize before the deposit
+			// so that the last on_finalize can be benchmarked as a stand-alone
+			Merkle::<T>::on_finalize(last_block_number);
+			// Bumping the block number so that we can add cached roots to it
+			System::<T>::set_block_number(curr_block_number);
 			// Adding 100 leaves every block
 			let leaves = vec![Data::from([42; 32]); 100];
-			setup_tree::<T>(caller.clone(), 32);
 			Merkle::<T>::add_members(RawOrigin::Signed(caller.clone()).into(), 0.into(), leaves).unwrap();
 		}
 	}: {
