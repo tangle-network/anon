@@ -3,7 +3,7 @@ SCRIPTDIR=$PWD
 
 # test each pallets tests
 for d in $(ls -d ./pallets/*/) ; do
-    cd "$SCRIPTDIR/$d" && WASM_BUILD_TOOLCHAIN=nightly-2021-02-19 cargo test
+    cd "$SCRIPTDIR/$d" && WASM_BUILD_TOOLCHAIN=nightly-2021-02-19 cargo test --features runtime-benchmarks
 done
 
 # test wasm utils

@@ -28,8 +28,8 @@ benchmarks! {
 		let caller = whitelisted_caller();
 
 		Mixer::<T>::initialize().unwrap();
-		let mixer_id: T::GroupId = 0.into();
-		let balance: T::Balance = 10_000.into();
+		let mixer_id: T::GroupId = 0u32.into();
+		let balance: T::Balance = 10_000u32.into();
 		// Adding initial balance to the `caller` in order to make the deposit
 		let _ = <Balances<T> as Currency<_>>::make_free_balance_be(&caller, balance);
 
@@ -46,8 +46,8 @@ benchmarks! {
 		let caller = whitelisted_caller();
 		Mixer::<T>::initialize().unwrap();
 
-		let mixer_id: T::GroupId = 0.into();
-		let balance: T::Balance = 10_000.into();
+		let mixer_id: T::GroupId = 0u32.into();
+		let balance: T::Balance = 10_000u32.into();
 		let _ = <Balances<T> as Currency<_>>::make_free_balance_be(&caller, balance);
 
 		let pc_gens = PedersenGens::default();
@@ -57,7 +57,7 @@ benchmarks! {
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 		let mut ftree = FixedDepositTreeBuilder::new()
 			.hash_params(poseidon.clone())
-			.depth(<T as Config>::MaxTreeDepth::get().into())
+			.depth(<T as Config>::MaxMixerTreeDepth::get().into())
 			.build();
 
 		let leaf = ftree.generate_secrets();
@@ -73,7 +73,7 @@ benchmarks! {
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
 
-		let block_number: T::BlockNumber = 0.into();
+		let block_number: T::BlockNumber = 0u32.into();
 	}: _(
 		RawOrigin::Signed(caller.clone()),
 		mixer_id,
@@ -117,7 +117,7 @@ benchmarks! {
 	}
 
 	on_finalize_uninitialized {
-		let first_block: T::BlockNumber = 0.into();
+		let first_block: T::BlockNumber = 0u32.into();
 	}: {
 		Mixer::<T>::on_finalize(first_block);
 	}
@@ -128,14 +128,14 @@ benchmarks! {
 
 	on_finalize_initialized {
 		// We first initialize to reach the first branch of if statement inside `on_finalize`
-		let first_block: T::BlockNumber = 0.into();
+		let first_block: T::BlockNumber = 0u32.into();
 		Mixer::<T>::on_finalize(first_block);
-		let second_block: T::BlockNumber = 1.into();
+		let second_block: T::BlockNumber = 1u32.into();
 	}: {
 		Mixer::<T>::on_finalize(second_block);
 	}
 	verify {
-		let first_group: T::GroupId = 0.into();
+		let first_group: T::GroupId = 0u32.into();
 		let data = Merkle::<T>::get_cache(first_group, second_block);
 		assert_eq!(data.len(), 1);
 	}

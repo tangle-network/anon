@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-cargo build --release
+WASM_BUILD_TOOLCHAIN=nightly-2021-02-19 cargo build --release
