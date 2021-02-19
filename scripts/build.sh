@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-cargo build --release
+cargo build --release --no-default-features
