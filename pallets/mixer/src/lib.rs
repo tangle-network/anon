@@ -70,35 +70,6 @@ pub mod pallet {
 		type WeightInfo: WeightInfo;
 	}
 
-	pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-
-	#[derive(Encode, Decode, PartialEq)]
-	pub struct MixerInfo<T: Config> {
-		pub minimum_deposit_length_for_reward: T::BlockNumber,
-		pub fixed_deposit_size: BalanceOf<T>,
-		pub leaves: Vec<Data>,
-	}
-
-	impl<T: Config> core::default::Default for MixerInfo<T> {
-		fn default() -> Self {
-			Self {
-				minimum_deposit_length_for_reward: Zero::zero(),
-				fixed_deposit_size: Zero::zero(),
-				leaves: Vec::new(),
-			}
-		}
-	}
-
-	impl<T: Config> MixerInfo<T> {
-		pub fn new(min_dep_length: T::BlockNumber, dep_size: BalanceOf<T>, leaves: Vec<Data>) -> Self {
-			Self {
-				minimum_deposit_length_for_reward: min_dep_length,
-				fixed_deposit_size: dep_size,
-				leaves,
-			}
-		}
-	}
-
 	#[pallet::storage]
 	#[pallet::getter(fn initialised)]
 	pub type Initialised<T: Config> = StorageValue<_, bool, ValueQuery>;
@@ -273,11 +244,12 @@ pub mod pallet {
 			let tvl = Self::total_value_locked(mixer_id);
 			<TotalValueLocked<T>>::insert(mixer_id, tvl - mixer_info.fixed_deposit_size);
 			// Add the nullifier on behalf of the module
-			T::Group::add_nullifier(Self::account_id(), mixer_id.into(), nullifier_hash)
+			T::Group::add_nullifier(Self::account_id(), mixer_id.into(), nullifier_hash)?;
+			Ok(().into())
 		}
 
 		#[pallet::weight(<T as Config>::WeightInfo::set_stopped())]
-		fn set_stopped(origin: OriginFor<T>, stopped: bool) -> DispatchResultWithPostInfo {
+		pub fn set_stopped(origin: OriginFor<T>, stopped: bool) -> DispatchResultWithPostInfo {
 			// Ensure the caller is admin or root
 			ensure_admin(origin, &Self::admin())?;
 			// Set the mixer state, `stopped` can be true or false
@@ -289,12 +261,41 @@ pub mod pallet {
 		}
 
 		#[pallet::weight(<T as Config>::WeightInfo::transfer_admin())]
-		fn transfer_admin(origin: OriginFor<T>, to: T::AccountId) -> DispatchResultWithPostInfo {
+		pub fn transfer_admin(origin: OriginFor<T>, to: T::AccountId) -> DispatchResultWithPostInfo {
 			// Ensures that the caller is the root or the current admin
 			ensure_admin(origin, &Self::admin())?;
 			// Updating the admin
 			Admin::<T>::set(to);
 			Ok(().into())
+		}
+	}
+}
+
+pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+
+#[derive(Encode, Decode, PartialEq)]
+pub struct MixerInfo<T: Config> {
+	pub minimum_deposit_length_for_reward: T::BlockNumber,
+	pub fixed_deposit_size: BalanceOf<T>,
+	pub leaves: Vec<Data>,
+}
+
+impl<T: Config> core::default::Default for MixerInfo<T> {
+	fn default() -> Self {
+		Self {
+			minimum_deposit_length_for_reward: Zero::zero(),
+			fixed_deposit_size: Zero::zero(),
+			leaves: Vec::new(),
+		}
+	}
+}
+
+impl<T: Config> MixerInfo<T> {
+	pub fn new(min_dep_length: T::BlockNumber, dep_size: BalanceOf<T>, leaves: Vec<Data>) -> Self {
+		Self {
+			minimum_deposit_length_for_reward: min_dep_length,
+			fixed_deposit_size: dep_size,
+			leaves,
 		}
 	}
 }

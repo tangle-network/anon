@@ -295,7 +295,7 @@ impl mixer::Config for Runtime {
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
 	type Group = Merkle;
-	type MaxTreeDepth = MaxTreeDepth;
+	type MaxMixerTreeDepth = MaxTreeDepth;
 	type ModuleId = MixerModuleId;
 	type WeightInfo = MixerWeights<Self>;
 }

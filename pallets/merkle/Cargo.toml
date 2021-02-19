@@ -33,12 +33,11 @@ rand_core = { version = "0.5", default-features = false, features = ["alloc", "g
 bulletproofs = { version = "2.0.0", branch = "main", git = "https://github.com/edgeware-builders/bulletproofs", default-features = false, features = ["yoloproofs"] }
 curve25519-gadgets = { path = "../../gadgets", default-features = false }
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
-
+sp-io = { default-features = false, version = "3.0.0" }
 frame-benchmarking = { default-features = false, version = "3.0.0", optional = true }
 
 [dev-dependencies]
 sp-core = { default-features = false, version = "3.0.0" }
-sp-io = { default-features = false, version = "3.0.0" }
 
 [features]
 default = ["std"]

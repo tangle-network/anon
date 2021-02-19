@@ -100,7 +100,7 @@ impl Config for Test {
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
 	type Group = MerkleGroups;
-	type MaxTreeDepth = MaxTreeDepth;
+	type MaxMixerTreeDepth = MaxTreeDepth;
 	type ModuleId = MixerModuleId;
 	type WeightInfo = Weights<Self>;
 }
