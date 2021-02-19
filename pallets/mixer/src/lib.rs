@@ -1,5 +1,4 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-
 /// A runtime module Groups with necessary imports
 
 /// Feel free to remove or edit this file as needed.
@@ -20,7 +19,7 @@ pub mod weights;
 
 use codec::{Decode, Encode};
 use frame_support::{
-	debug, decl_error, decl_event, decl_module, decl_storage, dispatch, ensure,
+	debug, dispatch, ensure,
 	traits::{Currency, ExistenceRequirement::AllowDeath, Get},
 	weights::Weight,
 };
@@ -39,111 +38,178 @@ use sp_runtime::{
 use sp_std::prelude::*;
 use weights::WeightInfo;
 
-pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+pub use pallet::*;
 
-/// The pallet's configuration trait.
-pub trait Config: frame_system::Config + merkle::Config {
-	type ModuleId: Get<ModuleId>;
-	/// The overarching event type.
-	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
-	/// Currency type for taking deposits
-	type Currency: Currency<Self::AccountId>;
-	/// The overarching group trait
-	type Group: GroupTrait<Self::AccountId, Self::BlockNumber, Self::GroupId>;
-	/// The max depth of the mixers
-	type MaxTreeDepth: Get<u8>;
-	/// The small deposit length
-	type DepositLength: Get<Self::BlockNumber>;
-	/// Default admin key
-	type DefaultAdmin: Get<Self::AccountId>;
-	/// Weight information for extrinsics in this pallet.
-	type WeightInfo: WeightInfo;
-}
+#[frame_support::pallet]
+pub mod pallet {
+	use super::*;
+	use frame_support::pallet_prelude::*;
+	use frame_system::pallet_prelude::*;
 
-#[derive(Encode, Decode, PartialEq)]
-pub struct MixerInfo<T: Config> {
-	pub minimum_deposit_length_for_reward: T::BlockNumber,
-	pub fixed_deposit_size: BalanceOf<T>,
-	pub leaves: Vec<Data>,
-}
+	/// The pallet's configuration trait.
+	#[pallet::config]
+	pub trait Config: frame_system::Config + merkle::Config {
+		#[pallet::constant]
+		type ModuleId: Get<ModuleId>;
+		/// The overarching event type.
+		type Event: IsType<<Self as frame_system::Config>::Event> + From<Event<Self>>;
+		/// Currency type for taking deposits
+		type Currency: Currency<Self::AccountId>;
+		/// The overarching group trait
+		type Group: GroupTrait<Self::AccountId, Self::BlockNumber, Self::GroupId>;
+		/// The max depth of the mixers
+		#[pallet::constant]
+		type MaxMixerTreeDepth: Get<u8>;
+		/// The small deposit length
+		#[pallet::constant]
+		type DepositLength: Get<Self::BlockNumber>;
+		/// Default admin key
+		#[pallet::constant]
+		type DefaultAdmin: Get<Self::AccountId>;
+		/// Weight information for extrinsics in this pallet.
+		type WeightInfo: WeightInfo;
+	}
 
-impl<T: Config> core::default::Default for MixerInfo<T> {
-	fn default() -> Self {
-		Self {
-			minimum_deposit_length_for_reward: Zero::zero(),
-			fixed_deposit_size: Zero::zero(),
-			leaves: Vec::new(),
+	pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+
+	#[derive(Encode, Decode, PartialEq)]
+	pub struct MixerInfo<T: Config> {
+		pub minimum_deposit_length_for_reward: T::BlockNumber,
+		pub fixed_deposit_size: BalanceOf<T>,
+		pub leaves: Vec<Data>,
+	}
+
+	impl<T: Config> core::default::Default for MixerInfo<T> {
+		fn default() -> Self {
+			Self {
+				minimum_deposit_length_for_reward: Zero::zero(),
+				fixed_deposit_size: Zero::zero(),
+				leaves: Vec::new(),
+			}
 		}
 	}
-}
 
-impl<T: Config> MixerInfo<T> {
-	pub fn new(min_dep_length: T::BlockNumber, dep_size: BalanceOf<T>, leaves: Vec<Data>) -> Self {
-		Self {
-			minimum_deposit_length_for_reward: min_dep_length,
-			fixed_deposit_size: dep_size,
-			leaves,
+	impl<T: Config> MixerInfo<T> {
+		pub fn new(min_dep_length: T::BlockNumber, dep_size: BalanceOf<T>, leaves: Vec<Data>) -> Self {
+			Self {
+				minimum_deposit_length_for_reward: min_dep_length,
+				fixed_deposit_size: dep_size,
+				leaves,
+			}
 		}
 	}
-}
 
-// This pallet's storage items.
-decl_storage! {
-	trait Store for Module<T: Config> as Mixer {
-		pub Initialised get(fn initialised): bool;
-		/// The map of mixer groups to their metadata
-		pub MixerGroups get(fn mixer_groups): map hasher(blake2_128_concat) T::GroupId => MixerInfo<T>;
-		/// The vec of group ids
-		pub MixerGroupIds get(fn mixer_group_ids): Vec<T::GroupId>;
-		/// Administrator of the mixer pallet.
-		/// This account that can stop/start operations of the mixer
-		pub Admin get(fn admin): T::AccountId;
-		/// The TVL per group
-		pub TotalValueLocked get(fn total_value_locked): map hasher(blake2_128_concat) T::GroupId => BalanceOf<T>;
+	#[pallet::storage]
+	#[pallet::getter(fn initialised)]
+	pub type Initialised<T: Config> = StorageValue<_, bool, ValueQuery>;
+
+	/// The map of mixer groups to their metadata
+	#[pallet::storage]
+	#[pallet::getter(fn mixer_groups)]
+	pub type MixerGroups<T: Config> = StorageMap<_, Blake2_128Concat, T::GroupId, MixerInfo<T>, ValueQuery>;
+
+	/// The vec of group ids
+	#[pallet::storage]
+	#[pallet::getter(fn mixer_group_ids)]
+	pub type MixerGroupIds<T: Config> = StorageValue<_, Vec<T::GroupId>, ValueQuery>;
+
+	/// Administrator of the mixer pallet.
+	/// This account that can stop/start operations of the mixer
+	#[pallet::storage]
+	#[pallet::getter(fn admin)]
+	pub type Admin<T: Config> = StorageValue<_, T::AccountId, ValueQuery>;
+
+	/// The TVL per group
+	#[pallet::storage]
+	#[pallet::getter(fn total_value_locked)]
+	pub type TotalValueLocked<T: Config> = StorageMap<_, Blake2_128Concat, T::GroupId, BalanceOf<T>, ValueQuery>;
+
+	// /// Old name generated by `decl_event`.
+	// #[deprecated(note = "use `Event` instead")]
+	// pub type RawEvent<T: Config> = Event<T>;
+
+	#[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		Deposit(
+			<T as merkle::Config>::GroupId,
+			<T as frame_system::Config>::AccountId,
+			Data,
+		),
+		Withdraw(
+			<T as merkle::Config>::GroupId,
+			<T as frame_system::Config>::AccountId,
+			Data,
+		),
 	}
-}
 
-// The pallet's events
-decl_event!(
-	pub enum Event<T>
-	where
-		AccountId = <T as frame_system::Config>::AccountId,
-		GroupId = <T as merkle::Config>::GroupId,
-		Nullifier = Data,
-	{
-		Deposit(GroupId, AccountId, Nullifier),
-		Withdraw(GroupId, AccountId, Nullifier),
-	}
-);
-
-// The pallet's errors
-decl_error! {
-	pub enum Error for Module<T: Config> {
+	#[pallet::error]
+	pub enum Error<T> {
 		/// Value was None
 		NoneValue,
-		///
+		/// Mixer not found for specified id
 		NoMixerForId,
-		///
+		/// Mixer is not initialized
 		NotInitialised,
-		///
+		/// Mixer is already initialized
 		AlreadyInitialised,
-		///
+		/// User doesn't have enough balance for the deposit
 		InsufficientBalance,
-		///
+		/// Caller doesn't have permission to make a call
 		UnauthorizedCall,
-		///
+		/// Mixer is stopped
 		MixerStopped,
 	}
-}
 
-decl_module! {
-	pub struct Module<T: Config> for enum Call where origin: T::Origin {
-		type Error = Error<T>;
+	#[pallet::pallet]
+	#[pallet::generate_store(pub(super) trait Store)]
+	pub struct Pallet<T>(PhantomData<T>);
 
-		fn deposit_event() = default;
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
+			// We make sure that wee return correct weight for the block accourding to
+			// on_finalize
+			if Self::initialised() {
+				// In case mixer is initialized, we expect the weights for merkle cache update
+				<T as Config>::WeightInfo::on_finalize_initialized()
+			} else {
+				// In case mixer is not initialized, we expect the weights for initialization
+				<T as Config>::WeightInfo::on_finalize_uninitialized()
+			}
+		}
 
-		#[weight = <T as Config>::WeightInfo::deposit(data_points.len() as u32)]
-		pub fn deposit(origin, mixer_id: T::GroupId, data_points: Vec<Data>) -> dispatch::DispatchResult {
+		fn on_finalize(_n: BlockNumberFor<T>) {
+			if Self::initialised() {
+				// check if any deposits happened (by checked the size of collection at this
+				// block) if none happened, carry over previous merkle roots for the cache.
+				let mixer_ids = MixerGroupIds::<T>::get();
+				for i in 0..mixer_ids.len() {
+					let cached_roots = <merkle::Module<T>>::cached_roots(_n, mixer_ids[i]);
+					// if there are no cached roots, carry forward the current root
+					if cached_roots.len() == 0 {
+						let _ = <merkle::Module<T>>::add_root_to_cache(mixer_ids[i], _n);
+					}
+				}
+			} else {
+				match Self::initialize() {
+					Ok(_) => {}
+					Err(e) => {
+						debug::native::error!("Error initialising: {:?}", e);
+					}
+				}
+			}
+		}
+	}
+
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		#[pallet::weight(<T as Config>::WeightInfo::deposit(data_points.len() as u32))]
+		pub fn deposit(
+			origin: OriginFor<T>,
+			mixer_id: T::GroupId,
+			data_points: Vec<Data>,
+		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 			ensure!(!<MerkleModule<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
@@ -152,9 +218,10 @@ decl_module! {
 			// ensure the sender has enough balance to cover deposit
 			let balance = T::Currency::free_balance(&sender);
 			// TODO: Multiplication by usize should be possible
-			// using this hack for now, though we should optimise with regular multiplication
-			// `data_points.len() * mixer_info.fixed_deposit_size`
-			let deposit: BalanceOf<T> = data_points.iter()
+			// using this hack for now, though we should optimise with regular
+			// multiplication `data_points.len() * mixer_info.fixed_deposit_size`
+			let deposit: BalanceOf<T> = data_points
+				.iter()
 				.map(|_| mixer_info.fixed_deposit_size)
 				.fold(Zero::zero(), |acc, elt| acc + elt);
 			ensure!(balance >= deposit, Error::<T>::InsufficientBalance);
@@ -168,12 +235,12 @@ decl_module! {
 			mixer_info.leaves.extend(data_points);
 			MixerGroups::<T>::insert(mixer_id, mixer_info);
 
-			Ok(())
+			Ok(().into())
 		}
 
-		#[weight = <T as Config>::WeightInfo::withdraw()]
+		#[pallet::weight(<T as Config>::WeightInfo::withdraw())]
 		pub fn withdraw(
-			origin,
+			origin: OriginFor<T>,
 			mixer_id: T::GroupId,
 			cached_block: T::BlockNumber,
 			cached_root: Data,
@@ -182,7 +249,7 @@ decl_module! {
 			proof_bytes: Vec<u8>,
 			leaf_index_commitments: Vec<Commitment>,
 			proof_commitments: Vec<Commitment>,
-		) -> dispatch::DispatchResult {
+		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 			ensure!(!<MerkleModule<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
@@ -198,7 +265,7 @@ decl_module! {
 				nullifier_hash,
 				proof_bytes,
 				leaf_index_commitments,
-				proof_commitments
+				proof_commitments,
 			)?;
 			// transfer the fixed deposit size to the sender
 			T::Currency::transfer(&Self::account_id(), &sender, mixer_info.fixed_deposit_size, AllowDeath)?;
@@ -209,8 +276,8 @@ decl_module! {
 			T::Group::add_nullifier(Self::account_id(), mixer_id.into(), nullifier_hash)
 		}
 
-		#[weight = <T as Config>::WeightInfo::set_stopped()]
-		fn set_stopped(origin, stopped: bool) -> dispatch::DispatchResult {
+		#[pallet::weight(<T as Config>::WeightInfo::set_stopped())]
+		fn set_stopped(origin: OriginFor<T>, stopped: bool) -> DispatchResultWithPostInfo {
 			// Ensure the caller is admin or root
 			ensure_admin(origin, &Self::admin())?;
 			// Set the mixer state, `stopped` can be true or false
@@ -218,47 +285,16 @@ decl_module! {
 			for i in 0..mixer_ids.len() {
 				T::Group::set_stopped(Self::account_id(), mixer_ids[i], stopped)?;
 			}
-			Ok(())
+			Ok(().into())
 		}
 
-		#[weight = <T as Config>::WeightInfo::transfer_admin()]
-		fn transfer_admin(origin, to: T::AccountId) -> dispatch::DispatchResult {
+		#[pallet::weight(<T as Config>::WeightInfo::transfer_admin())]
+		fn transfer_admin(origin: OriginFor<T>, to: T::AccountId) -> DispatchResultWithPostInfo {
 			// Ensures that the caller is the root or the current admin
 			ensure_admin(origin, &Self::admin())?;
 			// Updating the admin
 			Admin::<T>::set(to);
-			Ok(())
-		}
-
-		fn on_initialize() -> Weight {
-			// We make sure that wee return correct weight for the block accourding to on_finalize
-			if Self::initialised() {
-				// In case mixer is initialized, we expect the weights for merkle cache update
-				<T as Config>::WeightInfo::on_finalize_initialized()
-			} else {
-				// In case mixer is not initialized, we expect the weights for initialization
-				<T as Config>::WeightInfo::on_finalize_uninitialized()
-			}
-		}
-
-		fn on_finalize(_n: T::BlockNumber) {
-			if Self::initialised() {
-				// check if any deposits happened (by checked the size of collection at this block)
-				// if none happened, carry over previous merkle roots for the cache.
-				let mixer_ids = MixerGroupIds::<T>::get();
-				for i in 0..mixer_ids.len() {
-					let cached_roots = <merkle::Module<T>>::cached_roots(_n, mixer_ids[i]);
-					// if there are no cached roots, carry forward the current root
-					if cached_roots.len() == 0 {
-						let _ = <merkle::Module<T>>::add_root_to_cache(mixer_ids[i], _n);
-					}
-				}
-			} else {
-				match Self::initialize() {
-					Ok(_) => {},
-					Err(e) => { debug::native::error!("Error initialising: {:?}", e); },
-				}
-			}
+			Ok(().into())
 		}
 	}
 }
@@ -272,8 +308,7 @@ impl<T: Config> Module<T> {
 		let mixer_info = MixerGroups::<T>::get(mixer_id);
 		// ensure mixer_info has non-zero deposit, otherwise mixer doesn't
 		// really exist for this id
-		ensure!(mixer_info.fixed_deposit_size > Zero::zero(), Error::<T>::NoMixerForId);
-		// return the mixer info
+		ensure!(mixer_info.fixed_deposit_size > Zero::zero(), Error::<T>::NoMixerForId); // return the mixer info
 		Ok(mixer_info)
 	}
 
@@ -286,11 +321,11 @@ impl<T: Config> Module<T> {
 		Admin::<T>::set(default_admin);
 
 		let one: BalanceOf<T> = One::one();
-		let depth: u8 = <T as Config>::MaxTreeDepth::get();
+		let depth: u8 = <T as Config>::MaxMixerTreeDepth::get();
 		// create small mixer and assign the module as the manager
 		let small_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
 		let small_mixer_info = MixerInfo::<T> {
-			fixed_deposit_size: one * 1_000.into(),
+			fixed_deposit_size: one * 1_000u32.into(),
 			minimum_deposit_length_for_reward: T::DepositLength::get(),
 			leaves: Vec::new(),
 		};
@@ -298,7 +333,7 @@ impl<T: Config> Module<T> {
 		// create medium mixer and assign the module as the manager
 		let med_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
 		let med_mixer_info = MixerInfo::<T> {
-			fixed_deposit_size: one * 10_000.into(),
+			fixed_deposit_size: one * 10_000u32.into(),
 			minimum_deposit_length_for_reward: T::DepositLength::get(),
 			leaves: Vec::new(),
 		};
@@ -306,7 +341,7 @@ impl<T: Config> Module<T> {
 		// create large mixer and assign the module as the manager
 		let large_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
 		let large_mixer_info = MixerInfo::<T> {
-			fixed_deposit_size: one * 100_000.into(),
+			fixed_deposit_size: one * 100_000u32.into(),
 			minimum_deposit_length_for_reward: T::DepositLength::get(),
 			leaves: Vec::new(),
 		};
@@ -314,14 +349,14 @@ impl<T: Config> Module<T> {
 		// create larger mixer and assign the module as the manager
 		let huge_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
 		let huge_mixer_info = MixerInfo::<T> {
-			fixed_deposit_size: one * 1_000_000.into(),
+			fixed_deposit_size: one * 1_000_000u32.into(),
 			minimum_deposit_length_for_reward: T::DepositLength::get(),
 			leaves: Vec::new(),
 		};
 		MixerGroups::<T>::insert(huge_mixer_id, huge_mixer_info);
 		MixerGroupIds::<T>::set(vec![small_mixer_id, med_mixer_id, large_mixer_id, huge_mixer_id]);
 
-		Initialised::set(true);
+		Initialised::<T>::set(true);
 		Ok(())
 	}
 }
