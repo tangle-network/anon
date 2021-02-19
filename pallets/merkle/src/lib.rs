@@ -19,6 +19,7 @@ pub mod tests;
 mod benchmarking;
 pub mod weights;
 
+use sp_std::prelude::*;
 pub use crate::group_trait::Group;
 use bulletproofs::{
 	r1cs::{R1CSProof, Verifier},
@@ -37,13 +38,14 @@ use curve25519_gadgets::{
 	utils::AllocatedScalar,
 };
 use frame_support::{
-	decl_error, decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, weights::Weight, Parameter,
+	dispatch, ensure, traits::Get, weights::Weight, Parameter,
 };
+use frame_system as system;
 use frame_system::ensure_signed;
+
 use merlin::Transcript;
 use rand_core::OsRng;
 use sp_runtime::traits::{AtLeast32Bit, One};
-use sp_std::prelude::*;
 use utils::{
 	keys::{Commitment, Data},
 	permissions::ensure_admin,
@@ -51,20 +53,6 @@ use utils::{
 use weights::WeightInfo;
 
 pub mod group_trait;
-
-/// The pallet's configuration trait.
-pub trait Config: frame_system::Config + balances::Config {
-	/// The overarching event type.
-	type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
-	/// The overarching group ID type
-	type GroupId: Encode + Decode + Parameter + AtLeast32Bit + Default + Copy;
-	/// The max depth of trees
-	type MaxTreeDepth: Get<u8>;
-	/// The amount of blocks to cache roots over
-	type CacheBlockLength: Get<Self::BlockNumber>;
-	/// Weight information for extrinsics in this pallet.
-	type WeightInfo: WeightInfo;
-}
 
 // TODO find better way to have default hasher without saving it inside storage
 pub fn default_hasher() -> Poseidon {
@@ -83,75 +71,31 @@ pub fn default_hasher() -> Poseidon {
 		.build()
 }
 
-#[cfg_attr(feature = "std", derive(Debug))]
-#[derive(Clone, Encode, Decode, PartialEq)]
-pub struct GroupTree {
-	pub leaf_count: u32,
-	pub max_leaves: u32,
-	pub depth: u8,
-	pub root_hash: Data,
-	pub edge_nodes: Vec<Data>,
-}
+use frame_support::pallet_prelude::*;
+use frame_system::pallet_prelude::*;
+pub use pallet::*;
 
-impl GroupTree {
-	pub fn new<T: Config>(depth: u8) -> Self {
-		let init_edges: Vec<Data> = ZERO_TREE[0..depth as usize].iter().map(|x| Data::from(*x)).collect();
-		let init_root = Data::from(ZERO_TREE[depth as usize]);
-		Self {
-			root_hash: init_root,
-			leaf_count: 0,
-			depth,
-			max_leaves: u32::MAX >> (T::MaxTreeDepth::get() - depth),
-			edge_nodes: init_edges,
-		}
+#[frame_support::pallet]
+pub mod pallet {
+	use super::*;
+
+	/// The pallet's configuration trait.
+	#[pallet::config]
+	pub trait Config: frame_system::Config + balances::Config {
+		/// The overarching event type.
+		type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+		/// The overarching group ID type
+		type GroupId: Encode + Decode + Parameter + AtLeast32Bit + Default + Copy;
+		/// The max depth of trees
+		type MaxTreeDepth: Get<u8>;
+		/// The amount of blocks to cache roots over
+		type CacheBlockLength: Get<Self::BlockNumber>;
+		/// Weight information for extrinsics in this pallet.
+		type WeightInfo: WeightInfo;
 	}
-}
 
-#[derive(Clone, Encode, Decode, PartialEq)]
-pub struct Manager<T: Config> {
-	pub account_id: T::AccountId,
-	pub required: bool,
-}
-
-impl<T: Config> Manager<T> {
-	pub fn new(account_id: T::AccountId, required: bool) -> Self {
-		Self { account_id, required }
-	}
-}
-
-// This pallet's storage items.
-decl_storage! {
-	trait Store for Module<T: Config> as MerkleGroups {
-		/// The next group identifier up for grabs
-		pub NextGroupId get(fn next_group_id): T::GroupId;
-		/// The map of groups to their metadata
-		pub Groups get(fn groups): map hasher(blake2_128_concat) T::GroupId => Option<GroupTree>;
-		/// Map of cached/past merkle roots at each blocknumber and group. There can be more than one root update in a single block.
-		/// Allows for easy pruning since we can remove all keys of first map past a certain point.
-		pub CachedRoots get(fn cached_roots): double_map hasher(blake2_128_concat) T::BlockNumber, hasher(blake2_128_concat) T::GroupId => Vec<Data>;
-		pub Managers get(fn get_manager): map hasher(blake2_128_concat) T::GroupId => Option<Manager<T>>;
-		pub LowestCachedBlock get(fn lowest_cached_block): T::BlockNumber;
-		pub HighestCachedBlock get(fn highest_cached_block): T::BlockNumber;
-		/// Map of used nullifiers (Data) for each tree.
-		pub UsedNullifiers get(fn used_nullifiers): map hasher(blake2_128_concat) (T::GroupId, Data) => bool;
-		pub Stopped get(fn stopped): map hasher(blake2_128_concat) T::GroupId => bool;
-	}
-}
-
-// The pallet's events
-decl_event!(
-	pub enum Event<T>
-	where
-		AccountId = <T as frame_system::Config>::AccountId,
-		GroupId = <T as Config>::GroupId,
-	{
-		NewMember(GroupId, AccountId, Vec<Data>),
-	}
-);
-
-// The pallet's errors
-decl_error! {
-	pub enum Error for Module<T: Config> {
+	#[pallet::error]
+	pub enum Error<T> {
 		/// Value was None
 		NoneValue,
 		///
@@ -187,71 +131,79 @@ decl_error! {
 		///
 		ManagerDoesntExist
 	}
-}
 
-// The pallet's dispatchable functions.
-decl_module! {
-	/// The module declaration.
-	pub struct Module<T: Config> for enum Call where origin: T::Origin {
-		type Error = Error<T>;
+	#[derive(Clone, Encode, Decode, PartialEq)]
+	pub struct Manager<T: Config> {
+		pub account_id: T::AccountId,
+		pub required: bool,
+	}
 
-		fn deposit_event() = default;
-
-		#[weight = <T as Config>::WeightInfo::create_group(_depth.map_or(T::MaxTreeDepth::get() as u32, |x| x as u32))]
-		pub fn create_group(origin, r_is_mgr: bool, _depth: Option<u8>) -> dispatch::DispatchResult {
-			let sender = ensure_signed(origin)?;
-			let depth = match _depth {
-				Some(d) => d,
-				None => T::MaxTreeDepth::get()
-			};
-			let _ = <Self as Group<_,_,_>>::create_group(sender, r_is_mgr, depth)?;
-			Ok(())
+	impl<T: Config> Manager<T> {
+		pub fn new(account_id: T::AccountId, required: bool) -> Self {
+			Self { account_id, required }
 		}
+	}
 
-		#[weight = <T as Config>::WeightInfo::set_manager_required()]
-		pub fn set_manager_required(origin, group_id: T::GroupId, manager_required: bool) -> dispatch::DispatchResult {
-			let sender = ensure_signed(origin)?;
+	#[pallet::event]
+	#[pallet::generate_deposit(pub(crate) fn deposit_event)]
+	pub enum Event<T: Config> {
+		NewMember(T::GroupId, T::AccountId, Vec<Data>),
+	}
 
-			<Self as Group<_,_,_>>::set_manager_required(sender, group_id, manager_required)
-		}
+	/// Old name generated by `decl_event`.
+	#[deprecated(note = "use `Event` instead")]
+	pub type RawEvent<T, I = ()> = Event<T, I>;
 
-		#[weight = <T as Config>::WeightInfo::set_manager()]
-		pub fn set_manager(origin, group_id: T::GroupId, new_manager: T::AccountId) -> dispatch::DispatchResult {
-			let manager_data = <Managers<T>>::get(group_id)
-				.ok_or(Error::<T>::ManagerDoesntExist)
-				.unwrap();
-			// Changing manager should always require an extrinsic from the manager or root even
-			// if the group doesn't explicitly require managers for other calls.
-			ensure_admin(origin, &manager_data.account_id)?;
-			// We are passing manager always, since we wont have account id when calling from root origin
-			<Self as Group<_,_,_>>::set_manager(manager_data.account_id, group_id, new_manager)
-		}
+	/// The next group identifier up for grabs
+	#[pallet::storage]
+	#[pallet::getter(fn next_group_id)]
+	pub type NextGroupId<T: Config> = T::GroupId;
 
-		#[weight = <T as Config>::WeightInfo::set_stopped()]
-		pub fn set_stopped(origin, group_id: T::GroupId, stopped: bool) -> dispatch::DispatchResult {
-			let manager_data = <Managers<T>>::get(group_id)
-				.ok_or(Error::<T>::ManagerDoesntExist)
-				.unwrap();
-			ensure_admin(origin, &manager_data.account_id)?;
-			<Self as Group<_,_,_>>::set_stopped(manager_data.account_id, group_id, stopped)
-		}
+	/// The map of groups to their metadata
+	#[pallet::storage]
+	#[pallet::getter(fn groups)]
+	pub type Groups<T: Config> = StorageMap<_, Blake2_128Concat, T::GroupId, Option<GroupTree>, ValueQuery>;
 
-		#[weight = <T as Config>::WeightInfo::add_members(members.len() as u32)]
-		pub fn add_members(origin, group_id: T::GroupId, members: Vec<Data>) -> dispatch::DispatchResult {
-			let sender = ensure_signed(origin)?;
-			<Self as Group<_,_,_>>::add_members(sender, group_id, members)
-		}
+	/// Map of cached/past merkle roots at each blocknumber and group. There can be more than one root update in a single block.
+	/// Allows for easy pruning since we can remove all keys of first map past a certain point.
+	#[pallet::storage]
+	#[pallet::getter(fn cached_roots)]
+	pub type CachedRoots<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::BlockNumber,
+		Blake2_128Concat,
+		T::GroupId,
+		Vec<Data>,
+		ValueQuery
+	>;
 
-		/// Verification stub for testing, these verification functions should
-		/// not need to be used directly as extrinsics. Rather, higher-order
-		/// modules should use the module functions to verify and execute further
-		/// logic.
-		#[weight = <T as Config>::WeightInfo::verify_path(path.len() as u32)]
-		pub fn verify(origin, group_id: T::GroupId, leaf: Data, path: Vec<(bool, Data)>) -> dispatch::DispatchResult {
-			let _sender = ensure_signed(origin)?;
-			<Self as Group<_,_,_>>::verify(group_id, leaf, path)
-		}
+	#[pallet::storage]
+	#[pallet::getter(fn get_manager)]
+	pub type Managers<T: Config> = StorageMap<_, Blake2_128Concat, T::GroupId, Option<Manager<T>>, ValueQuery>;
 
+	#[pallet::storage]
+	#[pallet::getter(fn lowest_cached_block)]
+	pub type LowestCachedBlock<T: Config> = T::BlockNumber;
+
+	#[pallet::storage]
+	#[pallet::getter(fn highest_cached_block)]
+	pub type HighestCachedBlock<T: Config> = T::BlockNumber;
+	
+	/// Map of used nullifiers (Data) for each tree.
+	#[pallet::storage]
+	#[pallet::getter(fn used_nullifiers)]
+	pub type UsedNullifiers<T: Config> = StorageMap<_, Blake2_128Concat, (T::GroupId, Data), bool, ValueQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn stopped)]
+	pub type Stopped<T: Config> = StorageMap<_, Blake2_128Concat, T::GroupId, bool, ValueQuery>;
+
+	#[pallet::pallet]
+	pub struct Pallet<T>(PhantomData<T>);
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<T::BlockNumber> for Pallet<T> {
 		fn on_initialize() -> Weight {
 			// Returning the weights for `on_finalize` in worst-case scenario where all if branches are hit
 			<T as Config>::WeightInfo::on_finalize()
@@ -277,9 +229,92 @@ decl_module! {
 			}
 		}
 	}
+
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+		#[pallet::weight(T::WeightInfo::create_group(_depth.map_or(T::MaxTreeDepth::get() as u32, |x| x as u32)))]
+		pub fn create_group(origin: OriginFor<T>, r_is_mgr: bool, _depth: Option<u8>) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			let depth = match _depth {
+				Some(d) => d,
+				None => T::MaxTreeDepth::get()
+			};
+			let _ = <Self as Group<_,_,_>>::create_group(sender, r_is_mgr, depth)?;
+			Ok(())
+		}
+
+		#[pallet::weight(T::WeightInfo::set_manager_required())]
+		pub fn set_manager_required(origin: OriginFor<T>, group_id: T::GroupId, manager_required: bool) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+
+			<Self as Group<_,_,_>>::set_manager_required(sender, group_id, manager_required)
+		}
+
+		#[pallet::weight(T::WeightInfo::set_manager())]
+		pub fn set_manager(origin: OriginFor<T>, group_id: T::GroupId, new_manager: T::AccountId) -> DispatchResultWithPostInfo {
+			let manager_data = Managers::<T>::get(group_id)
+				.ok_or(Error::<T>::ManagerDoesntExist)
+				.unwrap();
+			// Changing manager should always require an extrinsic from the manager or root even
+			// if the group doesn't explicitly require managers for other calls.
+			ensure_admin(origin: OriginFor<T>, &manager_data.account_id)?;
+			// We are passing manager always, since we wont have account id when calling from root origin
+			<Self as Group<_,_,_>>::set_manager(manager_data.account_id, group_id, new_manager)
+		}
+
+		#[pallet::weight(T::WeightInfo::set_stopped())]
+		pub fn set_stopped(origin: OriginFor<T>, group_id: T::GroupId, stopped: bool) -> DispatchResultWithPostInfo {
+			let manager_data = Managers::<T>::get(group_id)
+				.ok_or(Error::<T>::ManagerDoesntExist)
+				.unwrap();
+			ensure_admin(origin: OriginFor<T>, &manager_data.account_id)?;
+			<Self as Group<_,_,_>>::set_stopped(manager_data.account_id, group_id, stopped)
+		}
+
+		#[pallet::weight(T::WeightInfo::add_members(members.len() as u32))]
+		pub fn add_members(origin: OriginFor<T>, group_id: T::GroupId, members: Vec<Data>) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			<Self as Group<_,_,_>>::add_members(sender, group_id, members)
+		}
+
+		/// Verification stub for testing, these verification functions should
+		/// not need to be used directly as extrinsics. Rather, higher-order
+		/// modules should use the module functions to verify and execute further
+		/// logic.
+		#[pallet::weight(T::WeightInfo::verify_path(path.len() as u32))]
+		pub fn verify(origin: OriginFor<T>, group_id: T::GroupId, leaf: Data, path: Vec<(bool, Data)>) -> DispatchResultWithPostInfo {
+			let _sender = ensure_signed(origin)?;
+			<Self as Group<_,_,_>>::verify(group_id, leaf, path)
+		}
+	}
 }
 
-impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
+#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq)]
+pub struct GroupTree {
+	pub leaf_count: u32,
+	pub max_leaves: u32,
+	pub depth: u8,
+	pub root_hash: Data,
+	pub edge_nodes: Vec<Data>,
+}
+
+impl GroupTree {
+	pub fn new(depth: u8) -> Self {
+		let init_edges: Vec<Data> = ZERO_TREE[0..depth as usize].iter().map(|x| Data::from(*x)).collect();
+		let init_root = Data::from(ZERO_TREE[depth as usize]);
+		Self {
+			root_hash: init_root,
+			leaf_count: 0,
+			depth,
+			max_leaves: 2u32.pow(depth),
+			edge_nodes: init_edges,
+		}
+	}
+}
+
+
+impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 	fn create_group(
 		sender: T::AccountId,
 		is_manager_required: bool,
@@ -295,17 +330,17 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		NextGroupId::<T>::mutate(|id| *id += One::one());
 
 		// Setting up the tree
-		let mtree = GroupTree::new::<T>(depth);
-		<Groups<T>>::insert(group_id, mtree);
+		let mtree = GroupTree::new(depth);
+		Groups::<T>::insert(group_id, mtree);
 
 		// Setting up the manager
 		let manager = Manager::<T>::new(sender, is_manager_required);
-		<Managers<T>>::insert(group_id, manager);
+		Managers::<T>::insert(group_id, manager);
 		Ok(group_id)
 	}
 
 	fn set_stopped(sender: T::AccountId, id: T::GroupId, stopped: bool) -> Result<(), dispatch::DispatchError> {
-		let manager_data = <Managers<T>>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		ensure!(sender == manager_data.account_id, Error::<T>::ManagerIsRequired);
 		Stopped::<T>::insert(id, stopped);
 		Ok(())
@@ -316,13 +351,13 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		id: T::GroupId,
 		manager_required: bool,
 	) -> Result<(), dispatch::DispatchError> {
-		let mut manager_data = <Managers<T>>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let mut manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		// Changing manager required should always require an extrinsic from the
 		// manager even if the group doesn't explicitly require managers for
 		// other calls.
 		ensure!(sender == manager_data.account_id, Error::<T>::ManagerIsRequired);
 		manager_data.required = manager_required;
-		<Managers<T>>::insert(id, manager_data);
+		Managers::<T>::insert(id, manager_data);
 		Ok(())
 	}
 
@@ -331,16 +366,16 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		id: T::GroupId,
 		new_manager: T::AccountId,
 	) -> Result<(), dispatch::DispatchError> {
-		let mut manager_data = <Managers<T>>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let mut manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		ensure!(sender == manager_data.account_id, Error::<T>::ManagerIsRequired);
 		manager_data.account_id = new_manager;
-		<Managers<T>>::insert(id, manager_data);
+		Managers::<T>::insert(id, manager_data);
 		Ok(())
 	}
 
 	fn add_members(sender: T::AccountId, id: T::GroupId, members: Vec<Data>) -> Result<(), dispatch::DispatchError> {
-		let mut tree = <Groups<T>>::get(id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
-		let manager_data = <Managers<T>>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let mut tree = Groups::<T>::get(id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
+		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		// Check if the tree requires extrinsics to be called from a manager
 		ensure!(
 			Self::is_manager_required(sender.clone(), &manager_data),
@@ -370,7 +405,7 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		id: T::GroupId,
 		nullifier_hash: Data,
 	) -> Result<(), dispatch::DispatchError> {
-		let manager_data = <Managers<T>>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		// Check if the tree requires extrinsics to be called from a manager
 		ensure!(
 			Self::is_manager_required(sender.clone(), &manager_data),
@@ -381,7 +416,7 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 	}
 
 	fn has_used_nullifier(id: T::GroupId, nullifier: Data) -> Result<(), dispatch::DispatchError> {
-		let _ = <Groups<T>>::get(id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
+		let _ = Groups::<T>::get(id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
 
 		ensure!(
 			!UsedNullifiers::<T>::contains_key((id, nullifier)),
@@ -391,7 +426,7 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 	}
 
 	fn verify(id: T::GroupId, leaf: Data, path: Vec<(bool, Data)>) -> Result<(), dispatch::DispatchError> {
-		let tree = <Groups<T>>::get(id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
+		let tree = Groups::<T>::get(id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
 
 		ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
 		let h = default_hasher();
@@ -417,7 +452,7 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 		leaf_index_commitments: Vec<Commitment>,
 		proof_commitments: Vec<Commitment>,
 	) -> Result<(), dispatch::DispatchError> {
-		let tree = <Groups<T>>::get(group_id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
+		let tree = Groups::<T>::get(group_id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
 		ensure!(
 			tree.edge_nodes.len() == proof_commitments.len(),
 			Error::<T>::InvalidPathLength
@@ -521,7 +556,7 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Module<T> {
 	}
 }
 
-impl<T: Config> Module<T> {
+impl<T: Config> Pallet<T> {
 	pub fn get_cache(group_id: T::GroupId, block_number: T::BlockNumber) -> Vec<Data> {
 		Self::cached_roots(block_number, group_id)
 	}
@@ -541,7 +576,7 @@ impl<T: Config> Module<T> {
 	}
 
 	pub fn get_group(group_id: T::GroupId) -> Result<GroupTree, dispatch::DispatchError> {
-		let tree = <Groups<T>>::get(group_id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
+		let tree = Groups::<T>::get(group_id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
 		Ok(tree)
 	}
 
