@@ -24,23 +24,13 @@
 #![allow(unused_parens)]
 #![allow(unused_imports)]
 
+use crate::WeightInfo;
 use crate::Config;
 use frame_support::{
 	traits::Get,
 	weights::{constants::RocksDbWeight, Weight},
 };
 use sp_std::marker::PhantomData;
-
-/// Weight functions needed for pallet_merkle.
-pub trait WeightInfo {
-	fn create_group(n: u32) -> Weight;
-	fn set_manager_required() -> Weight;
-	fn set_manager() -> Weight;
-	fn set_stopped() -> Weight;
-	fn add_members(n: u32) -> Weight;
-	fn verify_path(n: u32) -> Weight;
-	fn on_finalize() -> Weight;
-}
 
 /// Weight functions for pallet_merkle.
 pub struct Weights<T>(PhantomData<T>);

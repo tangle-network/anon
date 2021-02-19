@@ -47,7 +47,6 @@ use utils::{
 	keys::{Commitment, Data},
 	permissions::ensure_admin,
 };
-use weights::WeightInfo;
 
 pub mod group_trait;
 
@@ -75,6 +74,17 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+
+	/// Weight functions needed for pallet_merkle.
+	pub trait WeightInfo {
+		fn create_group(n: u32) -> Weight;
+		fn set_manager_required() -> Weight;
+		fn set_manager() -> Weight;
+		fn set_stopped() -> Weight;
+		fn add_members(n: u32) -> Weight;
+		fn verify_path(n: u32) -> Weight;
+		fn on_finalize() -> Weight;
+	}
 
 	/// The pallet's configuration trait.
 	#[pallet::config]
@@ -190,6 +200,7 @@ pub mod pallet {
 	pub type Stopped<T: Config> = StorageMap<_, Blake2_128Concat, T::GroupId, bool, ValueQuery>;
 
 	#[pallet::pallet]
+	#[pallet::generate_store(pub(crate) trait Store)]
 	pub struct Pallet<T>(PhantomData<T>);
 
 	#[pallet::hooks]
@@ -200,15 +211,15 @@ pub mod pallet {
 			<T as Config>::WeightInfo::on_finalize()
 		}
 
-		fn on_finalize(n: T::BlockNumber) {
+		fn on_finalize(now: T::BlockNumber) {
 			// update highest block in cache
-			if HighestCachedBlock::<T>::get() < n {
-				HighestCachedBlock::<T>::set(n);
+			if HighestCachedBlock::<T>::get() < now {
+				HighestCachedBlock::<T>::set(now);
 			}
 
 			// initialise lowest block in cache if not already
 			if LowestCachedBlock::<T>::get() < One::one() {
-				LowestCachedBlock::<T>::set(n);
+				LowestCachedBlock::<T>::set(now);
 			}
 
 			// update and prune database if pruning length has been hit
