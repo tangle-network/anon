@@ -16,6 +16,9 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
+mod benchmarking;
+pub mod weights;
+
 pub use crate::group_trait::Group;
 use bulletproofs::{
 	r1cs::{R1CSProof, Verifier},
@@ -33,7 +36,9 @@ use curve25519_gadgets::{
 	},
 	utils::AllocatedScalar,
 };
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, Parameter};
+use frame_support::{
+	decl_error, decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get, weights::Weight, Parameter,
+};
 use frame_system::ensure_signed;
 use merlin::Transcript;
 use rand_core::OsRng;
@@ -43,6 +48,7 @@ use utils::{
 	keys::{Commitment, Data},
 	permissions::ensure_admin,
 };
+use weights::WeightInfo;
 
 pub mod group_trait;
 
@@ -56,16 +62,18 @@ pub trait Config: frame_system::Config + balances::Config {
 	type MaxTreeDepth: Get<u8>;
 	/// The amount of blocks to cache roots over
 	type CacheBlockLength: Get<Self::BlockNumber>;
+	/// Weight information for extrinsics in this pallet.
+	type WeightInfo: WeightInfo;
 }
 
 // TODO find better way to have default hasher without saving it inside storage
-fn default_hasher() -> Poseidon {
+pub fn default_hasher() -> Poseidon {
 	let width = 6;
 	let (full_b, full_e) = (4, 4);
 	let partial_rounds = 57;
 	// TODO: should be able to pass number of generators
 	// TODO: Initialise these generators with the pallet
-	let bp_gens = BulletproofGens::new(40960, 1);
+	let bp_gens = BulletproofGens::new(16400, 1);
 	PoseidonBuilder::new(width)
 		.num_rounds(full_b, full_e, partial_rounds)
 		.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
@@ -189,7 +197,7 @@ decl_module! {
 
 		fn deposit_event() = default;
 
-		#[weight = 0]
+		#[weight = <T as Config>::WeightInfo::create_group(_depth.map_or(T::MaxTreeDepth::get() as u32, |x| x as u32))]
 		pub fn create_group(origin, r_is_mgr: bool, _depth: Option<u8>) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let depth = match _depth {
@@ -200,14 +208,14 @@ decl_module! {
 			Ok(())
 		}
 
-		#[weight = 0]
+		#[weight = <T as Config>::WeightInfo::set_manager_required()]
 		pub fn set_manager_required(origin, group_id: T::GroupId, manager_required: bool) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
 
 			<Self as Group<_,_,_>>::set_manager_required(sender, group_id, manager_required)
 		}
 
-		#[weight = 0]
+		#[weight = <T as Config>::WeightInfo::set_manager()]
 		pub fn set_manager(origin, group_id: T::GroupId, new_manager: T::AccountId) -> dispatch::DispatchResult {
 			let manager_data = <Managers<T>>::get(group_id)
 				.ok_or(Error::<T>::ManagerDoesntExist)
@@ -219,7 +227,7 @@ decl_module! {
 			<Self as Group<_,_,_>>::set_manager(manager_data.account_id, group_id, new_manager)
 		}
 
-		#[weight = 0]
+		#[weight = <T as Config>::WeightInfo::set_stopped()]
 		pub fn set_stopped(origin, group_id: T::GroupId, stopped: bool) -> dispatch::DispatchResult {
 			let manager_data = <Managers<T>>::get(group_id)
 				.ok_or(Error::<T>::ManagerDoesntExist)
@@ -228,7 +236,7 @@ decl_module! {
 			<Self as Group<_,_,_>>::set_stopped(manager_data.account_id, group_id, stopped)
 		}
 
-		#[weight = 0]
+		#[weight = <T as Config>::WeightInfo::add_members(members.len() as u32)]
 		pub fn add_members(origin, group_id: T::GroupId, members: Vec<Data>) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
 			<Self as Group<_,_,_>>::add_members(sender, group_id, members)
@@ -238,21 +246,26 @@ decl_module! {
 		/// not need to be used directly as extrinsics. Rather, higher-order
 		/// modules should use the module functions to verify and execute further
 		/// logic.
-		#[weight = 0]
+		#[weight = <T as Config>::WeightInfo::verify_path(path.len() as u32)]
 		pub fn verify(origin, group_id: T::GroupId, leaf: Data, path: Vec<(bool, Data)>) -> dispatch::DispatchResult {
 			let _sender = ensure_signed(origin)?;
 			<Self as Group<_,_,_>>::verify(group_id, leaf, path)
 		}
 
-		fn on_finalize(_n: T::BlockNumber) {
+		fn on_initialize() -> Weight {
+			// Returning the weights for `on_finalize` in worst-case scenario where all if branches are hit
+			<T as Config>::WeightInfo::on_finalize()
+		}
+
+		fn on_finalize(n: T::BlockNumber) {
 			// update highest block in cache
-			if HighestCachedBlock::<T>::get() < _n {
-				HighestCachedBlock::<T>::set(_n);
+			if HighestCachedBlock::<T>::get() < n {
+				HighestCachedBlock::<T>::set(n);
 			}
 
 			// initialise lowest block in cache if not already
 			if LowestCachedBlock::<T>::get() < One::one() {
-				LowestCachedBlock::<T>::set(_n);
+				LowestCachedBlock::<T>::set(n);
 			}
 
 			// update and prune database if pruning length has been hit

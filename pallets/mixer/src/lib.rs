@@ -15,10 +15,14 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
+mod benchmarking;
+pub mod weights;
+
 use codec::{Decode, Encode};
 use frame_support::{
 	debug, decl_error, decl_event, decl_module, decl_storage, dispatch, ensure,
 	traits::{Currency, ExistenceRequirement::AllowDeath, Get},
+	weights::Weight,
 };
 use frame_system::ensure_signed;
 use merkle::{
@@ -33,6 +37,7 @@ use sp_runtime::{
 	ModuleId,
 };
 use sp_std::prelude::*;
+use weights::WeightInfo;
 
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
@@ -51,6 +56,8 @@ pub trait Config: frame_system::Config + merkle::Config {
 	type DepositLength: Get<Self::BlockNumber>;
 	/// Default admin key
 	type DefaultAdmin: Get<Self::AccountId>;
+	/// Weight information for extrinsics in this pallet.
+	type WeightInfo: WeightInfo;
 }
 
 #[derive(Encode, Decode, PartialEq)]
@@ -135,7 +142,7 @@ decl_module! {
 
 		fn deposit_event() = default;
 
-		#[weight = 0]
+		#[weight = <T as Config>::WeightInfo::deposit(data_points.len() as u32)]
 		pub fn deposit(origin, mixer_id: T::GroupId, data_points: Vec<Data>) -> dispatch::DispatchResult {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
@@ -164,7 +171,7 @@ decl_module! {
 			Ok(())
 		}
 
-		#[weight = 0]
+		#[weight = <T as Config>::WeightInfo::withdraw()]
 		pub fn withdraw(
 			origin,
 			mixer_id: T::GroupId,
@@ -202,7 +209,7 @@ decl_module! {
 			T::Group::add_nullifier(Self::account_id(), mixer_id.into(), nullifier_hash)
 		}
 
-		#[weight = 0]
+		#[weight = <T as Config>::WeightInfo::set_stopped()]
 		fn set_stopped(origin, stopped: bool) -> dispatch::DispatchResult {
 			// Ensure the caller is admin or root
 			ensure_admin(origin, &Self::admin())?;
@@ -214,13 +221,24 @@ decl_module! {
 			Ok(())
 		}
 
-		#[weight = 0]
+		#[weight = <T as Config>::WeightInfo::transfer_admin()]
 		fn transfer_admin(origin, to: T::AccountId) -> dispatch::DispatchResult {
 			// Ensures that the caller is the root or the current admin
 			ensure_admin(origin, &Self::admin())?;
 			// Updating the admin
 			Admin::<T>::set(to);
 			Ok(())
+		}
+
+		fn on_initialize() -> Weight {
+			// We make sure that wee return correct weight for the block accourding to on_finalize
+			if Self::initialised() {
+				// In case mixer is initialized, we expect the weights for merkle cache update
+				<T as Config>::WeightInfo::on_finalize_initialized()
+			} else {
+				// In case mixer is not initialized, we expect the weights for initialization
+				<T as Config>::WeightInfo::on_finalize_uninitialized()
+			}
 		}
 
 		fn on_finalize(_n: T::BlockNumber) {

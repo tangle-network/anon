@@ -197,7 +197,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize());
 		let pc_gens = PedersenGens::default();
-		let poseidon = default_hasher(40960);
+		let poseidon = default_hasher(16400);
 
 		for i in 0..4 {
 			let mut prover_transcript = Transcript::new(b"zk_membership_proof");
