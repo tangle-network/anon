@@ -1,7 +1,5 @@
 [workspace]
 members = [
-	"crypto-constants",
-	"gadgets",
 	"node",
 	"pallets/merkle",
 	"pallets/mixer",
