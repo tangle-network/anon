@@ -9,5 +9,3 @@ done
 # test wasm utils
 cd "$SCRIPTDIR/wasm-utils" && ./test.sh
 
-# test gadget tests
-cd "$SCRIPTDIR/gadgets" && WASM_BUILD_TOOLCHAIN=nightly-2020-10-05 cargo test
