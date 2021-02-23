@@ -12,6 +12,7 @@ use frame_support::traits::OnFinalize;
 use frame_system::RawOrigin;
 use merkle::{default_hasher, utils::keys::Data};
 use merlin::Transcript;
+use sp_runtime::traits::Bounded;
 
 use crate::{Config, Module as Mixer};
 use balances::Module as Balances;
@@ -28,9 +29,8 @@ benchmarks! {
 
 		Mixer::<T>::initialize().unwrap();
 		let mixer_id: T::GroupId = 0u32.into();
-		let balance: T::Balance = 10_000u32.into();
 		// Adding initial balance to the `caller` in order to make the deposit
-		let _ = <Balances<T> as Currency<_>>::make_free_balance_be(&caller, balance);
+		let _ = <Balances<T> as Currency<_>>::make_free_balance_be(&caller, T::Balance::max_value());
 
 		// Making `d` leaves/data points
 		let data_points = vec![Data::zero(); d as usize];
@@ -46,7 +46,7 @@ benchmarks! {
 		Mixer::<T>::initialize().unwrap();
 
 		let mixer_id: T::GroupId = 0u32.into();
-		let balance: T::Balance = 10_000u32.into();
+		let balance = T::Balance::max_value();
 		let _ = <Balances<T> as Currency<_>>::make_free_balance_be(&caller, balance);
 
 		let pc_gens = PedersenGens::default();
