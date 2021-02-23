@@ -253,7 +253,7 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-	pub const TransactionByteFee: Balance = 10 * MILLICENTS;
+	pub const TransactionByteFee: Balance = 10 * MILLICENT;
 	pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
 	pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
 	pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
@@ -288,6 +288,12 @@ parameter_types! {
 	pub const MixerModuleId: ModuleId = ModuleId(*b"py/mixer");
 	pub const MinimumDepositLength: BlockNumber = 10 * 60 * 24 * 28;
 	pub const DefaultAdminKey: AccountId32 = AccountId32::new([0; 32]);
+		pub MixerSizes: Vec<Balance> = [
+		DOLLAR / 10,
+		DOLLAR,
+		DOLLAR * 10,
+		DOLLAR * 100
+	].to_vec();
 }
 
 impl mixer::Config for Runtime {
@@ -297,6 +303,7 @@ impl mixer::Config for Runtime {
 	type Event = Event;
 	type Group = Merkle;
 	type MaxMixerTreeDepth = MaxTreeDepth;
+	type MixerSizes = MixerSizes;
 	type ModuleId = MixerModuleId;
 	type WeightInfo = MixerWeights<Self>;
 }
