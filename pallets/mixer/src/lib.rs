@@ -325,17 +325,21 @@ impl<T: Config> Module<T> {
 		Admin::<T>::set(default_admin);
 		let depth: u8 = <T as Config>::MaxTreeDepth::get();
 
+		// Getting the sizes from the config
 		let sizes = T::MixerSizes::get();
 		let mut mixer_ids = Vec::new();
 
 		// Iterating over configured sizes and initializing the mixers
 		for size in sizes.into_iter() {
+			// Creating a new merkle group and getting the id back
 			let mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
+			// Creating mixer info data
 			let mixer_info = MixerInfo::<T> {
 				fixed_deposit_size: size,
 				minimum_deposit_length_for_reward: T::DepositLength::get(),
 				leaves: Vec::new(),
 			};
+			// Saving the mixer group to storage
 			MixerGroups::<T>::insert(mixer_id, mixer_info);
 			mixer_ids.push(mixer_id);
 		}
