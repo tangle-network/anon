@@ -19,7 +19,7 @@ jobs:
           name: Check install
       - checkout
       - run: ~/anon/scripts/init.sh
-      - run: source ~/.cargo/env && ~/anon/scripts/build.sh
       - run: source ~/.cargo/env && ~/anon/scripts/test.sh
+      - run: source ~/.cargo/env && ~/anon/scripts/build.sh
 orbs:
   browser-tools: circleci/browser-tools@1.1.1
