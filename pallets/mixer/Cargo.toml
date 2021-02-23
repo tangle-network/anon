@@ -9,6 +9,24 @@ version = '3.0.0'
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
+[dependencies]
+balances = { version = "3.0.0", default-features = false, package = "pallet-balances" }
+frame-support = { default-features = false, version = '3.0.0' }
+frame-system = { default-features = false, version = '3.0.0' }
+sp-std = { default-features = false, version = "3.0.0" }
+sp-runtime = { default-features = false, version = '3.0.0' }
+merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
+serde = { version = "1.0.101", optional = true, features = ["derive"] }
+bulletproofs = { version = "2.0.0", branch = "main", git = "https://github.com/edgeware-builders/bulletproofs", default-features = false, features = ["yoloproofs"] }
+merlin = { version = "2.0.0", default-features = false }
+frame-benchmarking = { default-features = false, version = "3.0.0", optional = true }
+
+[dependencies.curve25519-gadgets]
+branch = "main"
+version = "2.0.0"
+git = "https://github.com/webb-tools/bulletproof-gadgets"
+default-features = false
+
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
 default-features = false
@@ -23,19 +41,6 @@ features = ["u64_backend", "alloc"]
 
 [dependencies.bencher]
 version = "0.1.5"
-
-[dependencies]
-balances = { version = "3.0.0", default-features = false, package = "pallet-balances" }
-frame-support = { default-features = false, version = '3.0.0' }
-frame-system = { default-features = false, version = '3.0.0' }
-sp-std = { default-features = false, version = "3.0.0" }
-sp-runtime = { default-features = false, version = '3.0.0' }
-merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
-serde = { version = "1.0.101", optional = true, features = ["derive"] }
-curve25519-gadgets = { path = "../../gadgets", default-features = false }
-bulletproofs = { version = "2.0.0", branch = "main", git = "https://github.com/edgeware-builders/bulletproofs", default-features = false, features = ["yoloproofs"] }
-merlin = { version = "2.0.0", default-features = false }
-frame-benchmarking = { default-features = false, version = "3.0.0", optional = true }
 
 [dev-dependencies]
 sp-core = { default-features = false, version = '3.0.0' }

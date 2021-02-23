@@ -8,7 +8,6 @@ edition = "2018"
 
 [dependencies]
 wasm-bindgen = { version = "0.2.69", features = ["serde-serialize"] }
-curve25519-gadgets = { path = "../gadgets" }
 js-sys = "0.3.46"
 console_error_panic_hook = "0.1.6"
 rand = { version = "0.7", features = ["wasm-bindgen"] }
@@ -22,6 +21,11 @@ version = "2.0.0"
 git = "https://github.com/edgeware-builders/bulletproofs"
 default-features = false
 features = ["yoloproofs"]
+
+[dependencies.curve25519-gadgets]
+branch = "main"
+version = "2.0.0"
+git = "https://github.com/webb-tools/bulletproof-gadgets"
 
 [dependencies.curve25519-dalek]
 version = "3.0.0"
