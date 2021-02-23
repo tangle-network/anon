@@ -47,12 +47,12 @@ pub mod currency {
 	use super::Balance;
 
 	// 12 zeros for easier testing
-	pub const DOLLAR: Balance = 1_000_000_000_000;
-	pub const CENT: Balance = DOLLAR / 100; // assume this is worth about a cent.
-	pub const MILLICENT: Balance = CENT / 1_000;
+	pub const DOLLARS: Balance = 1_000_000_000_000;
+	pub const CENTS: Balance = DOLLARS / 100; // assume this is worth about a cent.
+	pub const MILLICENTS: Balance = CENTS / 1_000;
 
 	pub const fn deposit(items: u32, bytes: u32) -> Balance {
-		items as Balance * 15 * CENT + (bytes as Balance) * 6 * CENT
+		items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS
 	}
 }
 
@@ -253,7 +253,7 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-	pub const TransactionByteFee: Balance = 10 * MILLICENT;
+	pub const TransactionByteFee: Balance = 10 * MILLICENTS;
 	pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
 	pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
 	pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
@@ -288,11 +288,11 @@ parameter_types! {
 	pub const MixerModuleId: ModuleId = ModuleId(*b"py/mixer");
 	pub const MinimumDepositLength: BlockNumber = 10 * 60 * 24 * 28;
 	pub const DefaultAdminKey: AccountId32 = AccountId32::new([0; 32]);
-		pub MixerSizes: Vec<Balance> = [
-		DOLLAR / 10,
-		DOLLAR,
-		DOLLAR * 10,
-		DOLLAR * 100
+	pub MixerSizes: Vec<Balance> = [
+		DOLLARS / 10,
+		DOLLARS,
+		DOLLARS * 10,
+		DOLLARS * 100
 	].to_vec();
 }
 
