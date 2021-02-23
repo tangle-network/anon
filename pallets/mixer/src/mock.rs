@@ -1,7 +1,7 @@
 use super::*;
 use crate as pallet_mixer;
 use frame_support::{construct_runtime, parameter_types, weights::Weight};
-use frame_system as system;
+use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
 use merkle::weights::Weights as MerkleWeights;
 use pallet_mixer::weights::Weights;
 use sp_core::H256;
@@ -10,7 +10,6 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	ModuleId, Perbill,
 };
-use system::mocking::{MockBlock, MockUncheckedExtrinsic};
 pub(crate) type Balance = u64;
 
 // Configure a mock runtime to test the pallet.
@@ -23,7 +22,7 @@ construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: system::{Module, Call, Config, Storage, Event<T>},
+		System: frame_system::{Module, Call, Config, Storage, Event<T>},
 		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
 		MerkleGroups: merkle::{Module, Call, Storage, Event<T>},
 		Mixer: pallet_mixer::{Module, Call, Storage, Event<T>},
@@ -101,7 +100,7 @@ impl Config for Test {
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
 	type Group = MerkleGroups;
-	type MaxTreeDepth = MaxTreeDepth;
+	type MaxMixerTreeDepth = MaxTreeDepth;
 	type ModuleId = MixerModuleId;
 	type WeightInfo = Weights<Self>;
 }

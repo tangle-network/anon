@@ -1,5 +1,3 @@
-#![cfg(feature = "runtime-benchmarks")]
-
 use super::*;
 use curve25519_gadgets::poseidon::Poseidon_hash_2;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
@@ -40,7 +38,7 @@ benchmarks! {
 	}: _(RawOrigin::Signed(caller), false, Some(d as u8))
 	verify {
 		let next_id: T::GroupId = Merkle::<T>::next_group_id();
-		let curr_id = next_id - 1.into();
+		let curr_id = next_id - 1u32.into();
 		let group: GroupTree = Groups::<T>::get(curr_id).unwrap();
 		assert_eq!(group.depth, d as u8);
 	}
@@ -51,10 +49,10 @@ benchmarks! {
 		setup_tree::<T>(caller.clone(), 32);
 	}:
 	// Manager is not required initially
-	_(RawOrigin::Signed(caller.clone()), 0.into(), false)
+	_(RawOrigin::Signed(caller.clone()), 0u32.into(), false)
 	verify {
 		// Checking if manager is caller and is not required
-		let group_id: T::GroupId = 0.into();
+		let group_id: T::GroupId = 0u32.into();
 		let manager = Managers::<T>::get(group_id).unwrap();
 		assert_eq!(manager.required, false);
 		assert_eq!(manager.account_id, caller.into());
@@ -67,9 +65,9 @@ benchmarks! {
 		setup_tree::<T>(caller.clone(), 32);
 	}:
 	// Transfering the admin role to `new_admin`
-	_(RawOrigin::Signed(caller), 0.into(), new_admin.clone())
+	_(RawOrigin::Signed(caller), 0u32.into(), new_admin.clone())
 	verify {
-		let group_id: T::GroupId = 0.into();
+		let group_id: T::GroupId = 0u32.into();
 		let manager = Managers::<T>::get(group_id).unwrap();
 		assert_eq!(manager.required, true);
 		assert_eq!(manager.account_id, new_admin);
@@ -81,9 +79,9 @@ benchmarks! {
 	}:
 	// Setting the stopped storage item, this doesnt't effect
 	// any other functionality of the tree
-	_(RawOrigin::Signed(caller.clone()), 0.into(), true)
+	_(RawOrigin::Signed(caller.clone()), 0u32.into(), true)
 	verify {
-		let group_id: T::GroupId = 0.into();
+		let group_id: T::GroupId = 0u32.into();
 		let stopped = Stopped::<T>::get(group_id);
 		assert!(stopped);
 	}
@@ -98,9 +96,9 @@ benchmarks! {
 		let leaves = vec![Data::zero(); n as usize];
 
 		setup_tree::<T>(caller.clone(), 32);
-	}: _(RawOrigin::Signed(caller.clone()), 0.into(), leaves)
+	}: _(RawOrigin::Signed(caller.clone()), 0u32.into(), leaves)
 	verify {
-		let group_id: T::GroupId = 0.into();
+		let group_id: T::GroupId = 0u32.into();
 		let group_tree: GroupTree = Groups::<T>::get(group_id).unwrap();
 		assert_eq!(group_tree.leaf_count, n);
 	}
@@ -111,7 +109,7 @@ benchmarks! {
 		let leaf_data = Data::zero();
 		setup_tree::<T>(caller.clone(), d);
 		let path = get_proof(d);
-	}: verify(RawOrigin::Signed(caller), 0.into(), leaf_data, path)
+	}: verify(RawOrigin::Signed(caller), 0u32.into(), leaf_data, path)
 	verify {
 	}
 
@@ -120,7 +118,7 @@ benchmarks! {
 		// We are running on_finalize more that 10 times to make sure
 		// highest_block - lowest_block is > 10 so that
 		// CachedRoots::<T>::remove_prefix is called
-		let num_blocks = 13;
+		let num_blocks = 13u32;
 
 		let caller: T::AccountId = whitelisted_caller();
 		setup_tree::<T>(caller.clone(), 32);
@@ -135,7 +133,7 @@ benchmarks! {
 			System::<T>::set_block_number(curr_block_number);
 			// Adding 100 leaves every block
 			let leaves = vec![Data::from([42; 32]); 100];
-			Merkle::<T>::add_members(RawOrigin::Signed(caller.clone()).into(), 0.into(), leaves).unwrap();
+			Merkle::<T>::add_members(RawOrigin::Signed(caller.clone()).into(), 0u32.into(), leaves).unwrap();
 		}
 	}: {
 		// Calling on finalize
