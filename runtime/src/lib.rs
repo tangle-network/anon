@@ -289,10 +289,10 @@ parameter_types! {
 	pub const MinimumDepositLength: BlockNumber = 10 * 60 * 24 * 28;
 	pub const DefaultAdminKey: AccountId32 = AccountId32::new([0; 32]);
 	pub MixerSizes: Vec<Balance> = [
-		DOLLARS / 10,
-		DOLLARS,
-		DOLLARS * 10,
-		DOLLARS * 100
+		DOLLARS * 1_000,
+		DOLLARS * 10_000,
+		DOLLARS * 100_000,
+		DOLLARS * 1_000_000
 	].to_vec();
 }
 
