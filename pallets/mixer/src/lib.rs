@@ -323,7 +323,7 @@ impl<T: Config> Module<T> {
 		let default_admin = T::DefaultAdmin::get();
 		// Initialize the admin in storage with default one
 		Admin::<T>::set(default_admin);
-		let depth: u8 = <T as Config>::MaxTreeDepth::get();
+		let depth: u8 = <T as Config>::MaxMixerTreeDepth::get();
 
 		// Getting the sizes from the config
 		let sizes = T::MixerSizes::get();
