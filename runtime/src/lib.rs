@@ -46,12 +46,13 @@ pub use sp_runtime::BuildStorage;
 pub mod currency {
 	use super::Balance;
 
-	pub const MILLICENTS: Balance = 1_000_000_000;
-	pub const CENTS: Balance = 1_000 * MILLICENTS; // assume this is worth about a cent.
-	pub const DOLLARS: Balance = 100 * CENTS;
+	// 12 zeros for easier testing
+	pub const DOLLAR: Balance = 1_000_000_000_000;
+	pub const CENT: Balance = DOLLAR / 100; // assume this is worth about a cent.
+	pub const MILLICENT: Balance = CENT / 1_000;
 
 	pub const fn deposit(items: u32, bytes: u32) -> Balance {
-		items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS
+		items as Balance * 15 * CENT + (bytes as Balance) * 6 * CENT
 	}
 }
 
