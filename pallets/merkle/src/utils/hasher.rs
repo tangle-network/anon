@@ -1,4 +1,3 @@
-
 use bulletproofs::{
 	r1cs::{LinearCombination, Prover, Verifier},
 	PedersenGens,
