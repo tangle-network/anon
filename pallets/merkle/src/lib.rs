@@ -1,13 +1,81 @@
+// A runtime module Groups with necessary imports
+
+// Feel free to remove or edit this file as needed.
+// If you change the name of this file, make sure to update its references in
+// runtime/src/lib.rs If you remove this file, you can remove those references
+
+// For more guidance on Substrate modules, see the example module
+// https://github.com/paritytech/substrate/blob/master/frame/example/src/lib.rs
+
+//! # Merkle Pallet
+//!
+//! The Merkle pallet provides functionality for making and managing the Merkle
+//! trees.
+//!
+//! - [`Config`]
+//! - [`Call`]
+//! - [`Pallet`]
+//!
+//! ## Overview
+//!
+//! The Merkle pallet provides functions for:
+//!
+//! - Creating merkle trees.
+//! - Adding the manager and setting whether the manager is required.
+//! - Adding leaf data to the Merkle tree.
+//! - Adding nullifiers to the storage.
+//! - Managing start/stop flags.
+//! - Caching merkle tree states.
+//! - Verifying regular and zero-knowledge membership proofs
+//!
+//! ### Terminology
+//!
+//! - **Membership proof in zero-knowladge:** Proving that leaf is inside the
+//!   tree without revealing which leaf you are proving over.
+//!
+//! - **Proof of creation in zero-knowladge:** TBA
+//!
+//! - **Nullifier:** Each leaf is made with an arithmetic circuit which includes
+//!   hashing several values. Nullifier is a part of this leaf circuit and is
+//!   revealed when proving membership in zero-knowladge.
+//!
+//! ### Implementations
+//!
+//! The merkle pallet provides implementations for following traits:
+//!
+//! - [`Group`](pallet_merkle::group_trait::Group) Functions for crerating and
+//!   managing the group.
+//!
+//! ## Interface
+//!
+//! ### Dispatchable functions
+//!
+//! - `create_group` - Create merkle tree and their respective manager account.
+//! - `set_manager_required` - Set whether manager is required to add members
+//!   and nullifiers.
+//! - `set_manager` - Set manager account id. Can only be called by the root or
+//!   the current manager.
+//! - `set_stopped` - Sets stopped storage flag. This flag by itself doesn't do
+//!   anything. It's up to a higher level pallets to make an appropriate use of
+//!   it. Can only be called by the root or the manager;
+//! - `add_members` Adds an array of leaves to the tree. Can only be called by
+//!   the manager if the manager is required.
+//! - `verify` - Verifies the membership proof.
+//!
+//! ## Usage
+//!
+//! The following examples show how to use the Merkle pallet in your custom
+//! pallet.
+//!
+//! ```
+//! use pallet_merkle::group_trait::Group;
+//! pub trait Config: frame_system::Config + pallet_merkle::Config {
+//! 	type Group: Group<Self::AccountId, Self::BlockNumber, Self::GroupId>;
+//! }
+//! ```
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
-/// A runtime module Groups with necessary imports
-
-/// Feel free to remove or edit this file as needed.
-/// If you change the name of this file, make sure to update its references in
-/// runtime/src/lib.rs If you remove this file, you can remove those references
-
-/// For more guidance on Substrate modules, see the example module
-/// https://github.com/paritytech/substrate/blob/master/frame/example/src/lib.rs
 pub mod utils;
 
 #[cfg(test)]
