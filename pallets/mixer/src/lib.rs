@@ -33,7 +33,7 @@ use merkle::{
 	Group as GroupTrait, Module as MerkleModule,
 };
 use sp_runtime::{
-	traits::{AccountIdConversion, One, Zero},
+	traits::{AccountIdConversion, Zero},
 	ModuleId,
 };
 use sp_std::prelude::*;
@@ -69,6 +69,8 @@ pub mod pallet {
 		type DefaultAdmin: Get<Self::AccountId>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
+		// Available mixes sizes (Size is determend by the deposit amount)
+		type MixerSizes: Get<Vec<BalanceOf<Self>>>;
 	}
 
 	#[pallet::storage]
@@ -321,42 +323,29 @@ impl<T: Config> Module<T> {
 		let default_admin = T::DefaultAdmin::get();
 		// Initialize the admin in storage with default one
 		Admin::<T>::set(default_admin);
-
-		let one: BalanceOf<T> = One::one();
 		let depth: u8 = <T as Config>::MaxMixerTreeDepth::get();
-		// create small mixer and assign the module as the manager
-		let small_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
-		let small_mixer_info = MixerInfo::<T> {
-			fixed_deposit_size: one * 1_000u32.into(),
-			minimum_deposit_length_for_reward: T::DepositLength::get(),
-			leaves: Vec::new(),
-		};
-		MixerGroups::<T>::insert(small_mixer_id, small_mixer_info);
-		// create medium mixer and assign the module as the manager
-		let med_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
-		let med_mixer_info = MixerInfo::<T> {
-			fixed_deposit_size: one * 10_000u32.into(),
-			minimum_deposit_length_for_reward: T::DepositLength::get(),
-			leaves: Vec::new(),
-		};
-		MixerGroups::<T>::insert(med_mixer_id, med_mixer_info);
-		// create large mixer and assign the module as the manager
-		let large_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
-		let large_mixer_info = MixerInfo::<T> {
-			fixed_deposit_size: one * 100_000u32.into(),
-			minimum_deposit_length_for_reward: T::DepositLength::get(),
-			leaves: Vec::new(),
-		};
-		MixerGroups::<T>::insert(large_mixer_id, large_mixer_info);
-		// create larger mixer and assign the module as the manager
-		let huge_mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
-		let huge_mixer_info = MixerInfo::<T> {
-			fixed_deposit_size: one * 1_000_000u32.into(),
-			minimum_deposit_length_for_reward: T::DepositLength::get(),
-			leaves: Vec::new(),
-		};
-		MixerGroups::<T>::insert(huge_mixer_id, huge_mixer_info);
-		MixerGroupIds::<T>::set(vec![small_mixer_id, med_mixer_id, large_mixer_id, huge_mixer_id]);
+
+		// Getting the sizes from the config
+		let sizes = T::MixerSizes::get();
+		let mut mixer_ids = Vec::new();
+
+		// Iterating over configured sizes and initializing the mixers
+		for size in sizes.into_iter() {
+			// Creating a new merkle group and getting the id back
+			let mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
+			// Creating mixer info data
+			let mixer_info = MixerInfo::<T> {
+				fixed_deposit_size: size,
+				minimum_deposit_length_for_reward: T::DepositLength::get(),
+				leaves: Vec::new(),
+			};
+			// Saving the mixer group to storage
+			MixerGroups::<T>::insert(mixer_id, mixer_info);
+			mixer_ids.push(mixer_id);
+		}
+
+		// Setting the mixer ids
+		MixerGroupIds::<T>::set(mixer_ids);
 
 		Initialised::<T>::set(true);
 		Ok(())

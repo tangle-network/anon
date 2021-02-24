@@ -92,6 +92,7 @@ impl merkle::Config for Test {
 parameter_types! {
 	pub const MixerModuleId: ModuleId = ModuleId(*b"py/mixer");
 	pub const DefaultAdmin: u64 = 4;
+	pub MixerSizes: Vec<Balance> = [1_000, 10_000, 100_000, 1_000_000].to_vec();
 }
 
 impl Config for Test {
@@ -101,6 +102,7 @@ impl Config for Test {
 	type Event = Event;
 	type Group = MerkleGroups;
 	type MaxMixerTreeDepth = MaxTreeDepth;
+	type MixerSizes = MixerSizes;
 	type ModuleId = MixerModuleId;
 	type WeightInfo = Weights<Self>;
 }

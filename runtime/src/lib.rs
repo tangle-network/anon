@@ -46,9 +46,10 @@ pub use sp_runtime::BuildStorage;
 pub mod currency {
 	use super::Balance;
 
-	pub const MILLICENTS: Balance = 1_000_000_000;
-	pub const CENTS: Balance = 1_000 * MILLICENTS; // assume this is worth about a cent.
-	pub const DOLLARS: Balance = 100 * CENTS;
+	// 12 zeros for easier testing
+	pub const DOLLARS: Balance = 1_000_000_000_000;
+	pub const CENTS: Balance = DOLLARS / 100; // assume this is worth about a cent.
+	pub const MILLICENTS: Balance = CENTS / 1_000;
 
 	pub const fn deposit(items: u32, bytes: u32) -> Balance {
 		items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS
@@ -287,6 +288,12 @@ parameter_types! {
 	pub const MixerModuleId: ModuleId = ModuleId(*b"py/mixer");
 	pub const MinimumDepositLength: BlockNumber = 10 * 60 * 24 * 28;
 	pub const DefaultAdminKey: AccountId32 = AccountId32::new([0; 32]);
+	pub MixerSizes: Vec<Balance> = [
+		DOLLARS * 1_000,
+		DOLLARS * 10_000,
+		DOLLARS * 100_000,
+		DOLLARS * 1_000_000
+	].to_vec();
 }
 
 impl mixer::Config for Runtime {
@@ -296,6 +303,7 @@ impl mixer::Config for Runtime {
 	type Event = Event;
 	type Group = Merkle;
 	type MaxMixerTreeDepth = MaxTreeDepth;
+	type MixerSizes = MixerSizes;
 	type ModuleId = MixerModuleId;
 	type WeightInfo = MixerWeights<Self>;
 }
