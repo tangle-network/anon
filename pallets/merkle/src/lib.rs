@@ -299,6 +299,18 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Creates a new group and sets a new manager for that group. The
+		/// initial manager is the sender. Also increments the mixer id counter
+		/// in the storage. If _depth is not provided, max tree depth is
+		/// assumed.
+		///
+		/// # <weight>
+		/// - Dependent on arguments: _depth
+		///
+		/// - Base weight: 7_618_000
+		/// - DB weights: 1 read, 3 writes
+		/// - Additional weights: 151_000 * _depth
+		/// # <weight>
 		#[pallet::weight(<T as Config>::WeightInfo::create_group(_depth.map_or(T::MaxTreeDepth::get() as u32, |x| x as u32)))]
 		pub fn create_group(origin: OriginFor<T>, r_is_mgr: bool, _depth: Option<u8>) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
@@ -310,6 +322,17 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Sets if manager is required for specific actions like adding
+		/// nullifiers or leaves into the tree.
+		///
+		/// Can only be called by the root or the current manager.
+		///
+		/// # <weight>
+		/// - Independend of the arguments.
+		///
+		/// - Base weight: 8_000_000
+		/// - DB weight: 1 read, 1 write
+		/// # <weight>
 		#[pallet::weight(<T as Config>::WeightInfo::set_manager_required())]
 		pub fn set_manager_required(
 			origin: OriginFor<T>,
@@ -322,6 +345,16 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Sets manager account id.
+		///
+		/// Can only be called by the root or the current manager.
+		///
+		/// # <weight>
+		/// - Independent of the arguments.
+		///
+		/// - Base weight: 8_000_000
+		/// - DB weight: 1 read, 1 write
+		/// # <weight>
 		#[pallet::weight(<T as Config>::WeightInfo::set_manager())]
 		pub fn set_manager(
 			origin: OriginFor<T>,
@@ -340,6 +373,16 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Set stopped flag inside the storage.
+		///
+		/// Can only be called by the root or the current manager.
+		///
+		/// # <weight>
+		/// - Independent of the arguments.
+		///
+		/// - Base weight: 7_000_000
+		/// - DB weight: 1 read, 1 write
+		/// # <weight>
 		#[pallet::weight(<T as Config>::WeightInfo::set_stopped())]
 		pub fn set_stopped(origin: OriginFor<T>, group_id: T::GroupId, stopped: bool) -> DispatchResultWithPostInfo {
 			let manager_data = Managers::<T>::get(group_id)
@@ -350,6 +393,16 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Adds an array of leaf data into the tree and adds calculated root to
+		/// the cache.
+		///
+		/// Can only be called by the manager if manager is set.
+		///
+		/// # <weight>
+		/// - Base weight: 305_389_489_000
+		/// - DB weight: 3 reads, 2 writes
+		/// - Additional weights: 63_659_275_000 * members.len()
+		/// # <weight>
 		#[pallet::weight(<T as Config>::WeightInfo::add_members(members.len() as u32))]
 		pub fn add_members(
 			origin: OriginFor<T>,
@@ -365,6 +418,14 @@ pub mod pallet {
 		/// not need to be used directly as extrinsics. Rather, higher-order
 		/// modules should use the module functions to verify and execute
 		/// further logic.
+		///
+		/// Verifies the membership proof.
+		///
+		/// # <weight>
+		/// - Base weight: 310_970_311_000
+		/// - DB weight: 1 read
+		/// - Additional weights: 3_666_683_000 * path.len()
+		/// # <weight>
 		#[pallet::weight(<T as Config>::WeightInfo::verify_path(path.len() as u32))]
 		pub fn verify(
 			origin: OriginFor<T>,
