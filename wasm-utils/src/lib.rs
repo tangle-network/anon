@@ -1,7 +1,15 @@
+#![allow(clippy::vec_init_then_push)]
+
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use curve25519_dalek::scalar::Scalar;
-use curve25519_gadgets::fixed_deposit_tree::builder::{FixedDepositTree, FixedDepositTreeBuilder};
-use js_sys::{Array, JsString, Map};
+use curve25519_gadgets::{
+	fixed_deposit_tree::builder::{FixedDepositTree, FixedDepositTreeBuilder},
+	poseidon::{
+		builder::{Poseidon, PoseidonBuilder},
+		gen_mds_matrix, gen_round_keys, PoseidonSbox,
+	},
+};
+use js_sys::{Array, JsString, Map, Uint8Array};
 use merlin::Transcript;
 use std::collections::hash_map::HashMap;
 use wasm_bindgen::prelude::*;
@@ -47,6 +55,92 @@ pub enum OperationCode {
 	DeserializationFailed = 11,
 }
 
+#[wasm_bindgen]
+pub struct PoseidonHasherOptions {
+	/// The size of the permutation, in field elements.
+	width: usize,
+	/// Number of full SBox rounds in beginning
+	pub full_rounds_beginning: Option<usize>,
+	/// Number of full SBox rounds in end
+	pub full_rounds_end: Option<usize>,
+	/// Number of partial rounds
+	pub partial_rounds: Option<usize>,
+	/// The desired (classical) security level, in bits.
+	pub security_bits: Option<usize>,
+	/// Bulletproof generators for proving/verifying (serialized)
+	#[wasm_bindgen(skip)]
+	pub bp_gens: Option<BulletproofGens>,
+}
+
+impl Default for PoseidonHasherOptions {
+	fn default() -> Self {
+		Self {
+			width: 6,
+			full_rounds_beginning: None,
+			full_rounds_end: None,
+			partial_rounds: None,
+			security_bits: None,
+			bp_gens: None,
+		}
+	}
+}
+
+#[wasm_bindgen]
+impl PoseidonHasherOptions {
+	#[wasm_bindgen(constructor)]
+	pub fn new() -> Self {
+		Self::default()
+	}
+
+	#[wasm_bindgen(setter)]
+	pub fn set_bp_gens(&mut self, value: Uint8Array) {
+		let bp_gens: BulletproofGens =
+			bincode::deserialize(&value.to_vec()).unwrap_or_else(|_| BulletproofGens::new(4096, 1));
+		self.bp_gens = Some(bp_gens);
+	}
+
+	#[wasm_bindgen(getter)]
+	pub fn bp_gens(&self) -> Uint8Array {
+		let val = self.bp_gens.clone().unwrap_or_else(|| BulletproofGens::new(4096, 1));
+		let serialized = bincode::serialize(&val).unwrap_or_else(|_| Vec::new());
+		Uint8Array::from(serialized.as_slice())
+	}
+}
+
+#[wasm_bindgen]
+pub struct PoseidonHasher {
+	inner: Poseidon,
+}
+
+#[wasm_bindgen]
+impl PoseidonHasher {
+	pub fn default() -> Self {
+		Self::with_options(Default::default())
+	}
+
+	#[wasm_bindgen(constructor)]
+	pub fn with_options(opts: PoseidonHasherOptions) -> Self {
+		let full_rounds_beginning = opts.full_rounds_beginning.unwrap_or(3);
+		let full_rounds_end = opts.full_rounds_end.unwrap_or(3);
+		let partial_rounds = opts.partial_rounds.unwrap_or(57);
+
+		// default pedersen genrators
+		let pc_gens = PedersenGens::default();
+		let bp_gens = opts.bp_gens.clone().unwrap_or_else(|| BulletproofGens::new(4096, 1));
+
+		let total_rounds = full_rounds_beginning + full_rounds_end + partial_rounds;
+		let inner = PoseidonBuilder::new(opts.width)
+			.num_rounds(full_rounds_beginning, full_rounds_end, partial_rounds)
+			.round_keys(gen_round_keys(opts.width, total_rounds))
+			.mds_matrix(gen_mds_matrix(opts.width))
+			.sbox(PoseidonSbox::Inverse)
+			.bulletproof_gens(bp_gens)
+			.pedersen_gens(pc_gens)
+			.build();
+		Self { inner }
+	}
+}
+
 impl OperationCode {
 	fn into_js(self) -> JsValue {
 		JsValue::from(self as u8)
@@ -83,27 +177,32 @@ pub struct Mixer {
 impl Mixer {
 	fn get_tree_mut(&mut self, asset: String, id: u8) -> Result<&mut FixedDepositTree, OperationCode> {
 		self.tree_map
-			.get_mut(&(asset.to_owned(), id))
+			.get_mut(&(asset, id))
 			.ok_or(OperationCode::MerkleTreeNotFound)
 	}
 
 	fn get_tree(&self, asset: String, id: u8) -> Result<&FixedDepositTree, OperationCode> {
-		self.tree_map
-			.get(&(asset.to_owned(), id))
-			.ok_or(OperationCode::MerkleTreeNotFound)
+		self.tree_map.get(&(asset, id)).ok_or(OperationCode::MerkleTreeNotFound)
 	}
 }
 
 // Implementation available to JS
 #[wasm_bindgen]
 impl Mixer {
-	pub fn new(trees_js: JsValue) -> Result<Mixer, JsValue> {
+	#[wasm_bindgen(constructor)]
+	pub fn new(trees_js: JsValue, poseidon: PoseidonHasher) -> Result<Mixer, JsValue> {
 		let trees: Vec<(String, u8, usize)> = trees_js
 			.into_serde()
 			.map_err(|_| OperationCode::DeserializationFailed.into_js())?;
 		let mut tree_map = HashMap::new();
 		for (asset, id, depth) in trees {
-			tree_map.insert((asset, id), FixedDepositTreeBuilder::new().depth(depth).build());
+			tree_map.insert(
+				(asset, id),
+				FixedDepositTreeBuilder::new()
+					.hash_params(poseidon.inner.clone())
+					.depth(depth)
+					.build(),
+			);
 		}
 		Ok(Mixer { tree_map })
 	}
@@ -142,7 +241,7 @@ impl Mixer {
 		let mut parts: Vec<String> = Vec::new();
 		parts.push(NOTE_PREFIX.to_string());
 		parts.push(VERSION.to_string());
-		parts.push(format!("{}", asset));
+		parts.push(asset);
 		parts.push(format!("{}", id));
 		if let Some(bn) = block_number {
 			parts.push(format!("{}", bn));
@@ -161,7 +260,7 @@ impl Mixer {
 	pub fn save_note(&mut self, note_js: JsString) -> Result<Map, JsValue> {
 		let note: String = note_js.into();
 
-		let parts: Vec<&str> = note.split("-").collect();
+		let parts: Vec<&str> = note.split('-').collect();
 		let partial = parts.len() == 5;
 		let full = parts.len() == 6;
 		if !partial && !full {
@@ -306,7 +405,7 @@ mod tests {
 		let top_level_arr = Array::new();
 		top_level_arr.push(&arr);
 		let js_trees = JsValue::from(top_level_arr);
-		let mut mixer = Mixer::new(js_trees).unwrap();
+		let mut mixer = Mixer::new(js_trees, PoseidonHasher::default()).unwrap();
 
 		let invalid_leafs = JsValue::from(1);
 		let leaf_res = mixer.add_leaves(asset.to_string(), id, invalid_leafs, JsValue::NULL);
@@ -329,7 +428,7 @@ mod tests {
 		let top_level_arr = Array::new();
 		top_level_arr.push(&arr);
 		let js_trees = JsValue::from(top_level_arr);
-		let mut mixer = Mixer::new(js_trees).unwrap();
+		let mut mixer = Mixer::new(js_trees, PoseidonHasher::default()).unwrap();
 		let leaf1 = Scalar::from(1u32);
 		let leaf2 = Scalar::from(2u32);
 		let leaf3 = Scalar::from(3u32);
@@ -364,7 +463,7 @@ mod tests {
 		let top_level_arr = Array::new();
 		top_level_arr.push(&arr);
 		let js_trees = JsValue::from(top_level_arr);
-		let mut mixer = Mixer::new(js_trees).unwrap();
+		let mut mixer = Mixer::new(js_trees, PoseidonHasher::default()).unwrap();
 
 		// Partial note
 		let note_js = mixer.generate_note(asset.to_owned(), id, None).unwrap();
@@ -410,7 +509,7 @@ mod tests {
 		let top_level_arr = Array::new();
 		top_level_arr.push(&arr);
 		let js_trees = JsValue::from(top_level_arr);
-		let mut mixer = Mixer::new(js_trees).unwrap();
+		let mut mixer = Mixer::new(js_trees, PoseidonHasher::default()).unwrap();
 		let tree = mixer.get_tree_mut(asset.to_owned(), id).unwrap();
 		let leaf1 = tree.generate_secrets();
 		let leaf2 = Scalar::from(2u32);
@@ -458,7 +557,7 @@ mod tests {
 		let top_level_arr = Array::new();
 		top_level_arr.push(&arr);
 		let js_trees = JsValue::from(top_level_arr);
-		let mut mixer = Mixer::new(js_trees).unwrap();
+		let mut mixer = Mixer::new(js_trees, PoseidonHasher::default()).unwrap();
 		let tree = mixer.get_tree_mut(asset.to_owned(), id).unwrap();
 		let leaf1 = tree.generate_secrets();
 		let leaf2 = Scalar::from(2u32);

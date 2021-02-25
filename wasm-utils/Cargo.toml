@@ -13,14 +13,14 @@ console_error_panic_hook = "0.1.6"
 rand = { version = "0.7", features = ["wasm-bindgen"] }
 merlin = { version = "2.0.0", default-features = false }
 getrandom = { version = "0.2", features = ["js"] }
-wasm-bindgen-test = "0.3.20"
+bincode = "1.3.2"
 
 [dependencies.bulletproofs]
 branch = "main"
 version = "2.0.0"
 git = "https://github.com/edgeware-builders/bulletproofs"
 default-features = false
-features = ["yoloproofs"]
+features = ["yoloproofs", "std"]
 
 [dependencies.curve25519-gadgets]
 branch = "main"
@@ -34,3 +34,12 @@ features = ["u64_backend", "alloc"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+# This makes the compiled code faster and smaller, but it makes compiling slower,
+# so it's only enabled in release mode.
+lto = true
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.20"
+
