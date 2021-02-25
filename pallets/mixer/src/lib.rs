@@ -72,6 +72,7 @@ pub mod pallet {
 		type MixerSizes: Get<Vec<BalanceOf<Self>>>;
 	}
 
+	/// Flag indicating if the mixer is initialized.
 	#[pallet::storage]
 	#[pallet::getter(fn initialised)]
 	pub type Initialised<T: Config> = StorageValue<_, bool, ValueQuery>;
@@ -103,12 +104,15 @@ pub mod pallet {
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	#[pallet::metadata(<T as frame_system::Config>::AccountId = "AccountId", <T as merkle::Config>::GroupId = "GroupId")]
 	pub enum Event<T: Config> {
+		/// New deposit added to the specific mixer
 		Deposit(
 			<T as merkle::Config>::GroupId,
 			<T as frame_system::Config>::AccountId,
 			ScalarData,
 		),
+		/// Withdrawal from the specific mixer
 		Withdraw(
 			<T as merkle::Config>::GroupId,
 			<T as frame_system::Config>::AccountId,
@@ -177,6 +181,18 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Deposits the fixed amount into the mixer with id of `mixer_id`
+		/// Multiple deposits can be inserted together since `data_points` is an
+		/// array.
+		///
+		/// Fails in case the mixer is stopped or not initialized.
+		///
+		/// Weights:
+		/// - Dependent on argument: `data_points`
+		///
+		/// - Base weight: 311_882_044_000
+		/// - DB weights: 8 reads, 5 writes
+		/// - Additional weights: 46_199_137_000 * data_points.len()
 		#[pallet::weight(<T as Config>::WeightInfo::deposit(data_points.len() as u32))]
 		pub fn deposit(
 			origin: OriginFor<T>,
@@ -211,6 +227,16 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Withdraws a deposited amount from the mixer. Can only withdraw one
+		/// deposit. Accepts a proof of membership along with the mixer id.
+		///
+		/// Fails if the mixer is stopped or not initialized.
+		///
+		/// Weights:
+		/// - Independent of the arguments.
+		///
+		/// - Base weight: 1_078_562_000_000
+		/// - DB weights: 9 reads, 3 writes
 		#[pallet::weight(<T as Config>::WeightInfo::withdraw())]
 		pub fn withdraw(
 			origin: OriginFor<T>,
@@ -250,6 +276,14 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Stops the operation of all the mixers managed by the pallet.
+		/// Can only be called by the admin or the root origin.
+		///
+		/// Weights:
+		/// - Independent of the arguments.
+		///
+		/// - Base weight: 36_000_000
+		/// - DB weights: 6 reads, 4 writes
 		#[pallet::weight(<T as Config>::WeightInfo::set_stopped())]
 		pub fn set_stopped(origin: OriginFor<T>, stopped: bool) -> DispatchResultWithPostInfo {
 			// Ensure the caller is admin or root
@@ -262,6 +296,14 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Transfers the admin from the caller to the specified `to` account.
+		/// Can only be called by the current admin or the root origin.
+		///
+		/// Weights:
+		/// - Independent of the arguments.
+		///
+		/// - Base weight: 7_000_000
+		/// - DB weights: 1 read, 1 write
 		#[pallet::weight(<T as Config>::WeightInfo::transfer_admin())]
 		pub fn transfer_admin(origin: OriginFor<T>, to: T::AccountId) -> DispatchResultWithPostInfo {
 			// Ensures that the caller is the root or the current admin

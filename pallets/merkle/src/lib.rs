@@ -304,13 +304,12 @@ pub mod pallet {
 		/// in the storage. If _depth is not provided, max tree depth is
 		/// assumed.
 		///
-		/// # <weight>
+		/// Weights:
 		/// - Dependent on arguments: _depth
 		///
 		/// - Base weight: 7_618_000
 		/// - DB weights: 1 read, 3 writes
 		/// - Additional weights: 151_000 * _depth
-		/// # <weight>
 		#[pallet::weight(<T as Config>::WeightInfo::create_group(_depth.map_or(T::MaxTreeDepth::get() as u32, |x| x as u32)))]
 		pub fn create_group(origin: OriginFor<T>, r_is_mgr: bool, _depth: Option<u8>) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
@@ -327,12 +326,11 @@ pub mod pallet {
 		///
 		/// Can only be called by the root or the current manager.
 		///
-		/// # <weight>
+		/// Weights:
 		/// - Independend of the arguments.
 		///
 		/// - Base weight: 8_000_000
-		/// - DB weight: 1 read, 1 write
-		/// # <weight>
+		/// - DB weights: 1 read, 1 write
 		#[pallet::weight(<T as Config>::WeightInfo::set_manager_required())]
 		pub fn set_manager_required(
 			origin: OriginFor<T>,
@@ -349,12 +347,11 @@ pub mod pallet {
 		///
 		/// Can only be called by the root or the current manager.
 		///
-		/// # <weight>
+		/// Weights:
 		/// - Independent of the arguments.
 		///
 		/// - Base weight: 8_000_000
-		/// - DB weight: 1 read, 1 write
-		/// # <weight>
+		/// - DB weights: 1 read, 1 write
 		#[pallet::weight(<T as Config>::WeightInfo::set_manager())]
 		pub fn set_manager(
 			origin: OriginFor<T>,
@@ -377,12 +374,11 @@ pub mod pallet {
 		///
 		/// Can only be called by the root or the current manager.
 		///
-		/// # <weight>
+		/// Weights:
 		/// - Independent of the arguments.
 		///
 		/// - Base weight: 7_000_000
-		/// - DB weight: 1 read, 1 write
-		/// # <weight>
+		/// - DB weights: 1 read, 1 write
 		#[pallet::weight(<T as Config>::WeightInfo::set_stopped())]
 		pub fn set_stopped(origin: OriginFor<T>, group_id: T::GroupId, stopped: bool) -> DispatchResultWithPostInfo {
 			let manager_data = Managers::<T>::get(group_id)
@@ -398,11 +394,12 @@ pub mod pallet {
 		///
 		/// Can only be called by the manager if manager is set.
 		///
-		/// # <weight>
+		/// Weights:
+		/// - Dependent on argument: `members`
+		///
 		/// - Base weight: 305_389_489_000
-		/// - DB weight: 3 reads, 2 writes
+		/// - DB weights: 3 reads, 2 writes
 		/// - Additional weights: 63_659_275_000 * members.len()
-		/// # <weight>
 		#[pallet::weight(<T as Config>::WeightInfo::add_members(members.len() as u32))]
 		pub fn add_members(
 			origin: OriginFor<T>,
@@ -421,11 +418,11 @@ pub mod pallet {
 		///
 		/// Verifies the membership proof.
 		///
-		/// # <weight>
+		/// Weights:
+		/// - Dependent on the argument: `path`
 		/// - Base weight: 310_970_311_000
-		/// - DB weight: 1 read
+		/// - DB weights: 1 read
 		/// - Additional weights: 3_666_683_000 * path.len()
-		/// # <weight>
 		#[pallet::weight(<T as Config>::WeightInfo::verify_path(path.len() as u32))]
 		pub fn verify(
 			origin: OriginFor<T>,
