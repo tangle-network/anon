@@ -40,6 +40,9 @@ use sp_runtime::{
 use sp_std::prelude::*;
 use weights::WeightInfo;
 
+pub use pallet::*;
+
+/// Implementation of Mixer pallet
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -315,8 +318,10 @@ pub mod pallet {
 	}
 }
 
+/// Type alias for the balances_pallet::Balance type
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
+/// Info about the mixer and it's leaf data
 #[derive(Encode, Decode, PartialEq)]
 pub struct MixerInfo<T: Config> {
 	pub minimum_deposit_length_for_reward: T::BlockNumber,

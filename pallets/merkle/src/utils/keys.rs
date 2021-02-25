@@ -1,3 +1,5 @@
+//! Type definitions used in merkle pallet
+
 use sha2::Sha512;
 use sp_std::prelude::*;
 

@@ -76,6 +76,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod traits;
 pub mod utils;
 
 #[cfg(test)]
@@ -88,7 +89,7 @@ pub mod tests;
 mod benchmarking;
 pub mod weights;
 
-pub use crate::group_trait::Group;
+pub use crate::traits::Group;
 use bulletproofs::{
 	r1cs::{R1CSProof, Verifier},
 	BulletproofGens, PedersenGens,
@@ -118,9 +119,8 @@ use utils::{
 };
 use weights::WeightInfo;
 
-pub mod group_trait;
-
 // TODO find better way to have default hasher without saving it inside storage
+/// Default hasher instance used to construct the tree
 pub fn default_hasher() -> Poseidon {
 	let width = 6;
 	let (full_b, full_e) = (4, 4);
@@ -139,6 +139,7 @@ pub fn default_hasher() -> Poseidon {
 
 pub use pallet::*;
 
+/// Implementation of Merkle pallet
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -196,18 +197,6 @@ pub mod pallet {
 		ManagerIsRequired,
 		///
 		ManagerDoesntExist,
-	}
-
-	#[derive(Clone, Encode, Decode, PartialEq)]
-	pub struct Manager<T: Config> {
-		pub account_id: T::AccountId,
-		pub required: bool,
-	}
-
-	impl<T: Config> Manager<T> {
-		pub fn new(account_id: T::AccountId, required: bool) -> Self {
-			Self { account_id, required }
-		}
 	}
 
 	#[pallet::event]
@@ -437,6 +426,27 @@ pub mod pallet {
 	}
 }
 
+/// Data about the manager of the GroupTree
+#[derive(Clone, Encode, Decode, PartialEq)]
+pub struct Manager<T: Config> {
+	/// Accound id of the manager
+	pub account_id: T::AccountId,
+	/// Is manager required to execute guarded functions in the tree
+	pub required: bool,
+}
+
+impl<T: Config> Manager<T> {
+	pub fn new(account_id: T::AccountId, required: bool) -> Self {
+		Self { account_id, required }
+	}
+}
+
+/// Essential data about the tree
+///
+/// It holds:
+/// - Current state of the tree
+/// - Data needed for the next insert into the tree
+/// - Limits of the tree
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Clone, Encode, Decode, PartialEq)]
 pub struct GroupTree {
