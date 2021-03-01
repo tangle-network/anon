@@ -15,8 +15,8 @@ use frame_support::{
 };
 use frame_system::RawOrigin;
 use merkle::{
-    utils::keys::{Commitment, ScalarData},
-    HighestCachedBlock,
+	utils::keys::{Commitment, ScalarData},
+	HighestCachedBlock,
 };
 use merlin::Transcript;
 use sp_runtime::{traits::BadOrigin, DispatchError};

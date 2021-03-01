@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
-    mock::*,
-    utils::keys::{Commitment, ScalarData},
+	mock::*,
+	utils::keys::{Commitment, ScalarData},
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use curve25519_dalek::{ristretto::RistrettoPoint, scalar::Scalar};
@@ -394,37 +394,37 @@ fn should_verify_proof_of_membership() {
 		let _root_hash = Poseidon_hash_2(key3_1, key3_2, &h);
 
 		let path = vec![
-            (true, keys_data[1]),
-            (true, ScalarData(key1_2)),
-            (true, ScalarData(key2_2)),
-            (true, ScalarData(key3_2)),
+			(true, keys_data[1]),
+			(true, ScalarData(key1_2)),
+			(true, ScalarData(key2_2)),
+			(true, ScalarData(key3_2)),
 		];
 
 		assert_ok!(MerkleGroups::verify(Origin::signed(2), 0, keys_data[0], path));
 
 		let path = vec![
-            (true, keys_data[5]),
-            (true, ScalarData(key1_4)),
-            (false, ScalarData(key2_1)),
-            (true, ScalarData(key3_2)),
+			(true, keys_data[5]),
+			(true, ScalarData(key1_4)),
+			(false, ScalarData(key2_1)),
+			(true, ScalarData(key3_2)),
 		];
 
 		assert_ok!(MerkleGroups::verify(Origin::signed(2), 0, keys_data[4], path));
 
 		let path = vec![
-            (true, keys_data[11]),
-            (false, ScalarData(key1_5)),
-            (true, ScalarData(key2_4)),
-            (false, ScalarData(key3_1)),
+			(true, keys_data[11]),
+			(false, ScalarData(key1_5)),
+			(true, ScalarData(key2_4)),
+			(false, ScalarData(key3_1)),
 		];
 
 		assert_ok!(MerkleGroups::verify(Origin::signed(2), 0, keys_data[10], path));
 
 		let path = vec![
-            (true, zero_h0),
-            (false, ScalarData(key1_7)),
-            (false, ScalarData(key2_3)),
-            (false, ScalarData(key3_1)),
+			(true, zero_h0),
+			(false, ScalarData(key1_7)),
+			(false, ScalarData(key2_3)),
+			(false, ScalarData(key3_1)),
 		];
 
 		assert_ok!(MerkleGroups::verify(Origin::signed(2), 0, keys_data[14], path));
@@ -664,7 +664,10 @@ fn should_verify_zk_proof_of_membership() {
 		];
 		ftree.tree.add_leaves(keys.clone(), None);
 
-		let keys_data: Vec<ScalarData> = keys.iter().map(|x| ScalarData(Scalar::from_bytes_mod_order(*x))).collect();
+		let keys_data: Vec<ScalarData> = keys
+			.iter()
+			.map(|x| ScalarData(Scalar::from_bytes_mod_order(*x)))
+			.collect();
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(3),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, keys_data));
 

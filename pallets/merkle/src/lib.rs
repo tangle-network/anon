@@ -45,8 +45,8 @@ use merlin::Transcript;
 use rand_core::OsRng;
 use sp_runtime::traits::{AtLeast32Bit, One};
 use utils::{
-    keys::{Commitment, ScalarData},
-    permissions::ensure_admin,
+	keys::{Commitment, ScalarData},
+	permissions::ensure_admin,
 };
 use weights::WeightInfo;
 
@@ -167,8 +167,15 @@ pub mod pallet {
 	/// since we can remove all keys of first map past a certain point.
 	#[pallet::storage]
 	#[pallet::getter(fn cached_roots)]
-	pub type CachedRoots<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, T::BlockNumber, Blake2_128Concat, T::GroupId, Vec<ScalarData>, ValueQuery>;
+	pub type CachedRoots<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::BlockNumber,
+		Blake2_128Concat,
+		T::GroupId,
+		Vec<ScalarData>,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_manager)]
@@ -277,9 +284,9 @@ pub mod pallet {
 
 		#[pallet::weight(<T as Config>::WeightInfo::add_members(members.len() as u32))]
 		pub fn add_members(
-            origin: OriginFor<T>,
-            group_id: T::GroupId,
-            members: Vec<ScalarData>,
+			origin: OriginFor<T>,
+			group_id: T::GroupId,
+			members: Vec<ScalarData>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			<Self as Group<_, _, _>>::add_members(sender, group_id, members)?;
@@ -292,10 +299,10 @@ pub mod pallet {
 		/// further logic.
 		#[pallet::weight(<T as Config>::WeightInfo::verify_path(path.len() as u32))]
 		pub fn verify(
-            origin: OriginFor<T>,
-            group_id: T::GroupId,
-            leaf: ScalarData,
-            path: Vec<(bool, ScalarData)>,
+			origin: OriginFor<T>,
+			group_id: T::GroupId,
+			leaf: ScalarData,
+			path: Vec<(bool, ScalarData)>,
 		) -> DispatchResultWithPostInfo {
 			let _sender = ensure_signed(origin)?;
 			<Self as Group<_, _, _>>::verify(group_id, leaf, path)?;
@@ -316,7 +323,10 @@ pub struct GroupTree {
 
 impl GroupTree {
 	pub fn new<T: Config>(depth: u8) -> Self {
-		let init_edges: Vec<ScalarData> = ZERO_TREE[0..depth as usize].iter().map(|x| ScalarData::from(*x)).collect();
+		let init_edges: Vec<ScalarData> = ZERO_TREE[0..depth as usize]
+			.iter()
+			.map(|x| ScalarData::from(*x))
+			.collect();
 		let init_root = ScalarData::from(ZERO_TREE[depth as usize]);
 		Self {
 			root_hash: init_root,
@@ -387,7 +397,11 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 		Ok(())
 	}
 
-	fn add_members(sender: T::AccountId, id: T::GroupId, members: Vec<ScalarData>) -> Result<(), dispatch::DispatchError> {
+	fn add_members(
+		sender: T::AccountId,
+		id: T::GroupId,
+		members: Vec<ScalarData>,
+	) -> Result<(), dispatch::DispatchError> {
 		let mut tree = Groups::<T>::get(id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
 		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		// Check if the tree requires extrinsics to be called from a manager
@@ -415,9 +429,9 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 	}
 
 	fn add_nullifier(
-        sender: T::AccountId,
-        id: T::GroupId,
-        nullifier_hash: ScalarData,
+		sender: T::AccountId,
+		id: T::GroupId,
+		nullifier_hash: ScalarData,
 	) -> Result<(), dispatch::DispatchError> {
 		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		// Check if the tree requires extrinsics to be called from a manager
@@ -457,14 +471,14 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 	}
 
 	fn verify_zk_membership_proof(
-        group_id: T::GroupId,
-        cached_block: T::BlockNumber,
-        cached_root: ScalarData,
-        comms: Vec<Commitment>,
-        nullifier_hash: ScalarData,
-        proof_bytes: Vec<u8>,
-        leaf_index_commitments: Vec<Commitment>,
-        proof_commitments: Vec<Commitment>,
+		group_id: T::GroupId,
+		cached_block: T::BlockNumber,
+		cached_root: ScalarData,
+		comms: Vec<Commitment>,
+		nullifier_hash: ScalarData,
+		proof_bytes: Vec<u8>,
+		leaf_index_commitments: Vec<Commitment>,
+		proof_commitments: Vec<Commitment>,
 	) -> Result<(), dispatch::DispatchError> {
 		let tree = Groups::<T>::get(group_id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
 		ensure!(
@@ -492,14 +506,14 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 	}
 
 	fn verify_zk(
-        pc_gens: PedersenGens,
-        m_root: ScalarData,
-        depth: u8,
-        comms: Vec<Commitment>,
-        nullifier_hash: ScalarData,
-        proof_bytes: Vec<u8>,
-        leaf_index_commitments: Vec<Commitment>,
-        proof_commitments: Vec<Commitment>,
+		pc_gens: PedersenGens,
+		m_root: ScalarData,
+		depth: u8,
+		comms: Vec<Commitment>,
+		nullifier_hash: ScalarData,
+		proof_bytes: Vec<u8>,
+		leaf_index_commitments: Vec<Commitment>,
+		proof_commitments: Vec<Commitment>,
 	) -> Result<(), dispatch::DispatchError> {
 		let label = b"zk_membership_proof";
 		let h = default_hasher();

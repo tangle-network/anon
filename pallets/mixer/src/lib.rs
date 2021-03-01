@@ -32,13 +32,13 @@ use merkle::{
 	},
 	Group as GroupTrait, Module as MerkleModule,
 };
+pub use pallet::*;
 use sp_runtime::{
 	traits::{AccountIdConversion, Zero},
 	ModuleId,
 };
 use sp_std::prelude::*;
 use weights::WeightInfo;
-pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {

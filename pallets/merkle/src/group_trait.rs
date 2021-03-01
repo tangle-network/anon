@@ -21,23 +21,23 @@ pub trait Group<AccountId, BlockNumber, GroupId> {
 	fn add_nullifier(sender: AccountId, id: GroupId, nullifier: ScalarData) -> Result<(), dispatch::DispatchError>;
 	fn verify(id: GroupId, leaf: ScalarData, path: Vec<(bool, ScalarData)>) -> Result<(), dispatch::DispatchError>;
 	fn verify_zk_membership_proof(
-        group_id: GroupId,
-        cached_block: BlockNumber,
-        cached_root: ScalarData,
-        comms: Vec<Commitment>,
-        nullifier_hash: ScalarData,
-        proof_bytes: Vec<u8>,
-        leaf_index_commitments: Vec<Commitment>,
-        proof_commitments: Vec<Commitment>,
+		group_id: GroupId,
+		cached_block: BlockNumber,
+		cached_root: ScalarData,
+		comms: Vec<Commitment>,
+		nullifier_hash: ScalarData,
+		proof_bytes: Vec<u8>,
+		leaf_index_commitments: Vec<Commitment>,
+		proof_commitments: Vec<Commitment>,
 	) -> Result<(), dispatch::DispatchError>;
 	fn verify_zk(
-        pc_gens: PedersenGens,
-        m_root: ScalarData,
-        depth: u8,
-        comms: Vec<Commitment>,
-        nullifier_hash: ScalarData,
-        proof_bytes: Vec<u8>,
-        leaf_index_commitments: Vec<Commitment>,
-        proof_commitments: Vec<Commitment>,
+		pc_gens: PedersenGens,
+		m_root: ScalarData,
+		depth: u8,
+		comms: Vec<Commitment>,
+		nullifier_hash: ScalarData,
+		proof_bytes: Vec<u8>,
+		leaf_index_commitments: Vec<Commitment>,
+		proof_commitments: Vec<Commitment>,
 	) -> Result<(), dispatch::DispatchError>;
 }
