@@ -27,7 +27,7 @@ use frame_support::{
 use frame_system::ensure_signed;
 use merkle::{
 	utils::{
-		keys::{Commitment, Data},
+		keys::{Commitment, ScalarData},
 		permissions::ensure_admin,
 	},
 	Group as GroupTrait, Module as MerkleModule,
@@ -38,7 +38,6 @@ use sp_runtime::{
 };
 use sp_std::prelude::*;
 use weights::WeightInfo;
-
 pub use pallet::*;
 
 #[frame_support::pallet]
@@ -108,12 +107,12 @@ pub mod pallet {
 		Deposit(
 			<T as merkle::Config>::GroupId,
 			<T as frame_system::Config>::AccountId,
-			Data,
+			ScalarData,
 		),
 		Withdraw(
 			<T as merkle::Config>::GroupId,
 			<T as frame_system::Config>::AccountId,
-			Data,
+			ScalarData,
 		),
 	}
 
@@ -182,7 +181,7 @@ pub mod pallet {
 		pub fn deposit(
 			origin: OriginFor<T>,
 			mixer_id: T::GroupId,
-			data_points: Vec<Data>,
+			data_points: Vec<ScalarData>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
@@ -217,9 +216,9 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			mixer_id: T::GroupId,
 			cached_block: T::BlockNumber,
-			cached_root: Data,
+			cached_root: ScalarData,
 			comms: Vec<Commitment>,
-			nullifier_hash: Data,
+			nullifier_hash: ScalarData,
 			proof_bytes: Vec<u8>,
 			leaf_index_commitments: Vec<Commitment>,
 			proof_commitments: Vec<Commitment>,
@@ -280,7 +279,7 @@ pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system:
 pub struct MixerInfo<T: Config> {
 	pub minimum_deposit_length_for_reward: T::BlockNumber,
 	pub fixed_deposit_size: BalanceOf<T>,
-	pub leaves: Vec<Data>,
+	pub leaves: Vec<ScalarData>,
 }
 
 impl<T: Config> core::default::Default for MixerInfo<T> {
@@ -294,7 +293,7 @@ impl<T: Config> core::default::Default for MixerInfo<T> {
 }
 
 impl<T: Config> MixerInfo<T> {
-	pub fn new(min_dep_length: T::BlockNumber, dep_size: BalanceOf<T>, leaves: Vec<Data>) -> Self {
+	pub fn new(min_dep_length: T::BlockNumber, dep_size: BalanceOf<T>, leaves: Vec<ScalarData>) -> Self {
 		Self {
 			minimum_deposit_length_for_reward: min_dep_length,
 			fixed_deposit_size: dep_size,

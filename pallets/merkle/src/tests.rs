@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
-	mock::*,
-	utils::keys::{Commitment, Data},
+    mock::*,
+    utils::keys::{Commitment, ScalarData},
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use curve25519_dalek::{ristretto::RistrettoPoint, scalar::Scalar};
@@ -105,7 +105,7 @@ fn cannot_update_manager_required_as_not_manager() {
 #[test]
 fn can_add_member() {
 	new_test_ext().execute_with(|| {
-		let key = Data::from(key_bytes(1));
+		let key = ScalarData::from(key_bytes(1));
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(3),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![key.clone()]));
@@ -115,7 +115,7 @@ fn can_add_member() {
 #[test]
 fn can_add_member_as_manager() {
 	new_test_ext().execute_with(|| {
-		let key = Data::from(key_bytes(1));
+		let key = ScalarData::from(key_bytes(1));
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), true, Some(3),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![key.clone()]));
@@ -125,7 +125,7 @@ fn can_add_member_as_manager() {
 #[test]
 fn cannot_add_member_as_not_manager() {
 	new_test_ext().execute_with(|| {
-		let key = Data::from(key_bytes(1));
+		let key = ScalarData::from(key_bytes(1));
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), true, Some(3),));
 		assert_err!(
@@ -182,7 +182,7 @@ fn should_not_have_0_depth() {
 #[test]
 fn should_have_min_depth() {
 	new_test_ext().execute_with(|| {
-		let key = Data::from(key_bytes(1));
+		let key = ScalarData::from(key_bytes(1));
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
 
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![key.clone()]));
@@ -214,11 +214,11 @@ fn should_not_have_more_than_max_depth() {
 fn should_have_correct_root_hash_after_insertion() {
 	new_test_ext().execute_with(|| {
 		let h = default_hasher(4096);
-		let key0 = Data::from(key_bytes(0));
-		let key1 = Data::from(key_bytes(1));
-		let key2 = Data::from(key_bytes(2));
-		let zero_h0 = Data::from(ZERO_TREE[0]);
-		let zero_h1 = Data::from(ZERO_TREE[1]);
+		let key0 = ScalarData::from(key_bytes(0));
+		let key1 = ScalarData::from(key_bytes(1));
+		let key2 = ScalarData::from(key_bytes(2));
+		let zero_h0 = ScalarData::from(ZERO_TREE[0]);
+		let zero_h1 = ScalarData::from(ZERO_TREE[1]);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(2),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![key0.clone()]));
@@ -259,10 +259,10 @@ fn should_have_correct_root_hash() {
 		for i in 0..15 {
 			keys.push(Scalar::from_bytes_mod_order(key_bytes(i as u8)))
 		}
-		let zero_h0 = Data::from(ZERO_TREE[0]);
+		let zero_h0 = ScalarData::from(ZERO_TREE[0]);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(4),));
-		let keys_data: Vec<Data> = keys.iter().map(|x| Data(*x)).collect();
+		let keys_data: Vec<ScalarData> = keys.iter().map(|x| ScalarData(*x)).collect();
 		assert_ok!(MerkleGroups::add_members(Origin::signed(0), 0, keys_data.clone()));
 
 		let key1_1 = Poseidon_hash_2(keys[0], keys[1], &h);
@@ -293,9 +293,9 @@ fn should_have_correct_root_hash() {
 #[test]
 fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 	new_test_ext().execute_with(|| {
-		let key0 = Data::from(key_bytes(0));
-		let key1 = Data::from(key_bytes(1));
-		let key2 = Data::from(key_bytes(2));
+		let key0 = ScalarData::from(key_bytes(0));
+		let key1 = ScalarData::from(key_bytes(1));
+		let key2 = ScalarData::from(key_bytes(2));
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(2),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(0), 0, vec![
 			key0.clone(),
@@ -321,10 +321,10 @@ fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 fn should_not_verify_invalid_proof() {
 	new_test_ext().execute_with(|| {
 		let h = default_hasher(4096);
-		let key0 = Data::from(key_bytes(9));
-		let key1 = Data::from(key_bytes(3));
-		let key2 = Data::from(key_bytes(5));
-		let zero_h0 = Data::from(ZERO_TREE[0]);
+		let key0 = ScalarData::from(key_bytes(9));
+		let key1 = ScalarData::from(key_bytes(3));
+		let key2 = ScalarData::from(key_bytes(5));
+		let zero_h0 = ScalarData::from(ZERO_TREE[0]);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(2),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![
@@ -337,21 +337,21 @@ fn should_not_verify_invalid_proof() {
 		let keyh2 = Poseidon_hash_2(key2.0, zero_h0.0, &h);
 		let _root_hash = Poseidon_hash_2(keyh1, keyh2, &h);
 
-		let path = vec![(false, key1), (true, Data(keyh2))];
+		let path = vec![(false, key1), (true, ScalarData(keyh2))];
 
 		assert_err!(
 			MerkleGroups::verify(Origin::signed(2), 0, key0, path),
 			Error::<Test>::InvalidMembershipProof,
 		);
 
-		let path = vec![(true, key1), (false, Data(keyh2))];
+		let path = vec![(true, key1), (false, ScalarData(keyh2))];
 
 		assert_err!(
 			MerkleGroups::verify(Origin::signed(2), 0, key0, path),
 			Error::<Test>::InvalidMembershipProof,
 		);
 
-		let path = vec![(true, key2), (true, Data(keyh1))];
+		let path = vec![(true, key2), (true, ScalarData(keyh1))];
 
 		assert_err!(
 			MerkleGroups::verify(Origin::signed(2), 0, key0, path),
@@ -368,10 +368,10 @@ fn should_verify_proof_of_membership() {
 		for i in 0..15 {
 			keys.push(Scalar::from_bytes_mod_order(key_bytes(i as u8)))
 		}
-		let zero_h0 = Data::from(ZERO_TREE[0]);
+		let zero_h0 = ScalarData::from(ZERO_TREE[0]);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(4),));
-		let keys_data: Vec<Data> = keys.iter().map(|x| Data(*x)).collect();
+		let keys_data: Vec<ScalarData> = keys.iter().map(|x| ScalarData(*x)).collect();
 		assert_ok!(MerkleGroups::add_members(Origin::signed(0), 0, keys_data.clone()));
 
 		let key1_1 = Poseidon_hash_2(keys[0], keys[1], &h);
@@ -394,37 +394,37 @@ fn should_verify_proof_of_membership() {
 		let _root_hash = Poseidon_hash_2(key3_1, key3_2, &h);
 
 		let path = vec![
-			(true, keys_data[1]),
-			(true, Data(key1_2)),
-			(true, Data(key2_2)),
-			(true, Data(key3_2)),
+            (true, keys_data[1]),
+            (true, ScalarData(key1_2)),
+            (true, ScalarData(key2_2)),
+            (true, ScalarData(key3_2)),
 		];
 
 		assert_ok!(MerkleGroups::verify(Origin::signed(2), 0, keys_data[0], path));
 
 		let path = vec![
-			(true, keys_data[5]),
-			(true, Data(key1_4)),
-			(false, Data(key2_1)),
-			(true, Data(key3_2)),
+            (true, keys_data[5]),
+            (true, ScalarData(key1_4)),
+            (false, ScalarData(key2_1)),
+            (true, ScalarData(key3_2)),
 		];
 
 		assert_ok!(MerkleGroups::verify(Origin::signed(2), 0, keys_data[4], path));
 
 		let path = vec![
-			(true, keys_data[11]),
-			(false, Data(key1_5)),
-			(true, Data(key2_4)),
-			(false, Data(key3_1)),
+            (true, keys_data[11]),
+            (false, ScalarData(key1_5)),
+            (true, ScalarData(key2_4)),
+            (false, ScalarData(key3_1)),
 		];
 
 		assert_ok!(MerkleGroups::verify(Origin::signed(2), 0, keys_data[10], path));
 
 		let path = vec![
-			(true, zero_h0),
-			(false, Data(key1_7)),
-			(false, Data(key2_3)),
-			(false, Data(key3_1)),
+            (true, zero_h0),
+            (false, ScalarData(key1_7)),
+            (false, ScalarData(key2_3)),
+            (false, ScalarData(key3_1)),
 		];
 
 		assert_ok!(MerkleGroups::verify(Origin::signed(2), 0, keys_data[14], path));
@@ -446,7 +446,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
-		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
+		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![ScalarData(leaf)]));
 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
@@ -460,7 +460,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 			0,
 			root,
 			comms,
-			Data(nullifier_hash),
+			ScalarData(nullifier_hash),
 			proof.to_bytes(),
 			leaf_index_comms,
 			proof_comms
@@ -483,7 +483,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
-		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
+		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![ScalarData(leaf)]));
 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
@@ -500,7 +500,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 				0,
 				root,
 				comms,
-				Data(nullifier_hash),
+				ScalarData(nullifier_hash),
 				proof.to_bytes(),
 				leaf_index_comms,
 				proof_comms
@@ -525,7 +525,7 @@ fn should_not_verify_invalid_private_inputs() {
 		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
-		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
+		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![ScalarData(leaf)]));
 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
@@ -544,7 +544,7 @@ fn should_not_verify_invalid_private_inputs() {
 				0,
 				root,
 				comms,
-				Data(nullifier_hash),
+				ScalarData(nullifier_hash),
 				proof.to_bytes(),
 				leaf_index_comms,
 				proof_comms
@@ -569,7 +569,7 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
-		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
+		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![ScalarData(leaf)]));
 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
@@ -587,7 +587,7 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 				0,
 				root,
 				comms,
-				Data(nullifier_hash),
+				ScalarData(nullifier_hash),
 				proof.to_bytes(),
 				leaf_index_comms,
 				proof_comms
@@ -612,7 +612,7 @@ fn should_not_verify_invalid_transcript() {
 		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(1),));
-		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
+		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![ScalarData(leaf)]));
 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
@@ -627,7 +627,7 @@ fn should_not_verify_invalid_transcript() {
 				0,
 				root,
 				comms,
-				Data(nullifier_hash),
+				ScalarData(nullifier_hash),
 				proof.to_bytes(),
 				leaf_index_comms,
 				proof_comms
@@ -664,7 +664,7 @@ fn should_verify_zk_proof_of_membership() {
 		];
 		ftree.tree.add_leaves(keys.clone(), None);
 
-		let keys_data: Vec<Data> = keys.iter().map(|x| Data(Scalar::from_bytes_mod_order(*x))).collect();
+		let keys_data: Vec<ScalarData> = keys.iter().map(|x| ScalarData(Scalar::from_bytes_mod_order(*x))).collect();
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(3),));
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, keys_data));
 
@@ -680,7 +680,7 @@ fn should_verify_zk_proof_of_membership() {
 			0,
 			root,
 			comms,
-			Data(nullifier_hash),
+			ScalarData(nullifier_hash),
 			proof.to_bytes(),
 			leaf_index_comms,
 			proof_comms
@@ -702,7 +702,7 @@ fn should_verify_large_zk_proof_of_membership() {
 		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
 		assert_ok!(MerkleGroups::create_group(Origin::signed(1), false, Some(32),));
-		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![Data(leaf)]));
+		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![ScalarData(leaf)]));
 
 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
@@ -716,7 +716,7 @@ fn should_verify_large_zk_proof_of_membership() {
 			0,
 			root,
 			comms,
-			Data(nullifier_hash),
+			ScalarData(nullifier_hash),
 			proof.to_bytes(),
 			leaf_index_comms,
 			proof_comms

@@ -15,8 +15,8 @@ use frame_support::{
 };
 use frame_system::RawOrigin;
 use merkle::{
-	utils::keys::{Commitment, Data},
-	HighestCachedBlock,
+    utils::keys::{Commitment, ScalarData},
+    HighestCachedBlock,
 };
 use merlin::Transcript;
 use sp_runtime::{traits::BadOrigin, DispatchError};
@@ -120,7 +120,7 @@ fn should_stop_and_start_mixer() {
 		assert_ok!(Mixer::initialize());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		let leaf = tree.generate_secrets();
-		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![Data(leaf)]));
+		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![ScalarData(leaf)]));
 
 		// Stopping deposits and withdrawal
 		assert_ok!(Mixer::set_stopped(Origin::signed(default_admin), true));
@@ -133,9 +133,9 @@ fn should_stop_and_start_mixer() {
 				Origin::signed(0),
 				0,
 				0,
-				Data::zero(),
+				ScalarData::zero(),
 				Vec::new(),
-				Data::zero(),
+				ScalarData::zero(),
 				Vec::new(),
 				Vec::new(),
 				Vec::new()
@@ -146,7 +146,7 @@ fn should_stop_and_start_mixer() {
 		// Starting mixer
 		assert_ok!(Mixer::set_stopped(Origin::signed(default_admin), false));
 		let leaf = tree.generate_secrets();
-		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![Data(leaf)]));
+		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![ScalarData(leaf)]));
 	})
 }
 
@@ -158,7 +158,7 @@ fn should_fail_to_deposit_with_insufficient_balance() {
 		for i in 0..4 {
 			let leaf = tree.generate_secrets();
 			assert_err!(
-				Mixer::deposit(Origin::signed(4), i, vec![Data(leaf)]),
+				Mixer::deposit(Origin::signed(4), i, vec![ScalarData(leaf)]),
 				DispatchError::Module {
 					index: 3,
 					error: 4,
@@ -177,7 +177,7 @@ fn should_deposit_into_each_mixer_successfully() {
 		for i in 0..4 {
 			let leaf = tree.generate_secrets();
 			let balance_before = Balances::free_balance(1);
-			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
+			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![ScalarData(leaf)]));
 			let balance_after = Balances::free_balance(1);
 
 			// ensure state updates
@@ -210,7 +210,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 			let leaf = ftree.generate_secrets();
 			ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
-			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
+			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![ScalarData(leaf)]));
 
 			let root = MerkleGroups::get_merkle_root(i).unwrap();
 			let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
@@ -232,7 +232,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 				0,
 				root,
 				comms,
-				Data(nullifier_hash),
+				ScalarData(nullifier_hash),
 				proof.to_bytes(),
 				leaf_index_comms,
 				proof_comms
@@ -252,10 +252,10 @@ fn should_cache_roots_if_no_new_deposits_show() {
 		System::set_block_number(1);
 		assert_ok!(Mixer::initialize());
 		let mut tree = FixedDepositTreeBuilder::new().build();
-		let mut merkle_roots: Vec<Data> = vec![];
+		let mut merkle_roots: Vec<ScalarData> = vec![];
 		for i in 0..4 {
 			let leaf = tree.generate_secrets();
-			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
+			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![ScalarData(leaf)]));
 			let root = MerkleGroups::get_merkle_root(i).unwrap();
 			merkle_roots.push(root);
 			let cache = MerkleGroups::cached_roots(1, i);
@@ -286,10 +286,10 @@ fn should_not_have_cache_once_cache_length_exceeded() {
 		System::set_block_number(1);
 		assert_ok!(Mixer::initialize());
 		let mut tree = FixedDepositTreeBuilder::new().build();
-		let mut merkle_roots: Vec<Data> = vec![];
+		let mut merkle_roots: Vec<ScalarData> = vec![];
 		for i in 0..4 {
 			let leaf = tree.generate_secrets();
-			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![Data(leaf)]));
+			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![ScalarData(leaf)]));
 			let root = MerkleGroups::get_merkle_root(i).unwrap();
 			merkle_roots.push(root);
 			let cache = MerkleGroups::cached_roots(1, i);

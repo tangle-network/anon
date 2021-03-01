@@ -10,7 +10,7 @@ use curve25519_gadgets::{
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::OnFinalize;
 use frame_system::RawOrigin;
-use merkle::{default_hasher, utils::keys::Data};
+use merkle::{default_hasher, utils::keys::ScalarData};
 use merlin::Transcript;
 use sp_runtime::traits::Bounded;
 
@@ -33,7 +33,7 @@ benchmarks! {
 		let _ = <Balances<T> as Currency<_>>::make_free_balance_be(&caller, T::Balance::max_value());
 
 		// Making `d` leaves/data points
-		let data_points = vec![Data::zero(); d as usize];
+		let data_points = vec![ScalarData::zero(); d as usize];
 	}: _(RawOrigin::Signed(caller), mixer_id, data_points)
 	verify {
 		// Checking if deposit is sucessfull by checking number of leaves
@@ -62,7 +62,7 @@ benchmarks! {
 		let leaf = ftree.generate_secrets();
 		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
-		Mixer::<T>::deposit(RawOrigin::Signed(caller.clone()).into(), mixer_id, vec![Data(leaf)]).unwrap();
+		Mixer::<T>::deposit(RawOrigin::Signed(caller.clone()).into(), mixer_id, vec![ScalarData(leaf)]).unwrap();
 
 		let root = Merkle::<T>::get_merkle_root(mixer_id).unwrap();
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
@@ -79,7 +79,7 @@ benchmarks! {
 		block_number,
 		root,
 		comms,
-		Data(nullifier_hash),
+		ScalarData(nullifier_hash),
 		proof.to_bytes(),
 		leaf_index_comms,
 		proof_comms

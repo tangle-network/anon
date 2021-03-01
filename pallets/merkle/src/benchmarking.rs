@@ -3,7 +3,7 @@ use curve25519_gadgets::poseidon::Poseidon_hash_2;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::OnFinalize;
 use frame_system::{Module as System, RawOrigin};
-use utils::keys::Data;
+use utils::keys::ScalarData;
 
 use crate::Module as Merkle;
 
@@ -17,13 +17,13 @@ fn setup_tree<T: Config>(caller: T::AccountId, depth: u32) {
 		.unwrap();
 }
 
-fn get_proof(depth: u32) -> Vec<(bool, Data)> {
+fn get_proof(depth: u32) -> Vec<(bool, ScalarData)> {
 	let hasher = default_hasher();
-	let mut d = Data::zero();
+	let mut d = ScalarData::zero();
 	let mut path = Vec::new();
 	for i in 0..depth {
 		path.push((true, d));
-		d = Data(Poseidon_hash_2(d.0, d.0, &hasher));
+		d = ScalarData(Poseidon_hash_2(d.0, d.0, &hasher));
 	}
 	path
 }
@@ -93,7 +93,7 @@ benchmarks! {
 		let n in 1 .. NUM_LEAVES;
 		let caller: T::AccountId = whitelisted_caller();
 		// Create leaves based on `n`
-		let leaves = vec![Data::zero(); n as usize];
+		let leaves = vec![ScalarData::zero(); n as usize];
 
 		setup_tree::<T>(caller.clone(), 32);
 	}: _(RawOrigin::Signed(caller.clone()), 0u32.into(), leaves)
@@ -106,7 +106,7 @@ benchmarks! {
 	verify_path {
 		let d in 1 .. VERIFY_DEPTH as u32;
 		let caller: T::AccountId = whitelisted_caller();
-		let leaf_data = Data::zero();
+		let leaf_data = ScalarData::zero();
 		setup_tree::<T>(caller.clone(), d);
 		let path = get_proof(d);
 	}: verify(RawOrigin::Signed(caller), 0u32.into(), leaf_data, path)
@@ -132,7 +132,7 @@ benchmarks! {
 			// Bumping the block number so that we can add cached roots to it
 			System::<T>::set_block_number(curr_block_number);
 			// Adding 100 leaves every block
-			let leaves = vec![Data::from([42; 32]); 100];
+			let leaves = vec![ScalarData::from([42; 32]); 100];
 			Merkle::<T>::add_members(RawOrigin::Signed(caller.clone()).into(), 0u32.into(), leaves).unwrap();
 		}
 	}: {

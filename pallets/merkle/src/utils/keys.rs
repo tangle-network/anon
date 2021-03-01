@@ -17,7 +17,7 @@ pub struct Commitment(pub CompressedRistretto);
 #[derive(Eq, PartialEq, Clone, Default, Debug, Copy)]
 pub struct PrivateKey(pub Scalar);
 #[derive(Eq, PartialEq, Clone, Default, Debug, Copy, Hash)]
-pub struct Data(pub Scalar);
+pub struct ScalarData(pub Scalar);
 
 pub const SIZE: usize = 32;
 
@@ -96,34 +96,34 @@ impl Commitment {
 	}
 }
 
-impl Encode for Data {
+impl Encode for ScalarData {
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		(self.0).as_bytes().using_encoded(f)
 	}
 }
 
-impl EncodeLike for Data {}
+impl EncodeLike for ScalarData {}
 
-impl Decode for Data {
+impl Decode for ScalarData {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, codec::Error> {
 		match <[u8; SIZE] as Decode>::decode(input) {
-			Ok(elt) => Ok(Data(Scalar::from_canonical_bytes(elt).unwrap_or(Scalar::zero()))),
+			Ok(elt) => Ok(ScalarData(Scalar::from_canonical_bytes(elt).unwrap_or(Scalar::zero()))),
 			Err(e) => Err(e),
 		}
 	}
 }
 
-impl Data {
+impl ScalarData {
 	pub fn from(b: [u8; 32]) -> Self {
-		Data(Scalar::from_bytes_mod_order(b))
+		ScalarData(Scalar::from_bytes_mod_order(b))
 	}
 
 	pub fn zero() -> Self {
-		Data(Scalar::zero())
+		ScalarData(Scalar::zero())
 	}
 
 	pub fn hash<H: Hasher>(xl: Self, xr: Self, h: &H) -> Self {
-		Data(h.hash(xl.0, xr.0))
+		ScalarData(h.hash(xl.0, xr.0))
 	}
 
 	pub fn constrain_prover<H: Hasher>(
