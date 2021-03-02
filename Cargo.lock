@@ -3592,6 +3592,9 @@ dependencies = [
  "hex-literal",
  "pallet-aura",
  "pallet-balances",
+ "pallet-contracts",
+ "pallet-contracts-primitives",
+ "pallet-contracts-rpc-runtime-api",
  "pallet-grandpa",
  "pallet-merkle",
  "pallet-mixer",
@@ -3802,6 +3805,64 @@ dependencies = [
  "frame-system",
  "parity-scale-codec 2.0.0",
  "serde",
+ "sp-runtime",
+ "sp-std 3.0.0",
+]
+
+[[package]]
+name = "pallet-contracts"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0979c1dd82fc56a87b37311006fe56f406de027c24591353058e9e9fc56487c"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-contracts-primitives",
+ "pallet-contracts-proc-macro",
+ "parity-scale-codec 2.0.0",
+ "parity-wasm",
+ "pwasm-utils 0.16.0",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-sandbox",
+ "sp-std 3.0.0",
+ "wasmi-validation",
+]
+
+[[package]]
+name = "pallet-contracts-primitives"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "621d75148763349f72e76e79f62365d28adb51e3f2e0285e4e8b8600ae600978"
+dependencies = [
+ "bitflags",
+ "parity-scale-codec 2.0.0",
+ "sp-runtime",
+ "sp-std 3.0.0",
+]
+
+[[package]]
+name = "pallet-contracts-proc-macro"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90046017aeee3f77752a6c77cdfb1bc93eb728591dc6edad36e2706f7626fd50"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "pallet-contracts-rpc-runtime-api"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb4b410cb148e68256e3827854a67ec34b16157f448e78173219dcd6a8ec7343"
+dependencies = [
+ "pallet-contracts-primitives",
+ "parity-scale-codec 2.0.0",
+ "sp-api",
  "sp-runtime",
  "sp-std 3.0.0",
 ]
@@ -4597,6 +4658,17 @@ name = "pwasm-utils"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f53bc2558e8376358ebdc28301546471d67336584f6438ed4b7c7457a055fd7"
+dependencies = [
+ "byteorder",
+ "log",
+ "parity-wasm",
+]
+
+[[package]]
+name = "pwasm-utils"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c8ac87af529432d3a4f0e2b3bbf08af49f28f09cc73ed7e551161bdaef5f78d"
 dependencies = [
  "byteorder",
  "log",
@@ -5489,7 +5561,7 @@ dependencies = [
  "log",
  "parity-scale-codec 2.0.0",
  "parity-wasm",
- "pwasm-utils",
+ "pwasm-utils 0.14.0",
  "sc-executor-common",
  "scoped-tls",
  "sp-allocator",
@@ -6735,6 +6807,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "sp-sandbox"
+version = "0.9.0"
+source = "git+https://github.com/paritytech/substrate.git?rev=49a4103#49a4103f4bfef55be20a5c6d26e18ff3003c3353"
+dependencies = [
+ "parity-scale-codec 2.0.0",
+ "sp-core",
+ "sp-io",
+ "sp-std 3.0.0",
+ "sp-wasm-interface",
+ "wasmi",
+]
+
+[[package]]
 name = "sp-serializer"
 version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=49a4103#49a4103f4bfef55be20a5c6d26e18ff3003c3353"
@@ -7653,7 +7738,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04f8ab788026715fa63b31960869617cba39117e520eb415b0139543e325ab59"
 dependencies = [
  "cfg-if 0.1.10",
- "rand 0.3.23",
+ "rand 0.7.3",
  "static_assertions",
 ]
 
@@ -8524,11 +8609,6 @@ source = "git+https://github.com/paritytech/substrate.git?rev=49a4103#49a4103f4b
 [[patch.unused]]
 name = "sp-npos-elections-compact"
 version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?rev=49a4103#49a4103f4bfef55be20a5c6d26e18ff3003c3353"
-
-[[patch.unused]]
-name = "sp-sandbox"
-version = "0.9.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=49a4103#49a4103f4bfef55be20a5c6d26e18ff3003c3353"
 
 [[patch.unused]]
