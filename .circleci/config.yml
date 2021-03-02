@@ -19,6 +19,6 @@ jobs:
           google-chrome --version
       - run: ~/anon/scripts/init.sh
       - run: source ~/.cargo/env && ~/anon/scripts/test.sh
-      - run: source ~/.cargo/env && ~/anon/scripts/build.sh
+      - run: source ~/.cargo/env && ~/anon/scripts/build_benchmarks.sh
 orbs:
   browser-tools: circleci/browser-tools@1.1
