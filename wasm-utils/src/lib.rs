@@ -120,8 +120,8 @@ impl PoseidonHasher {
 
 	#[wasm_bindgen(constructor)]
 	pub fn with_options(opts: PoseidonHasherOptions) -> Self {
-		let full_rounds_beginning = opts.full_rounds_beginning.unwrap_or(3);
-		let full_rounds_end = opts.full_rounds_end.unwrap_or(3);
+		let full_rounds_beginning = opts.full_rounds_beginning.unwrap_or(4);
+		let full_rounds_end = opts.full_rounds_end.unwrap_or(4);
 		let partial_rounds = opts.partial_rounds.unwrap_or(57);
 
 		// default pedersen genrators

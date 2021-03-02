@@ -1,3 +1,5 @@
+//! Utility functions for authorizations and permissions
+
 use frame_system::RawOrigin;
 use sp_runtime::traits::BadOrigin;
 

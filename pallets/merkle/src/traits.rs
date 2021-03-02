@@ -1,3 +1,5 @@
+//! All the traits exposed to be used in other custom pallets
+
 use crate::utils::keys::{Commitment, ScalarData};
 use bulletproofs::PedersenGens;
 pub use frame_support::dispatch;

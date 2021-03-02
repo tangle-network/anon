@@ -1,13 +1,82 @@
+// A runtime module Groups with necessary imports
+
+// Feel free to remove or edit this file as needed.
+// If you change the name of this file, make sure to update its references in
+// runtime/src/lib.rs If you remove this file, you can remove those references
+
+// For more guidance on Substrate modules, see the example module
+// https://github.com/paritytech/substrate/blob/master/frame/example/src/lib.rs
+
+//! # Merkle Pallet
+//!
+//! The Merkle pallet provides functionality for making and managing the Merkle
+//! trees.
+//!
+//! - [`Config`]
+//! - [`Call`]
+//! - [`Pallet`]
+//!
+//! ## Overview
+//!
+//! The Merkle pallet provides functions for:
+//!
+//! - Creating merkle trees.
+//! - Adding the manager and setting whether the manager is required.
+//! - Adding leaf data to the Merkle tree.
+//! - Adding nullifiers to the storage.
+//! - Managing start/stop flags.
+//! - Caching merkle tree states.
+//! - Verifying regular and zero-knowledge membership proofs
+//!
+//! ### Terminology
+//!
+//! - **Membership proof in zero-knowladge:** Proving that leaf is inside the
+//!   tree without revealing which leaf you are proving over.
+//!
+//! - **Proof of creation in zero-knowladge:** TBA
+//!
+//! - **Nullifier:** Each leaf is made with an arithmetic circuit which includes
+//!   hashing several values. Nullifier is a part of this leaf circuit and is
+//!   revealed when proving membership in zero-knowladge.
+//!
+//! ### Implementations
+//!
+//! The merkle pallet provides implementations for following traits:
+//!
+//! - [`Group`](pallet_merkle::traits::Group) Functions for crerating and
+//!   managing the group.
+//!
+//! ## Interface
+//!
+//! ### Dispatchable functions
+//!
+//! - `create_group` - Create merkle tree and their respective manager account.
+//! - `set_manager_required` - Set whether manager is required to add members
+//!   and nullifiers.
+//! - `set_manager` - Set manager account id. Can only be called by the root or
+//!   the current manager.
+//! - `set_stopped` - Sets stopped storage flag. This flag by itself doesn't do
+//!   anything. It's up to a higher level pallets to make an appropriate use of
+//!   it. Can only be called by the root or the manager;
+//! - `add_members` Adds an array of leaves to the tree. Can only be called by
+//!   the manager if the manager is required.
+//! - `verify` - Verifies the membership proof.
+//!
+//! ## Usage
+//!
+//! The following examples show how to use the Merkle pallet in your custom
+//! pallet.
+//!
+//! ```
+//! use pallet_merkle::traits::Group;
+//! pub trait Config: frame_system::Config + pallet_merkle::Config {
+//! 	type Group: Group<Self::AccountId, Self::BlockNumber, Self::GroupId>;
+//! }
+//! ```
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
-/// A runtime module Groups with necessary imports
-
-/// Feel free to remove or edit this file as needed.
-/// If you change the name of this file, make sure to update its references in
-/// runtime/src/lib.rs If you remove this file, you can remove those references
-
-/// For more guidance on Substrate modules, see the example module
-/// https://github.com/paritytech/substrate/blob/master/frame/example/src/lib.rs
+pub mod traits;
 pub mod utils;
 
 #[cfg(test)]
@@ -20,7 +89,6 @@ pub mod tests;
 mod benchmarking;
 pub mod weights;
 
-pub use crate::group_trait::Group;
 use bulletproofs::{
 	r1cs::{R1CSProof, Verifier},
 	BulletproofGens, PedersenGens,
@@ -40,6 +108,7 @@ use curve25519_gadgets::{
 use frame_support::{dispatch, ensure, traits::Get, weights::Weight, Parameter};
 use frame_system::ensure_signed;
 use sp_std::prelude::*;
+pub use traits::Group;
 
 use merlin::Transcript;
 use rand_core::OsRng;
@@ -50,9 +119,8 @@ use utils::{
 };
 use weights::WeightInfo;
 
-pub mod group_trait;
-
 // TODO find better way to have default hasher without saving it inside storage
+/// Default hasher instance used to construct the tree
 pub fn default_hasher() -> Poseidon {
 	let width = 6;
 	let (full_b, full_e) = (4, 4);
@@ -71,6 +139,7 @@ pub fn default_hasher() -> Poseidon {
 
 pub use pallet::*;
 
+/// Implementation of Merkle pallet
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -128,18 +197,6 @@ pub mod pallet {
 		ManagerIsRequired,
 		///
 		ManagerDoesntExist,
-	}
-
-	#[derive(Clone, Encode, Decode, PartialEq)]
-	pub struct Manager<T: Config> {
-		pub account_id: T::AccountId,
-		pub required: bool,
-	}
-
-	impl<T: Config> Manager<T> {
-		pub fn new(account_id: T::AccountId, required: bool) -> Self {
-			Self { account_id, required }
-		}
 	}
 
 	#[pallet::event]
@@ -231,6 +288,17 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Creates a new group and sets a new manager for that group. The
+		/// initial manager is the sender. Also increments the mixer id counter
+		/// in the storage. If _depth is not provided, max tree depth is
+		/// assumed.
+		///
+		/// Weights:
+		/// - Dependent on arguments: _depth
+		///
+		/// - Base weight: 7_618_000
+		/// - DB weights: 1 read, 3 writes
+		/// - Additional weights: 151_000 * _depth
 		#[pallet::weight(<T as Config>::WeightInfo::create_group(_depth.map_or(T::MaxTreeDepth::get() as u32, |x| x as u32)))]
 		pub fn create_group(origin: OriginFor<T>, r_is_mgr: bool, _depth: Option<u8>) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
@@ -242,6 +310,16 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Sets if manager is required for specific actions like adding
+		/// nullifiers or leaves into the tree.
+		///
+		/// Can only be called by the root or the current manager.
+		///
+		/// Weights:
+		/// - Independend of the arguments.
+		///
+		/// - Base weight: 8_000_000
+		/// - DB weights: 1 read, 1 write
 		#[pallet::weight(<T as Config>::WeightInfo::set_manager_required())]
 		pub fn set_manager_required(
 			origin: OriginFor<T>,
@@ -254,6 +332,15 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Sets manager account id.
+		///
+		/// Can only be called by the root or the current manager.
+		///
+		/// Weights:
+		/// - Independent of the arguments.
+		///
+		/// - Base weight: 8_000_000
+		/// - DB weights: 1 read, 1 write
 		#[pallet::weight(<T as Config>::WeightInfo::set_manager())]
 		pub fn set_manager(
 			origin: OriginFor<T>,
@@ -272,6 +359,15 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Set stopped flag inside the storage.
+		///
+		/// Can only be called by the root or the current manager.
+		///
+		/// Weights:
+		/// - Independent of the arguments.
+		///
+		/// - Base weight: 7_000_000
+		/// - DB weights: 1 read, 1 write
 		#[pallet::weight(<T as Config>::WeightInfo::set_stopped())]
 		pub fn set_stopped(origin: OriginFor<T>, group_id: T::GroupId, stopped: bool) -> DispatchResultWithPostInfo {
 			let manager_data = Managers::<T>::get(group_id)
@@ -282,6 +378,17 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Adds an array of leaf data into the tree and adds calculated root to
+		/// the cache.
+		///
+		/// Can only be called by the manager if manager is set.
+		///
+		/// Weights:
+		/// - Dependent on argument: `members`
+		///
+		/// - Base weight: 305_389_489_000
+		/// - DB weights: 3 reads, 2 writes
+		/// - Additional weights: 63_659_275_000 * members.len()
 		#[pallet::weight(<T as Config>::WeightInfo::add_members(members.len() as u32))]
 		pub fn add_members(
 			origin: OriginFor<T>,
@@ -297,6 +404,14 @@ pub mod pallet {
 		/// not need to be used directly as extrinsics. Rather, higher-order
 		/// modules should use the module functions to verify and execute
 		/// further logic.
+		///
+		/// Verifies the membership proof.
+		///
+		/// Weights:
+		/// - Dependent on the argument: `path`
+		/// - Base weight: 310_970_311_000
+		/// - DB weights: 1 read
+		/// - Additional weights: 3_666_683_000 * path.len()
 		#[pallet::weight(<T as Config>::WeightInfo::verify_path(path.len() as u32))]
 		pub fn verify(
 			origin: OriginFor<T>,
@@ -311,6 +426,27 @@ pub mod pallet {
 	}
 }
 
+/// Data about the manager of the GroupTree
+#[derive(Clone, Encode, Decode, PartialEq)]
+pub struct Manager<T: Config> {
+	/// Accound id of the manager
+	pub account_id: T::AccountId,
+	/// Is manager required to execute guarded functions in the tree
+	pub required: bool,
+}
+
+impl<T: Config> Manager<T> {
+	pub fn new(account_id: T::AccountId, required: bool) -> Self {
+		Self { account_id, required }
+	}
+}
+
+/// Essential data about the tree
+///
+/// It holds:
+/// - Current state of the tree
+/// - Data needed for the next insert into the tree
+/// - Limits of the tree
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Clone, Encode, Decode, PartialEq)]
 pub struct GroupTree {
