@@ -43,7 +43,7 @@
 //!
 //! The merkle pallet provides implementations for following traits:
 //!
-//! - [`Group`](pallet_merkle::group_trait::Group) Functions for crerating and
+//! - [`Group`](pallet_merkle::traits::Group) Functions for crerating and
 //!   managing the group.
 //!
 //! ## Interface
@@ -68,7 +68,7 @@
 //! pallet.
 //!
 //! ```
-//! use pallet_merkle::group_trait::Group;
+//! use pallet_merkle::traits::Group;
 //! pub trait Config: frame_system::Config + pallet_merkle::Config {
 //! 	type Group: Group<Self::AccountId, Self::BlockNumber, Self::GroupId>;
 //! }
@@ -89,7 +89,6 @@ pub mod tests;
 mod benchmarking;
 pub mod weights;
 
-pub use crate::traits::Group;
 use bulletproofs::{
 	r1cs::{R1CSProof, Verifier},
 	BulletproofGens, PedersenGens,
@@ -109,6 +108,7 @@ use curve25519_gadgets::{
 use frame_support::{dispatch, ensure, traits::Get, weights::Weight, Parameter};
 use frame_system::ensure_signed;
 use sp_std::prelude::*;
+pub use traits::Group;
 
 use merlin::Transcript;
 use rand_core::OsRng;
