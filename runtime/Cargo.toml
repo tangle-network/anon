@@ -41,6 +41,10 @@ pallet-contracts = { default-features = false, version = "3.0.0" }
 pallet-contracts-primitives = { default-features = false, version = "3.0.0" }
 pallet-contracts-rpc-runtime-api = { default-features = false, version = "3.0.0" }
 
+pallet-evm = { git = "https://github.com/purestake/frontier", default-features = false, branch = "v0.7-moonbeam" }
+pallet-ethereum = { default-features = false, git = "https://github.com/purestake/frontier", branch = "v0.7-moonbeam" }
+fp-rpc = { default-features = false, git = "https://github.com/purestake/frontier", branch = "v0.7-moonbeam" }
+
 pallet-grandpa = { default-features = false, version = "3.0.0" }
 pallet-randomness-collective-flip = { default-features = false, version = "3.0.0" }
 pallet-sudo = { default-features = false, version = "3.0.0" }
@@ -80,11 +84,14 @@ std = [
     "frame-support/std",
     "frame-system/std",
     "frame-system-rpc-runtime-api/std",
+    "fp-rpc/std",
     "pallet-aura/std",
     "pallet-balances/std",
     "pallet-contracts/std",
     "pallet-contracts-primitives/std",
     "pallet-contracts-rpc-runtime-api/std",
+    "pallet-ethereum/std",
+    "pallet-evm/std",
     "pallet-grandpa/std",
     "pallet-randomness-collective-flip/std",
     "pallet-sudo/std",
