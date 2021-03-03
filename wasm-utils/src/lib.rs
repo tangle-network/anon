@@ -3,11 +3,13 @@
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_gadgets::{
+	self,
 	fixed_deposit_tree::builder::{FixedDepositTree, FixedDepositTreeBuilder},
 	poseidon::{
 		builder::{Poseidon, PoseidonBuilder},
 		gen_mds_matrix, gen_round_keys, PoseidonSbox,
 	},
+	smt::builder::SparseMerkleTreeBuilder,
 };
 use js_sys::{Array, JsString, Map, Uint8Array};
 use merlin::Transcript;
@@ -195,11 +197,17 @@ impl Mixer {
 			.into_serde()
 			.map_err(|_| OperationCode::DeserializationFailed.into_js())?;
 		let mut tree_map = HashMap::new();
+
 		for (asset, id, depth) in trees {
+			let smt = SparseMerkleTreeBuilder::new()
+				.hash_params(poseidon.inner.clone())
+				.depth(depth)
+				.build();
 			tree_map.insert(
 				(asset, id),
 				FixedDepositTreeBuilder::new()
 					.hash_params(poseidon.inner.clone())
+					.merkle_tree(smt)
 					.depth(depth)
 					.build(),
 			);
