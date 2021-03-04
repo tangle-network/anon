@@ -1144,7 +1144,7 @@ dependencies = [
 [[package]]
 name = "curve25519-gadgets"
 version = "2.0.0"
-source = "git+https://github.com/webb-tools/bulletproof-gadgets?rev=217de1a#217de1a3692c7e9bec768a2b0ba38018972d1601"
+source = "git+https://github.com/webb-tools/bulletproof-gadgets?rev=4028605#402860539056639a3c22f243f8925bd4f89f869e"
 dependencies = [
  "bencher",
  "bulletproofs",

@@ -96,13 +96,13 @@ use bulletproofs::{
 use codec::{Decode, Encode};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_gadgets::{
-	crypto_constants::smt::ZERO_TREE,
 	fixed_deposit_tree::fixed_deposit_tree_verif_gadget,
 	poseidon::{
 		allocate_statics_for_verifier,
 		builder::{Poseidon, PoseidonBuilder},
-		gen_mds_matrix, gen_round_keys, PoseidonSbox, Poseidon_hash_2,
+		PoseidonSbox, Poseidon_hash_2,
 	},
+	smt::gen_zero_tree,
 	utils::AllocatedScalar,
 };
 use frame_support::{dispatch, ensure, traits::Get, weights::Weight, Parameter};
@@ -123,17 +123,12 @@ use weights::WeightInfo;
 /// Default hasher instance used to construct the tree
 pub fn default_hasher() -> Poseidon {
 	let width = 6;
-	let (full_b, full_e) = (4, 4);
-	let partial_rounds = 57;
 	// TODO: should be able to pass number of generators
 	// TODO: Initialise these generators with the pallet
 	let bp_gens = BulletproofGens::new(16400, 1);
 	PoseidonBuilder::new(width)
-		.num_rounds(full_b, full_e, partial_rounds)
-		.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
-		.mds_matrix(gen_mds_matrix(width))
 		.bulletproof_gens(bp_gens)
-		.sbox(PoseidonSbox::Inverse)
+		.sbox(PoseidonSbox::Exponentiation3)
 		.build()
 }
 
@@ -459,11 +454,12 @@ pub struct GroupTree {
 
 impl GroupTree {
 	pub fn new<T: Config>(depth: u8) -> Self {
-		let init_edges: Vec<ScalarData> = ZERO_TREE[0..depth as usize]
+		let zero_tree = gen_zero_tree(6, &PoseidonSbox::Exponentiation3);
+		let init_edges: Vec<ScalarData> = zero_tree[0..depth as usize]
 			.iter()
 			.map(|x| ScalarData::from(*x))
 			.collect();
-		let init_root = ScalarData::from(ZERO_TREE[depth as usize]);
+		let init_root = ScalarData::from(zero_tree[depth as usize]);
 		Self {
 			root_hash: init_root,
 			leaf_count: 0,
@@ -552,8 +548,9 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 		);
 
 		let h = default_hasher();
+		let zero_tree = gen_zero_tree(h.width, &h.sbox);
 		for data in &members {
-			Self::add_leaf(&mut tree, *data, &h);
+			Self::add_leaf(&mut tree, *data, &zero_tree, &h);
 		}
 		let block_number: T::BlockNumber = <frame_system::Module<T>>::block_number();
 		CachedRoots::<T>::append(block_number, id, tree.root_hash);
@@ -752,14 +749,14 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	pub fn add_leaf(tree: &mut GroupTree, data: ScalarData, h: &Poseidon) {
+	pub fn add_leaf(tree: &mut GroupTree, data: ScalarData, zero_tee: &Vec<[u8; 32]>, h: &Poseidon) {
 		let mut edge_index = tree.leaf_count;
 		let mut hash = data.0;
 		// Update the tree
 		for i in 0..tree.edge_nodes.len() {
 			hash = if edge_index % 2 == 0 {
 				tree.edge_nodes[i] = ScalarData(hash);
-				let zero_h = Scalar::from_bytes_mod_order(ZERO_TREE[i]);
+				let zero_h = Scalar::from_bytes_mod_order(zero_tee[i]);
 				Poseidon_hash_2(hash, zero_h, h)
 			} else {
 				Poseidon_hash_2(tree.edge_nodes[i].0, hash, h)

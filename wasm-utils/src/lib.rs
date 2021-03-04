@@ -122,20 +122,12 @@ impl PoseidonHasher {
 
 	#[wasm_bindgen(constructor)]
 	pub fn with_options(opts: PoseidonHasherOptions) -> Self {
-		let full_rounds_beginning = opts.full_rounds_beginning.unwrap_or(4);
-		let full_rounds_end = opts.full_rounds_end.unwrap_or(4);
-		let partial_rounds = opts.partial_rounds.unwrap_or(57);
-
 		// default pedersen genrators
 		let pc_gens = PedersenGens::default();
-		let bp_gens = opts.bp_gens.clone().unwrap_or_else(|| BulletproofGens::new(4096, 1));
+		let bp_gens = opts.bp_gens.clone().unwrap_or_else(|| BulletproofGens::new(16400, 1));
 
-		let total_rounds = full_rounds_beginning + full_rounds_end + partial_rounds;
 		let inner = PoseidonBuilder::new(opts.width)
-			.num_rounds(full_rounds_beginning, full_rounds_end, partial_rounds)
-			.round_keys(gen_round_keys(opts.width, total_rounds))
-			.mds_matrix(gen_mds_matrix(opts.width))
-			.sbox(PoseidonSbox::Inverse)
+			.sbox(PoseidonSbox::Exponentiation3)
 			.bulletproof_gens(bp_gens)
 			.pedersen_gens(pc_gens)
 			.build();
