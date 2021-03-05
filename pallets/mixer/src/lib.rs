@@ -68,7 +68,6 @@ use merkle::{
 	},
 	Group as GroupTrait, Module as MerkleModule,
 };
-pub use pallet::*;
 use sp_runtime::{
 	traits::{AccountIdConversion, Zero},
 	ModuleId,
@@ -360,22 +359,22 @@ pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system:
 /// Info about the mixer and it's leaf data
 #[derive(Encode, Decode, PartialEq)]
 pub struct MixerInfo<T: Config> {
+	/// Minimum duration the deposit has stayed in the mixer for a user
+	/// to be eligible for reward
+	///
+	/// NOTE: Currently not used
 	pub minimum_deposit_length_for_reward: T::BlockNumber,
+	/// Deposit size for the mixer
 	pub fixed_deposit_size: BalanceOf<T>,
+	/// All the leaves/deposits of the mixer
 	pub leaves: Vec<ScalarData>,
 }
 
 impl<T: Config> core::default::Default for MixerInfo<T> {
 	fn default() -> Self {
 		Self {
-			/// Minimum duration the deposit has stayed in the mixer for a user
-			/// to be eligible for reward
-			///
-			/// NOTE: Currently not used
 			minimum_deposit_length_for_reward: Zero::zero(),
-			/// Deposit size for the mixer
 			fixed_deposit_size: Zero::zero(),
-			/// All the leaves
 			leaves: Vec::new(),
 		}
 	}

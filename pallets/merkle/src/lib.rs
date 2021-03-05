@@ -33,18 +33,20 @@
 //! - **Membership proof in zero-knowledge:** Proving that leaf is inside the
 //!   tree without revealing which leaf you are proving over.
 //!
-//! - **Proof of creation in zero-knowladge:** TBA
+//! - **Proof of creation in zero-knowledge:** Each leaf is made with an
+//!   arithmetic circuit which includes hashing several values. Proving to know
+//!   all these values are called proof of creation.
 //!
-//! - **Nullifier:** Each leaf is made with an arithmetic circuit which includes
-//!   hashing several values. Nullifier is a part of this leaf circuit and is
-//!   revealed when proving membership in zero-knowledge.
+//! - **Nullifier:** Nullifier is a part of this leaf circuit and is revealed
+//!   when proving membership in zero-knowledge. The nullifier's role is to
+//!   prevent double-spending.
 //!
 //! ### Implementations
 //!
 //! The Merkle pallet provides implementations for the following traits:
 //!
-//! - [`Group`](pallet_merkle::traits::Group) Functions for creating and
-//!   managing the group.
+//! - [`Group`](crate::traits::Group) Functions for creating and managing the
+//!   group.
 //!
 //! ## Interface
 //!
