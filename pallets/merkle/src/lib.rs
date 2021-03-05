@@ -107,12 +107,11 @@ use curve25519_gadgets::{
 };
 use frame_support::{dispatch, ensure, traits::Get, weights::Weight, Parameter};
 use frame_system::ensure_signed;
-use sp_std::prelude::*;
-pub use traits::Group;
-
 use merlin::Transcript;
 use rand_core::OsRng;
 use sp_runtime::traits::{AtLeast32Bit, One};
+use sp_std::prelude::*;
+pub use traits::Group;
 use utils::{
 	keys::{Commitment, ScalarData},
 	permissions::ensure_admin,
@@ -160,43 +159,36 @@ pub mod pallet {
 	pub enum Error<T> {
 		/// Value was None
 		NoneValue,
-		///
-		IncorrectNumOfPubKeys,
-		///
-		ChallengeMismatch,
-		///
-		BadPoint,
-		///
-		ExceedsMaxDepth,
-		///
+		/// Tree is full
+		ExceedsMaxLeaves,
+		/// Group Tree doesnt exist
 		GroupDoesntExist,
-		///
+		/// Invalid membership proof
 		InvalidMembershipProof,
-		///
+		/// Invalid merkle path length
 		InvalidPathLength,
-		///
+		/// Invalid commitments specified for the zk proof
 		InvalidPrivateInputs,
-		///
+		/// Nullifier is already used
 		AlreadyUsedNullifier,
-		///
+		/// Failed to verify zero-knowladge proof
 		ZkVericationFailed,
-		///
+		/// Invalid zero-knowladge data
 		InvalidZkProof,
-		///
+		/// Invalid depth of the tree specified
 		InvalidTreeDepth,
-		///
+		/// Invalid merkle root hash
 		InvalidMerkleRoot,
-		///
-		DepositLengthTooSmall,
-		///
+		/// Manager is required for specific action
 		ManagerIsRequired,
-		///
+		/// Manager not found for specific tree
 		ManagerDoesntExist,
 	}
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(crate) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// New members/leaves added to the tree
 		NewMember(T::GroupId, T::AccountId, Vec<ScalarData>),
 	}
 
@@ -229,22 +221,27 @@ pub mod pallet {
 		ValueQuery,
 	>;
 
+	/// Maps tree id to the manager of the tree
 	#[pallet::storage]
 	#[pallet::getter(fn get_manager)]
 	pub type Managers<T: Config> = StorageMap<_, Blake2_128Concat, T::GroupId, Option<Manager<T>>, ValueQuery>;
 
+	/// Block number of the oldest set of roots that we are caching
 	#[pallet::storage]
 	#[pallet::getter(fn lowest_cached_block)]
 	pub type LowestCachedBlock<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
 
+	/// Block number of the newest set of roots that we are caching
 	#[pallet::storage]
 	#[pallet::getter(fn highest_cached_block)]
 	pub type HighestCachedBlock<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
+
 	/// Map of used nullifiers (Data) for each tree.
 	#[pallet::storage]
 	#[pallet::getter(fn used_nullifiers)]
 	pub type UsedNullifiers<T: Config> = StorageMap<_, Blake2_128Concat, (T::GroupId, ScalarData), bool, ValueQuery>;
 
+	/// Indicates whether the group tree is stopped or not
 	#[pallet::storage]
 	#[pallet::getter(fn stopped)]
 	pub type Stopped<T: Config> = StorageMap<_, Blake2_128Concat, T::GroupId, bool, ValueQuery>;
@@ -445,10 +442,15 @@ impl<T: Config> Manager<T> {
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Clone, Encode, Decode, PartialEq)]
 pub struct GroupTree {
+	/// Current number of leaves in the tree
 	pub leaf_count: u32,
+	/// Maximum allowed leaves in the tree
 	pub max_leaves: u32,
+	/// Depth of the tree
 	pub depth: u8,
+	/// Current root hash of the tree
 	pub root_hash: ScalarData,
+	/// Edge nodes needed for the next insert in the tree
 	pub edge_nodes: Vec<ScalarData>,
 }
 
@@ -544,7 +546,7 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 		let num_points = members.len() as u32;
 		ensure!(
 			tree.leaf_count + num_points <= tree.max_leaves,
-			Error::<T>::ExceedsMaxDepth
+			Error::<T>::ExceedsMaxLeaves
 		);
 
 		let h = default_hasher();

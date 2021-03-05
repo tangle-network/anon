@@ -1,12 +1,48 @@
+// A runtime module Groups with necessary imports
+
+// Feel free to remove or edit this file as needed.
+// If you change the name of this file, make sure to update its references in
+// runtime/src/lib.rs If you remove this file, you can remove those references
+
+// For more guidance on Substrate modules, see the example module
+// https://github.com/paritytech/substrate/blob/master/frame/example/src/lib.rs
+
+//! # Mixer Pallet
+//!
+//! The Mixer pallet provides functionality for doing deposits and withdrawals
+//! from the mixer.
+//!
+//! - [`Config`]
+//! - [`Call`]
+//! - [`Pallet`]
+//!
+//! ## Overview
+//!
+//! The Mixer pallet provides functions for:
+//!
+//! - Depositing some currency into the mixer.
+//! - Withdrawing the deposit from the mixer.
+//! - Stopping mixer operations.
+//! - Transfering the admin of the mixer.
+//!
+//! ### Terminology
+//!
+//! - **Mixer**: Cryptocurrency tumbler or mixer is a service offered to mix
+//!   potentially identifiable or 'tainted' cryptocurrency funds with others, so
+//!   as to obscure the trail back to the fund's original source.
+//!
+//! ## Interface
+//!
+//! ### Dispatchable Functions
+//!
+//! - `deposit` - Deposit a fixed amount of cryptocurrency into the mixer.
+//! - `withdraw` - Provide a zero-knowladge proof of the deposit and withdraw
+//!   from the mixer.
+//! - `set_stopped` - Stops the operation of all mixers.
+//! - `transfer_admin` - Transfers the admin role from sender to specified
+//!   account.
+
 #![cfg_attr(not(feature = "std"), no_std)]
-/// A runtime module Groups with necessary imports
-
-/// Feel free to remove or edit this file as needed.
-/// If you change the name of this file, make sure to update its references in
-/// runtime/src/lib.rs If you remove this file, you can remove those references
-
-/// For more guidance on Substrate modules, see the example module
-/// https://github.com/paritytech/substrate/blob/master/frame/example/src/lib.rs
 
 #[cfg(test)]
 pub mod mock;
@@ -332,8 +368,14 @@ pub struct MixerInfo<T: Config> {
 impl<T: Config> core::default::Default for MixerInfo<T> {
 	fn default() -> Self {
 		Self {
+			/// Minimum duration the deposit has stayed in the mixer for user to
+			/// be eligable for reward
+			///
+			/// NOTE: Currently not used
 			minimum_deposit_length_for_reward: Zero::zero(),
+			/// Deposit size for the mixer
 			fixed_deposit_size: Zero::zero(),
+			/// All the leaves
 			leaves: Vec::new(),
 		}
 	}
