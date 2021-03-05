@@ -291,7 +291,7 @@ pub mod pallet {
 		/// Weights:
 		/// - Dependent on arguments: _depth
 		///
-		/// - Base weight: 7_618_000
+		/// - Base weight: 8_356_000
 		/// - DB weights: 1 read, 3 writes
 		/// - Additional weights: 151_000 * _depth
 		#[pallet::weight(<T as Config>::WeightInfo::create_group(_depth.map_or(T::MaxTreeDepth::get() as u32, |x| x as u32)))]
@@ -313,7 +313,7 @@ pub mod pallet {
 		/// Weights:
 		/// - Independend of the arguments.
 		///
-		/// - Base weight: 8_000_000
+		/// - Base weight: 7_000_000
 		/// - DB weights: 1 read, 1 write
 		#[pallet::weight(<T as Config>::WeightInfo::set_manager_required())]
 		pub fn set_manager_required(
@@ -361,7 +361,7 @@ pub mod pallet {
 		/// Weights:
 		/// - Independent of the arguments.
 		///
-		/// - Base weight: 7_000_000
+		/// - Base weight: 8_000_000
 		/// - DB weights: 1 read, 1 write
 		#[pallet::weight(<T as Config>::WeightInfo::set_stopped())]
 		pub fn set_stopped(origin: OriginFor<T>, group_id: T::GroupId, stopped: bool) -> DispatchResultWithPostInfo {
@@ -381,9 +381,9 @@ pub mod pallet {
 		/// Weights:
 		/// - Dependent on argument: `members`
 		///
-		/// - Base weight: 305_389_489_000
+		/// - Base weight: 384_629_956_000
 		/// - DB weights: 3 reads, 2 writes
-		/// - Additional weights: 63_659_275_000 * members.len()
+		/// - Additional weights: 20_135_984_000 * members.len()
 		#[pallet::weight(<T as Config>::WeightInfo::add_members(members.len() as u32))]
 		pub fn add_members(
 			origin: OriginFor<T>,
@@ -404,9 +404,9 @@ pub mod pallet {
 		///
 		/// Weights:
 		/// - Dependent on the argument: `path`
-		/// - Base weight: 310_970_311_000
+		/// - Base weight: 383_420_867_000
 		/// - DB weights: 1 read
-		/// - Additional weights: 3_666_683_000 * path.len()
+		/// - Additional weights: 814_291_000 * path.len()
 		#[pallet::weight(<T as Config>::WeightInfo::verify_path(path.len() as u32))]
 		pub fn verify(
 			origin: OriginFor<T>,

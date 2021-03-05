@@ -193,9 +193,9 @@ pub mod pallet {
 		/// Weights:
 		/// - Dependent on argument: `data_points`
 		///
-		/// - Base weight: 311_882_044_000
+		/// - Base weight: 417_168_400_000
 		/// - DB weights: 8 reads, 5 writes
-		/// - Additional weights: 46_199_137_000 * data_points.len()
+		/// - Additional weights: 21_400_442_000 * data_points.len()
 		#[pallet::weight(<T as Config>::WeightInfo::deposit(data_points.len() as u32))]
 		pub fn deposit(
 			origin: OriginFor<T>,
