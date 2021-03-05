@@ -10,7 +10,7 @@ pub trait Group<AccountId, BlockNumber, GroupId> {
 	/// Check if nullifier is already used, in which case throws an error
 	fn has_used_nullifier(id: GroupId, nullifier: ScalarData) -> Result<(), dispatch::DispatchError>;
 	/// Sets stopped flag in storage. This flag doesn't do much by itself, it is
-	/// up to higher level pallet to find the use for it
+	/// up to higher-level pallet to find the use for it
 	/// Can only be called by the manager, regardless if the manager is required
 	fn set_stopped(sender: AccountId, group_id: GroupId, stopped: bool) -> Result<(), dispatch::DispatchError>;
 	/// Sets whether the manager is required for guarded calls.
@@ -32,7 +32,7 @@ pub trait Group<AccountId, BlockNumber, GroupId> {
 	/// Adds members/leaves to the tree
 	fn add_members(sender: AccountId, id: GroupId, members: Vec<ScalarData>) -> Result<(), dispatch::DispatchError>;
 	/// Adds a nullifier to the storage
-	/// Can only be called by the manager, if the manager is required
+	/// Can only be called by the manager if the manager is required
 	fn add_nullifier(sender: AccountId, id: GroupId, nullifier: ScalarData) -> Result<(), dispatch::DispatchError>;
 	/// Verify membership proof
 	fn verify(id: GroupId, leaf: ScalarData, path: Vec<(bool, ScalarData)>) -> Result<(), dispatch::DispatchError>;

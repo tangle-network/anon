@@ -20,44 +20,44 @@
 //!
 //! The Merkle pallet provides functions for:
 //!
-//! - Creating merkle trees.
+//! - Creating Merkle trees.
 //! - Adding the manager and setting whether the manager is required.
 //! - Adding leaf data to the Merkle tree.
 //! - Adding nullifiers to the storage.
 //! - Managing start/stop flags.
-//! - Caching merkle tree states.
+//! - Caching Merkle tree states.
 //! - Verifying regular and zero-knowledge membership proofs
 //!
 //! ### Terminology
 //!
-//! - **Membership proof in zero-knowladge:** Proving that leaf is inside the
+//! - **Membership proof in zero-knowledge:** Proving that leaf is inside the
 //!   tree without revealing which leaf you are proving over.
 //!
 //! - **Proof of creation in zero-knowladge:** TBA
 //!
 //! - **Nullifier:** Each leaf is made with an arithmetic circuit which includes
 //!   hashing several values. Nullifier is a part of this leaf circuit and is
-//!   revealed when proving membership in zero-knowladge.
+//!   revealed when proving membership in zero-knowledge.
 //!
 //! ### Implementations
 //!
-//! The merkle pallet provides implementations for following traits:
+//! The Merkle pallet provides implementations for the following traits:
 //!
-//! - [`Group`](pallet_merkle::traits::Group) Functions for crerating and
+//! - [`Group`](pallet_merkle::traits::Group) Functions for creating and
 //!   managing the group.
 //!
 //! ## Interface
 //!
 //! ### Dispatchable functions
 //!
-//! - `create_group` - Create merkle tree and their respective manager account.
+//! - `create_group` - Create Merkle tree and their respective manager account.
 //! - `set_manager_required` - Set whether manager is required to add members
 //!   and nullifiers.
 //! - `set_manager` - Set manager account id. Can only be called by the root or
 //!   the current manager.
 //! - `set_stopped` - Sets stopped storage flag. This flag by itself doesn't do
-//!   anything. It's up to a higher level pallets to make an appropriate use of
-//!   it. Can only be called by the root or the manager;
+//!   anything. It's up to higher-level pallets to make appropriate use of it.
+//!   Can only be called by the root or the manager;
 //! - `add_members` Adds an array of leaves to the tree. Can only be called by
 //!   the manager if the manager is required.
 //! - `verify` - Verifies the membership proof.
@@ -118,11 +118,12 @@ use utils::{
 };
 use weights::WeightInfo;
 
-// TODO find better way to have default hasher without saving it inside storage
+// TODO find a better way to have a default hasher without saving it inside
+// storage
 /// Default hasher instance used to construct the tree
 pub fn default_hasher() -> Poseidon {
 	let width = 6;
-	// TODO: should be able to pass number of generators
+	// TODO: should be able to pass the number of generators
 	// TODO: Initialise these generators with the pallet
 	let bp_gens = BulletproofGens::new(16400, 1);
 	PoseidonBuilder::new(width)
@@ -206,9 +207,10 @@ pub mod pallet {
 	#[pallet::getter(fn groups)]
 	pub type Groups<T: Config> = StorageMap<_, Blake2_128Concat, T::GroupId, Option<GroupTree>, ValueQuery>;
 
-	/// Map of cached/past merkle roots at each blocknumber and group. There can
-	/// be more than one root update in a single block. Allows for easy pruning
-	/// since we can remove all keys of first map past a certain point.
+	/// Map of cached/past Merkle roots at each block number and group. There
+	/// can be more than one root update in a single block. Allows for easy
+	/// pruning since we can remove all keys of the first map past a certain
+	/// point.
 	#[pallet::storage]
 	#[pallet::getter(fn cached_roots)]
 	pub type CachedRoots<T: Config> = StorageDoubleMap<
@@ -236,7 +238,7 @@ pub mod pallet {
 	#[pallet::getter(fn highest_cached_block)]
 	pub type HighestCachedBlock<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
 
-	/// Map of used nullifiers (Data) for each tree.
+	/// Map of used nullifiers for each tree.
 	#[pallet::storage]
 	#[pallet::getter(fn used_nullifiers)]
 	pub type UsedNullifiers<T: Config> = StorageMap<_, Blake2_128Concat, (T::GroupId, ScalarData), bool, ValueQuery>;
@@ -302,7 +304,7 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		/// Sets if manager is required for specific actions like adding
+		/// Sets if a manager is required for specific actions like adding
 		/// nullifiers or leaves into the tree.
 		///
 		/// Can only be called by the root or the current manager.
@@ -345,7 +347,7 @@ pub mod pallet {
 			// Changing manager should always require an extrinsic from the manager or root
 			// even if the group doesn't explicitly require managers for other calls.
 			ensure_admin(origin, &manager_data.account_id)?;
-			// We are passing manager always, since we wont have account id when calling
+			// We are passing manager always since we won't have account id when calling
 			// from root origin
 			<Self as Group<_, _, _>>::set_manager(manager_data.account_id, group_id, new_manager)?;
 			Ok(().into())
@@ -373,7 +375,7 @@ pub mod pallet {
 		/// Adds an array of leaf data into the tree and adds calculated root to
 		/// the cache.
 		///
-		/// Can only be called by the manager if manager is set.
+		/// Can only be called by the manager if a manager is set.
 		///
 		/// Weights:
 		/// - Dependent on argument: `members`

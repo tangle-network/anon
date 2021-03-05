@@ -29,7 +29,7 @@
 //!
 //! - **Mixer**: Cryptocurrency tumbler or mixer is a service offered to mix
 //!   potentially identifiable or 'tainted' cryptocurrency funds with others, so
-//!   as to obscure the trail back to the fund's original source.
+//!   as to obscure the trail back to the fund's source.
 //!
 //! ## Interface
 //!
@@ -105,13 +105,13 @@ pub mod pallet {
 		/// Default admin key
 		#[pallet::constant]
 		type DefaultAdmin: Get<Self::AccountId>;
-		/// Weight information for extrinsics in this pallet.
+		/// Weight information for extrinsics in this pallet
 		type WeightInfo: WeightInfo;
 		// Available mixes sizes (Size is determend by the deposit amount)
 		type MixerSizes: Get<Vec<BalanceOf<Self>>>;
 	}
 
-	/// Flag indicating if the mixer is initialized.
+	/// Flag indicating if the mixer is initialized
 	#[pallet::storage]
 	#[pallet::getter(fn initialised)]
 	pub type Initialised<T: Config> = StorageValue<_, bool, ValueQuery>;
@@ -121,7 +121,7 @@ pub mod pallet {
 	#[pallet::getter(fn mixer_groups)]
 	pub type MixerGroups<T: Config> = StorageMap<_, Blake2_128Concat, T::GroupId, MixerInfo<T>, ValueQuery>;
 
-	/// The vec of group ids
+	/// The vector of group ids
 	#[pallet::storage]
 	#[pallet::getter(fn mixer_group_ids)]
 	pub type MixerGroupIds<T: Config> = StorageValue<_, Vec<T::GroupId>, ValueQuery>;
@@ -184,7 +184,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-			// We make sure that wee return correct weight for the block accourding to
+			// We make sure that we return the correct weight for the block according to
 			// on_finalize
 			if Self::initialised() {
 				// In case mixer is initialized, we expect the weights for merkle cache update
@@ -197,8 +197,8 @@ pub mod pallet {
 
 		fn on_finalize(_n: BlockNumberFor<T>) {
 			if Self::initialised() {
-				// check if any deposits happened (by checked the size of collection at this
-				// block) if none happened, carry over previous merkle roots for the cache.
+				// check if any deposits happened (by checking the size of the collection at
+				// this block) if none happened, carry over previous Merkle roots for the cache.
 				let mixer_ids = MixerGroupIds::<T>::get();
 				for i in 0..mixer_ids.len() {
 					let cached_roots = <merkle::Module<T>>::cached_roots(_n, mixer_ids[i]);
@@ -241,7 +241,7 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 			ensure!(!<MerkleModule<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
-			// get mixer info, should always exist if module is initialised
+			// get mixer info, should always exist if the module is initialized
 			let mut mixer_info = Self::get_mixer(mixer_id)?;
 			// ensure the sender has enough balance to cover deposit
 			let balance = T::Currency::free_balance(&sender);
@@ -267,7 +267,7 @@ pub mod pallet {
 		}
 
 		/// Withdraws a deposited amount from the mixer. Can only withdraw one
-		/// deposit. Accepts a proof of membership along with the mixer id.
+		/// deposit. Accepts proof of membership along with the mixer id.
 		///
 		/// Fails if the mixer is stopped or not initialized.
 		///
@@ -368,8 +368,8 @@ pub struct MixerInfo<T: Config> {
 impl<T: Config> core::default::Default for MixerInfo<T> {
 	fn default() -> Self {
 		Self {
-			/// Minimum duration the deposit has stayed in the mixer for user to
-			/// be eligable for reward
+			/// Minimum duration the deposit has stayed in the mixer for a user
+			/// to be eligible for reward
 			///
 			/// NOTE: Currently not used
 			minimum_deposit_length_for_reward: Zero::zero(),
@@ -398,8 +398,8 @@ impl<T: Config> Module<T> {
 
 	pub fn get_mixer(mixer_id: T::GroupId) -> Result<MixerInfo<T>, dispatch::DispatchError> {
 		let mixer_info = MixerGroups::<T>::get(mixer_id);
-		// ensure mixer_info has non-zero deposit, otherwise mixer doesn't
-		// really exist for this id
+		// ensure mixer_info has a non-zero deposit, otherwise, the mixer doesn't
+		//exist for this id
 		ensure!(mixer_info.fixed_deposit_size > Zero::zero(), Error::<T>::NoMixerForId); // return the mixer info
 		Ok(mixer_info)
 	}
