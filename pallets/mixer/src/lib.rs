@@ -278,39 +278,33 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::withdraw())]
 		pub fn withdraw(
 			origin: OriginFor<T>,
-			mixer_id: T::GroupId,
-			cached_block: T::BlockNumber,
-			cached_root: ScalarData,
-			comms: Vec<Commitment>,
-			nullifier_hash: ScalarData,
-			proof_bytes: Vec<u8>,
-			leaf_index_commitments: Vec<Commitment>,
-			proof_commitments: Vec<Commitment>,
+			withdraw_proof: WithdrawProof<T>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
+			let recipient = withdraw_proof.recipient.unwrap_or(sender);
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
-			ensure!(!<MerkleModule<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
-			let mixer_info = MixerGroups::<T>::get(mixer_id);
+			ensure!(!<MerkleModule<T>>::stopped(withdraw_proof.mixer_id), Error::<T>::MixerStopped);
+			let mixer_info = MixerGroups::<T>::get(withdraw_proof.mixer_id);
 			// check if the nullifier has been used
-			T::Group::has_used_nullifier(mixer_id.into(), nullifier_hash)?;
+			T::Group::has_used_nullifier(withdraw_proof.mixer_id.into(), withdraw_proof.nullifier_hash)?;
 			// Verify the zero-knowledge proof of membership provided
 			T::Group::verify_zk_membership_proof(
-				mixer_id.into(),
-				cached_block,
-				cached_root,
-				comms,
-				nullifier_hash,
-				proof_bytes,
-				leaf_index_commitments,
-				proof_commitments,
+				withdraw_proof.mixer_id.into(),
+				withdraw_proof.cached_block,
+				withdraw_proof.cached_root,
+				withdraw_proof.comms,
+				withdraw_proof.nullifier_hash,
+				withdraw_proof.proof_bytes,
+				withdraw_proof.leaf_index_commitments,
+				withdraw_proof.proof_commitments,
 			)?;
 			// transfer the fixed deposit size to the sender
-			T::Currency::transfer(&Self::account_id(), &sender, mixer_info.fixed_deposit_size, AllowDeath)?;
+			T::Currency::transfer(&Self::account_id(), &recipient, mixer_info.fixed_deposit_size, AllowDeath)?;
 			// update the total value locked
-			let tvl = Self::total_value_locked(mixer_id);
-			<TotalValueLocked<T>>::insert(mixer_id, tvl - mixer_info.fixed_deposit_size);
+			let tvl = Self::total_value_locked(withdraw_proof.mixer_id);
+			<TotalValueLocked<T>>::insert(withdraw_proof.mixer_id, tvl - mixer_info.fixed_deposit_size);
 			// Add the nullifier on behalf of the module
-			T::Group::add_nullifier(Self::account_id(), mixer_id.into(), nullifier_hash)?;
+			T::Group::add_nullifier(Self::account_id(), withdraw_proof.mixer_id.into(), withdraw_proof.nullifier_hash)?;
 			Ok(().into())
 		}
 
@@ -351,6 +345,62 @@ pub mod pallet {
 			Ok(().into())
 		}
 	}
+}
+
+#[derive(Encode, Decode, PartialEq, Clone)]
+pub struct WithdrawProof<T: Config> {
+	/// The mixer id this withdraw proof corresponds to
+	mixer_id: T::GroupId,
+	/// The cached block for the cached root being proven against
+	cached_block: T::BlockNumber,
+	/// The cached root being proven against
+	cached_root: ScalarData,
+	/// The individual scalar commitments (to the randomness and nullifier)
+	comms: Vec<Commitment>,
+	/// The nullifier hash with itself
+	nullifier_hash: ScalarData,
+	/// The proof in bytes representation
+	proof_bytes: Vec<u8>,
+	/// The leaf index scalar commitments to decide on which side to hash
+	leaf_index_commitments: Vec<Commitment>,
+	/// The scalar commitments to merkle proof path elements
+	proof_commitments: Vec<Commitment>,
+	/// The recipient to withdraw amount of currency to
+	recipient: Option<T::AccountId>,
+}
+
+impl<T: Config> WithdrawProof<T> {
+	pub fn new(
+		mixer_id: T::GroupId,
+		cached_block: T::BlockNumber,
+		cached_root: ScalarData,
+		comms: Vec<Commitment>,
+		nullifier_hash: ScalarData,
+		proof_bytes: Vec<u8>,
+		leaf_index_commitments: Vec<Commitment>,
+		proof_commitments: Vec<Commitment>,
+		recipient: Option<T::AccountId>,
+	) -> Self {
+		Self {
+			mixer_id,
+			cached_block,
+			cached_root,
+			comms,
+			nullifier_hash,
+			proof_bytes,
+			leaf_index_commitments,
+			proof_commitments,
+			recipient,
+		}
+	}
+}
+
+// TODO: Not sure why compiler is complaining without this since it implements Debug
+#[cfg(feature = "std")]
+impl<T: Config> std::fmt::Debug for WithdrawProof<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 /// Type alias for the balances_pallet::Balance type
