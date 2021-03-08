@@ -762,7 +762,7 @@ impl<T: Config> Pallet<T> {
 		for i in 0..tree.edge_nodes.len() {
 			hash = if edge_index % 2 == 0 {
 				tree.edge_nodes[i] = ScalarData(hash);
-				let zero_h = Scalar::from_bytes_mod_order(zero_tee[i]);
+				let zero_h = Scalar::from_bytes_mod_order(zero_tree[i]);
 				Poseidon_hash_2(hash, zero_h, h)
 			} else {
 				Poseidon_hash_2(tree.edge_nodes[i].0, hash, h)
