@@ -243,13 +243,14 @@ impl Mixer {
 		let leaves_bytes = Array::from(&leaves)
 			.to_vec()
 			.into_iter()
-			.map(|v| v.into_serde())
+			.map(|v| Uint8Array::new_with_byte_offset_and_length(&v, 0, 32))
+			.map(|v| v.to_vec().try_into())
 			.collect::<Result<Vec<[u8; 32]>, _>>()
-			.map_err(|_| OperationCode::SerializationFailed.into_js())?;
+			.map_err(|_| OperationCode::DeserializationFailed.into_js())?;
 		let root = target_root
 			.map(|v| v.to_vec().try_into())
 			.transpose()
-			.map_err(|_| OperationCode::SerializationFailed.into_js())?;
+			.map_err(|_| OperationCode::DeserializationFailed.into_js())?;
 		fixed_tree.tree.add_leaves(leaves_bytes, root);
 		Ok(())
 	}
@@ -423,7 +424,7 @@ mod tests {
 			Leaves::from(invalid_leaves),
 			None,
 		);
-		assert_eq!(leaf_res.err().unwrap(), OperationCode::SerializationFailed.into_js());
+		assert_eq!(leaf_res.err().unwrap(), OperationCode::DeserializationFailed.into_js());
 
 		let invalid_asset = "foo".to_string();
 		let tree_res = mixer.get_tree(invalid_asset, mixer_group.group_id);
