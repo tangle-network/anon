@@ -3423,6 +3423,7 @@ dependencies = [
  "js-sys",
  "merlin",
  "rand 0.7.3",
+ "serde",
  "wasm-bindgen",
  "wasm-bindgen-test",
 ]
