@@ -7,7 +7,7 @@ use sp_std::vec::Vec;
 
 /// Group trait definition to be used in other pallets
 pub trait Group<AccountId, BlockNumber, GroupId> {
-	/// Check if nullifier is already used, in which case throws an error
+	/// Check if nullifier is already used, in which case return an error
 	fn has_used_nullifier(id: GroupId, nullifier: ScalarData) -> Result<(), dispatch::DispatchError>;
 	/// Sets stopped flag in storage. This flag doesn't do much by itself, it is
 	/// up to higher-level pallet to find the use for it
