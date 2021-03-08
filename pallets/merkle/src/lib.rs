@@ -755,7 +755,7 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	pub fn add_leaf(tree: &mut GroupTree, data: ScalarData, zero_tee: &Vec<[u8; 32]>, h: &Poseidon) {
+	pub fn add_leaf(tree: &mut GroupTree, data: ScalarData, zero_tree: &Vec<[u8; 32]>, h: &Poseidon) {
 		let mut edge_index = tree.leaf_count;
 		let mut hash = data.0;
 		// Update the tree
