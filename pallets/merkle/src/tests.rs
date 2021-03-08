@@ -183,7 +183,7 @@ fn should_have_min_depth() {
 		assert_ok!(MerkleGroups::add_members(Origin::signed(1), 0, vec![key.clone()]));
 		assert_err!(
 			MerkleGroups::add_members(Origin::signed(1), 0, vec![key.clone()]),
-			Error::<Test>::ExceedsMaxDepth,
+			Error::<Test>::ExceedsMaxLeaves,
 		);
 	});
 }
