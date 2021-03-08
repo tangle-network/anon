@@ -133,7 +133,8 @@ fn should_stop_and_start_mixer() {
 				ScalarData::zero(),
 				Vec::new(),
 				Vec::new(),
-				Vec::new()
+				Vec::new(),
+				None,
 			),
 			Error::<Test>::MixerStopped
 		);
@@ -230,7 +231,8 @@ fn should_withdraw_from_each_mixer_successfully() {
 				ScalarData(nullifier_hash),
 				proof.to_bytes(),
 				leaf_index_comms,
-				proof_comms
+				proof_comms,
+				None,
 			));
 			let balance_after = Balances::free_balance(2);
 			assert_eq!(balance_before + m.fixed_deposit_size, balance_after);

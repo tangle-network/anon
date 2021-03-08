@@ -286,8 +286,10 @@ pub mod pallet {
 			proof_bytes: Vec<u8>,
 			leaf_index_commitments: Vec<Commitment>,
 			proof_commitments: Vec<Commitment>,
+			recipient: Option<T::AccountId>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
+			let recipient = recipient.unwrap_or(sender);
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 			ensure!(!<MerkleModule<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
 			let mixer_info = MixerGroups::<T>::get(mixer_id);
@@ -305,7 +307,7 @@ pub mod pallet {
 				proof_commitments,
 			)?;
 			// transfer the fixed deposit size to the sender
-			T::Currency::transfer(&Self::account_id(), &sender, mixer_info.fixed_deposit_size, AllowDeath)?;
+			T::Currency::transfer(&Self::account_id(), &recipient, mixer_info.fixed_deposit_size, AllowDeath)?;
 			// update the total value locked
 			let tvl = Self::total_value_locked(mixer_id);
 			<TotalValueLocked<T>>::insert(mixer_id, tvl - mixer_info.fixed_deposit_size);
