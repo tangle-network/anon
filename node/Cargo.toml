@@ -54,6 +54,10 @@ sp-runtime = { version = "3.0.0" }
 sp-transaction-pool = { version = "3.0.0" }
 substrate-frame-rpc-system = { version = "3.0.0" }
 
+fc-consensus = { default-features = false, git = "https://github.com/paritytech/frontier" }
+fp-consensus = { default-features = false, git = "https://github.com/paritytech/frontier" }
+fc-rpc-core = { default-features = false, git = "https://github.com/paritytech/frontier" }
+
 [features]
 default = []
 runtime-benchmarks = ["node-template-runtime/runtime-benchmarks"]

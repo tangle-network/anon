@@ -1537,6 +1537,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "fc-consensus"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08914f6096de425722fec198cf5abec68490e3dc051afc3d1c03fd0f612815dd"
+
+[[package]]
+name = "fc-rpc-core"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0fbd2db67d4342acf4d9d815214202fe325eed9855a93d83275cf9ad3679f0c"
+
+[[package]]
 name = "fdlimit"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1624,6 +1636,12 @@ dependencies = [
  "matches",
  "percent-encoding 2.1.0",
 ]
+
+[[package]]
+name = "fp-consensus"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4204b9533dd1596996a97d64c3b17f1efd88200b8e41535eb06e5bfa22c0afb"
 
 [[package]]
 name = "fp-consensus"
@@ -3841,6 +3859,9 @@ dependencies = [
 name = "node-template"
 version = "3.0.0"
 dependencies = [
+ "fc-consensus",
+ "fc-rpc-core",
+ "fp-consensus 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "frame-benchmarking 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "frame-benchmarking-cli",
  "jsonrpc-core",
@@ -4193,7 +4214,7 @@ dependencies = [
  "ethereum",
  "ethereum-types",
  "evm",
- "fp-consensus",
+ "fp-consensus 0.1.0 (git+https://github.com/purestake/frontier?branch=v0.7-moonbeam)",
  "fp-evm",
  "fp-rpc",
  "frame-support 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=master)",
