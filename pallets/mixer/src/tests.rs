@@ -23,14 +23,9 @@ use sp_runtime::{traits::BadOrigin, DispatchError};
 
 fn default_hasher(num_gens: usize) -> Poseidon {
 	let width = 6;
-	let (full_b, full_e) = (4, 4);
-	let partial_rounds = 57;
 	PoseidonBuilder::new(width)
-		.num_rounds(full_b, full_e, partial_rounds)
-		.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
-		.mds_matrix(gen_mds_matrix(width))
 		.bulletproof_gens(BulletproofGens::new(num_gens, 1))
-		.sbox(PoseidonSbox::Inverse)
+		.sbox(PoseidonSbox::Exponentiation3)
 		.build()
 }
 

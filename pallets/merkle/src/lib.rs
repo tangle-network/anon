@@ -20,44 +20,46 @@
 //!
 //! The Merkle pallet provides functions for:
 //!
-//! - Creating merkle trees.
+//! - Creating Merkle trees.
 //! - Adding the manager and setting whether the manager is required.
 //! - Adding leaf data to the Merkle tree.
 //! - Adding nullifiers to the storage.
 //! - Managing start/stop flags.
-//! - Caching merkle tree states.
+//! - Caching Merkle tree states.
 //! - Verifying regular and zero-knowledge membership proofs
 //!
 //! ### Terminology
 //!
-//! - **Membership proof in zero-knowladge:** Proving that leaf is inside the
+//! - **Membership proof in zero-knowledge:** Proving that leaf is inside the
 //!   tree without revealing which leaf you are proving over.
 //!
-//! - **Proof of creation in zero-knowladge:** TBA
+//! - **Proof of creation in zero-knowledge:** Each leaf is made with an
+//!   arithmetic circuit which includes hashing several values. Proving to know
+//!   all these values are called proof of creation.
 //!
-//! - **Nullifier:** Each leaf is made with an arithmetic circuit which includes
-//!   hashing several values. Nullifier is a part of this leaf circuit and is
-//!   revealed when proving membership in zero-knowladge.
+//! - **Nullifier:** Nullifier is a part of this leaf circuit and is revealed
+//!   when proving membership in zero-knowledge. The nullifier's role is to
+//!   prevent double-spending.
 //!
 //! ### Implementations
 //!
-//! The merkle pallet provides implementations for following traits:
+//! The Merkle pallet provides implementations for the following traits:
 //!
-//! - [`Group`](pallet_merkle::traits::Group) Functions for crerating and
-//!   managing the group.
+//! - [`Group`](crate::traits::Group) Functions for creating and managing the
+//!   group.
 //!
 //! ## Interface
 //!
 //! ### Dispatchable functions
 //!
-//! - `create_group` - Create merkle tree and their respective manager account.
+//! - `create_group` - Create Merkle tree and their respective manager account.
 //! - `set_manager_required` - Set whether manager is required to add members
 //!   and nullifiers.
 //! - `set_manager` - Set manager account id. Can only be called by the root or
 //!   the current manager.
 //! - `set_stopped` - Sets stopped storage flag. This flag by itself doesn't do
-//!   anything. It's up to a higher level pallets to make an appropriate use of
-//!   it. Can only be called by the root or the manager;
+//!   anything. It's up to higher-level pallets to make appropriate use of it.
+//!   Can only be called by the root or the manager;
 //! - `add_members` Adds an array of leaves to the tree. Can only be called by
 //!   the manager if the manager is required.
 //! - `verify` - Verifies the membership proof.
@@ -96,44 +98,39 @@ use bulletproofs::{
 use codec::{Decode, Encode};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_gadgets::{
-	crypto_constants::smt::ZERO_TREE,
 	fixed_deposit_tree::fixed_deposit_tree_verif_gadget,
 	poseidon::{
 		allocate_statics_for_verifier,
 		builder::{Poseidon, PoseidonBuilder},
-		gen_mds_matrix, gen_round_keys, PoseidonSbox, Poseidon_hash_2,
+		PoseidonSbox, Poseidon_hash_2,
 	},
+	smt::gen_zero_tree,
 	utils::AllocatedScalar,
 };
 use frame_support::{dispatch, ensure, traits::Get, weights::Weight, Parameter};
 use frame_system::ensure_signed;
-use sp_std::prelude::*;
-pub use traits::Group;
-
 use merlin::Transcript;
 use rand_core::OsRng;
 use sp_runtime::traits::{AtLeast32Bit, One};
+use sp_std::prelude::*;
+pub use traits::Group;
 use utils::{
 	keys::{Commitment, ScalarData},
 	permissions::ensure_admin,
 };
 use weights::WeightInfo;
 
-// TODO find better way to have default hasher without saving it inside storage
+// TODO find a better way to have a default hasher without saving it inside
+// storage
 /// Default hasher instance used to construct the tree
 pub fn default_hasher() -> Poseidon {
 	let width = 6;
-	let (full_b, full_e) = (4, 4);
-	let partial_rounds = 57;
-	// TODO: should be able to pass number of generators
+	// TODO: should be able to pass the number of generators
 	// TODO: Initialise these generators with the pallet
 	let bp_gens = BulletproofGens::new(16400, 1);
 	PoseidonBuilder::new(width)
-		.num_rounds(full_b, full_e, partial_rounds)
-		.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
-		.mds_matrix(gen_mds_matrix(width))
 		.bulletproof_gens(bp_gens)
-		.sbox(PoseidonSbox::Inverse)
+		.sbox(PoseidonSbox::Exponentiation3)
 		.build()
 }
 
@@ -165,43 +162,36 @@ pub mod pallet {
 	pub enum Error<T> {
 		/// Value was None
 		NoneValue,
-		///
-		IncorrectNumOfPubKeys,
-		///
-		ChallengeMismatch,
-		///
-		BadPoint,
-		///
-		ExceedsMaxDepth,
-		///
+		/// Tree is full
+		ExceedsMaxLeaves,
+		/// Group Tree doesnt exist
 		GroupDoesntExist,
-		///
+		/// Invalid membership proof
 		InvalidMembershipProof,
-		///
+		/// Invalid merkle path length
 		InvalidPathLength,
-		///
+		/// Invalid commitments specified for the zk proof
 		InvalidPrivateInputs,
-		///
+		/// Nullifier is already used
 		AlreadyUsedNullifier,
-		///
+		/// Failed to verify zero-knowladge proof
 		ZkVericationFailed,
-		///
+		/// Invalid zero-knowladge data
 		InvalidZkProof,
-		///
+		/// Invalid depth of the tree specified
 		InvalidTreeDepth,
-		///
+		/// Invalid merkle root hash
 		InvalidMerkleRoot,
-		///
-		DepositLengthTooSmall,
-		///
+		/// Manager is required for specific action
 		ManagerIsRequired,
-		///
+		/// Manager not found for specific tree
 		ManagerDoesntExist,
 	}
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(crate) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// New members/leaves added to the tree
 		NewMember(T::GroupId, T::AccountId, Vec<ScalarData>),
 	}
 
@@ -219,9 +209,10 @@ pub mod pallet {
 	#[pallet::getter(fn groups)]
 	pub type Groups<T: Config> = StorageMap<_, Blake2_128Concat, T::GroupId, Option<GroupTree>, ValueQuery>;
 
-	/// Map of cached/past merkle roots at each blocknumber and group. There can
-	/// be more than one root update in a single block. Allows for easy pruning
-	/// since we can remove all keys of first map past a certain point.
+	/// Map of cached/past Merkle roots at each block number and group. There
+	/// can be more than one root update in a single block. Allows for easy
+	/// pruning since we can remove all keys of the first map past a certain
+	/// point.
 	#[pallet::storage]
 	#[pallet::getter(fn cached_roots)]
 	pub type CachedRoots<T: Config> = StorageDoubleMap<
@@ -234,22 +225,27 @@ pub mod pallet {
 		ValueQuery,
 	>;
 
+	/// Maps tree id to the manager of the tree
 	#[pallet::storage]
 	#[pallet::getter(fn get_manager)]
 	pub type Managers<T: Config> = StorageMap<_, Blake2_128Concat, T::GroupId, Option<Manager<T>>, ValueQuery>;
 
+	/// Block number of the oldest set of roots that we are caching
 	#[pallet::storage]
 	#[pallet::getter(fn lowest_cached_block)]
 	pub type LowestCachedBlock<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
 
+	/// Block number of the newest set of roots that we are caching
 	#[pallet::storage]
 	#[pallet::getter(fn highest_cached_block)]
 	pub type HighestCachedBlock<T: Config> = StorageValue<_, T::BlockNumber, ValueQuery>;
-	/// Map of used nullifiers (Data) for each tree.
+
+	/// Map of used nullifiers for each tree.
 	#[pallet::storage]
 	#[pallet::getter(fn used_nullifiers)]
 	pub type UsedNullifiers<T: Config> = StorageMap<_, Blake2_128Concat, (T::GroupId, ScalarData), bool, ValueQuery>;
 
+	/// Indicates whether the group tree is stopped or not
 	#[pallet::storage]
 	#[pallet::getter(fn stopped)]
 	pub type Stopped<T: Config> = StorageMap<_, Blake2_128Concat, T::GroupId, bool, ValueQuery>;
@@ -296,7 +292,7 @@ pub mod pallet {
 		/// Weights:
 		/// - Dependent on arguments: _depth
 		///
-		/// - Base weight: 7_618_000
+		/// - Base weight: 8_356_000
 		/// - DB weights: 1 read, 3 writes
 		/// - Additional weights: 151_000 * _depth
 		#[pallet::weight(<T as Config>::WeightInfo::create_group(_depth.map_or(T::MaxTreeDepth::get() as u32, |x| x as u32)))]
@@ -310,7 +306,7 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		/// Sets if manager is required for specific actions like adding
+		/// Sets if a manager is required for specific actions like adding
 		/// nullifiers or leaves into the tree.
 		///
 		/// Can only be called by the root or the current manager.
@@ -318,7 +314,7 @@ pub mod pallet {
 		/// Weights:
 		/// - Independend of the arguments.
 		///
-		/// - Base weight: 8_000_000
+		/// - Base weight: 7_000_000
 		/// - DB weights: 1 read, 1 write
 		#[pallet::weight(<T as Config>::WeightInfo::set_manager_required())]
 		pub fn set_manager_required(
@@ -353,7 +349,7 @@ pub mod pallet {
 			// Changing manager should always require an extrinsic from the manager or root
 			// even if the group doesn't explicitly require managers for other calls.
 			ensure_admin(origin, &manager_data.account_id)?;
-			// We are passing manager always, since we wont have account id when calling
+			// We are passing manager always since we won't have account id when calling
 			// from root origin
 			<Self as Group<_, _, _>>::set_manager(manager_data.account_id, group_id, new_manager)?;
 			Ok(().into())
@@ -366,7 +362,7 @@ pub mod pallet {
 		/// Weights:
 		/// - Independent of the arguments.
 		///
-		/// - Base weight: 7_000_000
+		/// - Base weight: 8_000_000
 		/// - DB weights: 1 read, 1 write
 		#[pallet::weight(<T as Config>::WeightInfo::set_stopped())]
 		pub fn set_stopped(origin: OriginFor<T>, group_id: T::GroupId, stopped: bool) -> DispatchResultWithPostInfo {
@@ -381,14 +377,14 @@ pub mod pallet {
 		/// Adds an array of leaf data into the tree and adds calculated root to
 		/// the cache.
 		///
-		/// Can only be called by the manager if manager is set.
+		/// Can only be called by the manager if a manager is set.
 		///
 		/// Weights:
 		/// - Dependent on argument: `members`
 		///
-		/// - Base weight: 305_389_489_000
+		/// - Base weight: 384_629_956_000
 		/// - DB weights: 3 reads, 2 writes
-		/// - Additional weights: 63_659_275_000 * members.len()
+		/// - Additional weights: 20_135_984_000 * members.len()
 		#[pallet::weight(<T as Config>::WeightInfo::add_members(members.len() as u32))]
 		pub fn add_members(
 			origin: OriginFor<T>,
@@ -409,9 +405,9 @@ pub mod pallet {
 		///
 		/// Weights:
 		/// - Dependent on the argument: `path`
-		/// - Base weight: 310_970_311_000
+		/// - Base weight: 383_420_867_000
 		/// - DB weights: 1 read
-		/// - Additional weights: 3_666_683_000 * path.len()
+		/// - Additional weights: 814_291_000 * path.len()
 		#[pallet::weight(<T as Config>::WeightInfo::verify_path(path.len() as u32))]
 		pub fn verify(
 			origin: OriginFor<T>,
@@ -450,20 +446,26 @@ impl<T: Config> Manager<T> {
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Clone, Encode, Decode, PartialEq)]
 pub struct GroupTree {
+	/// Current number of leaves in the tree
 	pub leaf_count: u32,
+	/// Maximum allowed leaves in the tree
 	pub max_leaves: u32,
+	/// Depth of the tree
 	pub depth: u8,
+	/// Current root hash of the tree
 	pub root_hash: ScalarData,
+	/// Edge nodes needed for the next insert in the tree
 	pub edge_nodes: Vec<ScalarData>,
 }
 
 impl GroupTree {
 	pub fn new<T: Config>(depth: u8) -> Self {
-		let init_edges: Vec<ScalarData> = ZERO_TREE[0..depth as usize]
+		let zero_tree = gen_zero_tree(6, &PoseidonSbox::Exponentiation3);
+		let init_edges: Vec<ScalarData> = zero_tree[0..depth as usize]
 			.iter()
 			.map(|x| ScalarData::from(*x))
 			.collect();
-		let init_root = ScalarData::from(ZERO_TREE[depth as usize]);
+		let init_root = ScalarData::from(zero_tree[depth as usize]);
 		Self {
 			root_hash: init_root,
 			leaf_count: 0,
@@ -548,12 +550,13 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 		let num_points = members.len() as u32;
 		ensure!(
 			tree.leaf_count + num_points <= tree.max_leaves,
-			Error::<T>::ExceedsMaxDepth
+			Error::<T>::ExceedsMaxLeaves
 		);
 
 		let h = default_hasher();
+		let zero_tree = gen_zero_tree(h.width, &h.sbox);
 		for data in &members {
-			Self::add_leaf(&mut tree, *data, &h);
+			Self::add_leaf(&mut tree, *data, &zero_tree, &h);
 		}
 		let block_number: T::BlockNumber = <frame_system::Module<T>>::block_number();
 		CachedRoots::<T>::append(block_number, id, tree.root_hash);
@@ -752,14 +755,14 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	pub fn add_leaf(tree: &mut GroupTree, data: ScalarData, h: &Poseidon) {
+	pub fn add_leaf(tree: &mut GroupTree, data: ScalarData, zero_tree: &Vec<[u8; 32]>, h: &Poseidon) {
 		let mut edge_index = tree.leaf_count;
 		let mut hash = data.0;
 		// Update the tree
 		for i in 0..tree.edge_nodes.len() {
 			hash = if edge_index % 2 == 0 {
 				tree.edge_nodes[i] = ScalarData(hash);
-				let zero_h = Scalar::from_bytes_mod_order(ZERO_TREE[i]);
+				let zero_h = Scalar::from_bytes_mod_order(zero_tree[i]);
 				Poseidon_hash_2(hash, zero_h, h)
 			} else {
 				Poseidon_hash_2(tree.edge_nodes[i].0, hash, h)

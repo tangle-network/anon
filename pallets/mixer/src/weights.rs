@@ -46,9 +46,9 @@ pub trait WeightInfo {
 pub struct Weights<T>(PhantomData<T>);
 impl<T: frame_system::Config + Config + merkle::Config> WeightInfo for Weights<T> {
 	fn deposit(d: u32) -> Weight {
-		(311_882_044_000 as Weight)
-			// Standard Error: 650_565_000
-			.saturating_add((46_199_137_000 as Weight).saturating_mul(d as Weight))
+		(417_168_400_000 as Weight)
+			// Standard Error: 241_824_000
+			.saturating_add((21_400_442_000 as Weight).saturating_mul(d as Weight))
 			.saturating_add(T::DbWeight::get().reads(8 as Weight))
 			.saturating_add(T::DbWeight::get().writes(5 as Weight))
 	}
