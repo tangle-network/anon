@@ -1176,7 +1176,7 @@ dependencies = [
 [[package]]
 name = "curve25519-gadgets"
 version = "2.0.0"
-source = "git+https://github.com/webb-tools/bulletproof-gadgets?branch=main#34bb208fc1820431d2bda7b7abc8e30ef35f8e9c"
+source = "git+https://github.com/webb-tools/bulletproof-gadgets?rev=6157520#61575207cd02335a866399319238d3b95312da2d"
 dependencies = [
  "bencher",
  "bulletproofs",
@@ -3957,7 +3957,7 @@ version = "3.0.0"
 dependencies = [
  "bulletproofs",
  "curve25519-dalek 3.0.2",
- "curve25519-gadgets 2.0.0 (git+https://github.com/webb-tools/bulletproof-gadgets?branch=main)",
+ "curve25519-gadgets 2.0.0 (git+https://github.com/webb-tools/bulletproof-gadgets?rev=6157520)",
  "frame-benchmarking 3.1.0",
  "frame-support",
  "frame-system",
@@ -3980,7 +3980,7 @@ dependencies = [
  "bencher",
  "bulletproofs",
  "curve25519-dalek 3.0.2",
- "curve25519-gadgets 2.0.0 (git+https://github.com/webb-tools/bulletproof-gadgets?rev=4028605)",
+ "curve25519-gadgets 2.0.0 (git+https://github.com/webb-tools/bulletproof-gadgets?rev=6157520)",
  "frame-benchmarking 3.1.0",
  "frame-support",
  "frame-system",
