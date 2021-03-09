@@ -463,7 +463,9 @@ fn should_verify_simple_zk_proof_of_membership() {
 			ScalarData(nullifier_hash),
 			proof.to_bytes(),
 			leaf_index_comms,
-			proof_comms
+			proof_comms,
+			ScalarData::zero(),
+			ScalarData::zero(),
 		));
 	});
 }
@@ -504,7 +506,9 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 				ScalarData(nullifier_hash),
 				proof.to_bytes(),
 				leaf_index_comms,
-				proof_comms
+				proof_comms,
+				ScalarData::zero(),
+				ScalarData::zero(),
 			),
 			Error::<Test>::ZkVericationFailed
 		);
@@ -549,7 +553,9 @@ fn should_not_verify_invalid_private_inputs() {
 				ScalarData(nullifier_hash),
 				proof.to_bytes(),
 				leaf_index_comms,
-				proof_comms
+				proof_comms,
+				ScalarData::zero(),
+				ScalarData::zero(),
 			),
 			Error::<Test>::InvalidPrivateInputs
 		);
@@ -593,7 +599,9 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 				ScalarData(nullifier_hash),
 				proof.to_bytes(),
 				leaf_index_comms,
-				proof_comms
+				proof_comms,
+				ScalarData::zero(),
+				ScalarData::zero(),
 			),
 			Error::<Test>::ZkVericationFailed
 		);
@@ -634,7 +642,9 @@ fn should_not_verify_invalid_transcript() {
 				ScalarData(nullifier_hash),
 				proof.to_bytes(),
 				leaf_index_comms,
-				proof_comms
+				proof_comms,
+				ScalarData::zero(),
+				ScalarData::zero(),
 			),
 			Error::<Test>::ZkVericationFailed
 		);
@@ -691,7 +701,9 @@ fn should_verify_zk_proof_of_membership() {
 			ScalarData(nullifier_hash),
 			proof.to_bytes(),
 			leaf_index_comms,
-			proof_comms
+			proof_comms,
+			ScalarData::zero(),
+			ScalarData::zero(),
 		));
 	});
 }
@@ -727,7 +739,9 @@ fn should_verify_large_zk_proof_of_membership() {
 			ScalarData(nullifier_hash),
 			proof.to_bytes(),
 			leaf_index_comms,
-			proof_comms
+			proof_comms,
+			ScalarData::zero(),
+			ScalarData::zero(),
 		));
 	});
 }

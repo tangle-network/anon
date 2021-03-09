@@ -132,6 +132,7 @@ fn should_stop_and_start_mixer() {
 				Vec::new(),
 				Vec::new(),
 				None,
+				None,
 			)),
 			Error::<Test>::MixerStopped
 		);
@@ -228,6 +229,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 				proof.to_bytes(),
 				leaf_index_comms,
 				proof_comms,
+				None,
 				None,
 			)));
 			let balance_after = Balances::free_balance(2);

@@ -281,9 +281,10 @@ pub mod pallet {
 			withdraw_proof: WithdrawProof<T>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
-			let recipient = withdraw_proof.recipient.unwrap_or(sender);
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 			ensure!(!<MerkleModule<T>>::stopped(withdraw_proof.mixer_id), Error::<T>::MixerStopped);
+			let recipient = withdraw_proof.recipient.unwrap_or(sender.clone());
+			let relayer = withdraw_proof.relayer.unwrap_or(sender.clone());
 			let mixer_info = MixerGroups::<T>::get(withdraw_proof.mixer_id);
 			// check if the nullifier has been used
 			T::Group::has_used_nullifier(withdraw_proof.mixer_id.into(), withdraw_proof.nullifier_hash)?;
@@ -297,6 +298,8 @@ pub mod pallet {
 				withdraw_proof.proof_bytes,
 				withdraw_proof.leaf_index_commitments,
 				withdraw_proof.proof_commitments,
+				ScalarData::from_slice(&recipient.encode()),
+				ScalarData::from_slice(&relayer.encode()),
 			)?;
 			// transfer the fixed deposit size to the sender
 			T::Currency::transfer(&Self::account_id(), &recipient, mixer_info.fixed_deposit_size, AllowDeath)?;
@@ -367,6 +370,8 @@ pub struct WithdrawProof<T: Config> {
 	proof_commitments: Vec<Commitment>,
 	/// The recipient to withdraw amount of currency to
 	recipient: Option<T::AccountId>,
+	/// The recipient to withdraw amount of currency to
+	relayer: Option<T::AccountId>,
 }
 
 impl<T: Config> WithdrawProof<T> {
@@ -380,6 +385,7 @@ impl<T: Config> WithdrawProof<T> {
 		leaf_index_commitments: Vec<Commitment>,
 		proof_commitments: Vec<Commitment>,
 		recipient: Option<T::AccountId>,
+		relayer: Option<T::AccountId>,
 	) -> Self {
 		Self {
 			mixer_id,
@@ -391,6 +397,7 @@ impl<T: Config> WithdrawProof<T> {
 			leaf_index_commitments,
 			proof_commitments,
 			recipient,
+			relayer,
 		}
 	}
 }
