@@ -36,7 +36,7 @@ default-features = false
 features = ["u64_backend", "alloc"]
 
 [dependencies.curve25519-gadgets]
-rev = "6157520"
+branch = "main"
 version = "2.0.0"
 git = "https://github.com/webb-tools/bulletproof-gadgets"
 default-features = false

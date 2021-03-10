@@ -1176,7 +1176,7 @@ dependencies = [
 [[package]]
 name = "curve25519-gadgets"
 version = "2.0.0"
-source = "git+https://github.com/webb-tools/bulletproof-gadgets?rev=6157520#61575207cd02335a866399319238d3b95312da2d"
+source = "git+https://github.com/webb-tools/bulletproof-gadgets?branch=main#ea1981f241243def9a789fabfb9d41155613b599"
 dependencies = [
  "bencher",
  "bulletproofs",
@@ -3958,7 +3958,7 @@ version = "3.0.0"
 dependencies = [
  "bulletproofs",
  "curve25519-dalek 3.0.2",
- "curve25519-gadgets 2.0.0 (git+https://github.com/webb-tools/bulletproof-gadgets?rev=6157520)",
+ "curve25519-gadgets 2.0.0 (git+https://github.com/webb-tools/bulletproof-gadgets?branch=main)",
  "frame-benchmarking 3.1.0",
  "frame-support",
  "frame-system",
@@ -3981,7 +3981,7 @@ dependencies = [
  "bencher",
  "bulletproofs",
  "curve25519-dalek 3.0.2",
- "curve25519-gadgets 2.0.0 (git+https://github.com/webb-tools/bulletproof-gadgets?rev=6157520)",
+ "curve25519-gadgets 2.0.0 (git+https://github.com/webb-tools/bulletproof-gadgets?branch=main)",
  "frame-benchmarking 3.1.0",
  "frame-support",
  "frame-system",
@@ -7243,9 +7243,9 @@ checksum = "1e81da0851ada1f3e9d4312c704aa4f8806f0f9d69faaf8df2f3464b4a9437c2"
 
 [[package]]
 name = "syn"
-version = "1.0.62"
+version = "1.0.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "123a78a3596b24fee53a6464ce52d8ecbf62241e6294c7e7fe12086cd161f512"
+checksum = "8fd9bc7ccc2688b3344c2f48b9b546648b25ce0b20fc717ee7fa7981a8ca9717"
 dependencies = [
  "proc-macro2",
  "quote",

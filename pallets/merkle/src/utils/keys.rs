@@ -122,7 +122,10 @@ impl ScalarData {
 
 	pub fn from_slice(b: &[u8]) -> Self {
 		let mut buf: [u8; 32] = [0u8; 32];
-		buf.copy_from_slice(b);
+		let length = if b.len() < 32 { b.len() } else { 32 };
+		for i in 0..length {
+			buf[i] = b[i]
+		}
 		Self::from(buf)
 	}
 
