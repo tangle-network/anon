@@ -276,13 +276,13 @@ pub mod pallet {
 		/// - Base weight: 1_078_562_000_000
 		/// - DB weights: 9 reads, 3 writes
 		#[pallet::weight(<T as Config>::WeightInfo::withdraw())]
-		pub fn withdraw(
-			origin: OriginFor<T>,
-			withdraw_proof: WithdrawProof<T>,
-		) -> DispatchResultWithPostInfo {
+		pub fn withdraw(origin: OriginFor<T>, withdraw_proof: WithdrawProof<T>) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
-			ensure!(!<MerkleModule<T>>::stopped(withdraw_proof.mixer_id), Error::<T>::MixerStopped);
+			ensure!(
+				!<MerkleModule<T>>::stopped(withdraw_proof.mixer_id),
+				Error::<T>::MixerStopped
+			);
 			let recipient = withdraw_proof.recipient.unwrap_or(sender.clone());
 			let relayer = withdraw_proof.relayer.unwrap_or(sender.clone());
 			let mixer_info = MixerGroups::<T>::get(withdraw_proof.mixer_id);
@@ -302,12 +302,21 @@ pub mod pallet {
 				ScalarData::from_slice(&relayer.encode()),
 			)?;
 			// transfer the fixed deposit size to the sender
-			T::Currency::transfer(&Self::account_id(), &recipient, mixer_info.fixed_deposit_size, AllowDeath)?;
+			T::Currency::transfer(
+				&Self::account_id(),
+				&recipient,
+				mixer_info.fixed_deposit_size,
+				AllowDeath,
+			)?;
 			// update the total value locked
 			let tvl = Self::total_value_locked(withdraw_proof.mixer_id);
 			<TotalValueLocked<T>>::insert(withdraw_proof.mixer_id, tvl - mixer_info.fixed_deposit_size);
 			// Add the nullifier on behalf of the module
-			T::Group::add_nullifier(Self::account_id(), withdraw_proof.mixer_id.into(), withdraw_proof.nullifier_hash)?;
+			T::Group::add_nullifier(
+				Self::account_id(),
+				withdraw_proof.mixer_id.into(),
+				withdraw_proof.nullifier_hash,
+			)?;
 			Ok(().into())
 		}
 
@@ -402,12 +411,13 @@ impl<T: Config> WithdrawProof<T> {
 	}
 }
 
-// TODO: Not sure why compiler is complaining without this since it implements Debug
+// TODO: Not sure why compiler is complaining without this since it implements
+// Debug
 #[cfg(feature = "std")]
 impl<T: Config> std::fmt::Debug for WithdrawProof<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
+	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		write!(f, "{:?}", self)
+	}
 }
 
 /// Type alias for the balances_pallet::Balance type

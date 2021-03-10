@@ -98,7 +98,7 @@ use bulletproofs::{
 use codec::{Decode, Encode};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_gadgets::{
-	fixed_deposit_tree::{mixer_verif_gadget},
+	fixed_deposit_tree::mixer_verif_gadget,
 	poseidon::{
 		allocate_statics_for_verifier,
 		builder::{Poseidon, PoseidonBuilder},

@@ -4,7 +4,8 @@ use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use curve25519_gadgets::{
 	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
 	poseidon::{
-		builder::{Poseidon, PoseidonBuilder}, PoseidonSbox,
+		builder::{Poseidon, PoseidonBuilder},
+		PoseidonSbox,
 	},
 };
 use frame_support::{
@@ -122,18 +123,21 @@ fn should_stop_and_start_mixer() {
 			Error::<Test>::MixerStopped
 		);
 		assert_err!(
-			Mixer::withdraw(Origin::signed(0), WithdrawProof::new(
-				0,
-				0,
-				ScalarData::zero(),
-				Vec::new(),
-				ScalarData::zero(),
-				Vec::new(),
-				Vec::new(),
-				Vec::new(),
-				None,
-				None,
-			)),
+			Mixer::withdraw(
+				Origin::signed(0),
+				WithdrawProof::new(
+					0,
+					0,
+					ScalarData::zero(),
+					Vec::new(),
+					ScalarData::zero(),
+					Vec::new(),
+					Vec::new(),
+					Vec::new(),
+					None,
+					None,
+				)
+			),
 			Error::<Test>::MixerStopped
 		);
 
@@ -220,18 +224,21 @@ fn should_withdraw_from_each_mixer_successfully() {
 			let tvl = Mixer::total_value_locked(i);
 			assert_eq!(tvl, m.fixed_deposit_size);
 			// withdraw from another account
-			assert_ok!(Mixer::withdraw(Origin::signed(2), WithdrawProof::new(
-				i,
-				0,
-				root,
-				comms,
-				ScalarData(nullifier_hash),
-				proof.to_bytes(),
-				leaf_index_comms,
-				proof_comms,
-				None,
-				None,
-			)));
+			assert_ok!(Mixer::withdraw(
+				Origin::signed(2),
+				WithdrawProof::new(
+					i,
+					0,
+					root,
+					comms,
+					ScalarData(nullifier_hash),
+					proof.to_bytes(),
+					leaf_index_comms,
+					proof_comms,
+					None,
+					None,
+				)
+			));
 			let balance_after = Balances::free_balance(2);
 			assert_eq!(balance_before + m.fixed_deposit_size, balance_after);
 			// ensure TVL is 0 after withdrawing
