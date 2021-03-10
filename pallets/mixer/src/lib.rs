@@ -68,6 +68,7 @@ use merkle::{
 	},
 	Group as GroupTrait, Module as MerkleModule,
 };
+use orml_traits::MultiCurrency;
 use sp_runtime::{
 	traits::{AccountIdConversion, Zero},
 	ModuleId,
@@ -93,6 +94,7 @@ pub mod pallet {
 		type Event: IsType<<Self as frame_system::Config>::Event> + From<Event<Self>>;
 		/// Currency type for taking deposits
 		type Currency: Currency<Self::AccountId>;
+		type MultiCurrency: MultiCurrency<Self::AccountId>;
 		/// The overarching group trait
 		type Group: GroupTrait<Self::AccountId, Self::BlockNumber, Self::GroupId>;
 		/// The max depth of the mixers

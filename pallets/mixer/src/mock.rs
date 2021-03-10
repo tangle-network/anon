@@ -3,6 +3,8 @@ use crate as pallet_mixer;
 use frame_support::{construct_runtime, parameter_types, weights::Weight};
 use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
 use merkle::weights::Weights as MerkleWeights;
+use orml_currencies::BasicCurrencyAdapter;
+use orml_traits::parameter_type_with_key;
 use pallet_mixer::weights::Weights;
 use sp_core::H256;
 use sp_runtime::{
@@ -10,7 +12,11 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	ModuleId, Perbill,
 };
+
 pub(crate) type Balance = u64;
+pub type Amount = i128;
+pub type CurrencyId = u64;
+pub type BlockNumber = u64;
 
 // Configure a mock runtime to test the pallet.
 type UncheckedExtrinsic = MockUncheckedExtrinsic<Test>;
@@ -26,6 +32,8 @@ construct_runtime!(
 		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
 		MerkleGroups: merkle::{Module, Call, Storage, Event<T>},
 		Mixer: pallet_mixer::{Module, Call, Storage, Event<T>},
+		Currencies: orml_currencies::{Module, Storage, Event<T>},
+		Tokens: orml_tokens::{Module, Storage, Event<T>},
 	}
 );
 
@@ -81,6 +89,37 @@ impl balances::Config for Test {
 	type WeightInfo = ();
 }
 
+parameter_type_with_key! {
+	pub ExistentialDepositMap: |k: CurrencyId| -> Balance {
+		match k {
+			1 => 1,
+			_ => 2,
+		}
+	};
+}
+
+parameter_types! {
+	pub const NativeCurrencyId: CurrencyId = 0;
+}
+
+impl orml_tokens::Config for Test {
+	type Amount = Amount;
+	type Balance = Balance;
+	type CurrencyId = CurrencyId;
+	type Event = Event;
+	type ExistentialDeposits = ExistentialDepositMap;
+	type OnDust = ();
+	type WeightInfo = ();
+}
+
+impl orml_currencies::Config for Test {
+	type Event = Event;
+	type GetNativeCurrencyId = NativeCurrencyId;
+	type MultiCurrency = Tokens;
+	type NativeCurrency = BasicCurrencyAdapter<Test, Balances, Amount, BlockNumber>;
+	type WeightInfo = ();
+}
+
 impl merkle::Config for Test {
 	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
@@ -104,6 +143,7 @@ impl Config for Test {
 	type MaxMixerTreeDepth = MaxTreeDepth;
 	type MixerSizes = MixerSizes;
 	type ModuleId = MixerModuleId;
+	type MultiCurrency = Currencies;
 	type WeightInfo = Weights<Self>;
 }
 

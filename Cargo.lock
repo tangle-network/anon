@@ -1640,7 +1640,7 @@ dependencies = [
  "bitflags",
  "frame-metadata",
  "frame-support-procedural",
- "impl-trait-for-tuples",
+ "impl-trait-for-tuples 0.2.1",
  "log",
  "once_cell",
  "parity-scale-codec 2.0.1",
@@ -1698,7 +1698,7 @@ version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=49a4103#49a4103f4bfef55be20a5c6d26e18ff3003c3353"
 dependencies = [
  "frame-support",
- "impl-trait-for-tuples",
+ "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.0.1",
  "serde",
  "sp-core",
@@ -2414,6 +2414,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b47ca4d2b6931707a55fce5cf66aff80e2178c8b63bbb4ecb5695cbc870ddf6f"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "impl-trait-for-tuples"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ef5550a42e3740a0e71f909d4c861056a284060af885ae7aa6242820f920d9d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -3818,6 +3829,69 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77af24da69f9d9341038eba93a073b1fdaaa1b788221b00a69bce9e762cb32de"
 
 [[package]]
+name = "orml-currencies"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "204fa52ab72cf353879bf57a6cccc64d1fadf3d44246d98007b218cc22fc4d06"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "funty",
+ "orml-traits",
+ "orml-utilities",
+ "parity-scale-codec 2.0.1",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
+]
+
+[[package]]
+name = "orml-tokens"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0321e56f921689c6c78bf2b68e3deb03172065ca8f306d4d8432d09c3569bb9d"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "funty",
+ "orml-traits",
+ "parity-scale-codec 2.0.1",
+ "sp-runtime",
+ "sp-std 3.0.0",
+]
+
+[[package]]
+name = "orml-traits"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18dd4788a7b96709d23081b1a33a5b8477cf25833f20b27b19908d5babdfe7ab"
+dependencies = [
+ "frame-support",
+ "funty",
+ "impl-trait-for-tuples 0.1.3",
+ "num-traits",
+ "orml-utilities",
+ "parity-scale-codec 2.0.1",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
+]
+
+[[package]]
+name = "orml-utilities"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f84d1a0ce4c65a8695cf8c41895c6161d2345214a4a413e674478f6a37968db"
+dependencies = [
+ "frame-support",
+ "funty",
+ "parity-scale-codec 2.0.1",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
+]
+
+[[package]]
 name = "owning_ref"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3851,7 +3925,7 @@ source = "git+https://github.com/paritytech/substrate.git?rev=49a4103#49a4103f4b
 dependencies = [
  "frame-support",
  "frame-system",
- "impl-trait-for-tuples",
+ "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.0.1",
  "sp-authorship",
  "sp-inherents",
@@ -3986,6 +4060,9 @@ dependencies = [
  "frame-support",
  "frame-system",
  "merlin",
+ "orml-currencies",
+ "orml-tokens",
+ "orml-traits",
  "pallet-balances",
  "pallet-merkle",
  "parity-scale-codec 2.0.1",
@@ -4016,7 +4093,7 @@ source = "git+https://github.com/paritytech/substrate.git?rev=49a4103#49a4103f4b
 dependencies = [
  "frame-support",
  "frame-system",
- "impl-trait-for-tuples",
+ "impl-trait-for-tuples 0.2.1",
  "pallet-timestamp",
  "parity-scale-codec 2.0.1",
  "serde",
@@ -4051,7 +4128,7 @@ dependencies = [
  "frame-benchmarking 3.0.0",
  "frame-support",
  "frame-system",
- "impl-trait-for-tuples",
+ "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.0.1",
  "serde",
  "sp-inherents",
@@ -4223,7 +4300,7 @@ checksum = "664a8c6b8e62d8f9f2f937e391982eb433ab285b4cd9545b342441e04a906e42"
 dependencies = [
  "cfg-if 1.0.0",
  "hashbrown",
- "impl-trait-for-tuples",
+ "impl-trait-for-tuples 0.2.1",
  "parity-util-mem-derive",
  "parking_lot 0.11.1",
  "primitive-types",
@@ -5287,7 +5364,7 @@ name = "sc-chain-spec"
 version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=49a4103#49a4103f4bfef55be20a5c6d26e18ff3003c3353"
 dependencies = [
- "impl-trait-for-tuples",
+ "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.0.1",
  "sc-chain-spec-derive",
  "sc-consensus-babe",
@@ -6828,7 +6905,7 @@ source = "git+https://github.com/paritytech/substrate.git?rev=49a4103#49a4103f4b
 dependencies = [
  "either",
  "hash256-std-hasher",
- "impl-trait-for-tuples",
+ "impl-trait-for-tuples 0.2.1",
  "log",
  "parity-scale-codec 2.0.1",
  "parity-util-mem",
@@ -6847,7 +6924,7 @@ name = "sp-runtime-interface"
 version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=49a4103#49a4103f4bfef55be20a5c6d26e18ff3003c3353"
 dependencies = [
- "impl-trait-for-tuples",
+ "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.0.1",
  "primitive-types",
  "sp-externalities",
@@ -6980,7 +7057,7 @@ name = "sp-timestamp"
 version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=49a4103#49a4103f4bfef55be20a5c6d26e18ff3003c3353"
 dependencies = [
- "impl-trait-for-tuples",
+ "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.0.1",
  "sp-api",
  "sp-inherents",
@@ -7061,7 +7138,7 @@ name = "sp-wasm-interface"
 version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=49a4103#49a4103f4bfef55be20a5c6d26e18ff3003c3353"
 dependencies = [
- "impl-trait-for-tuples",
+ "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.0.1",
  "sp-std 3.0.0",
  "wasmi",
