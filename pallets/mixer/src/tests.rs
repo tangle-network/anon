@@ -1,3 +1,4 @@
+use curve25519_dalek::scalar::Scalar;
 use super::*;
 use crate::mock::{new_test_ext, Balances, MerkleGroups, Mixer, MixerCall, Origin, System, Test};
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
@@ -212,7 +213,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 
 			let root = MerkleGroups::get_merkle_root(i).unwrap();
 			let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-				ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+				ftree.prove_zk(root.0, leaf, Scalar::from(2u32), Scalar::zero(), &ftree.hash_params.bp_gens, prover);
 
 			let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 			let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
@@ -235,8 +236,8 @@ fn should_withdraw_from_each_mixer_successfully() {
 					proof.to_bytes(),
 					leaf_index_comms,
 					proof_comms,
-					None,
-					None,
+					Some(2),
+					Some(0),
 				)
 			));
 			let balance_after = Balances::free_balance(2);

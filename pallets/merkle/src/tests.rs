@@ -450,7 +450,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+			ftree.prove_zk(root.0, leaf, Scalar::zero(), Scalar::zero(), &ftree.hash_params.bp_gens, prover);
 
 		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
@@ -490,7 +490,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+			ftree.prove_zk(root.0, leaf, Scalar::zero(), Scalar::zero(), &ftree.hash_params.bp_gens, prover);
 
 		let mut comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let mut rng = OsRng::default();
@@ -535,7 +535,7 @@ fn should_not_verify_invalid_private_inputs() {
 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+			ftree.prove_zk(root.0, leaf, Scalar::zero(), Scalar::zero(), &ftree.hash_params.bp_gens, prover);
 
 		let mut comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
@@ -582,7 +582,7 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+			ftree.prove_zk(root.0, leaf, Scalar::zero(), Scalar::zero(), &ftree.hash_params.bp_gens, prover);
 
 		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let mut leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
@@ -628,7 +628,7 @@ fn should_not_verify_invalid_transcript() {
 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+			ftree.prove_zk(root.0, leaf, Scalar::zero(), Scalar::zero(), &ftree.hash_params.bp_gens, prover);
 
 		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
@@ -688,7 +688,7 @@ fn should_verify_zk_proof_of_membership() {
 
 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-			ftree.prove_zk(root.0, leaf5, &ftree.hash_params.bp_gens, prover);
+			ftree.prove_zk(root.0, leaf5, Scalar::zero(), Scalar::zero(), &ftree.hash_params.bp_gens, prover);
 
 		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
@@ -726,7 +726,7 @@ fn should_verify_large_zk_proof_of_membership() {
 
 		let root = MerkleGroups::get_merkle_root(0).unwrap();
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+			ftree.prove_zk(root.0, leaf, Scalar::zero(), Scalar::zero(), &ftree.hash_params.bp_gens, prover);
 
 		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
