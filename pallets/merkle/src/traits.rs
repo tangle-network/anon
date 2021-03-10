@@ -46,6 +46,8 @@ pub trait Group<AccountId, BlockNumber, GroupId> {
 		proof_bytes: Vec<u8>,
 		leaf_index_commitments: Vec<Commitment>,
 		proof_commitments: Vec<Commitment>,
+		recipient: ScalarData,
+		relayer: ScalarData,
 	) -> Result<(), dispatch::DispatchError>;
 	fn verify_zk(
 		pc_gens: PedersenGens,
@@ -56,5 +58,7 @@ pub trait Group<AccountId, BlockNumber, GroupId> {
 		proof_bytes: Vec<u8>,
 		leaf_index_commitments: Vec<Commitment>,
 		proof_commitments: Vec<Commitment>,
+		recipient: ScalarData,
+		relayer: ScalarData,
 	) -> Result<(), dispatch::DispatchError>;
 }

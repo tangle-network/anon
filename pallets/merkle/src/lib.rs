@@ -98,7 +98,7 @@ use bulletproofs::{
 use codec::{Decode, Encode};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_gadgets::{
-	fixed_deposit_tree::fixed_deposit_tree_verif_gadget,
+	fixed_deposit_tree::mixer_verif_gadget,
 	poseidon::{
 		allocate_statics_for_verifier,
 		builder::{Poseidon, PoseidonBuilder},
@@ -618,6 +618,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 		proof_bytes: Vec<u8>,
 		leaf_index_commitments: Vec<Commitment>,
 		proof_commitments: Vec<Commitment>,
+		recipient: ScalarData,
+		relayer: ScalarData,
 	) -> Result<(), dispatch::DispatchError> {
 		let tree = Groups::<T>::get(group_id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
 		ensure!(
@@ -641,6 +643,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 			proof_bytes,
 			leaf_index_commitments,
 			proof_commitments,
+			recipient,
+			relayer,
 		)
 	}
 
@@ -653,6 +657,8 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 		proof_bytes: Vec<u8>,
 		leaf_index_commitments: Vec<Commitment>,
 		proof_commitments: Vec<Commitment>,
+		recipient: ScalarData,
+		relayer: ScalarData,
 	) -> Result<(), dispatch::DispatchError> {
 		let label = b"zk_membership_proof";
 		let mut verifier_transcript = Transcript::new(label);
@@ -696,8 +702,10 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 
 		let num_statics = 4;
 		let statics = allocate_statics_for_verifier(&mut verifier, num_statics, &pc_gens);
-		let gadget_res = fixed_deposit_tree_verif_gadget(
+		let gadget_res = mixer_verif_gadget(
 			&mut verifier,
+			&recipient.to_scalar(),
+			&relayer.to_scalar(),
 			depth as usize,
 			&m_root.0,
 			&nullifier_hash.0,

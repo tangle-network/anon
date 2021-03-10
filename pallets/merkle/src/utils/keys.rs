@@ -115,7 +115,17 @@ impl ScalarData {
 		ScalarData(Scalar::from_bytes_mod_order(b))
 	}
 
+	pub fn from_slice(b: &[u8]) -> Self {
+		let mut buf: [u8; 32] = [0u8; 32];
+		buf.copy_from_slice(b);
+		Self::from(buf)
+	}
+
 	pub fn zero() -> Self {
 		ScalarData(Scalar::zero())
+	}
+
+	pub fn to_scalar(&self) -> Scalar {
+		self.0
 	}
 }
