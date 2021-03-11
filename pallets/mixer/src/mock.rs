@@ -142,6 +142,7 @@ impl Config for Test {
 	type MaxMixerTreeDepth = MaxTreeDepth;
 	type MixerSizes = MixerSizes;
 	type ModuleId = MixerModuleId;
+	type NativeCurrencyId = NativeCurrencyId;
 	type WeightInfo = Weights<Self>;
 }
 
