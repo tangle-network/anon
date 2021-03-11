@@ -3,11 +3,6 @@
 use sha2::Sha512;
 use sp_std::prelude::*;
 
-use super::hasher::Hasher;
-use bulletproofs::{
-	r1cs::{LinearCombination, Prover, Verifier},
-	PedersenGens,
-};
 use codec::{Decode, Encode, EncodeLike, Input};
 use curve25519_dalek::{
 	ristretto::{CompressedRistretto, RistrettoPoint},
@@ -135,28 +130,5 @@ impl ScalarData {
 
 	pub fn to_scalar(&self) -> Scalar {
 		self.0
-	}
-
-	pub fn hash<H: Hasher>(xl: Self, xr: Self, h: &H) -> Self {
-		ScalarData(h.hash(xl.0, xr.0))
-	}
-
-	pub fn constrain_prover<H: Hasher>(
-		cs: &mut Prover,
-		xl: LinearCombination,
-		xr: LinearCombination,
-		h: &H,
-	) -> LinearCombination {
-		h.constrain_prover(cs, xl, xr)
-	}
-
-	pub fn constrain_verifier<H: Hasher>(
-		cs: &mut Verifier,
-		pc_gens: &PedersenGens,
-		xl: LinearCombination,
-		xr: LinearCombination,
-		h: &H,
-	) -> LinearCombination {
-		h.constrain_verifier(cs, pc_gens, xl, xr)
 	}
 }
