@@ -1160,14 +1160,12 @@ dependencies = [
 [[package]]
 name = "curve25519-gadgets"
 version = "2.0.0"
-source = "git+https://github.com/webb-tools/bulletproof-gadgets?rev=4028605#402860539056639a3c22f243f8925bd4f89f869e"
+source = "git+https://github.com/webb-tools/bulletproof-gadgets?branch=main#ea1981f241243def9a789fabfb9d41155613b599"
 dependencies = [
  "bencher",
  "bulletproofs",
  "curve25519-dalek 3.0.2",
- "hex",
  "merlin",
- "num-bigint 0.3.2",
  "parity-scale-codec 1.3.7",
  "rand_core 0.5.1",
  "sp-std 2.0.1",
@@ -1176,12 +1174,14 @@ dependencies = [
 [[package]]
 name = "curve25519-gadgets"
 version = "2.0.0"
-source = "git+https://github.com/webb-tools/bulletproof-gadgets?branch=main#ea1981f241243def9a789fabfb9d41155613b599"
+source = "git+https://github.com/webb-tools/bulletproof-gadgets?rev=4028605#402860539056639a3c22f243f8925bd4f89f869e"
 dependencies = [
  "bencher",
  "bulletproofs",
  "curve25519-dalek 3.0.2",
+ "hex",
  "merlin",
+ "num-bigint 0.3.2",
  "parity-scale-codec 1.3.7",
  "rand_core 0.5.1",
  "sp-std 2.0.1",

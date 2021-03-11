@@ -55,11 +55,7 @@ mod benchmarking;
 pub mod weights;
 
 use codec::{Decode, Encode};
-use frame_support::{
-	debug, dispatch, ensure,
-	traits::{Currency, ExistenceRequirement::AllowDeath, Get},
-	weights::Weight,
-};
+use frame_support::{debug, dispatch, ensure, traits::Get, weights::Weight};
 use frame_system::ensure_signed;
 use merkle::{
 	utils::{
@@ -87,14 +83,13 @@ pub mod pallet {
 
 	/// The pallet's configuration trait.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + merkle::Config {
+	pub trait Config: frame_system::Config + merkle::Config + orml_currencies::Config {
 		#[pallet::constant]
 		type ModuleId: Get<ModuleId>;
 		/// The overarching event type.
 		type Event: IsType<<Self as frame_system::Config>::Event> + From<Event<Self>>;
 		/// Currency type for taking deposits
-		type Currency: Currency<Self::AccountId>;
-		type MultiCurrency: MultiCurrency<Self::AccountId>;
+		type Currency: MultiCurrency<Self::AccountId>;
 		/// The overarching group trait
 		type Group: GroupTrait<Self::AccountId, Self::BlockNumber, Self::GroupId>;
 		/// The max depth of the mixers
@@ -245,7 +240,7 @@ pub mod pallet {
 			// get mixer info, should always exist if the module is initialized
 			let mut mixer_info = Self::get_mixer(mixer_id)?;
 			// ensure the sender has enough balance to cover deposit
-			let balance = T::Currency::free_balance(&sender);
+			let balance = T::Currency::free_balance(mixer_info.currency_id, &sender);
 			// TODO: Multiplication by usize should be possible
 			// using this hack for now, though we should optimise with regular
 			// multiplication `data_points.len() * mixer_info.fixed_deposit_size`
@@ -253,10 +248,10 @@ pub mod pallet {
 				.iter()
 				.map(|_| mixer_info.fixed_deposit_size)
 				.fold(Zero::zero(), |acc, elt| acc + elt);
-			ensure!(balance >= deposit, Error::<T>::InsufficientBalance);
+			// ensure!(balance >= deposit, Error::<T>::InsufficientBalance);
 			// transfer the deposit to the module
-			T::Currency::transfer(&sender, &Self::account_id(), deposit, AllowDeath)?;
-			// update the total value locked
+			// T::Currency::transfer(mixer_info.currency_id, &sender, &Self::account_id(),
+			// deposit)?; update the total value locked
 			let tvl = Self::total_value_locked(mixer_id);
 			<TotalValueLocked<T>>::insert(mixer_id, tvl + deposit);
 			// add elements to the mixer group's merkle tree and save the leaves
@@ -304,12 +299,12 @@ pub mod pallet {
 				ScalarData::from_slice(&relayer.encode()),
 			)?;
 			// transfer the fixed deposit size to the sender
-			T::Currency::transfer(
-				&Self::account_id(),
-				&recipient,
-				mixer_info.fixed_deposit_size,
-				AllowDeath,
-			)?;
+			// T::Currency::transfer(
+			// 	mixer_info.currency_id,
+			// 	&Self::account_id(),
+			// 	&recipient,
+			// 	mixer_info.fixed_deposit_size,
+			// )?;
 			// update the total value locked
 			let tvl = Self::total_value_locked(withdraw_proof.mixer_id);
 			<TotalValueLocked<T>>::insert(withdraw_proof.mixer_id, tvl - mixer_info.fixed_deposit_size);
@@ -422,8 +417,10 @@ impl<T: Config> std::fmt::Debug for WithdrawProof<T> {
 	}
 }
 
-/// Type alias for the balances_pallet::Balance type
-pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+/// Type alias for the orml_currencies::Balance type
+type BalanceOf<T> = <<T as Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::Balance;
+type CurrencyIdOf<T> = <<T as Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::CurrencyId;
+type GetNativeCurrencyIdOf<T> = <T as orml_currencies::Config>::GetNativeCurrencyId;
 
 /// Info about the mixer and it's leaf data
 #[derive(Encode, Decode, PartialEq)]
@@ -437,6 +434,8 @@ pub struct MixerInfo<T: Config> {
 	pub fixed_deposit_size: BalanceOf<T>,
 	/// All the leaves/deposits of the mixer
 	pub leaves: Vec<ScalarData>,
+	/// Id of the currency in the mixer
+	pub currency_id: CurrencyIdOf<T>,
 }
 
 impl<T: Config> core::default::Default for MixerInfo<T> {
@@ -445,16 +444,23 @@ impl<T: Config> core::default::Default for MixerInfo<T> {
 			minimum_deposit_length_for_reward: Zero::zero(),
 			fixed_deposit_size: Zero::zero(),
 			leaves: Vec::new(),
+			currency_id: GetNativeCurrencyIdOf::<T>::get(),
 		}
 	}
 }
 
 impl<T: Config> MixerInfo<T> {
-	pub fn new(min_dep_length: T::BlockNumber, dep_size: BalanceOf<T>, leaves: Vec<ScalarData>) -> Self {
+	pub fn new(
+		min_dep_length: T::BlockNumber,
+		dep_size: BalanceOf<T>,
+		leaves: Vec<ScalarData>,
+		currency_id: CurrencyIdOf<T>,
+	) -> Self {
 		Self {
 			minimum_deposit_length_for_reward: min_dep_length,
 			fixed_deposit_size: dep_size,
 			leaves,
+			currency_id,
 		}
 	}
 }
@@ -490,11 +496,8 @@ impl<T: Config> Module<T> {
 			// Creating a new merkle group and getting the id back
 			let mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
 			// Creating mixer info data
-			let mixer_info = MixerInfo::<T> {
-				fixed_deposit_size: size,
-				minimum_deposit_length_for_reward: T::DepositLength::get(),
-				leaves: Vec::new(),
-			};
+			let mixer_info =
+				MixerInfo::<T>::new(T::DepositLength::get(), size, Vec::new(), T::GetNativeCurrencyId::get());
 			// Saving the mixer group to storage
 			MixerGroups::<T>::insert(mixer_id, mixer_info);
 			mixer_ids.push(mixer_id);

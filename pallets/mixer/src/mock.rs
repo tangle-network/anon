@@ -92,7 +92,6 @@ impl balances::Config for Test {
 parameter_type_with_key! {
 	pub ExistentialDepositMap: |k: CurrencyId| -> Balance {
 		match k {
-			1 => 1,
 			_ => 2,
 		}
 	};
@@ -135,7 +134,7 @@ parameter_types! {
 }
 
 impl Config for Test {
-	type Currency = Balances;
+	type Currency = Currencies;
 	type DefaultAdmin = DefaultAdmin;
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
@@ -143,7 +142,6 @@ impl Config for Test {
 	type MaxMixerTreeDepth = MaxTreeDepth;
 	type MixerSizes = MixerSizes;
 	type ModuleId = MixerModuleId;
-	type MultiCurrency = Currencies;
 	type WeightInfo = Weights<Self>;
 }
 
