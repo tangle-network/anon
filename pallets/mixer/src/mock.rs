@@ -1,7 +1,7 @@
 use super::*;
 use crate as pallet_mixer;
 use frame_benchmarking::whitelisted_caller;
-use frame_support::{construct_runtime, parameter_types, weights::Weight};
+use frame_support::{construct_runtime, parameter_types, traits::GenesisBuild, weights::Weight};
 use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
 use merkle::weights::Weights as MerkleWeights;
 use orml_currencies::BasicCurrencyAdapter;
@@ -17,6 +17,7 @@ use weights::Weights;
 pub(crate) type Balance = u64;
 pub type Amount = i128;
 pub type CurrencyId = u64;
+pub type AccountId = u64;
 pub type BlockNumber = u64;
 
 // Configure a mock runtime to test the pallet.
@@ -34,7 +35,7 @@ construct_runtime!(
 		MerkleGroups: merkle::{Module, Call, Storage, Event<T>},
 		Mixer: pallet_mixer::{Module, Call, Storage, Event<T>},
 		Currencies: orml_currencies::{Module, Storage, Event<T>},
-		Tokens: orml_tokens::{Module, Storage, Event<T>},
+		Tokens: orml_tokens::{Module, Storage, Event<T>, Config<T>},
 	}
 );
 
@@ -48,11 +49,11 @@ parameter_types! {
 
 impl frame_system::Config for Test {
 	type AccountData = balances::AccountData<u64>;
-	type AccountId = u64;
+	type AccountId = AccountId;
 	type BaseCallFilter = ();
 	type BlockHashCount = BlockHashCount;
 	type BlockLength = ();
-	type BlockNumber = u64;
+	type BlockNumber = BlockNumber;
 	type BlockWeights = ();
 	type Call = Call;
 	type DbWeight = ();
@@ -151,7 +152,9 @@ pub type MixerCall = pallet_mixer::Call<Test>;
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	use balances::GenesisConfig as BalancesConfig;
+	use orml_tokens::GenesisConfig as TokensConfig;
 	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+
 	BalancesConfig::<Test> {
 		// Total issuance will be 200 with treasury account initialized at ED.
 		balances: vec![
@@ -163,5 +166,13 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();
+
+	let token_currency_id: CurrencyId = 1;
+	TokensConfig::<Test> {
+		endowed_accounts: vec![(0, token_currency_id, 1_000_000_000)],
+	}
+	.assimilate_storage(&mut t)
+	.unwrap();
+
 	t.into()
 }

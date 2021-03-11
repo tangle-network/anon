@@ -80,6 +80,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
+	use sp_runtime::DispatchResultWithInfo;
 
 	/// The pallet's configuration trait.
 	#[pallet::config]
@@ -314,6 +315,22 @@ pub mod pallet {
 				withdraw_proof.mixer_id.into(),
 				withdraw_proof.nullifier_hash,
 			)?;
+			Ok(().into())
+		}
+
+		// NOTE: Used only for testing purposes
+		#[pallet::weight(0)]
+		pub fn create_new(
+			origin: OriginFor<T>,
+			currency_id: CurrencyIdOf<T>,
+			size: BalanceOf<T>,
+		) -> DispatchResultWithPostInfo {
+			ensure_admin(origin, &Self::admin())?;
+
+			let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
+			let mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
+			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, Vec::new(), currency_id);
+			MixerGroups::<T>::insert(mixer_id, mixer_info);
 			Ok(().into())
 		}
 

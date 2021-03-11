@@ -57,6 +57,7 @@ std = [
     "balances/std",
     "frame-support/std",
     "frame-system/std",
+    "orml-tokens/std",
     "frame-benchmarking/std",
     "merkle/std",
 ]

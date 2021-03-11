@@ -1,7 +1,7 @@
-use curve25519_dalek::scalar::Scalar;
 use super::*;
-use crate::mock::{new_test_ext, Balances, MerkleGroups, Mixer, MixerCall, Origin, System, Test};
+use crate::mock::{new_test_ext, AccountId, Balances, MerkleGroups, Mixer, MixerCall, Origin, System, Test, Tokens};
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
+use curve25519_dalek::scalar::Scalar;
 use curve25519_gadgets::{
 	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
 	poseidon::{
@@ -212,8 +212,14 @@ fn should_withdraw_from_each_mixer_successfully() {
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![ScalarData(leaf)]));
 
 			let root = MerkleGroups::get_merkle_root(i).unwrap();
-			let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-				ftree.prove_zk(root.0, leaf, Scalar::from(2u32), Scalar::zero(), &ftree.hash_params.bp_gens, prover);
+			let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
+				root.0,
+				leaf,
+				Scalar::from(2u32),
+				Scalar::zero(),
+				&ftree.hash_params.bp_gens,
+				prover,
+			);
 
 			let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 			let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
@@ -322,4 +328,83 @@ fn should_not_have_cache_once_cache_length_exceeded() {
 			}
 		}
 	})
+}
+
+#[test]
+fn should_make_mixer_with_non_native_token() {
+	new_test_ext().execute_with(|| {
+		let currency_id = 1;
+		assert_ok!(Mixer::initialize());
+		assert_ok!(Mixer::create_new(Origin::signed(4), currency_id, 1_000));
+
+		let pc_gens = PedersenGens::default();
+		let poseidon = default_hasher(16400);
+
+		let group_tree_id = 4u32;
+		let sender: AccountId = 0;
+		let recipient: AccountId = 1;
+		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
+		let prover = Prover::new(&pc_gens, &mut prover_transcript);
+		let mut ftree = FixedDepositTreeBuilder::new()
+			.hash_params(poseidon.clone())
+			.depth(32)
+			.build();
+
+		let leaf = ftree.generate_secrets();
+		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
+
+		// Getting native balance before deposit
+		let native_balance_before = Balances::free_balance(&sender);
+		assert_ok!(Mixer::deposit(Origin::signed(sender), group_tree_id, vec![ScalarData(
+			leaf
+		)]));
+		// Native balance after deposit, to make sure its not touched
+		let native_balance_after = Balances::free_balance(&sender);
+		assert_eq!(native_balance_before, native_balance_after);
+
+		let root = MerkleGroups::get_merkle_root(group_tree_id).unwrap();
+		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
+			root.0,
+			leaf,
+			Scalar::from(recipient),
+			Scalar::zero(),
+			&ftree.hash_params.bp_gens,
+			prover,
+		);
+
+		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
+		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
+		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
+
+		let m = Mixer::get_mixer(group_tree_id).unwrap();
+		let balance_before = Tokens::free_balance(currency_id, &recipient);
+		let native_balance_before = Balances::free_balance(&sender);
+		// check TVL after depositing
+		let tvl = Mixer::total_value_locked(group_tree_id);
+		assert_eq!(tvl, m.fixed_deposit_size);
+		// withdraw from another account
+		assert_ok!(Mixer::withdraw(
+			Origin::signed(recipient),
+			WithdrawProof::new(
+				group_tree_id,
+				0,
+				root,
+				comms,
+				ScalarData(nullifier_hash),
+				proof.to_bytes(),
+				leaf_index_comms,
+				proof_comms,
+				Some(recipient),
+				Some(0),
+			)
+		));
+		let balance_after = Tokens::free_balance(currency_id, &recipient);
+		assert_eq!(balance_before + m.fixed_deposit_size, balance_after);
+		// Native balance after withdraw, to make sure its not changed
+		let native_balance_after = Balances::free_balance(&sender);
+		assert_eq!(native_balance_before, native_balance_after);
+		// ensure TVL is 0 after withdrawing
+		let tvl = Mixer::total_value_locked(group_tree_id);
+		assert_eq!(tvl, 0);
+	});
 }

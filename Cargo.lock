@@ -3859,6 +3859,7 @@ dependencies = [
  "funty",
  "orml-traits",
  "parity-scale-codec 2.0.1",
+ "serde",
  "sp-runtime",
  "sp-std 3.0.0",
 ]
@@ -3875,6 +3876,7 @@ dependencies = [
  "num-traits",
  "orml-utilities",
  "parity-scale-codec 2.0.1",
+ "serde",
  "sp-io",
  "sp-runtime",
  "sp-std 3.0.0",
@@ -3889,6 +3891,7 @@ dependencies = [
  "frame-support",
  "funty",
  "parity-scale-codec 2.0.1",
+ "serde",
  "sp-io",
  "sp-runtime",
  "sp-std 3.0.0",
