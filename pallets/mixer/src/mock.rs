@@ -1,17 +1,18 @@
 use super::*;
 use crate as pallet_mixer;
+use frame_benchmarking::whitelisted_caller;
 use frame_support::{construct_runtime, parameter_types, weights::Weight};
 use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
 use merkle::weights::Weights as MerkleWeights;
 use orml_currencies::BasicCurrencyAdapter;
 use orml_traits::parameter_type_with_key;
-use pallet_mixer::weights::Weights;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 	ModuleId, Perbill,
 };
+use weights::Weights;
 
 pub(crate) type Balance = u64;
 pub type Amount = i128;
@@ -139,7 +140,6 @@ impl Config for Test {
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
 	type Group = MerkleGroups;
-	type MaxMixerTreeDepth = MaxTreeDepth;
 	type MixerSizes = MixerSizes;
 	type ModuleId = MixerModuleId;
 	type NativeCurrencyId = NativeCurrencyId;
@@ -154,7 +154,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 	BalancesConfig::<Test> {
 		// Total issuance will be 200 with treasury account initialized at ED.
-		balances: vec![(0, 1_000_000_000), (1, 1_000_000_000), (2, 1_000_000_000)],
+		balances: vec![
+			(0, 1_000_000_000),
+			(1, 1_000_000_000),
+			(2, 1_000_000_000),
+			(whitelisted_caller(), 1_000_000_000),
+		],
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();

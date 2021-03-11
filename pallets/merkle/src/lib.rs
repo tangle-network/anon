@@ -145,7 +145,7 @@ pub mod pallet {
 
 	/// The pallet's configuration trait.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + balances::Config {
+	pub trait Config: frame_system::Config {
 		/// The overarching event type.
 		type Event: IsType<<Self as frame_system::Config>::Event> + From<Event<Self>>;
 		/// The overarching group ID type

@@ -83,7 +83,7 @@ pub mod pallet {
 
 	/// The pallet's configuration trait.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + merkle::Config + orml_currencies::Config {
+	pub trait Config: frame_system::Config + merkle::Config + orml_tokens::Config + orml_currencies::Config {
 		#[pallet::constant]
 		type ModuleId: Get<ModuleId>;
 		/// The overarching event type.
@@ -91,12 +91,10 @@ pub mod pallet {
 		/// Currency type for taking deposits
 		type Currency: MultiCurrency<Self::AccountId>;
 		/// Native currency id
+		#[pallet::constant]
 		type NativeCurrencyId: Get<CurrencyIdOf<Self>>;
 		/// The overarching group trait
 		type Group: GroupTrait<Self::AccountId, Self::BlockNumber, Self::GroupId>;
-		/// The max depth of the mixers
-		#[pallet::constant]
-		type MaxMixerTreeDepth: Get<u8>;
 		/// The small deposit length
 		#[pallet::constant]
 		type DepositLength: Get<Self::BlockNumber>;
@@ -422,8 +420,7 @@ impl<T: Config> std::fmt::Debug for WithdrawProof<T> {
 /// Type alias for the orml_currencies::Balance type
 pub type BalanceOf<T> = <<T as Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::Balance;
 pub type CurrencyIdOf<T> =
-	<<T as pallet::Config>::Currency as orml_traits::MultiCurrency<<T as frame_system::Config>::AccountId>>::CurrencyId;
-pub type GetNativeCurrencyIdOf<T> = <T as orml_currencies::Config>::GetNativeCurrencyId;
+	<<T as pallet::Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::CurrencyId;
 
 /// Info about the mixer and it's leaf data
 #[derive(Encode, Decode, PartialEq)]
@@ -488,7 +485,7 @@ impl<T: Config> Module<T> {
 		let default_admin = T::DefaultAdmin::get();
 		// Initialize the admin in storage with default one
 		Admin::<T>::set(default_admin);
-		let depth: u8 = <T as Config>::MaxMixerTreeDepth::get();
+		let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
 
 		// Getting the sizes from the config
 		let sizes = T::MixerSizes::get();
