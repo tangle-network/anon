@@ -4,7 +4,6 @@ members = [
 	"pallets/merkle",
 	"pallets/mixer",
 	"runtime",
-	"wasm-utils"
 ]
 
 [profile.dev.package]

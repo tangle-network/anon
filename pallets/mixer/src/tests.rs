@@ -1,14 +1,14 @@
 use super::*;
 use crate::mock::{new_test_ext, AccountId, Balances, MerkleGroups, Mixer, MixerCall, Origin, System, Test, Tokens};
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
-use curve25519_dalek::scalar::Scalar;
-use curve25519_gadgets::{
+use bulletproofs_gadgets::{
 	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
 	poseidon::{
 		builder::{Poseidon, PoseidonBuilder},
 		PoseidonSbox,
 	},
 };
+use curve25519_dalek::scalar::Scalar;
 use frame_support::{
 	assert_err, assert_ok,
 	traits::{OnFinalize, UnfilteredDispatchable},

@@ -22,8 +22,3 @@ else
     source $HOME/.cargo/env
     export PATH=$HOME/.cargo/bin:$PATH
 fi
-
-rustup install nightly-2021-03-02
-rustup target add wasm32-unknown-unknown --toolchain nightly-2021-03-02
-rustup default nightly-2021-03-02
-curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh

@@ -373,6 +373,7 @@ pub mod pallet {
 	}
 }
 
+/// Proof data for withdrawal
 #[derive(Encode, Decode, PartialEq, Clone)]
 pub struct WithdrawProof<T: Config> {
 	/// The mixer id this withdraw proof corresponds to
@@ -434,8 +435,9 @@ impl<T: Config> std::fmt::Debug for WithdrawProof<T> {
 	}
 }
 
-/// Type alias for the orml_currencies::Balance type
+/// Type alias for the orml_traits::MultiCurrency::Balance type
 pub type BalanceOf<T> = <<T as Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::Balance;
+/// Type alias for the orml_traits::MultiCurrency::CurrencyId type
 pub type CurrencyIdOf<T> =
 	<<T as pallet::Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::CurrencyId;
 
