@@ -45,11 +45,10 @@ use pallet_contracts::weights::WeightInfo;
 pub use pallet_timestamp::Call as TimestampCall;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-use pallet_ethereum::Call::transact;
+
 use pallet_ethereum::TransactionStatus;
 use pallet_evm::{
-	Account as EVMAccount, EnsureAddressNever, EnsureAddressSame, FeeCalculator,
-	IdentityAddressMapping, Runner,
+	Account as EVMAccount, FeeCalculator, Runner,
 };
 use sp_runtime::ConsensusEngineId;
 use frame_support::traits::FindAuthor;

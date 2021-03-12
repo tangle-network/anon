@@ -1,3 +1,5 @@
+//! A collection of node-specific RPC methods.
+
 #![warn(missing_docs)]
 
 use pallet_ethereum::EthereumStorageSchema;
@@ -79,8 +81,6 @@ pub struct FullDeps<C, P, SC, B> {
 	pub deny_unsafe: DenyUnsafe,
 	/// GRANDPA specific dependencies.
 	pub grandpa: GrandpaDeps<B>,
-	/// A copy of the chain spec.
-	pub chain_spec: Box<dyn sc_chain_spec::ChainSpec>,
 }
 
 
@@ -108,8 +108,8 @@ pub fn create_full<C, P, SC, B>(
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
 	use pallet_contracts_rpc::{Contracts, ContractsApi};
 	use fc_rpc::{
-		EthApi, EthApiServer, NetApi, NetApiServer, EthPubSubApiServer, EthPubSubApi,
-		EthDevSigner, EthSigner, HexEncodedIdProvider,
+		EthApi, EthApiServer, EthFilterApi, EthFilterApiServer, EthPubSubApi, EthPubSubApiServer,
+		HexEncodedIdProvider, NetApi, NetApiServer, Web3Api, Web3ApiServer, EthDevSigner, EthSigner
 	};
 
 	let mut io = jsonrpc_core::IoHandler::default();
@@ -123,7 +123,6 @@ pub fn create_full<C, P, SC, B>(
 		pending_transactions,
 		deny_unsafe,
 		filter_pool,
-		chain_spec,
 		backend,
 		grandpa,
 	} = deps;
@@ -170,23 +169,31 @@ pub fn create_full<C, P, SC, B>(
 			is_authority,
 		))
 	);
-	io.extend_with(
-		NetApiServer::to_delegate(NetApi::new(
+
+	if let Some(filter_pool) = filter_pool {
+		io.extend_with(EthFilterApiServer::to_delegate(EthFilterApi::new(
 			client.clone(),
-			network.clone(),
-		))
-	);
-	io.extend_with(
-		EthPubSubApiServer::to_delegate(EthPubSubApi::new(
-			pool.clone(),
-			client.clone(),
-			network.clone(),
-			SubscriptionManager::<HexEncodedIdProvider>::with_id_provider(
-				HexEncodedIdProvider::default(),
-				Arc::new(subscription_task_executor)
-			),
-		))
-	);
+			filter_pool.clone(),
+			500 as usize, // max stored filters
+		)));
+	}
+
+	io.extend_with(NetApiServer::to_delegate(NetApi::new(
+		client.clone(),
+		network.clone(),
+	)));
+	io.extend_with(Web3ApiServer::to_delegate(Web3Api::new(client.clone())));
+	io.extend_with(EthPubSubApiServer::to_delegate(EthPubSubApi::new(
+		pool.clone(),
+		client.clone(),
+		network,
+		SubscriptionManager::<HexEncodedIdProvider>::with_id_provider(
+			HexEncodedIdProvider::default(),
+			Arc::new(subscription_task_executor),
+		),
+	)));
+
+
 	io.extend_with(
 		sc_finality_grandpa_rpc::GrandpaApi::to_delegate(
 			GrandpaRpcHandler::new(

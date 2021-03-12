@@ -167,7 +167,6 @@ pub fn new_full_base(
 	let prometheus_registry = config.prometheus_registry().cloned();
 	let is_authority = role.is_authority();
 	let subscription_task_executor = sc_rpc::SubscriptionTaskExecutor::new(task_manager.spawn_handle());
-	let chain_spec = config.chain_spec.cloned_box();
 
 	let g_link = match consensus_result {
 		ConsensusResult::Aura(ref _aura_link, ref grandpa_link) => {
@@ -200,7 +199,6 @@ pub fn new_full_base(
 				is_authority,
 				enable_dev_signer,
 				network: network.clone(),
-				chain_spec: chain_spec.cloned_box(),
 				pending_transactions: pending.clone(),
 				filter_pool: filter_pool.clone(),
 				backend: frontier_backend.clone(),
