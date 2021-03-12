@@ -3,21 +3,28 @@
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use curve25519_dalek::scalar::Scalar;
 use curve25519_gadgets::{
+	self,
 	fixed_deposit_tree::builder::{FixedDepositTree, FixedDepositTreeBuilder},
 	poseidon::{
 		builder::{Poseidon, PoseidonBuilder},
-		gen_mds_matrix, gen_round_keys, PoseidonSbox,
+		PoseidonSbox,
 	},
 };
 use js_sys::{Array, JsString, Map, Uint8Array};
 use merlin::Transcript;
-use std::collections::hash_map::HashMap;
+use std::{collections::hash_map::HashMap, convert::TryInto};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 extern "C" {
 	#[wasm_bindgen(js_namespace = console)]
 	fn log(s: &str);
+
+	#[wasm_bindgen(typescript_type = "MixerGroups")]
+	pub type MixerGroups;
+
+	#[wasm_bindgen(typescript_type = "Leaves")]
+	pub type Leaves;
 }
 
 #[wasm_bindgen(start)]
@@ -27,7 +34,9 @@ pub fn set_panic_hook() {
 	console_error_panic_hook::set_once();
 }
 
+#[wasm_bindgen]
 #[derive(Debug, PartialEq)]
+#[repr(u32)]
 pub enum OperationCode {
 	Unknown = 0,
 	// Invalid hex string length when decoding
@@ -95,13 +104,13 @@ impl PoseidonHasherOptions {
 	#[wasm_bindgen(setter)]
 	pub fn set_bp_gens(&mut self, value: Uint8Array) {
 		let bp_gens: BulletproofGens =
-			bincode::deserialize(&value.to_vec()).unwrap_or_else(|_| BulletproofGens::new(4096, 1));
+			bincode::deserialize(&value.to_vec()).unwrap_or_else(|_| BulletproofGens::new(16400, 1));
 		self.bp_gens = Some(bp_gens);
 	}
 
 	#[wasm_bindgen(getter)]
 	pub fn bp_gens(&self) -> Uint8Array {
-		let val = self.bp_gens.clone().unwrap_or_else(|| BulletproofGens::new(4096, 1));
+		let val = self.bp_gens.clone().unwrap_or_else(|| BulletproofGens::new(16400, 1));
 		let serialized = bincode::serialize(&val).unwrap_or_else(|_| Vec::new());
 		Uint8Array::from(serialized.as_slice())
 	}
@@ -120,20 +129,12 @@ impl PoseidonHasher {
 
 	#[wasm_bindgen(constructor)]
 	pub fn with_options(opts: PoseidonHasherOptions) -> Self {
-		let full_rounds_beginning = opts.full_rounds_beginning.unwrap_or(4);
-		let full_rounds_end = opts.full_rounds_end.unwrap_or(4);
-		let partial_rounds = opts.partial_rounds.unwrap_or(57);
-
 		// default pedersen genrators
 		let pc_gens = PedersenGens::default();
-		let bp_gens = opts.bp_gens.clone().unwrap_or_else(|| BulletproofGens::new(4096, 1));
+		let bp_gens = opts.bp_gens.clone().unwrap_or_else(|| BulletproofGens::new(16400, 1));
 
-		let total_rounds = full_rounds_beginning + full_rounds_end + partial_rounds;
 		let inner = PoseidonBuilder::new(opts.width)
-			.num_rounds(full_rounds_beginning, full_rounds_end, partial_rounds)
-			.round_keys(gen_round_keys(opts.width, total_rounds))
-			.mds_matrix(gen_mds_matrix(opts.width))
-			.sbox(PoseidonSbox::Inverse)
+			.sbox(PoseidonSbox::Exponentiation3)
 			.bulletproof_gens(bp_gens)
 			.pedersen_gens(pc_gens)
 			.build();
@@ -143,7 +144,7 @@ impl PoseidonHasher {
 
 impl OperationCode {
 	fn into_js(self) -> JsValue {
-		JsValue::from(self as u8)
+		JsValue::from(self as u32)
 	}
 }
 
@@ -172,6 +173,7 @@ const VERSION: &str = "v1";
 #[wasm_bindgen]
 pub struct Mixer {
 	tree_map: HashMap<(String, u8), FixedDepositTree>,
+	poseidon: PoseidonHasher,
 }
 
 impl Mixer {
@@ -186,46 +188,76 @@ impl Mixer {
 	}
 }
 
-// Implementation available to JS
+#[wasm_bindgen(typescript_custom_section)]
+const MIXER_GROUP_OBJECT: &'static str = r#"
+type MixerGroup = { asset: string; group_id: number; tree_depth: number; }
+type MixerGroups = MixerGroup[];
+"#;
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+struct MixerGroup {
+	pub asset: String,
+	pub group_id: u8,
+	pub tree_depth: usize,
+}
+
+#[wasm_bindgen(typescript_custom_section)]
+const LEAVES: &'static str = r#"type Leaves = Array<Uint8Array>;"#;
+
 #[wasm_bindgen]
 impl Mixer {
+	#[allow(clippy::boxed_local)]
 	#[wasm_bindgen(constructor)]
-	pub fn new(trees_js: JsValue, poseidon: PoseidonHasher) -> Result<Mixer, JsValue> {
-		let trees: Vec<(String, u8, usize)> = trees_js
-			.into_serde()
+	pub fn new(groups_js: MixerGroups, poseidon: PoseidonHasher) -> Result<Mixer, JsValue> {
+		let groups = Array::from(&groups_js)
+			.iter()
+			.map(|v| v.into_serde())
+			.collect::<Result<Vec<MixerGroup>, _>>()
 			.map_err(|_| OperationCode::DeserializationFailed.into_js())?;
 		let mut tree_map = HashMap::new();
-		for (asset, id, depth) in trees {
+		for MixerGroup {
+			asset,
+			group_id,
+			tree_depth,
+		} in groups
+		{
 			tree_map.insert(
-				(asset, id),
+				(asset, group_id),
 				FixedDepositTreeBuilder::new()
 					.hash_params(poseidon.inner.clone())
-					.depth(depth)
+					.depth(tree_depth)
 					.build(),
 			);
 		}
-		Ok(Mixer { tree_map })
+		Ok(Mixer { tree_map, poseidon })
 	}
 
-	pub fn add_leaves(&mut self, asset: String, id: u8, leaves: JsValue, target_root: JsValue) -> Result<(), JsValue> {
+	pub fn add_leaves(
+		&mut self,
+		asset: String,
+		id: u8,
+		leaves: Leaves,
+		target_root: Option<Uint8Array>,
+	) -> Result<(), JsValue> {
 		let fixed_tree = self.get_tree_mut(asset, id).map_err(|e| e.into_js())?;
-		let leaves_bytes: Vec<[u8; 32]> = leaves
-			.into_serde()
+		let leaves_bytes = Array::from(&leaves)
+			.to_vec()
+			.into_iter()
+			.map(|v| Uint8Array::new_with_byte_offset_and_length(&v, 0, 32))
+			.map(|v| v.to_vec().try_into())
+			.collect::<Result<Vec<[u8; 32]>, _>>()
 			.map_err(|_| OperationCode::DeserializationFailed.into_js())?;
-		let root_option = if target_root.is_null() || target_root.is_undefined() {
-			None
-		} else {
-			target_root
-				.into_serde()
-				.map_err(|_| OperationCode::DeserializationFailed.into_js())?
-		};
-		fixed_tree.tree.add_leaves(leaves_bytes, root_option);
+		let root = target_root
+			.map(|v| v.to_vec().try_into())
+			.transpose()
+			.map_err(|_| OperationCode::DeserializationFailed.into_js())?;
+		fixed_tree.tree.add_leaves(leaves_bytes, root);
 		Ok(())
 	}
 
-	pub fn get_root(&self, asset: String, id: u8) -> Result<JsValue, JsValue> {
+	pub fn get_root(&self, asset: String, id: u8) -> Result<Uint8Array, JsValue> {
 		let fixed_tree = self.get_tree(asset, id).map_err(|e| e.into_js())?;
-		JsValue::from_serde(&fixed_tree.tree.root.to_bytes()).map_err(|_| OperationCode::SerializationFailed.into_js())
+		Ok(Uint8Array::from(fixed_tree.tree.root.to_bytes().to_vec().as_slice()))
 	}
 
 	// Generates a new note with random samples
@@ -253,11 +285,12 @@ impl Mixer {
 		Ok(note_js)
 	}
 
-	// Saving the note to a memory.
+	// Saving the note to the tree.
 	// First it checks if the note is in valid format,
 	// then decodes it and saves a note to a Merkle Client
 	// to be used for constructing the proof
-	pub fn save_note(&mut self, note_js: JsString) -> Result<Map, JsValue> {
+	// returns the note leaf that can be used to do a deposit.
+	pub fn save_note(&mut self, note_js: JsString) -> Result<Uint8Array, JsValue> {
 		let note: String = note_js.into();
 
 		let parts: Vec<&str> = note.split('-').collect();
@@ -275,7 +308,7 @@ impl Mixer {
 		}
 		let asset: String = parts[2].to_string();
 		let id = parts[3].parse().map_err(|_| OperationCode::InvalidNoteId.into_js())?;
-		let (block_number, note_val) = match partial {
+		let (_block_number, note_val) = match partial {
 			true => (None, parts[4]),
 			false => {
 				let bn = parts[4]
@@ -295,47 +328,28 @@ impl Mixer {
 		let r_bytes = decode_hex(&note_val[..64]).map_err(|e| e.into_js())?;
 		let nullifier_bytes = decode_hex(&note_val[64..]).map_err(|e| e.into_js())?;
 
-		let tree = self.get_tree_mut(asset.to_owned(), id).map_err(|e| e.into_js())?;
+		let tree = self.get_tree_mut(asset, id).map_err(|e| e.into_js())?;
 		let (r, nullifier, nullifier_hash, leaf) = tree.leaf_data_from_bytes(r_bytes, nullifier_bytes);
 		tree.add_secrets(leaf, r, nullifier, nullifier_hash);
-
-		let map = Map::new();
-		let leaf_js: JsValue =
-			JsValue::from_serde(&leaf.to_bytes()).map_err(|_| OperationCode::SerializationFailed.into_js())?;
-		let asset_js = JsValue::from(&asset);
-		let id_js = JsValue::from(id);
-
-		if let Some(bn) = block_number {
-			let block_number_js = JsValue::from(bn);
-			map.set(&JsValue::from_str("block_number"), &block_number_js);
-		}
-
-		map.set(&JsValue::from_str("leaf"), &leaf_js);
-		map.set(&JsValue::from_str("asset"), &asset_js);
-		map.set(&JsValue::from_str("id"), &id_js);
-		Ok(map)
+		Ok(Uint8Array::from(leaf.to_bytes().to_vec().as_slice()))
 	}
 
 	// Generates zk proof
-	pub fn generate_proof(
-		&self,
-		asset: String,
-		id: u8,
-		root_json: JsValue,
-		leaf_json: JsValue,
-	) -> Result<Map, JsValue> {
-		let root_bytes: [u8; 32] = root_json
-			.into_serde()
+	pub fn generate_proof(&self, asset: String, id: u8, root: Uint8Array, leaf: Uint8Array) -> Result<Map, JsValue> {
+		let root_bytes: [u8; 32] = root
+			.to_vec()
+			.try_into()
 			.map_err(|_| OperationCode::DeserializationFailed.into_js())?;
-		let leaf_bytes: [u8; 32] = leaf_json
-			.into_serde()
+		let leaf_bytes: [u8; 32] = leaf
+			.to_vec()
+			.try_into()
 			.map_err(|_| OperationCode::DeserializationFailed.into_js())?;
 		let tree = self.get_tree(asset, id).map_err(|e| e.into_js())?;
 		let root = Scalar::from_bytes_mod_order(root_bytes);
 		let leaf = Scalar::from_bytes_mod_order(leaf_bytes);
 
 		let pc_gens = PedersenGens::default();
-		let bp_gens = BulletproofGens::new(40960, 1);
+		let bp_gens = self.poseidon.inner.bp_gens.clone();
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
@@ -395,137 +409,115 @@ mod tests {
 
 	#[wasm_bindgen_test]
 	fn should_return_proper_errors() {
-		let asset = "EDG";
-		let id = 0;
-		let depth = 2;
-		let arr = Array::new();
-		arr.push(&JsString::from(asset));
-		arr.push(&JsValue::from(id));
-		arr.push(&JsValue::from(depth));
-		let top_level_arr = Array::new();
-		top_level_arr.push(&arr);
-		let js_trees = JsValue::from(top_level_arr);
-		let mut mixer = Mixer::new(js_trees, PoseidonHasher::default()).unwrap();
+		let mixer_group = MixerGroup {
+			asset: String::from("EDG"),
+			group_id: 0,
+			tree_depth: 2,
+		};
+		let groups = JsValue::from_serde(&[&mixer_group]).unwrap();
+		let mut mixer = Mixer::new(MixerGroups::from(groups), PoseidonHasher::default()).unwrap();
 
-		let invalid_leafs = JsValue::from(1);
-		let leaf_res = mixer.add_leaves(asset.to_string(), id, invalid_leafs, JsValue::NULL);
-		assert_eq!(leaf_res.err().unwrap(), JsValue::from(11));
+		let invalid_leaves = JsValue::from_serde(&[1]).unwrap();
+		let leaf_res = mixer.add_leaves(
+			mixer_group.asset,
+			mixer_group.group_id,
+			Leaves::from(invalid_leaves),
+			None,
+		);
+		assert_eq!(leaf_res.err().unwrap(), OperationCode::DeserializationFailed.into_js());
 
 		let invalid_asset = "foo".to_string();
-		let tree_res = mixer.get_tree(invalid_asset, id);
+		let tree_res = mixer.get_tree(invalid_asset, mixer_group.group_id);
 		assert_eq!(tree_res.err().unwrap(), OperationCode::MerkleTreeNotFound);
 	}
 
 	#[wasm_bindgen_test]
 	fn should_have_correct_root() {
-		let asset = "EDG";
-		let id = 0;
-		let depth = 2;
-		let arr = Array::new();
-		arr.push(&JsString::from(asset));
-		arr.push(&JsValue::from(id));
-		arr.push(&JsValue::from(depth));
-		let top_level_arr = Array::new();
-		top_level_arr.push(&arr);
-		let js_trees = JsValue::from(top_level_arr);
-		let mut mixer = Mixer::new(js_trees, PoseidonHasher::default()).unwrap();
+		let mixer_group = MixerGroup {
+			asset: String::from("EDG"),
+			group_id: 0,
+			tree_depth: 2,
+		};
+		let groups = JsValue::from_serde(&[&mixer_group]).unwrap();
+		let mut mixer = Mixer::new(MixerGroups::from(groups), PoseidonHasher::default()).unwrap();
 		let leaf1 = Scalar::from(1u32);
 		let leaf2 = Scalar::from(2u32);
 		let leaf3 = Scalar::from(3u32);
 		let zero = Scalar::zero();
 
-		let arr = Array::new();
-		arr.push(&JsValue::from_serde(&leaf1.to_bytes()).unwrap());
-		arr.push(&JsValue::from_serde(&leaf2.to_bytes()).unwrap());
-		arr.push(&JsValue::from_serde(&leaf3.to_bytes()).unwrap());
-		let list = JsValue::from(arr);
-
-		mixer.add_leaves(asset.to_owned(), id, list, JsValue::NULL).unwrap();
-		let tree = mixer.get_tree(asset.to_owned(), id).unwrap();
+		let mut leaves = Vec::new();
+		leaves.push(leaf1.to_bytes());
+		leaves.push(leaf2.to_bytes());
+		leaves.push(leaf3.to_bytes());
+		mixer
+			.add_leaves(
+				mixer_group.asset.clone(),
+				mixer_group.group_id,
+				Leaves::from(JsValue::from_serde(&leaves).unwrap()),
+				None,
+			)
+			.unwrap();
+		let tree = mixer.get_tree(mixer_group.asset.clone(), mixer_group.group_id).unwrap();
 		let node1 = Poseidon_hash_2(leaf1, leaf2, &tree.hash_params);
 		let node2 = Poseidon_hash_2(leaf3, zero, &tree.hash_params);
 		let root = Poseidon_hash_2(node1, node2, &tree.hash_params);
 
-		let calc_root_js = mixer.get_root(asset.to_owned(), id).unwrap();
-		let calc_root: [u8; 32] = calc_root_js.into_serde().unwrap();
+		let calc_root = mixer.get_root(mixer_group.asset.clone(), mixer_group.group_id).unwrap();
+		let calc_root: [u8; 32] = calc_root.to_vec().try_into().unwrap();
 		assert_eq!(calc_root, root.to_bytes());
 	}
 
 	#[wasm_bindgen_test]
 	fn should_generate_and_save_note() {
-		let asset = "EDG";
-		let id = 0;
-		let depth = 2;
-		let arr = Array::new();
-		arr.push(&JsString::from(asset));
-		arr.push(&JsValue::from(id));
-		arr.push(&JsValue::from(depth));
-		let top_level_arr = Array::new();
-		top_level_arr.push(&arr);
-		let js_trees = JsValue::from(top_level_arr);
-		let mut mixer = Mixer::new(js_trees, PoseidonHasher::default()).unwrap();
-
-		// Partial note
-		let note_js = mixer.generate_note(asset.to_owned(), id, None).unwrap();
-		let note_map = mixer.save_note(note_js).unwrap();
-
-		let id_js = note_map.get(&JsValue::from("id"));
-		let asset_js = note_map.get(&JsValue::from("asset"));
-		let block_number_js = note_map.get(&JsValue::from("block_number"));
-
-		let id_res: u8 = id_js.into_serde().unwrap();
-		let asset_res: String = asset_js.into_serde().unwrap();
-
-		assert_eq!(id_res, id);
-		assert_eq!(asset_res, asset);
-		assert!(block_number_js.is_undefined());
-
-		// Complete note
-		let note_js = mixer.generate_note(asset.to_owned(), id, Some(1)).unwrap();
-		let note_map = mixer.save_note(note_js).unwrap();
-
-		let id_js = note_map.get(&JsValue::from("id"));
-		let asset_js = note_map.get(&JsValue::from("asset"));
-		let block_number_js = note_map.get(&JsValue::from("block_number"));
-
-		let id_res: u8 = id_js.into_serde().unwrap();
-		let asset_res: String = asset_js.into_serde().unwrap();
-		let block_number_res: u32 = block_number_js.into_serde().unwrap();
-
-		assert_eq!(id_res, id);
-		assert_eq!(asset_res, asset);
-		assert_eq!(block_number_res, 1);
+		let mixer_group = MixerGroup {
+			asset: String::from("EDG"),
+			group_id: 0,
+			tree_depth: 2,
+		};
+		let groups = JsValue::from_serde(&[&mixer_group]).unwrap();
+		let mut mixer = Mixer::new(MixerGroups::from(groups), PoseidonHasher::default()).unwrap();
+		let note_js = mixer
+			.generate_note(mixer_group.asset.clone(), mixer_group.group_id, None)
+			.unwrap();
+		let leaf = mixer.save_note(note_js).unwrap();
+		assert_eq!(leaf.to_vec().len(), 32);
 	}
 
 	#[wasm_bindgen_test]
 	fn should_create_proof() {
-		let asset = "EDG";
-		let id = 0;
-		let depth = 2;
-		let arr = Array::new();
-		arr.push(&JsString::from(asset));
-		arr.push(&JsValue::from(id));
-		arr.push(&JsValue::from(depth));
-		let top_level_arr = Array::new();
-		top_level_arr.push(&arr);
-		let js_trees = JsValue::from(top_level_arr);
-		let mut mixer = Mixer::new(js_trees, PoseidonHasher::default()).unwrap();
-		let tree = mixer.get_tree_mut(asset.to_owned(), id).unwrap();
+		let mixer_group = MixerGroup {
+			asset: String::from("EDG"),
+			group_id: 0,
+			tree_depth: 2,
+		};
+		let groups = JsValue::from_serde(&[&mixer_group]).unwrap();
+		let mut mixer = Mixer::new(MixerGroups::from(groups), PoseidonHasher::default()).unwrap();
+		let tree = mixer
+			.get_tree_mut(mixer_group.asset.clone(), mixer_group.group_id)
+			.unwrap();
 		let leaf1 = tree.generate_secrets();
 		let leaf2 = Scalar::from(2u32);
 		let leaf3 = Scalar::from(3u32);
-		let leaf1_js = JsValue::from_serde(&leaf1.to_bytes()).unwrap();
 
-		let arr = Array::new();
-		arr.push(&leaf1_js);
-		arr.push(&JsValue::from_serde(&leaf2.to_bytes()).unwrap());
-		arr.push(&JsValue::from_serde(&leaf3.to_bytes()).unwrap());
-		let list = JsValue::from(arr);
+		let mut leaves = Vec::new();
+		leaves.push(leaf1.to_bytes());
+		leaves.push(leaf2.to_bytes());
+		leaves.push(leaf3.to_bytes());
 
-		mixer.add_leaves(asset.to_owned(), id, list, JsValue::NULL).unwrap();
-		let root = mixer.get_root(asset.to_owned(), id).unwrap();
+		mixer
+			.add_leaves(
+				mixer_group.asset.clone(),
+				mixer_group.group_id,
+				Leaves::from(JsValue::from_serde(&leaves).unwrap()),
+				None,
+			)
+			.unwrap();
+		let root = mixer.get_root(mixer_group.asset.clone(), mixer_group.group_id).unwrap();
 
-		let proof = mixer.generate_proof(asset.to_owned(), id, root, leaf1_js).unwrap();
+		let secret = Uint8Array::from(leaf1.to_bytes().to_vec().as_slice());
+		let proof = mixer
+			.generate_proof(mixer_group.asset.clone(), mixer_group.group_id, root, secret)
+			.unwrap();
 		let comms = proof.get(&JsValue::from_str("comms"));
 		// let nullifier_hash = proof.get(&JsValue::from_str("nullifier_hash"));
 		let leaf_index_comms = proof.get(&JsValue::from_str("leaf_index_comms"));
@@ -547,52 +539,58 @@ mod tests {
 
 	#[wasm_bindgen_test]
 	fn should_create_proof_with_older_target_root() {
-		let asset = "EDG";
-		let id = 0;
-		let depth = 2;
-		let arr = Array::new();
-		arr.push(&JsString::from(asset));
-		arr.push(&JsValue::from(id));
-		arr.push(&JsValue::from(depth));
-		let top_level_arr = Array::new();
-		top_level_arr.push(&arr);
-		let js_trees = JsValue::from(top_level_arr);
-		let mut mixer = Mixer::new(js_trees, PoseidonHasher::default()).unwrap();
-		let tree = mixer.get_tree_mut(asset.to_owned(), id).unwrap();
+		let mixer_group = MixerGroup {
+			asset: String::from("EDG"),
+			group_id: 0,
+			tree_depth: 2,
+		};
+		let groups = JsValue::from_serde(&[&mixer_group]).unwrap();
+		let mut mixer = Mixer::new(MixerGroups::from(groups), PoseidonHasher::default()).unwrap();
+		let tree = mixer
+			.get_tree_mut(mixer_group.asset.clone(), mixer_group.group_id)
+			.unwrap();
 		let leaf1 = tree.generate_secrets();
 		let leaf2 = Scalar::from(2u32);
 		let leaf3 = Scalar::from(3u32);
-		let leaf1_js = JsValue::from_serde(&leaf1.to_bytes()).unwrap();
 
-		let arr = Array::new();
-		arr.push(&leaf1_js);
-		arr.push(&JsValue::from_serde(&leaf2.to_bytes()).unwrap());
-		arr.push(&JsValue::from_serde(&leaf3.to_bytes()).unwrap());
-		let list = JsValue::from(arr);
+		let mut leaves = Vec::new();
+		leaves.push(leaf1.to_bytes());
+		leaves.push(leaf2.to_bytes());
+		leaves.push(leaf3.to_bytes());
 
-		mixer.add_leaves(asset.to_owned(), id, list, JsValue::NULL).unwrap();
-		let root = mixer.get_root(asset.to_owned(), id).unwrap();
-
-		let arr = Array::new();
-		arr.push(&JsValue::from_serde(&Scalar::from(4u32).to_bytes()).unwrap());
-		arr.push(&JsValue::from_serde(&Scalar::from(5u32).to_bytes()).unwrap());
-		let list = JsValue::from(arr);
+		mixer
+			.add_leaves(
+				mixer_group.asset.clone(),
+				mixer_group.group_id,
+				Leaves::from(JsValue::from_serde(&leaves).unwrap()),
+				None,
+			)
+			.unwrap();
+		let root = mixer.get_root(mixer_group.asset.clone(), mixer_group.group_id).unwrap();
+		leaves.clear(); // clear old values
+		leaves.push(Scalar::from(4u32).to_bytes());
+		leaves.push(Scalar::from(5u32).to_bytes());
+		leaves.push(Scalar::from(6u32).to_bytes());
 		// Attempt to add more leaves even with older target root
-		mixer.add_leaves(asset.to_owned(), id, list, root.clone()).unwrap();
+		mixer
+			.add_leaves(
+				mixer_group.asset.clone(),
+				mixer_group.group_id,
+				Leaves::from(JsValue::from_serde(&leaves).unwrap()),
+				Some(root.clone()),
+			)
+			.unwrap();
 
-		let should_be_same_root = mixer.get_root(asset.to_owned(), id).unwrap();
-		assert_eq!(
-			root.into_serde::<[u8; 32]>().unwrap(),
-			should_be_same_root.into_serde::<[u8; 32]>().unwrap()
-		);
+		let same_root = mixer.get_root(mixer_group.asset.clone(), mixer_group.group_id).unwrap();
+		assert_eq!(root.to_vec(), same_root.to_vec());
 
-		let proof = mixer.generate_proof(asset.to_owned(), id, root, leaf1_js).unwrap();
+		let secret = Uint8Array::from(leaf1.to_bytes().to_vec().as_slice());
+		let proof = mixer
+			.generate_proof(mixer_group.asset.clone(), mixer_group.group_id, root, secret)
+			.unwrap();
 		let comms = proof.get(&JsValue::from_str("comms"));
-		// let nullifier_hash = proof.get(&JsValue::from_str("nullifier_hash"));
 		let leaf_index_comms = proof.get(&JsValue::from_str("leaf_index_comms"));
 		let proof_comms = proof.get(&JsValue::from_str("proof_comms"));
-		// let proof = proof.get(&JsValue::from_str("proof"));
-
 		let comms_arr = Array::from(&comms);
 		let leaf_index_comms_arr = Array::from(&leaf_index_comms);
 		let proof_comms_arr = Array::from(&proof_comms);

@@ -1,12 +1,48 @@
+// A runtime module Groups with necessary imports
+
+// Feel free to remove or edit this file as needed.
+// If you change the name of this file, make sure to update its references in
+// runtime/src/lib.rs If you remove this file, you can remove those references
+
+// For more guidance on Substrate modules, see the example module
+// https://github.com/paritytech/substrate/blob/master/frame/example/src/lib.rs
+
+//! # Mixer Pallet
+//!
+//! The Mixer pallet provides functionality for doing deposits and withdrawals
+//! from the mixer.
+//!
+//! - [`Config`]
+//! - [`Call`]
+//! - [`Pallet`]
+//!
+//! ## Overview
+//!
+//! The Mixer pallet provides functions for:
+//!
+//! - Depositing some currency into the mixer.
+//! - Withdrawing the deposit from the mixer.
+//! - Stopping mixer operations.
+//! - Transfering the admin of the mixer.
+//!
+//! ### Terminology
+//!
+//! - **Mixer**: Cryptocurrency tumbler or mixer is a service offered to mix
+//!   potentially identifiable or 'tainted' cryptocurrency funds with others, so
+//!   as to obscure the trail back to the fund's source.
+//!
+//! ## Interface
+//!
+//! ### Dispatchable Functions
+//!
+//! - `deposit` - Deposit a fixed amount of cryptocurrency into the mixer.
+//! - `withdraw` - Provide a zero-knowladge proof of the deposit and withdraw
+//!   from the mixer.
+//! - `set_stopped` - Stops the operation of all mixers.
+//! - `transfer_admin` - Transfers the admin role from sender to specified
+//!   account.
+
 #![cfg_attr(not(feature = "std"), no_std)]
-/// A runtime module Groups with necessary imports
-
-/// Feel free to remove or edit this file as needed.
-/// If you change the name of this file, make sure to update its references in
-/// runtime/src/lib.rs If you remove this file, you can remove those references
-
-/// For more guidance on Substrate modules, see the example module
-/// https://github.com/paritytech/substrate/blob/master/frame/example/src/lib.rs
 
 #[cfg(test)]
 pub mod mock;
@@ -32,7 +68,6 @@ use merkle::{
 	},
 	Group as GroupTrait, Module as MerkleModule,
 };
-pub use pallet::*;
 use sp_runtime::{
 	traits::{AccountIdConversion, Zero},
 	ModuleId,
@@ -69,13 +104,13 @@ pub mod pallet {
 		/// Default admin key
 		#[pallet::constant]
 		type DefaultAdmin: Get<Self::AccountId>;
-		/// Weight information for extrinsics in this pallet.
+		/// Weight information for extrinsics in this pallet
 		type WeightInfo: WeightInfo;
 		// Available mixes sizes (Size is determend by the deposit amount)
 		type MixerSizes: Get<Vec<BalanceOf<Self>>>;
 	}
 
-	/// Flag indicating if the mixer is initialized.
+	/// Flag indicating if the mixer is initialized
 	#[pallet::storage]
 	#[pallet::getter(fn initialised)]
 	pub type Initialised<T: Config> = StorageValue<_, bool, ValueQuery>;
@@ -85,7 +120,7 @@ pub mod pallet {
 	#[pallet::getter(fn mixer_groups)]
 	pub type MixerGroups<T: Config> = StorageMap<_, Blake2_128Concat, T::GroupId, MixerInfo<T>, ValueQuery>;
 
-	/// The vec of group ids
+	/// The vector of group ids
 	#[pallet::storage]
 	#[pallet::getter(fn mixer_group_ids)]
 	pub type MixerGroupIds<T: Config> = StorageValue<_, Vec<T::GroupId>, ValueQuery>;
@@ -148,7 +183,7 @@ pub mod pallet {
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-			// We make sure that wee return correct weight for the block accourding to
+			// We make sure that we return the correct weight for the block according to
 			// on_finalize
 			if Self::initialised() {
 				// In case mixer is initialized, we expect the weights for merkle cache update
@@ -161,8 +196,8 @@ pub mod pallet {
 
 		fn on_finalize(_n: BlockNumberFor<T>) {
 			if Self::initialised() {
-				// check if any deposits happened (by checked the size of collection at this
-				// block) if none happened, carry over previous merkle roots for the cache.
+				// check if any deposits happened (by checking the size of the collection at
+				// this block) if none happened, carry over previous Merkle roots for the cache.
 				let mixer_ids = MixerGroupIds::<T>::get();
 				for i in 0..mixer_ids.len() {
 					let cached_roots = <merkle::Module<T>>::cached_roots(_n, mixer_ids[i]);
@@ -193,9 +228,9 @@ pub mod pallet {
 		/// Weights:
 		/// - Dependent on argument: `data_points`
 		///
-		/// - Base weight: 311_882_044_000
+		/// - Base weight: 417_168_400_000
 		/// - DB weights: 8 reads, 5 writes
-		/// - Additional weights: 46_199_137_000 * data_points.len()
+		/// - Additional weights: 21_400_442_000 * data_points.len()
 		#[pallet::weight(<T as Config>::WeightInfo::deposit(data_points.len() as u32))]
 		pub fn deposit(
 			origin: OriginFor<T>,
@@ -205,7 +240,7 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 			ensure!(!<MerkleModule<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
-			// get mixer info, should always exist if module is initialised
+			// get mixer info, should always exist if the module is initialized
 			let mut mixer_info = Self::get_mixer(mixer_id)?;
 			// ensure the sender has enough balance to cover deposit
 			let balance = T::Currency::free_balance(&sender);
@@ -231,7 +266,7 @@ pub mod pallet {
 		}
 
 		/// Withdraws a deposited amount from the mixer. Can only withdraw one
-		/// deposit. Accepts a proof of membership along with the mixer id.
+		/// deposit. Accepts proof of membership along with the mixer id.
 		///
 		/// Fails if the mixer is stopped or not initialized.
 		///
@@ -241,41 +276,47 @@ pub mod pallet {
 		/// - Base weight: 1_078_562_000_000
 		/// - DB weights: 9 reads, 3 writes
 		#[pallet::weight(<T as Config>::WeightInfo::withdraw())]
-		pub fn withdraw(
-			origin: OriginFor<T>,
-			mixer_id: T::GroupId,
-			cached_block: T::BlockNumber,
-			cached_root: ScalarData,
-			comms: Vec<Commitment>,
-			nullifier_hash: ScalarData,
-			proof_bytes: Vec<u8>,
-			leaf_index_commitments: Vec<Commitment>,
-			proof_commitments: Vec<Commitment>,
-		) -> DispatchResultWithPostInfo {
+		pub fn withdraw(origin: OriginFor<T>, withdraw_proof: WithdrawProof<T>) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
-			ensure!(!<MerkleModule<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
-			let mixer_info = MixerGroups::<T>::get(mixer_id);
+			ensure!(
+				!<MerkleModule<T>>::stopped(withdraw_proof.mixer_id),
+				Error::<T>::MixerStopped
+			);
+			let recipient = withdraw_proof.recipient.unwrap_or(sender.clone());
+			let relayer = withdraw_proof.relayer.unwrap_or(sender.clone());
+			let mixer_info = MixerGroups::<T>::get(withdraw_proof.mixer_id);
 			// check if the nullifier has been used
-			T::Group::has_used_nullifier(mixer_id.into(), nullifier_hash)?;
+			T::Group::has_used_nullifier(withdraw_proof.mixer_id.into(), withdraw_proof.nullifier_hash)?;
 			// Verify the zero-knowledge proof of membership provided
 			T::Group::verify_zk_membership_proof(
-				mixer_id.into(),
-				cached_block,
-				cached_root,
-				comms,
-				nullifier_hash,
-				proof_bytes,
-				leaf_index_commitments,
-				proof_commitments,
+				withdraw_proof.mixer_id.into(),
+				withdraw_proof.cached_block,
+				withdraw_proof.cached_root,
+				withdraw_proof.comms,
+				withdraw_proof.nullifier_hash,
+				withdraw_proof.proof_bytes,
+				withdraw_proof.leaf_index_commitments,
+				withdraw_proof.proof_commitments,
+				ScalarData::from_slice(&recipient.encode()),
+				ScalarData::from_slice(&relayer.encode()),
 			)?;
 			// transfer the fixed deposit size to the sender
-			T::Currency::transfer(&Self::account_id(), &sender, mixer_info.fixed_deposit_size, AllowDeath)?;
+			T::Currency::transfer(
+				&Self::account_id(),
+				&recipient,
+				mixer_info.fixed_deposit_size,
+				AllowDeath,
+			)?;
 			// update the total value locked
-			let tvl = Self::total_value_locked(mixer_id);
-			<TotalValueLocked<T>>::insert(mixer_id, tvl - mixer_info.fixed_deposit_size);
+			let tvl = Self::total_value_locked(withdraw_proof.mixer_id);
+			<TotalValueLocked<T>>::insert(withdraw_proof.mixer_id, tvl - mixer_info.fixed_deposit_size);
 			// Add the nullifier on behalf of the module
-			T::Group::add_nullifier(Self::account_id(), mixer_id.into(), nullifier_hash)?;
+			T::Group::add_nullifier(
+				Self::account_id(),
+				withdraw_proof.mixer_id.into(),
+				withdraw_proof.nullifier_hash,
+			)?;
 			Ok(().into())
 		}
 
@@ -318,14 +359,81 @@ pub mod pallet {
 	}
 }
 
+#[derive(Encode, Decode, PartialEq, Clone)]
+pub struct WithdrawProof<T: Config> {
+	/// The mixer id this withdraw proof corresponds to
+	mixer_id: T::GroupId,
+	/// The cached block for the cached root being proven against
+	cached_block: T::BlockNumber,
+	/// The cached root being proven against
+	cached_root: ScalarData,
+	/// The individual scalar commitments (to the randomness and nullifier)
+	comms: Vec<Commitment>,
+	/// The nullifier hash with itself
+	nullifier_hash: ScalarData,
+	/// The proof in bytes representation
+	proof_bytes: Vec<u8>,
+	/// The leaf index scalar commitments to decide on which side to hash
+	leaf_index_commitments: Vec<Commitment>,
+	/// The scalar commitments to merkle proof path elements
+	proof_commitments: Vec<Commitment>,
+	/// The recipient to withdraw amount of currency to
+	recipient: Option<T::AccountId>,
+	/// The recipient to withdraw amount of currency to
+	relayer: Option<T::AccountId>,
+}
+
+impl<T: Config> WithdrawProof<T> {
+	pub fn new(
+		mixer_id: T::GroupId,
+		cached_block: T::BlockNumber,
+		cached_root: ScalarData,
+		comms: Vec<Commitment>,
+		nullifier_hash: ScalarData,
+		proof_bytes: Vec<u8>,
+		leaf_index_commitments: Vec<Commitment>,
+		proof_commitments: Vec<Commitment>,
+		recipient: Option<T::AccountId>,
+		relayer: Option<T::AccountId>,
+	) -> Self {
+		Self {
+			mixer_id,
+			cached_block,
+			cached_root,
+			comms,
+			nullifier_hash,
+			proof_bytes,
+			leaf_index_commitments,
+			proof_commitments,
+			recipient,
+			relayer,
+		}
+	}
+}
+
+// TODO: Not sure why compiler is complaining without this since it implements
+// Debug
+#[cfg(feature = "std")]
+impl<T: Config> std::fmt::Debug for WithdrawProof<T> {
+	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		write!(f, "{:?}", self)
+	}
+}
+
 /// Type alias for the balances_pallet::Balance type
 pub type BalanceOf<T> = <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 /// Info about the mixer and it's leaf data
 #[derive(Encode, Decode, PartialEq)]
 pub struct MixerInfo<T: Config> {
+	/// Minimum duration the deposit has stayed in the mixer for a user
+	/// to be eligible for reward
+	///
+	/// NOTE: Currently not used
 	pub minimum_deposit_length_for_reward: T::BlockNumber,
+	/// Deposit size for the mixer
 	pub fixed_deposit_size: BalanceOf<T>,
+	/// All the leaves/deposits of the mixer
 	pub leaves: Vec<ScalarData>,
 }
 
@@ -356,8 +464,8 @@ impl<T: Config> Module<T> {
 
 	pub fn get_mixer(mixer_id: T::GroupId) -> Result<MixerInfo<T>, dispatch::DispatchError> {
 		let mixer_info = MixerGroups::<T>::get(mixer_id);
-		// ensure mixer_info has non-zero deposit, otherwise mixer doesn't
-		// really exist for this id
+		// ensure mixer_info has a non-zero deposit, otherwise, the mixer doesn't
+		//exist for this id
 		ensure!(mixer_info.fixed_deposit_size > Zero::zero(), Error::<T>::NoMixerForId); // return the mixer info
 		Ok(mixer_info)
 	}

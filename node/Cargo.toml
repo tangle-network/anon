@@ -64,7 +64,6 @@ pallet-contracts-rpc = { version = "3.0.0" }
 
 fc-consensus = { git = "https://github.com/paritytech/frontier" }
 fp-consensus = { git = "https://github.com/paritytech/frontier" }
-frontier-template-runtime = { git = "https://github.com/paritytech/frontier" }
 fc-rpc = { git = "https://github.com/paritytech/frontier" }
 fp-rpc = { git = "https://github.com/paritytech/frontier" }
 fc-rpc-core = { git = "https://github.com/paritytech/frontier" }

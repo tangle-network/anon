@@ -46,7 +46,7 @@ pub trait WeightInfo {
 pub struct Weights<T>(PhantomData<T>);
 impl<T: frame_system::Config + Config> WeightInfo for Weights<T> {
 	fn create_group(d: u32) -> Weight {
-		(7_618_000 as Weight)
+		(8_356_000 as Weight)
 			// Standard Error: 4_000
 			.saturating_add((151_000 as Weight).saturating_mul(d as Weight))
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
@@ -54,7 +54,7 @@ impl<T: frame_system::Config + Config> WeightInfo for Weights<T> {
 	}
 
 	fn set_manager_required() -> Weight {
-		(8_000_000 as Weight)
+		(7_000_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
@@ -66,23 +66,23 @@ impl<T: frame_system::Config + Config> WeightInfo for Weights<T> {
 	}
 
 	fn set_stopped() -> Weight {
-		(7_000_000 as Weight)
+		(8_000_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
 
 	fn add_members(n: u32) -> Weight {
-		(305_389_489_000 as Weight)
-			// Standard Error: 4_552_643_000
-			.saturating_add((63_659_275_000 as Weight).saturating_mul(n as Weight))
+		(384_629_956_000 as Weight)
+			// Standard Error: 141_117_000
+			.saturating_add((20_135_984_000 as Weight).saturating_mul(n as Weight))
 			.saturating_add(T::DbWeight::get().reads(3 as Weight))
 			.saturating_add(T::DbWeight::get().writes(2 as Weight))
 	}
 
 	fn verify_path(d: u32) -> Weight {
-		(310_970_311_000 as Weight)
-			// Standard Error: 673_763_000
-			.saturating_add((3_666_683_000 as Weight).saturating_mul(d as Weight))
+		(383_420_867_000 as Weight)
+			// Standard Error: 173_974_000
+			.saturating_add((814_291_000 as Weight).saturating_mul(d as Weight))
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 	}
 

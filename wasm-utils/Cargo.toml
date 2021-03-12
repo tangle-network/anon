@@ -13,6 +13,7 @@ console_error_panic_hook = "0.1.6"
 rand = { version = "0.7", features = ["wasm-bindgen"] }
 merlin = { version = "2.0.0", default-features = false }
 getrandom = { version = "0.2", features = ["js"] }
+serde = { version = "1", features = ["derive"] }
 bincode = "1.3.2"
 
 [dependencies.bulletproofs]
@@ -23,7 +24,7 @@ default-features = false
 features = ["yoloproofs", "std"]
 
 [dependencies.curve25519-gadgets]
-rev = "217de1a"
+rev = "4028605"
 version = "2.0.0"
 git = "https://github.com/webb-tools/bulletproof-gadgets"
 

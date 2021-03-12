@@ -1,12 +1,6 @@
 use super::*;
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
-use curve25519_gadgets::{
-	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
-	poseidon::{
-		builder::{Poseidon, PoseidonBuilder},
-		gen_mds_matrix, gen_round_keys, PoseidonSbox,
-	},
-};
+use curve25519_gadgets::fixed_deposit_tree::builder::FixedDepositTreeBuilder;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::OnFinalize;
 use frame_system::RawOrigin;

@@ -1,3 +1,4 @@
+use curve25519_dalek::scalar::Scalar;
 use super::*;
 use crate::mock::{new_test_ext, Balances, MerkleGroups, Mixer, MixerCall, Origin, System, Test};
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
@@ -5,12 +6,11 @@ use curve25519_gadgets::{
 	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
 	poseidon::{
 		builder::{Poseidon, PoseidonBuilder},
-		gen_mds_matrix, gen_round_keys, PoseidonSbox,
+		PoseidonSbox,
 	},
 };
 use frame_support::{
 	assert_err, assert_ok,
-	storage::StorageValue,
 	traits::{OnFinalize, UnfilteredDispatchable},
 };
 use frame_system::RawOrigin;
@@ -23,14 +23,9 @@ use sp_runtime::{traits::BadOrigin, DispatchError};
 
 fn default_hasher(num_gens: usize) -> Poseidon {
 	let width = 6;
-	let (full_b, full_e) = (4, 4);
-	let partial_rounds = 57;
 	PoseidonBuilder::new(width)
-		.num_rounds(full_b, full_e, partial_rounds)
-		.round_keys(gen_round_keys(width, full_b + full_e + partial_rounds))
-		.mds_matrix(gen_mds_matrix(width))
 		.bulletproof_gens(BulletproofGens::new(num_gens, 1))
-		.sbox(PoseidonSbox::Inverse)
+		.sbox(PoseidonSbox::Exponentiation3)
 		.build()
 }
 
@@ -131,14 +126,18 @@ fn should_stop_and_start_mixer() {
 		assert_err!(
 			Mixer::withdraw(
 				Origin::signed(0),
-				0,
-				0,
-				ScalarData::zero(),
-				Vec::new(),
-				ScalarData::zero(),
-				Vec::new(),
-				Vec::new(),
-				Vec::new()
+				WithdrawProof::new(
+					0,
+					0,
+					ScalarData::zero(),
+					Vec::new(),
+					ScalarData::zero(),
+					Vec::new(),
+					Vec::new(),
+					Vec::new(),
+					None,
+					None,
+				)
 			),
 			Error::<Test>::MixerStopped
 		);
@@ -214,7 +213,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 
 			let root = MerkleGroups::get_merkle_root(i).unwrap();
 			let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-				ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+				ftree.prove_zk(root.0, leaf, Scalar::from(2u32), Scalar::zero(), &ftree.hash_params.bp_gens, prover);
 
 			let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 			let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
@@ -228,14 +227,18 @@ fn should_withdraw_from_each_mixer_successfully() {
 			// withdraw from another account
 			assert_ok!(Mixer::withdraw(
 				Origin::signed(2),
-				i,
-				0,
-				root,
-				comms,
-				ScalarData(nullifier_hash),
-				proof.to_bytes(),
-				leaf_index_comms,
-				proof_comms
+				WithdrawProof::new(
+					i,
+					0,
+					root,
+					comms,
+					ScalarData(nullifier_hash),
+					proof.to_bytes(),
+					leaf_index_comms,
+					proof_comms,
+					Some(2),
+					Some(0),
+				)
 			));
 			let balance_after = Balances::free_balance(2);
 			assert_eq!(balance_before + m.fixed_deposit_size, balance_after);
