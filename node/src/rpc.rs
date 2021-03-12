@@ -1,37 +1,12 @@
-// Copyright 2018-2020 Commonwealth Labs, Inc.
-// This file is part of Edgeware.
-
-// Edgeware is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Edgeware is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Edgeware.  If not, see <http://www.gnu.org/licenses/>.
-
-//! A collection of node-specific RPC methods.
-//!
-//! Since `substrate` core functionality makes no assumptions
-//! about the modules used inside the runtime, so do
-//! RPC methods defined in `substrate-rpc` crate.
-//! It means that `client/rpc` can't have any methods that
-//! need some strong assumptions about the particular runtime.
-//!
-//! The RPCs available in this crate however can make some assumptions
-//! about how the runtime is constructed and what `SRML` modules
-//! are part of it. Therefore all node-runtime-specific RPCs can
-//! be placed here or imported from corresponding `SRML` RPC definitions.
-
 #![warn(missing_docs)]
 
+use pallet_ethereum::EthereumStorageSchema;
+use fc_rpc::StorageOverride;
+use std::collections::BTreeMap;
+use fc_rpc::SchemaV1Override;
+use fc_rpc_core::types::FilterPool;
 use std::{sync::Arc};
 use fc_rpc_core::types::PendingTransactions;
-// use edgeware_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
 use node_template_runtime::{opaque::Block, BlockNumber, Hash, AccountId, Balance, Index};
 use jsonrpc_pubsub::manager::SubscriptionManager;
 use sc_finality_grandpa::{
@@ -96,10 +71,16 @@ pub struct FullDeps<C, P, SC, B> {
 	pub network: Arc<NetworkService<Block, Hash>>,
 	/// Ethereum pending transactions.
 	pub pending_transactions: PendingTransactions,
+	/// EthFilterApi pool.
+	pub filter_pool: Option<FilterPool>,
+	/// Backend.
+	pub backend: Arc<fc_db::Backend<Block>>,
 	/// Whether to deny unsafe calls
 	pub deny_unsafe: DenyUnsafe,
 	/// GRANDPA specific dependencies.
 	pub grandpa: GrandpaDeps<B>,
+	/// A copy of the chain spec.
+	pub chain_spec: Box<dyn sc_chain_spec::ChainSpec>,
 }
 
 
@@ -141,6 +122,9 @@ pub fn create_full<C, P, SC, B>(
 		network,
 		pending_transactions,
 		deny_unsafe,
+		filter_pool,
+		chain_spec,
+		backend,
 		grandpa,
 	} = deps;
 	let GrandpaDeps {
@@ -168,14 +152,21 @@ pub fn create_full<C, P, SC, B>(
 	if enable_dev_signer {
 		signers.push(Box::new(EthDevSigner::new()) as Box<dyn EthSigner>);
 	}
+	let mut overrides = BTreeMap::new();
+	overrides.insert(
+		EthereumStorageSchema::V1,
+		Box::new(SchemaV1Override::new(client.clone())) as Box<dyn StorageOverride<_> + Send + Sync>
+	);
 	io.extend_with(
 		EthApiServer::to_delegate(EthApi::new(
 			client.clone(),
 			pool.clone(),
-			edgeware_runtime::TransactionConverter,
+			node_template_runtime::TransactionConverter,
 			network.clone(),
 			pending_transactions.clone(),
 			signers,
+			overrides,
+			backend,
 			is_authority,
 		))
 	);
@@ -199,7 +190,7 @@ pub fn create_full<C, P, SC, B>(
 	io.extend_with(
 		sc_finality_grandpa_rpc::GrandpaApi::to_delegate(
 			GrandpaRpcHandler::new(
-				shared_authority_set,
+				shared_authority_set.clone(),
 				shared_voter_state,
 				justification_stream,
 				subscription_executor,

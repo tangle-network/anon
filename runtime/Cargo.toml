@@ -44,6 +44,7 @@ pallet-contracts-rpc-runtime-api = { default-features = false, version = "3.0.0"
 pallet-evm = { git = "https://github.com/paritytech/frontier", default-features = false }
 pallet-ethereum = { default-features = false, git = "https://github.com/paritytech/frontier" }
 fp-rpc = { default-features = false, git = "https://github.com/paritytech/frontier" }
+pallet-evm-precompile-simple = { version = "3.0", git = "https://github.com/paritytech/frontier", default-features = false }
 
 pallet-grandpa = { default-features = false, version = "3.0.0" }
 pallet-randomness-collective-flip = { default-features = false, version = "3.0.0" }
@@ -92,6 +93,7 @@ std = [
     "pallet-contracts-rpc-runtime-api/std",
     "pallet-ethereum/std",
     "pallet-evm/std",
+    "pallet-evm-precompile-simple/std",
     "pallet-grandpa/std",
     "pallet-randomness-collective-flip/std",
     "pallet-sudo/std",
