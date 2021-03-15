@@ -15,7 +15,7 @@ frame-support = { default-features = false, version = '3.0.0' }
 frame-system = { default-features = false, version = '3.0.0' }
 sp-std = { default-features = false, version = "3.0.0" }
 sp-runtime = { default-features = false, version = '3.0.0' }
-merkle = { package = "pallet-merkle", version = "3.0.0", default-features = false }
+merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 merlin = { version = "2.0.0", default-features = false }
 frame-benchmarking = { default-features = false, version = "3.0.0", optional = true }
