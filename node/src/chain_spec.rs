@@ -1,13 +1,14 @@
 use frame_benchmarking::whitelisted_caller;
 use node_template_runtime::{
-	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig, SystemConfig,
-	WASM_BINARY,
+	AccountId, AuraConfig, BalancesConfig, EVMConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
+	SystemConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{sr25519, Pair, Public};
+use sp_core::{sr25519, Pair, Public, H160, U256};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
+use std::{collections::BTreeMap, str::FromStr};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -133,6 +134,15 @@ fn testnet_genesis(
 	endowed_accounts: Vec<AccountId>,
 	_enable_println: bool,
 ) -> GenesisConfig {
+	let alice_evm_account_id = H160::from_str("19e7e376e7c213b7e7e7e46cc70a5dd086daff2a").unwrap();
+	let mut evm_accounts = BTreeMap::new();
+	evm_accounts.insert(alice_evm_account_id, pallet_evm::GenesisAccount {
+		nonce: 0.into(),
+		balance: U256::from(123456_123_000_000_000_000_000u128),
+		storage: BTreeMap::new(),
+		code: vec![],
+	});
+
 	GenesisConfig {
 		frame_system: Some(SystemConfig {
 			// Add Wasm runtime to storage.
@@ -154,5 +164,7 @@ fn testnet_genesis(
 			// Assign network admin rights.
 			key: root_key,
 		}),
+		pallet_evm: Some(EVMConfig { accounts: evm_accounts }),
+		pallet_ethereum: Some(Default::default()),
 	}
 }

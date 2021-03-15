@@ -61,7 +61,7 @@ impl frame_system::Config for Test {
 }
 
 parameter_types! {
-	pub Prefix: u8 = 100;
+	pub const Prefix: u8 = 100;
 	pub const ExistentialDeposit: Balance = 0;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxTreeDepth: u8 = 32;
