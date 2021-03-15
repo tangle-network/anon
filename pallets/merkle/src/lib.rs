@@ -109,6 +109,7 @@ use curve25519_gadgets::{
 };
 use frame_support::{dispatch, ensure, traits::Get, weights::Weight, Parameter};
 use frame_system::ensure_signed;
+use lazy_static::lazy_static;
 use merlin::Transcript;
 use rand_core::OsRng;
 use sp_runtime::traits::{AtLeast32Bit, One};
@@ -120,13 +121,14 @@ use utils::{
 };
 use weights::WeightInfo;
 
-// TODO find a better way to have a default hasher without saving it inside
-// storage
+lazy_static! {
+	static ref POSEIDON_HASHER: Poseidon = default_hasher();
+}
+
 /// Default hasher instance used to construct the tree
 pub fn default_hasher() -> Poseidon {
 	let width = 6;
 	// TODO: should be able to pass the number of generators
-	// TODO: Initialise these generators with the pallet
 	let bp_gens = BulletproofGens::new(16400, 1);
 	PoseidonBuilder::new(width)
 		.bulletproof_gens(bp_gens)
@@ -553,10 +555,9 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 			Error::<T>::ExceedsMaxLeaves
 		);
 
-		let h = default_hasher();
-		let zero_tree = gen_zero_tree(h.width, &h.sbox);
+		let zero_tree = gen_zero_tree(POSEIDON_HASHER.width, &POSEIDON_HASHER.sbox);
 		for data in &members {
-			Self::add_leaf(&mut tree, *data, &zero_tree, &h);
+			Self::add_leaf(&mut tree, *data, &zero_tree, &POSEIDON_HASHER);
 		}
 		let block_number: T::BlockNumber = <frame_system::Module<T>>::block_number();
 		CachedRoots::<T>::append(block_number, id, tree.root_hash);
@@ -596,12 +597,11 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 		let tree = Groups::<T>::get(id).ok_or(Error::<T>::GroupDoesntExist).unwrap();
 
 		ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
-		let h = default_hasher();
 		let mut hash = leaf.0;
 		for (is_right, node) in path {
 			hash = match is_right {
-				true => Poseidon_hash_2(hash, node.0, &h),
-				false => Poseidon_hash_2(node.0, hash, &h),
+				true => Poseidon_hash_2(hash, node.0, &POSEIDON_HASHER),
+				false => Poseidon_hash_2(node.0, hash, &POSEIDON_HASHER),
 			}
 		}
 
@@ -661,7 +661,6 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 		relayer: ScalarData,
 	) -> Result<(), dispatch::DispatchError> {
 		let label = b"zk_membership_proof";
-		let h = default_hasher();
 		let mut verifier_transcript = Transcript::new(label);
 		let mut verifier = Verifier::new(&mut verifier_transcript);
 
@@ -716,7 +715,7 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 			leaf_index_alloc_scalars,
 			proof_alloc_scalars,
 			statics,
-			&h,
+			&POSEIDON_HASHER,
 		);
 		ensure!(gadget_res.is_ok(), Error::<T>::InvalidZkProof);
 
@@ -725,7 +724,7 @@ impl<T: Config> Group<T::AccountId, T::BlockNumber, T::GroupId> for Pallet<T> {
 		let proof = proof.unwrap();
 
 		let mut rng = OsRng::default();
-		let verify_res = verifier.verify_with_rng(&proof, &h.pc_gens, &h.bp_gens, &mut rng);
+		let verify_res = verifier.verify_with_rng(&proof, &POSEIDON_HASHER.pc_gens, &POSEIDON_HASHER.bp_gens, &mut rng);
 		ensure!(verify_res.is_ok(), Error::<T>::ZkVericationFailed);
 		Ok(())
 	}
