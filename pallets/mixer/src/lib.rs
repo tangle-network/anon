@@ -143,14 +143,12 @@ pub mod pallet {
 	#[pallet::metadata(<T as frame_system::Config>::AccountId = "AccountId", <T as merkle::Config>::GroupId = "GroupId")]
 	pub enum Event<T: Config> {
 		/// New deposit added to the specific mixer
-		Deposit(
-			<T as merkle::Config>::GroupId,
-			<T as frame_system::Config>::AccountId,
-			ScalarData,
-		),
+		Deposit(<T as merkle::Config>::GroupId, <T as frame_system::Config>::AccountId),
 		/// Withdrawal from the specific mixer
 		Withdraw(
 			<T as merkle::Config>::GroupId,
+			<T as frame_system::Config>::AccountId,
+			<T as frame_system::Config>::AccountId,
 			<T as frame_system::Config>::AccountId,
 			ScalarData,
 		),
@@ -260,6 +258,8 @@ pub mod pallet {
 			mixer_info.leaves.extend(data_points);
 			MixerGroups::<T>::insert(mixer_id, mixer_info);
 
+			Self::deposit_event(Event::Deposit(mixer_id, sender));
+
 			Ok(().into())
 		}
 
@@ -315,6 +315,14 @@ pub mod pallet {
 				withdraw_proof.mixer_id.into(),
 				withdraw_proof.nullifier_hash,
 			)?;
+
+			Self::deposit_event(Event::Withdraw(
+				withdraw_proof.mixer_id,
+				sender,
+				recipient,
+				relayer,
+				withdraw_proof.cached_root,
+			));
 			Ok(().into())
 		}
 
