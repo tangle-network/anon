@@ -4,3 +4,7 @@ runtime/target
 **/*.rs.bk
 /*/**/target
 .vscode
+node_modules
+build
+cache
+artifacts
