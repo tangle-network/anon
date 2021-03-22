@@ -192,7 +192,9 @@ pub mod pallet {
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(crate) fn deposit_event)]
+	#[pallet::metadata(T::AccountId = "AccountId", T::GroupId = "GroupId")]
 	pub enum Event<T: Config> {
+		/// New tree created
 		NewTree(T::GroupId, T::AccountId, bool),
 		/// New members/leaves added to the tree
 		NewMembers(T::GroupId, T::AccountId, u32, Vec<ScalarData>),
