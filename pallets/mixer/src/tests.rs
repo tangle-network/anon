@@ -1,5 +1,8 @@
 use super::*;
-use crate::mock::{new_test_ext, AccountId, Balances, MerkleGroups, Mixer, MixerCall, Origin, System, Test, Tokens};
+use crate::mock::{
+	new_test_ext, AccountId, Balance, Balances, CurrencyId, MerkleGroups, Mixer, MixerCall, Origin, System, Test,
+	Tokens,
+};
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use bulletproofs_gadgets::{
 	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
@@ -335,7 +338,11 @@ fn should_make_mixer_with_non_native_token() {
 	new_test_ext().execute_with(|| {
 		let currency_id = 1;
 		assert_ok!(Mixer::initialize());
-		assert_ok!(Mixer::create_new(Origin::signed(4), currency_id, 1_000));
+		assert_ok!(<Mixer as ExtendedMixer<AccountId, CurrencyId, Balance>>::create_new(
+			4,
+			currency_id,
+			1_000
+		));
 
 		let pc_gens = PedersenGens::default();
 		let poseidon = default_hasher(16400);

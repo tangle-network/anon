@@ -54,6 +54,8 @@ pub mod tests;
 mod benchmarking;
 pub mod weights;
 
+pub mod traits;
+
 use codec::{Decode, Encode};
 use frame_support::{debug, dispatch, ensure, traits::Get, weights::Weight};
 use frame_system::ensure_signed;
@@ -70,6 +72,7 @@ use sp_runtime::{
 	ModuleId,
 };
 use sp_std::prelude::*;
+use traits::ExtendedMixer;
 use weights::WeightInfo;
 
 pub use pallet::*;
@@ -559,6 +562,20 @@ impl<T: Config> Module<T> {
 		MixerGroupIds::<T>::set(mixer_ids);
 
 		Initialised::<T>::set(true);
+		Ok(())
+	}
+}
+
+impl<T: Config> ExtendedMixer<T::AccountId, CurrencyIdOf<T>, BalanceOf<T>> for Pallet<T> {
+	fn create_new(
+		account_id: T::AccountId,
+		currency_id: CurrencyIdOf<T>,
+		size: BalanceOf<T>,
+	) -> Result<(), dispatch::DispatchError> {
+		let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
+		let mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
+		let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, Vec::new(), currency_id);
+		MixerGroups::<T>::insert(mixer_id, mixer_info);
 		Ok(())
 	}
 }
