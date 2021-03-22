@@ -1,13 +1,14 @@
-pragma solidity 0.5.17;
+pragma solidity 0.7.3;
 
-library Hasher {
-  function MiMCSponge(uint256 in_xL, uint256 in_xR) public pure returns (uint256 xL, uint256 xR);
+abstract contract Hasher {
+  function MiMCSponge(uint256 in_xL, uint256 in_xR) virtual public pure returns (uint256 xL, uint256 xR);
 }
 
 contract MerkleTreeWithHistory {
   uint256 public constant FIELD_SIZE = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
   uint256 public constant ZERO_VALUE = 21663839004416932945382355908790599225266501822907911457504978515578255421292; // = keccak256("tornado") % FIELD_SIZE
 
+  address public hasher;
   uint32 public levels;
 
   // the following variables are made public for easier testing and debugging and
@@ -40,14 +41,14 @@ contract MerkleTreeWithHistory {
   /**
     @dev Hash 2 tree leaves, returns MiMC(_left, _right)
   */
-  function hashLeftRight(bytes32 _left, bytes32 _right) public pure returns (bytes32) {
+  function hashLeftRight(bytes32 _left, bytes32 _right) public returns (bytes32) {
     require(uint256(_left) < FIELD_SIZE, "_left should be inside the field");
     require(uint256(_right) < FIELD_SIZE, "_right should be inside the field");
     uint256 R = uint256(_left);
     uint256 C = 0;
-    (R, C) = Hasher.MiMCSponge(R, C);
+    (R, C) = Hasher(hasher).MiMCSponge(R, C);
     R = addmod(R, uint256(_right), FIELD_SIZE);
-    (R, C) = Hasher.MiMCSponge(R, C);
+    (R, C) = Hasher(hasher).MiMCSponge(R, C);
     return bytes32(R);
   }
 
