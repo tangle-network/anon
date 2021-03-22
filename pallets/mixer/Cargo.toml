@@ -18,14 +18,21 @@ sp-std = { default-features = false, version = "3.0.0" }
 sp-runtime = { default-features = false, version = '3.0.0' }
 merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
-bulletproofs = { version = "2.0.0", branch = "main", git = "https://github.com/edgeware-builders/bulletproofs", default-features = false, features = ["yoloproofs"] }
 merlin = { version = "2.0.0", default-features = false }
 frame-benchmarking = { default-features = false, version = "3.0.0", optional = true }
+orml-traits = { version = "0.4.0", default-features = false }
+orml-currencies = { version = "0.4.0", default-features = false }
+orml-tokens = { version = "0.4.0", default-features = false }
 
-[dependencies.curve25519-gadgets]
+[dependencies.bulletproofs]
+version = "2.0.0"
+package = "webb-bulletproofs"
+default-features = false
+features = ["yoloproofs"]
+
+[dependencies.bulletproofs-gadgets]
 branch = "main"
 version = "2.0.0"
-git = "https://github.com/webb-tools/bulletproof-gadgets"
 default-features = false
 
 [dependencies.curve25519-dalek]
@@ -48,6 +55,7 @@ std = [
     "balances/std",
     "frame-support/std",
     "frame-system/std",
+    "orml-tokens/std",
     "frame-benchmarking/std",
     "merkle/std",
 ]

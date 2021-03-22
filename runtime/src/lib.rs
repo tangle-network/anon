@@ -43,6 +43,9 @@ pub use frame_system::limits::{BlockLength, BlockWeights};
 pub use pallet_balances::Call as BalancesCall;
 use pallet_contracts::weights::WeightInfo;
 pub use pallet_timestamp::Call as TimestampCall;
+
+use orml_currencies::BasicCurrencyAdapter;
+use orml_traits::parameter_type_with_key;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
@@ -80,6 +83,11 @@ use mixer::weights::Weights as MixerWeights;
 
 /// An index to a block.
 pub type BlockNumber = u32;
+
+// Currency id
+pub type CurrencyId = u64;
+
+pub type Amount = i128;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on
 /// the chain.
@@ -345,6 +353,36 @@ impl merkle::Config for Runtime {
 	type WeightInfo = MerkleWeights<Self>;
 }
 
+parameter_type_with_key! {
+	pub ExistentialDepositMap: |k: CurrencyId| -> Balance {
+		match k {
+			_ => 2,
+		}
+	};
+}
+
+parameter_types! {
+	pub const NativeCurrencyId: CurrencyId = 0;
+}
+
+impl orml_tokens::Config for Runtime {
+	type Amount = Amount;
+	type Balance = Balance;
+	type CurrencyId = CurrencyId;
+	type Event = Event;
+	type ExistentialDeposits = ExistentialDepositMap;
+	type OnDust = ();
+	type WeightInfo = ();
+}
+
+impl orml_currencies::Config for Runtime {
+	type Event = Event;
+	type GetNativeCurrencyId = NativeCurrencyId;
+	type MultiCurrency = Tokens;
+	type NativeCurrency = BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
+	type WeightInfo = ();
+}
+
 parameter_types! {
 	pub const MixerModuleId: ModuleId = ModuleId(*b"py/mixer");
 	pub const MinimumDepositLength: BlockNumber = 10 * 60 * 24 * 28;
@@ -358,14 +396,14 @@ parameter_types! {
 }
 
 impl mixer::Config for Runtime {
-	type Currency = Balances;
+	type Currency = Currencies;
 	type DefaultAdmin = DefaultAdminKey;
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
 	type Group = Merkle;
-	type MaxMixerTreeDepth = MaxTreeDepth;
 	type MixerSizes = MixerSizes;
 	type ModuleId = MixerModuleId;
+	type NativeCurrencyId = NativeCurrencyId;
 	type WeightInfo = MixerWeights<Self>;
 }
 
@@ -460,6 +498,8 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment::{Module, Storage},
 		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
 
+		Currencies: orml_currencies::{Module, Storage, Event<T>},
+		Tokens: orml_tokens::{Module, Storage, Event<T>},
 		Mixer: mixer::{Module, Call, Storage, Event<T>},
 		Merkle: merkle::{Module, Call, Storage, Event<T>},
 	}

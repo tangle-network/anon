@@ -64,6 +64,10 @@ sp-std = { default-features = false, version = "3.0.0" }
 sp-transaction-pool = { default-features = false, version = "3.0.0" }
 sp-version = { default-features = false, version = "3.0.0" }
 
+orml-tokens = { version = "0.4.0", default-features = false }
+orml-currencies = { version = "0.4.0", default-features = false }
+orml-traits = { version = "0.4.0", default-features = false }
+
 [features]
 default = ["std"]
 runtime-benchmarks = [

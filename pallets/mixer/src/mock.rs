@@ -1,16 +1,24 @@
 use super::*;
 use crate as pallet_mixer;
-use frame_support::{construct_runtime, parameter_types, weights::Weight};
+use frame_benchmarking::whitelisted_caller;
+use frame_support::{construct_runtime, parameter_types, traits::GenesisBuild, weights::Weight};
 use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
 use merkle::weights::Weights as MerkleWeights;
-use pallet_mixer::weights::Weights;
+use orml_currencies::BasicCurrencyAdapter;
+use orml_traits::parameter_type_with_key;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
 	ModuleId, Perbill,
 };
+use weights::Weights;
+
 pub(crate) type Balance = u64;
+pub type Amount = i128;
+pub type CurrencyId = u64;
+pub type AccountId = u64;
+pub type BlockNumber = u64;
 
 // Configure a mock runtime to test the pallet.
 type UncheckedExtrinsic = MockUncheckedExtrinsic<Test>;
@@ -26,6 +34,8 @@ construct_runtime!(
 		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
 		MerkleGroups: merkle::{Module, Call, Storage, Event<T>},
 		Mixer: pallet_mixer::{Module, Call, Storage, Event<T>},
+		Currencies: orml_currencies::{Module, Storage, Event<T>},
+		Tokens: orml_tokens::{Module, Storage, Event<T>, Config<T>},
 	}
 );
 
@@ -39,11 +49,11 @@ parameter_types! {
 
 impl frame_system::Config for Test {
 	type AccountData = balances::AccountData<u64>;
-	type AccountId = u64;
+	type AccountId = AccountId;
 	type BaseCallFilter = ();
 	type BlockHashCount = BlockHashCount;
 	type BlockLength = ();
-	type BlockNumber = u64;
+	type BlockNumber = BlockNumber;
 	type BlockWeights = ();
 	type Call = Call;
 	type DbWeight = ();
@@ -81,6 +91,36 @@ impl balances::Config for Test {
 	type WeightInfo = ();
 }
 
+parameter_type_with_key! {
+	pub ExistentialDepositMap: |k: CurrencyId| -> Balance {
+		match k {
+			_ => 2,
+		}
+	};
+}
+
+parameter_types! {
+	pub const NativeCurrencyId: CurrencyId = 0;
+}
+
+impl orml_tokens::Config for Test {
+	type Amount = Amount;
+	type Balance = Balance;
+	type CurrencyId = CurrencyId;
+	type Event = Event;
+	type ExistentialDeposits = ExistentialDepositMap;
+	type OnDust = ();
+	type WeightInfo = ();
+}
+
+impl orml_currencies::Config for Test {
+	type Event = Event;
+	type GetNativeCurrencyId = NativeCurrencyId;
+	type MultiCurrency = Tokens;
+	type NativeCurrency = BasicCurrencyAdapter<Test, Balances, Amount, BlockNumber>;
+	type WeightInfo = ();
+}
+
 impl merkle::Config for Test {
 	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
@@ -96,14 +136,14 @@ parameter_types! {
 }
 
 impl Config for Test {
-	type Currency = Balances;
+	type Currency = Currencies;
 	type DefaultAdmin = DefaultAdmin;
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
 	type Group = MerkleGroups;
-	type MaxMixerTreeDepth = MaxTreeDepth;
 	type MixerSizes = MixerSizes;
 	type ModuleId = MixerModuleId;
+	type NativeCurrencyId = NativeCurrencyId;
 	type WeightInfo = Weights<Self>;
 }
 
@@ -112,12 +152,27 @@ pub type MixerCall = pallet_mixer::Call<Test>;
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	use balances::GenesisConfig as BalancesConfig;
+	use orml_tokens::GenesisConfig as TokensConfig;
 	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
+
 	BalancesConfig::<Test> {
 		// Total issuance will be 200 with treasury account initialized at ED.
-		balances: vec![(0, 1_000_000_000), (1, 1_000_000_000), (2, 1_000_000_000)],
+		balances: vec![
+			(0, 1_000_000_000),
+			(1, 1_000_000_000),
+			(2, 1_000_000_000),
+			(whitelisted_caller(), 1_000_000_000),
+		],
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();
+
+	let token_currency_id: CurrencyId = 1;
+	TokensConfig::<Test> {
+		endowed_accounts: vec![(0, token_currency_id, 1_000_000_000)],
+	}
+	.assimilate_storage(&mut t)
+	.unwrap();
+
 	t.into()
 }

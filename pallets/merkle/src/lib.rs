@@ -95,9 +95,7 @@ use bulletproofs::{
 	r1cs::{R1CSProof, Verifier},
 	BulletproofGens, PedersenGens,
 };
-use codec::{Decode, Encode};
-use curve25519_dalek::scalar::Scalar;
-use curve25519_gadgets::{
+use bulletproofs_gadgets::{
 	fixed_deposit_tree::mixer_verif_gadget,
 	poseidon::{
 		allocate_statics_for_verifier,
@@ -107,6 +105,8 @@ use curve25519_gadgets::{
 	smt::gen_zero_tree,
 	utils::AllocatedScalar,
 };
+use codec::{Decode, Encode};
+use curve25519_dalek::scalar::Scalar;
 use frame_support::{dispatch, ensure, traits::Get, weights::Weight, Parameter};
 use frame_system::ensure_signed;
 use lazy_static::lazy_static;
@@ -147,7 +147,7 @@ pub mod pallet {
 
 	/// The pallet's configuration trait.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + balances::Config {
+	pub trait Config: frame_system::Config {
 		/// The overarching event type.
 		type Event: IsType<<Self as frame_system::Config>::Event> + From<Event<Self>>;
 		/// The overarching group ID type

@@ -1,16 +1,18 @@
 use super::*;
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
-use curve25519_gadgets::fixed_deposit_tree::builder::FixedDepositTreeBuilder;
+use bulletproofs_gadgets::fixed_deposit_tree::builder::FixedDepositTreeBuilder;
+use curve25519_dalek::scalar::Scalar;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::OnFinalize;
 use frame_system::RawOrigin;
 use merkle::{default_hasher, utils::keys::ScalarData};
 use merlin::Transcript;
+use orml_traits::MultiCurrency;
 use sp_runtime::traits::Bounded;
 
 use crate::{Config, Module as Mixer};
 use balances::Module as Balances;
-use merkle::Module as Merkle;
+use merkle::{Config as MerkleConfig, Module as Merkle};
 
 const NUM_DEPOSITS: u32 = 10;
 const NUM_WITHDRAWALS: u32 = 5;
@@ -23,8 +25,7 @@ benchmarks! {
 
 		Mixer::<T>::initialize().unwrap();
 		let mixer_id: T::GroupId = 0u32.into();
-		// Adding initial balance to the `caller` in order to make the deposit
-		let _ = <Balances<T> as Currency<_>>::make_free_balance_be(&caller, T::Balance::max_value());
+		let currency_id: CurrencyIdOf<T> = T::NativeCurrencyId::get();
 
 		// Making `d` leaves/data points
 		let data_points = vec![ScalarData::zero(); d as usize];
@@ -36,12 +37,11 @@ benchmarks! {
 	}
 
 	withdraw {
-		let caller = whitelisted_caller();
+		let caller: T::AccountId = whitelisted_caller();
 		Mixer::<T>::initialize().unwrap();
 
 		let mixer_id: T::GroupId = 0u32.into();
-		let balance = T::Balance::max_value();
-		let _ = <Balances<T> as Currency<_>>::make_free_balance_be(&caller, balance);
+		let balance: BalanceOf<T> = 1_000_000_000u32.into();
 
 		let pc_gens = PedersenGens::default();
 		let poseidon = default_hasher();
@@ -50,7 +50,7 @@ benchmarks! {
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 		let mut ftree = FixedDepositTreeBuilder::new()
 			.hash_params(poseidon.clone())
-			.depth(<T as Config>::MaxMixerTreeDepth::get().into())
+			.depth(<T as MerkleConfig>::MaxTreeDepth::get().into())
 			.build();
 
 		let leaf = ftree.generate_secrets();
@@ -59,27 +59,39 @@ benchmarks! {
 		Mixer::<T>::deposit(RawOrigin::Signed(caller.clone()).into(), mixer_id, vec![ScalarData(leaf)]).unwrap();
 
 		let root = Merkle::<T>::get_merkle_root(mixer_id).unwrap();
-		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) =
-			ftree.prove_zk(root.0, leaf, &ftree.hash_params.bp_gens, prover);
+		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
+			root.0,
+			leaf,
+			ScalarData::from_slice(&caller.encode()).to_scalar(),
+			ScalarData::from_slice(&caller.encode()).to_scalar(),
+			&ftree.hash_params.bp_gens, prover
+		);
 
 		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
 
 		let block_number: T::BlockNumber = 0u32.into();
+
+		let withdraw_proof = WithdrawProof::<T>::new(
+			mixer_id,
+			block_number,
+			root,
+			comms,
+			ScalarData(nullifier_hash),
+			proof.to_bytes(),
+			leaf_index_comms,
+			proof_comms,
+			None,
+			None
+		);
 	}: _(
 		RawOrigin::Signed(caller.clone()),
-		mixer_id,
-		block_number,
-		root,
-		comms,
-		ScalarData(nullifier_hash),
-		proof.to_bytes(),
-		leaf_index_comms,
-		proof_comms
+		withdraw_proof
 	)
 	verify {
-		let balance_after: T::Balance = <Balances<T> as Currency<_>>::free_balance(&caller);
+		let currency_id: CurrencyIdOf<T> = T::NativeCurrencyId::get();
+		let balance_after: BalanceOf<T> = T::Currency::free_balance(currency_id, &caller);
 		assert_eq!(balance_after, balance);
 	}
 
