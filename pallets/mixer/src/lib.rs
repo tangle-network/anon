@@ -368,22 +368,6 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		// NOTE: Used only for testing purposes
-		#[pallet::weight(0)]
-		pub fn create_new(
-			origin: OriginFor<T>,
-			currency_id: CurrencyIdOf<T>,
-			size: BalanceOf<T>,
-		) -> DispatchResultWithPostInfo {
-			ensure_admin(origin, &Self::admin())?;
-
-			let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
-			let mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
-			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, Vec::new(), currency_id);
-			MixerGroups::<T>::insert(mixer_id, mixer_info);
-			Ok(().into())
-		}
-
 		/// Stops the operation of all the mixers managed by the pallet.
 		/// Can only be called by the admin or the root origin.
 		///
