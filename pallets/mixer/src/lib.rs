@@ -140,18 +140,32 @@ pub mod pallet {
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	#[pallet::metadata(<T as frame_system::Config>::AccountId = "AccountId", <T as merkle::Config>::GroupId = "GroupId")]
+	#[pallet::metadata(T::AccountId = "AccountId", T::GroupId = "GroupId", BalanceOf<T> = "Balance")]
 	pub enum Event<T: Config> {
 		/// New deposit added to the specific mixer
 		Deposit(
-			<T as merkle::Config>::GroupId,
-			<T as frame_system::Config>::AccountId,
-			ScalarData,
+			/// Id of the tree
+			T::GroupId,
+			/// Account id of the sender
+			T::AccountId,
+			/// Deposit size
+			BalanceOf<T>,
+			/// Number of leaves before insertion
+			u32,
+			/// Leaf data
+			Vec<ScalarData>,
 		),
 		/// Withdrawal from the specific mixer
 		Withdraw(
-			<T as merkle::Config>::GroupId,
-			<T as frame_system::Config>::AccountId,
+			/// Id of the tree
+			T::GroupId,
+			/// Account id of the sender
+			T::AccountId,
+			/// Account id of the recipient
+			T::AccountId,
+			/// Account id of the relayer
+			T::AccountId,
+			/// Merkle root
 			ScalarData,
 		),
 	}
@@ -257,8 +271,20 @@ pub mod pallet {
 			<TotalValueLocked<T>>::insert(mixer_id, tvl + deposit);
 			// add elements to the mixer group's merkle tree and save the leaves
 			T::Group::add_members(Self::account_id(), mixer_id.into(), data_points.clone())?;
-			mixer_info.leaves.extend(data_points);
+
+			// number of leaves before the insertion of new leaves
+			let num_leaves_before = mixer_info.leaves.len() as u32;
+			let deposit_size = mixer_info.fixed_deposit_size;
+			mixer_info.leaves.extend(data_points.clone());
 			MixerGroups::<T>::insert(mixer_id, mixer_info);
+
+			Self::deposit_event(Event::Deposit(
+				mixer_id,
+				sender,
+				deposit_size,
+				num_leaves_before,
+				data_points,
+			));
 
 			Ok(().into())
 		}
@@ -315,6 +341,14 @@ pub mod pallet {
 				withdraw_proof.mixer_id.into(),
 				withdraw_proof.nullifier_hash,
 			)?;
+
+			Self::deposit_event(Event::Withdraw(
+				withdraw_proof.mixer_id,
+				sender,
+				recipient,
+				relayer,
+				withdraw_proof.cached_root,
+			));
 			Ok(().into())
 		}
 
