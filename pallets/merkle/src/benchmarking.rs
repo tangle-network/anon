@@ -1,5 +1,5 @@
 use super::*;
-use curve25519_gadgets::poseidon::Poseidon_hash_2;
+use bulletproofs_gadgets::poseidon::Poseidon_hash_2;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::OnFinalize;
 use frame_system::{Module as System, RawOrigin};

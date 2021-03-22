@@ -1,7 +1,7 @@
 use super::*;
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
+use bulletproofs_gadgets::fixed_deposit_tree::builder::FixedDepositTreeBuilder;
 use curve25519_dalek::scalar::Scalar;
-use curve25519_gadgets::fixed_deposit_tree::builder::FixedDepositTreeBuilder;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::OnFinalize;
 use frame_system::RawOrigin;

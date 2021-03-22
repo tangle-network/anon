@@ -4,8 +4,7 @@ use crate::{
 	utils::keys::{Commitment, ScalarData},
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
-use curve25519_dalek::{ristretto::RistrettoPoint, scalar::Scalar};
-use curve25519_gadgets::{
+use bulletproofs_gadgets::{
 	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
 	poseidon::{
 		builder::{Poseidon, PoseidonBuilder},
@@ -13,6 +12,7 @@ use curve25519_gadgets::{
 	},
 	smt::gen_zero_tree,
 };
+use curve25519_dalek::{ristretto::RistrettoPoint, scalar::Scalar};
 use frame_support::{assert_err, assert_ok, traits::UnfilteredDispatchable};
 use frame_system::RawOrigin;
 use merlin::Transcript;

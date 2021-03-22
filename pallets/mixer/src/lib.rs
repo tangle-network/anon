@@ -321,6 +321,22 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		// NOTE: Used only for testing purposes
+		#[pallet::weight(0)]
+		pub fn create_new(
+			origin: OriginFor<T>,
+			currency_id: CurrencyIdOf<T>,
+			size: BalanceOf<T>,
+		) -> DispatchResultWithPostInfo {
+			ensure_admin(origin, &Self::admin())?;
+
+			let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
+			let mixer_id: T::GroupId = T::Group::create_group(Self::account_id(), true, depth)?;
+			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, Vec::new(), currency_id);
+			MixerGroups::<T>::insert(mixer_id, mixer_info);
+			Ok(().into())
+		}
+
 		/// Stops the operation of all the mixers managed by the pallet.
 		/// Can only be called by the admin or the root origin.
 		///
@@ -360,6 +376,7 @@ pub mod pallet {
 	}
 }
 
+/// Proof data for withdrawal
 #[derive(Encode, Decode, PartialEq, Clone)]
 pub struct WithdrawProof<T: Config> {
 	/// The mixer id this withdraw proof corresponds to
@@ -421,8 +438,9 @@ impl<T: Config> std::fmt::Debug for WithdrawProof<T> {
 	}
 }
 
-/// Type alias for the orml_currencies::Balance type
+/// Type alias for the orml_traits::MultiCurrency::Balance type
 pub type BalanceOf<T> = <<T as Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::Balance;
+/// Type alias for the orml_traits::MultiCurrency::CurrencyId type
 pub type CurrencyIdOf<T> =
 	<<T as pallet::Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::CurrencyId;
 
