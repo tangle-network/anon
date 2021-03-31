@@ -1,5 +1,5 @@
 # anon
-Substrate based mixer w/ relayable transactions using bulletproofs.
+Substrate based mixer w/ relayable transactions using bulletproofs and Curve25519.
 
 ## Build
 
