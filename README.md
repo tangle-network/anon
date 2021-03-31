@@ -1,3 +1,6 @@
+# anon
+Substrate based mixer w/ relayable transactions using bulletproofs.
+
 ## Build
 
 Install Rust:
