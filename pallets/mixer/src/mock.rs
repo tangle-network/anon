@@ -32,7 +32,7 @@ construct_runtime!(
 	{
 		System: frame_system::{Module, Call, Config, Storage, Event<T>},
 		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
-		MerkleGroups: merkle::{Module, Call, Storage, Event<T>},
+		MerkleTrees: merkle::{Module, Call, Storage, Event<T>},
 		Mixer: pallet_mixer::{Module, Call, Storage, Event<T>},
 		Currencies: orml_currencies::{Module, Storage, Event<T>},
 		Tokens: orml_tokens::{Module, Storage, Event<T>, Config<T>},
@@ -124,7 +124,7 @@ impl orml_currencies::Config for Test {
 impl merkle::Config for Test {
 	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
-	type GroupId = u32;
+	type TreeId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
 	type WeightInfo = MerkleWeights<Self>;
 }
@@ -140,7 +140,7 @@ impl Config for Test {
 	type DefaultAdmin = DefaultAdmin;
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
-	type Group = MerkleGroups;
+	type Tree = MerkleTrees;
 	type MixerSizes = MixerSizes;
 	type ModuleId = MixerModuleId;
 	type NativeCurrencyId = NativeCurrencyId;
