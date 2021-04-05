@@ -118,7 +118,7 @@ pub mod pallet {
 
 	/// The map of mixer treess to their metadata
 	#[pallet::storage]
-	#[pallet::getter(fn mixer_treess)]
+	#[pallet::getter(fn mixer_trees)]
 	pub type MixerTrees<T: Config> = StorageMap<_, Blake2_128Concat, T::TreeId, MixerInfo<T>, ValueQuery>;
 
 	/// The vector of group ids
