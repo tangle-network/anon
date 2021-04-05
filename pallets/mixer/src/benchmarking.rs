@@ -24,7 +24,7 @@ benchmarks! {
 		let caller = whitelisted_caller();
 
 		Mixer::<T>::initialize().unwrap();
-		let mixer_id: T::TestId = 0u32.into();
+		let mixer_id: T::TreeId = 0u32.into();
 		let currency_id: CurrencyIdOf<T> = T::NativeCurrencyId::get();
 
 		// Making `d` leaves/data points
@@ -40,7 +40,7 @@ benchmarks! {
 		let caller: T::AccountId = whitelisted_caller();
 		Mixer::<T>::initialize().unwrap();
 
-		let mixer_id: T::TestId = 0u32.into();
+		let mixer_id: T::TreeId = 0u32.into();
 		let balance: BalanceOf<T> = 1_000_000_000u32.into();
 
 		let pc_gens = PedersenGens::default();
@@ -101,9 +101,9 @@ benchmarks! {
 	// Calling the function with the root origin
 	_(RawOrigin::Root, true)
 	verify {
-		let mixer_ids = MixerTestIds::<T>::get();
+		let mixer_ids = MixerTreeIds::<T>::get();
 		for i in 0..mixer_ids.len() {
-			let group_id: T::TestId = (i as u32).into();
+			let group_id: T::TreeId = (i as u32).into();
 			let stopped = Merkle::<T>::stopped(group_id);
 			assert!(stopped);
 		}
@@ -140,7 +140,7 @@ benchmarks! {
 		Mixer::<T>::on_finalize(second_block);
 	}
 	verify {
-		let first_group: T::TestId = 0u32.into();
+		let first_group: T::TreeId = 0u32.into();
 		let data = Merkle::<T>::get_cache(first_group, second_block);
 		assert_eq!(data.len(), 1);
 	}
