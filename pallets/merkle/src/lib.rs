@@ -444,6 +444,19 @@ impl<T: Config> Manager<T> {
 	}
 }
 
+/// Hash functions for MerkleTree
+#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq)]
+pub enum HashFunction {
+	PoseidonDefault,
+	PoseidonExp3,
+	PoseidonExp5,
+	PoseidonExp17,
+	MiMC,
+	Blake2,
+	Sha256,
+}
+
 /// Essential data about the tree
 ///
 /// It holds:
@@ -463,6 +476,8 @@ pub struct MerkleTree {
 	pub root_hash: ScalarData,
 	/// Edge nodes needed for the next insert in the tree
 	pub edge_nodes: Vec<ScalarData>,
+	/// Hash function for the merkle tree
+	pub hasher: HashFunction,
 }
 
 impl MerkleTree {
@@ -479,6 +494,7 @@ impl MerkleTree {
 			depth,
 			max_leaves: u32::MAX >> (T::MaxTreeDepth::get() - depth),
 			edge_nodes: init_edges,
+			hasher: HashFunction::PoseidonDefault,
 		}
 	}
 }
@@ -563,9 +579,9 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 			Error::<T>::ExceedsMaxLeaves
 		);
 
-		let zero_tree = gen_zero_tree(POSEIDON_HASHER.width, &POSEIDON_HASHER.sbox);
+		let zero_tree = Self::generate_zero_tree(tree.hasher.clone());
 		for data in &members {
-			Self::add_leaf(&mut tree, *data, &zero_tree, &POSEIDON_HASHER);
+			Self::add_leaf(&mut tree, *data, &zero_tree);
 		}
 		let block_number: T::BlockNumber = <frame_system::Module<T>>::block_number();
 		CachedRoots::<T>::append(block_number, id, tree.root_hash);
@@ -770,7 +786,7 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	pub fn add_leaf(tree: &mut MerkleTree, data: ScalarData, zero_tree: &Vec<[u8; 32]>, h: &Poseidon) {
+	pub fn add_leaf(tree: &mut MerkleTree, data: ScalarData, zero_tree: &Vec<[u8; 32]>) {
 		let mut edge_index = tree.leaf_count;
 		let mut hash = data.0;
 		// Update the tree
@@ -778,9 +794,9 @@ impl<T: Config> Pallet<T> {
 			hash = if edge_index % 2 == 0 {
 				tree.edge_nodes[i] = ScalarData(hash);
 				let zero_h = Scalar::from_bytes_mod_order(zero_tree[i]);
-				Poseidon_hash_2(hash, zero_h, h)
+				Self::hash(tree.hasher.clone(), hash, zero_h)
 			} else {
-				Poseidon_hash_2(tree.edge_nodes[i].0, hash, h)
+				Self::hash(tree.hasher.clone(), tree.edge_nodes[i].0, hash)
 			};
 
 			edge_index /= 2;
@@ -788,5 +804,19 @@ impl<T: Config> Pallet<T> {
 
 		tree.leaf_count += 1;
 		tree.root_hash = ScalarData(hash);
+	}
+
+	pub fn hash(hasher: HashFunction, left: Scalar, right: Scalar) -> Scalar {
+		match hasher {
+			HashFunction::PoseidonDefault => Poseidon_hash_2(left, right, &POSEIDON_HASHER),
+			_ => Poseidon_hash_2(left, right, &POSEIDON_HASHER),
+		}
+	}
+
+	pub fn generate_zero_tree(hasher: HashFunction) -> Vec<[u8; 32]> {
+		match hasher {
+			HashFunction::PoseidonDefault => gen_zero_tree(POSEIDON_HASHER.width, &POSEIDON_HASHER.sbox),
+			_ => gen_zero_tree(POSEIDON_HASHER.width, &POSEIDON_HASHER.sbox),
+		}
 	}
 }
