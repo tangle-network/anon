@@ -1,6 +1,6 @@
 use super::*;
 use crate::mock::{
-	new_test_ext, AccountId, Balance, Balances, CurrencyId, MerkleGroups, Mixer, MixerCall, Origin, System, Test,
+	new_test_ext, AccountId, Balance, Balances, CurrencyId, MerkleTrees, Mixer, MixerCall, Origin, System, Test,
 	Tokens,
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
@@ -39,8 +39,8 @@ fn should_initialize_successfully() {
 		// the mixer creates 4 groups, they should all initialise to 0
 		let val = 1_000;
 		for i in 0..4 {
-			let g = MerkleGroups::get_group(i).unwrap();
-			let mng = MerkleGroups::get_manager(i).unwrap();
+			let g = MerkleTrees::get_tree(i).unwrap();
+			let mng = MerkleTrees::get_manager(i).unwrap();
 			let m = Mixer::get_mixer(i).unwrap();
 			assert_eq!(g.leaf_count, 0);
 			assert_eq!(mng.required, true);
@@ -57,8 +57,8 @@ fn should_initialize_successfully_on_finalize() {
 		// the mixer creates 4 groups, they should all initialise to 0
 		let val = 1_000;
 		for i in 0..4 {
-			let g = MerkleGroups::get_group(i).unwrap();
-			let mng = MerkleGroups::get_manager(i).unwrap();
+			let g = MerkleTrees::get_tree(i).unwrap();
+			let mng = MerkleTrees::get_manager(i).unwrap();
 			let m = Mixer::get_mixer(i).unwrap();
 			assert_eq!(g.leaf_count, 0);
 			assert_eq!(mng.required, true);
@@ -92,7 +92,7 @@ fn should_be_able_to_stop_mixers_with_root() {
 		assert_ok!(res);
 
 		for i in 0..4 {
-			let stopped = MerkleGroups::stopped(i);
+			let stopped = MerkleTrees::stopped(i);
 			assert!(stopped);
 		}
 	})
@@ -183,7 +183,7 @@ fn should_deposit_into_each_mixer_successfully() {
 			let balance_after = Balances::free_balance(1);
 
 			// ensure state updates
-			let g = MerkleGroups::get_group(i).unwrap();
+			let g = MerkleTrees::get_tree(i).unwrap();
 			let m = Mixer::get_mixer(i).unwrap();
 			let tvl = Mixer::total_value_locked(i);
 			assert_eq!(tvl, m.fixed_deposit_size);
@@ -214,7 +214,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![ScalarData(leaf)]));
 
-			let root = MerkleGroups::get_merkle_root(i).unwrap();
+			let root = MerkleTrees::get_merkle_root(i).unwrap();
 			let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
 				root.0,
 				leaf,
@@ -268,25 +268,25 @@ fn should_cache_roots_if_no_new_deposits_show() {
 		for i in 0..4 {
 			let leaf = tree.generate_secrets();
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![ScalarData(leaf)]));
-			let root = MerkleGroups::get_merkle_root(i).unwrap();
+			let root = MerkleTrees::get_merkle_root(i).unwrap();
 			merkle_roots.push(root);
-			let cache = MerkleGroups::cached_roots(1, i);
+			let cache = MerkleTrees::cached_roots(1, i);
 			assert_eq!(cache.len(), 1);
 		}
 
 		System::set_block_number(2);
 		<Mixer as OnFinalize<u64>>::on_finalize(2);
 		for i in 0..4 {
-			let cache_prev = MerkleGroups::cached_roots(1, i);
-			let cache = MerkleGroups::cached_roots(2, i);
+			let cache_prev = MerkleTrees::cached_roots(1, i);
+			let cache = MerkleTrees::cached_roots(2, i);
 			assert_eq!(cache, cache_prev);
 		}
 
 		System::set_block_number(3);
 		<Mixer as OnFinalize<u64>>::on_finalize(3);
 		for i in 0..4 {
-			let cache_prev = MerkleGroups::cached_roots(2, i);
-			let cache = MerkleGroups::cached_roots(3, i);
+			let cache_prev = MerkleTrees::cached_roots(2, i);
+			let cache = MerkleTrees::cached_roots(3, i);
 			assert_eq!(cache, cache_prev);
 		}
 	})
@@ -302,28 +302,28 @@ fn should_not_have_cache_once_cache_length_exceeded() {
 		for i in 0..4 {
 			let leaf = tree.generate_secrets();
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![ScalarData(leaf)]));
-			let root = MerkleGroups::get_merkle_root(i).unwrap();
+			let root = MerkleTrees::get_merkle_root(i).unwrap();
 			merkle_roots.push(root);
-			let cache = MerkleGroups::cached_roots(1, i);
+			let cache = MerkleTrees::cached_roots(1, i);
 			assert_eq!(cache.len(), 1);
 		}
 
 		<Mixer as OnFinalize<u64>>::on_finalize(1);
-		<MerkleGroups as OnFinalize<u64>>::on_finalize(1);
+		<MerkleTrees as OnFinalize<u64>>::on_finalize(1);
 		// iterate over next 5 blocks
 		for i in 1..6 {
 			System::set_block_number(i + 1);
 			<Mixer as OnFinalize<u64>>::on_finalize(i + 1);
-			<MerkleGroups as OnFinalize<u64>>::on_finalize(i + 1);
+			<MerkleTrees as OnFinalize<u64>>::on_finalize(i + 1);
 			// iterate over each mixer in each block
 			for j in 0u32..4u32 {
 				if i + 1 == 6 {
-					let old_root = MerkleGroups::cached_roots(1, j);
+					let old_root = MerkleTrees::cached_roots(1, j);
 					assert_eq!(old_root, vec![]);
 				}
 
 				// get cached root at block i + 1
-				let root = MerkleGroups::cached_roots(i + 1, j);
+				let root = MerkleTrees::cached_roots(i + 1, j);
 				// check cached root is same as first updated root
 				assert_eq!(root, vec![merkle_roots[j as usize]]);
 				// check that highest cache block is i + 1
@@ -347,7 +347,7 @@ fn should_make_mixer_with_non_native_token() {
 		let pc_gens = PedersenGens::default();
 		let poseidon = default_hasher(16400);
 
-		let group_tree_id = 4u32;
+		let tree_id = 4u32;
 		let sender: AccountId = 0;
 		let recipient: AccountId = 1;
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
@@ -362,14 +362,14 @@ fn should_make_mixer_with_non_native_token() {
 
 		// Getting native balance before deposit
 		let native_balance_before = Balances::free_balance(&sender);
-		assert_ok!(Mixer::deposit(Origin::signed(sender), group_tree_id, vec![ScalarData(
+		assert_ok!(Mixer::deposit(Origin::signed(sender), tree_id, vec![ScalarData(
 			leaf
 		)]));
 		// Native balance after deposit, to make sure its not touched
 		let native_balance_after = Balances::free_balance(&sender);
 		assert_eq!(native_balance_before, native_balance_after);
 
-		let root = MerkleGroups::get_merkle_root(group_tree_id).unwrap();
+		let root = MerkleTrees::get_merkle_root(tree_id).unwrap();
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
 			root.0,
 			leaf,
@@ -383,17 +383,17 @@ fn should_make_mixer_with_non_native_token() {
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
 
-		let m = Mixer::get_mixer(group_tree_id).unwrap();
+		let m = Mixer::get_mixer(tree_id).unwrap();
 		let balance_before = Tokens::free_balance(currency_id, &recipient);
 		let native_balance_before = Balances::free_balance(&sender);
 		// check TVL after depositing
-		let tvl = Mixer::total_value_locked(group_tree_id);
+		let tvl = Mixer::total_value_locked(tree_id);
 		assert_eq!(tvl, m.fixed_deposit_size);
 		// withdraw from another account
 		assert_ok!(Mixer::withdraw(
 			Origin::signed(recipient),
 			WithdrawProof::new(
-				group_tree_id,
+				tree_id,
 				0,
 				root,
 				comms,
@@ -411,7 +411,7 @@ fn should_make_mixer_with_non_native_token() {
 		let native_balance_after = Balances::free_balance(&sender);
 		assert_eq!(native_balance_before, native_balance_after);
 		// ensure TVL is 0 after withdrawing
-		let tvl = Mixer::total_value_locked(group_tree_id);
+		let tvl = Mixer::total_value_locked(tree_id);
 		assert_eq!(tvl, 0);
 	});
 }

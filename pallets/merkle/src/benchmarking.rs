@@ -13,7 +13,7 @@ const VERIFY_DEPTH: u8 = 10;
 
 fn setup_tree<T: Config>(caller: T::AccountId, depth: u32) {
 	let manager_required = true;
-	<Merkle<T> as Group<T::AccountId, T::BlockNumber, T::GroupId>>::create_group(caller, manager_required, depth as u8)
+	<Merkle<T> as Group<T::AccountId, T::BlockNumber, T::TreeId>>::create_group(caller, manager_required, depth as u8)
 		.unwrap();
 }
 
@@ -37,7 +37,7 @@ benchmarks! {
 		let caller = whitelisted_caller();
 	}: _(RawOrigin::Signed(caller), false, Some(d as u8))
 	verify {
-		let next_id: T::GroupId = Merkle::<T>::next_group_id();
+		let next_id: T::TreeId = Merkle::<T>::next_group_id();
 		let curr_id = next_id - 1u32.into();
 		let group: GroupTree = Groups::<T>::get(curr_id).unwrap();
 		assert_eq!(group.depth, d as u8);
@@ -52,7 +52,7 @@ benchmarks! {
 	_(RawOrigin::Signed(caller.clone()), 0u32.into(), false)
 	verify {
 		// Checking if manager is caller and is not required
-		let group_id: T::GroupId = 0u32.into();
+		let group_id: T::TreeId = 0u32.into();
 		let manager = Managers::<T>::get(group_id).unwrap();
 		assert_eq!(manager.required, false);
 		assert_eq!(manager.account_id, caller.into());
@@ -67,7 +67,7 @@ benchmarks! {
 	// Transfering the admin role to `new_admin`
 	_(RawOrigin::Signed(caller), 0u32.into(), new_admin.clone())
 	verify {
-		let group_id: T::GroupId = 0u32.into();
+		let group_id: T::TreeId = 0u32.into();
 		let manager = Managers::<T>::get(group_id).unwrap();
 		assert_eq!(manager.required, true);
 		assert_eq!(manager.account_id, new_admin);
@@ -81,7 +81,7 @@ benchmarks! {
 	// any other functionality of the tree
 	_(RawOrigin::Signed(caller.clone()), 0u32.into(), true)
 	verify {
-		let group_id: T::GroupId = 0u32.into();
+		let group_id: T::TreeId = 0u32.into();
 		let stopped = Stopped::<T>::get(group_id);
 		assert!(stopped);
 	}
@@ -98,7 +98,7 @@ benchmarks! {
 		setup_tree::<T>(caller.clone(), 32);
 	}: _(RawOrigin::Signed(caller.clone()), 0u32.into(), leaves)
 	verify {
-		let group_id: T::GroupId = 0u32.into();
+		let group_id: T::TreeId = 0u32.into();
 		let group_tree: GroupTree = Groups::<T>::get(group_id).unwrap();
 		assert_eq!(group_tree.leaf_count, n);
 	}

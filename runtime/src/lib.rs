@@ -74,10 +74,10 @@ pub mod currency {
 
 use currency::*;
 
-/// Importing a groups pallet
+/// Importing a merkle trees pallet
 pub use merkle;
 use merkle::weights::Weights as MerkleWeights;
-/// Importing a groups pallet
+/// Importing a mixers pallet
 pub use mixer;
 use mixer::weights::Weights as MixerWeights;
 
@@ -348,7 +348,7 @@ parameter_types! {
 impl merkle::Config for Runtime {
 	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
-	type GroupId = u32;
+	type TreeId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
 	type WeightInfo = MerkleWeights<Self>;
 }
@@ -400,7 +400,7 @@ impl mixer::Config for Runtime {
 	type DefaultAdmin = DefaultAdminKey;
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
-	type Group = Merkle;
+	type Tree = Merkle;
 	type MixerSizes = MixerSizes;
 	type ModuleId = MixerModuleId;
 	type NativeCurrencyId = NativeCurrencyId;

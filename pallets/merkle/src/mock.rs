@@ -24,7 +24,7 @@ construct_runtime!(
 	{
 		System: system::{Module, Call, Config, Storage, Event<T>},
 		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
-		MerkleGroups: pallet_merkle::{Module, Call, Storage, Event<T>},
+		MerkleTrees: pallet_merkle::{Module, Call, Storage, Event<T>},
 	}
 );
 
@@ -82,7 +82,7 @@ impl balances::Config for Test {
 impl Config for Test {
 	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
-	type GroupId = u32;
+	type TreeId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
 	type WeightInfo = Weights<Self>;
 }
