@@ -126,6 +126,11 @@ pub mod pallet {
 	#[pallet::getter(fn mixer_group_ids)]
 	pub type MixerTreeIds<T: Config> = StorageValue<_, Vec<T::TreeId>, ValueQuery>;
 
+	/// The map of mixer treess to their metadata
+	#[pallet::storage]
+	#[pallet::getter(fn mixer_ids_by_currency)]
+	pub type MixerTreeIdsByCurrency<T: Config> = StorageMap<_, Blake2_128Concat, CurrencyIdOf<T>, T::TreeId, ValueQuery>;
+
 	/// Administrator of the mixer pallet.
 	/// This account that can stop/start operations of the mixer
 	#[pallet::storage]
@@ -177,6 +182,8 @@ pub mod pallet {
 	pub enum Error<T> {
 		/// Value was None
 		NoneValue,
+		/// No points provided
+		NoPointsProvided,
 		/// Mixer not found for specified id
 		NoMixerForId,
 		/// Mixer is not initialized
@@ -253,6 +260,7 @@ pub mod pallet {
 			data_points: Vec<ScalarData>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
+			ensure!(data_points.len() >= 1, Error::<T>::NoPointsProvided);
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 			ensure!(!<MerkleModule<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
 			// get mixer info, should always exist if the module is initialized
@@ -362,7 +370,7 @@ pub mod pallet {
 			currency_id: CurrencyIdOf<T>,
 			size: BalanceOf<T>,
 		) -> DispatchResultWithPostInfo {
-			ensure_admin(origin, &Self::admin())?;
+			ensure_root(origin)?;
 
 			let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
 			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth)?;
@@ -555,6 +563,7 @@ impl<T: Config> Module<T> {
 			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, Vec::new(), T::NativeCurrencyId::get());
 			// Saving the mixer group to storage
 			MixerTrees::<T>::insert(mixer_id, mixer_info);
+			MixerTreeIdsByCurrency::<T>::insert(T::NativeCurrencyId::get(), mixer_id);
 			mixer_ids.push(mixer_id);
 		}
 

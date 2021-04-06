@@ -14,6 +14,7 @@ use crate::{Config, Module as Mixer};
 use balances::Module as Balances;
 use merkle::{Config as MerkleConfig, Module as Merkle};
 
+const NUM_MIXERS: u32 = 4;
 const NUM_DEPOSITS: u32 = 10;
 const NUM_WITHDRAWALS: u32 = 5;
 
@@ -103,8 +104,8 @@ benchmarks! {
 	verify {
 		let mixer_ids = MixerTreeIds::<T>::get();
 		for i in 0..mixer_ids.len() {
-			let group_id: T::TreeId = (i as u32).into();
-			let stopped = Merkle::<T>::stopped(group_id);
+			let tree_id: T::TreeId = (i as u32).into();
+			let stopped = Merkle::<T>::stopped(tree_id);
 			assert!(stopped);
 		}
 	}
@@ -119,6 +120,20 @@ benchmarks! {
 	verify {
 		let admin: T::AccountId = Mixer::<T>::admin();
 		assert_eq!(admin, new_admin);
+	}
+
+	create_new {
+		Mixer::<T>::initialize().unwrap();
+		let size: BalanceOf<T> = 1_000.into();
+		let currency_id = 1.into();
+	}:
+	// Calling the function with the root origin
+	_(RawOrigin::Root, currency_id, size)
+	verify {
+		let mixer_ids = MixerTreeIds::<T>::get();
+		let tree_id: T::TreeId = (mixer_ids.len() as u32).into();
+		let mixer_info = MixerTrees::<T>::get(tree_id);
+		assert_eq!(mixer_info.currency_id, currency_id);
 	}
 
 	on_finalize_uninitialized {
