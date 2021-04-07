@@ -355,8 +355,7 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		// NOTE: Used only for testing purposes
-		#[pallet::weight(0)]
+		#[pallet::weight(5_000_000)]
 		pub fn create_new(
 			origin: OriginFor<T>,
 			currency_id: CurrencyIdOf<T>,
