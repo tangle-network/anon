@@ -1,7 +1,6 @@
 use super::*;
 use crate::mock::{
-	new_test_ext, AccountId, Balance, Balances, CurrencyId, MerkleTrees, Mixer, MixerCall, Origin, System, Test,
-	Tokens,
+	new_test_ext, AccountId, Balance, Balances, CurrencyId, MerkleTrees, Mixer, MixerCall, Origin, System, Test, Tokens,
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use bulletproofs_gadgets::{
@@ -44,7 +43,6 @@ fn should_initialize_successfully() {
 			let m = Mixer::get_mixer(i).unwrap();
 			assert_eq!(g.leaf_count, 0);
 			assert_eq!(mng.required, true);
-			assert_eq!(m.leaves.len(), 0);
 			assert_eq!(m.fixed_deposit_size, val * 10_u64.pow(i))
 		}
 	})
@@ -62,7 +60,6 @@ fn should_initialize_successfully_on_finalize() {
 			let m = Mixer::get_mixer(i).unwrap();
 			assert_eq!(g.leaf_count, 0);
 			assert_eq!(mng.required, true);
-			assert_eq!(m.leaves.len(), 0);
 			assert_eq!(m.fixed_deposit_size, val * 10_u64.pow(i))
 		}
 	})
@@ -189,7 +186,6 @@ fn should_deposit_into_each_mixer_successfully() {
 			assert_eq!(tvl, m.fixed_deposit_size);
 			assert_eq!(balance_before, balance_after + m.fixed_deposit_size);
 			assert_eq!(g.leaf_count, 1);
-			assert_eq!(m.leaves.len(), 1);
 		}
 	})
 }
@@ -362,9 +358,7 @@ fn should_make_mixer_with_non_native_token() {
 
 		// Getting native balance before deposit
 		let native_balance_before = Balances::free_balance(&sender);
-		assert_ok!(Mixer::deposit(Origin::signed(sender), tree_id, vec![ScalarData(
-			leaf
-		)]));
+		assert_ok!(Mixer::deposit(Origin::signed(sender), tree_id, vec![ScalarData(leaf)]));
 		// Native balance after deposit, to make sure its not touched
 		let native_balance_after = Balances::free_balance(&sender);
 		assert_eq!(native_balance_before, native_balance_after);
