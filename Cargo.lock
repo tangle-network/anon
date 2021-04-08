@@ -3997,6 +3997,8 @@ dependencies = [
  "pallet-contracts-rpc",
  "pallet-ethereum",
  "pallet-evm",
+ "pallet-merkle",
+ "pallet-merkle-rpc",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
  "sc-chain-spec",
@@ -4054,6 +4056,7 @@ dependencies = [
  "pallet-evm-precompile-simple",
  "pallet-grandpa",
  "pallet-merkle",
+ "pallet-merkle-rpc",
  "pallet-mixer",
  "pallet-randomness-collective-flip",
  "pallet-sudo",
@@ -4506,11 +4509,28 @@ dependencies = [
  "rand_core 0.5.1",
  "serde",
  "sha2 0.9.3",
+ "sp-api",
  "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-std 3.0.0",
  "webb-bulletproofs",
+]
+
+[[package]]
+name = "pallet-merkle-rpc"
+version = "3.0.0"
+dependencies = [
+ "jsonrpc-core 15.1.0",
+ "jsonrpc-core-client 15.1.0",
+ "jsonrpc-derive 15.1.0",
+ "pallet-merkle",
+ "parity-scale-codec 2.0.1",
+ "sc-rpc",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
