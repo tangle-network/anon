@@ -430,7 +430,7 @@ pub mod pallet {
 
 sp_api::decl_runtime_apis! {
 	pub trait MerkleApi {
-		/// Get leaves of tree id.
+		/// Get the leaf of tree id at a given index.
 		fn get_leaf(tree_id: u32, index: u32) -> Option<ScalarData>;
 	}
 }
