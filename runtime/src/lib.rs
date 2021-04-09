@@ -6,7 +6,7 @@
 // Make the WASM binary available.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
-use codec::{Encode, Decode};
+use codec::{Decode, Encode};
 use core::convert::TryFrom;
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 pub use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
@@ -31,7 +31,9 @@ use static_assertions::const_assert;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
-	construct_runtime, parameter_types, pallet_prelude::PhantomData,
+	construct_runtime,
+	pallet_prelude::PhantomData,
+	parameter_types,
 	traits::{Currency, Imbalance, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced, Randomness, U128CurrencyToVote},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
@@ -44,20 +46,16 @@ pub use pallet_balances::Call as BalancesCall;
 use pallet_contracts::weights::WeightInfo;
 pub use pallet_timestamp::Call as TimestampCall;
 
+use frame_support::traits::FindAuthor;
+use merkle::utils::keys::ScalarData;
 use orml_currencies::BasicCurrencyAdapter;
 use orml_traits::parameter_type_with_key;
+use pallet_ethereum::TransactionStatus;
+use pallet_evm::{Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner};
+use sp_core::crypto::Public;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-
-use pallet_ethereum::TransactionStatus;
-use pallet_evm::{
-	Account as EVMAccount, FeeCalculator, Runner,
-};
 use sp_runtime::ConsensusEngineId;
-use frame_support::traits::FindAuthor;
-use pallet_evm::HashedAddressMapping;
-use pallet_evm::EnsureAddressTruncated;
-use sp_core::crypto::Public;
 
 pub mod currency {
 	use super::Balance;
@@ -348,8 +346,8 @@ parameter_types! {
 impl merkle::Config for Runtime {
 	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
-	type TreeId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
+	type TreeId = u32;
 	type WeightInfo = MerkleWeights<Self>;
 }
 
@@ -400,21 +398,23 @@ impl mixer::Config for Runtime {
 	type DefaultAdmin = DefaultAdminKey;
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
-	type Tree = Merkle;
 	type MixerSizes = MixerSizes;
 	type ModuleId = MixerModuleId;
 	type NativeCurrencyId = NativeCurrencyId;
+	type Tree = Merkle;
 	type WeightInfo = MixerWeights<Self>;
 }
 
 /// Current approximation of the gas/s consumption considering
 /// EVM execution over compiled WASM (on 4.4Ghz CPU).
 /// Given the 500ms Weight, from which 75% only are used for transactions,
-/// the total EVM execution gas limit is: GAS_PER_SECOND * 0.500 * 0.75 ~= 15_000_000.
+/// the total EVM execution gas limit is: GAS_PER_SECOND * 0.500 * 0.75 ~=
+/// 15_000_000.
 pub const GAS_PER_SECOND: u64 = 40_000_000;
 
 /// Approximate ratio of the amount of Weight per Gas.
-/// u64 works for approximations because Weight is a very small unit compared to gas.
+/// u64 works for approximations because Weight is a very small unit compared to
+/// gas.
 pub const WEIGHT_PER_GAS: u64 = WEIGHT_PER_SECOND / GAS_PER_SECOND;
 
 pub struct AnonGasWeightMapping;
@@ -423,6 +423,7 @@ impl pallet_evm::GasWeightMapping for AnonGasWeightMapping {
 	fn gas_to_weight(gas: u64) -> Weight {
 		gas.saturating_mul(WEIGHT_PER_GAS)
 	}
+
 	fn weight_to_gas(weight: Weight) -> u64 {
 		u64::try_from(weight.wrapping_div(WEIGHT_PER_GAS)).unwrap_or(u32::MAX as u64)
 	}
@@ -433,29 +434,29 @@ parameter_types! {
 }
 
 impl pallet_evm::Config for Runtime {
-	type FeeCalculator = ();
-	type GasWeightMapping = AnonGasWeightMapping;
-	type CallOrigin = EnsureAddressTruncated;
-	type WithdrawOrigin = EnsureAddressTruncated;
 	type AddressMapping = HashedAddressMapping<BlakeTwo256>;
+	type CallOrigin = EnsureAddressTruncated;
+	type ChainId = ChainId;
 	type Currency = Balances;
 	type Event = Event;
-	type Runner = pallet_evm::runner::stack::Runner<Self>;
+	type FeeCalculator = ();
+	type GasWeightMapping = AnonGasWeightMapping;
+	type OnChargeTransaction = ();
 	type Precompiles = (
 		pallet_evm_precompile_simple::ECRecover,
 		pallet_evm_precompile_simple::Sha256,
 		pallet_evm_precompile_simple::Ripemd160,
 		pallet_evm_precompile_simple::Identity,
 	);
-	type ChainId = ChainId;
-	type OnChargeTransaction = ();
+	type Runner = pallet_evm::runner::stack::Runner<Self>;
+	type WithdrawOrigin = EnsureAddressTruncated;
 }
 
 pub struct EthereumFindAuthor<F>(PhantomData<F>);
-impl<F: FindAuthor<u32>> FindAuthor<H160> for EthereumFindAuthor<F>
-{
-	fn find_author<'a, I>(digests: I) -> Option<H160> where
-		I: 'a + IntoIterator<Item=(ConsensusEngineId, &'a [u8])>
+impl<F: FindAuthor<u32>> FindAuthor<H160> for EthereumFindAuthor<F> {
+	fn find_author<'a, I>(digests: I) -> Option<H160>
+	where
+		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
 	{
 		if let Some(author_index) = F::find_author(digests) {
 			let authority_id = Aura::authorities()[author_index as usize].clone();
@@ -471,10 +472,10 @@ parameter_types! {
 }
 
 impl pallet_ethereum::Config for Runtime {
+	type BlockGasLimit = BlockGasLimit;
 	type Event = Event;
 	type FindAuthor = EthereumFindAuthor<Aura>;
 	type StateRoot = pallet_ethereum::IntermediateStateRoot;
-	type BlockGasLimit = BlockGasLimit;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously
@@ -515,7 +516,8 @@ impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
 
 impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConverter {
 	fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> opaque::UncheckedExtrinsic {
-		let extrinsic = UncheckedExtrinsic::new_unsigned(pallet_ethereum::Call::<Runtime>::transact(transaction).into());
+		let extrinsic =
+			UncheckedExtrinsic::new_unsigned(pallet_ethereum::Call::<Runtime>::transact(transaction).into());
 		let encoded = extrinsic.encode();
 		opaque::UncheckedExtrinsic::decode(&mut &encoded[..]).expect("Encoded extrinsic is always valid")
 	}
@@ -810,6 +812,17 @@ impl_runtime_apis! {
 		}
 		fn query_fee_details(uxt: <Block as BlockT>::Extrinsic, len: u32) -> FeeDetails<Balance> {
 			TransactionPayment::query_fee_details(uxt, len)
+		}
+	}
+
+	impl merkle::MerkleApi<Block> for Runtime {
+		fn get_leaf(tree_id: u32, index: u32) -> Option<ScalarData> {
+			let v = Merkle::leaves(tree_id, index);
+			if v == ScalarData::default() {
+				None
+			} else {
+				Some(v)
+			}
 		}
 	}
 

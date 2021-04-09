@@ -2,6 +2,7 @@
 members = [
 	"node",
 	"pallets/merkle",
+	"pallets/merkle/rpc",
 	"pallets/mixer",
 	"runtime",
 ]
