@@ -65,7 +65,7 @@ where
 		}
 		let leaves = (from..to)
 			.into_iter()
-			.map(|i| api.get_leaves(&at, tree_id, i as u32)) // Result<Option<ScalarData>>
+			.map(|i| api.get_leaf(&at, tree_id, i as u32)) // Result<Option<ScalarData>>
 			.flatten() // Option<ScalarData>
 			.flatten() // ScalarData
 			.map(|v| v.0.to_bytes()) // [u8; 32]
