@@ -46,17 +46,18 @@ pub type BalanceOf<T> = <<T as Config>::Currency as MultiCurrency<<T as frame_sy
 pub type CurrencyIdOf<T> =
 	<<T as pallet::Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::CurrencyId;
 
+pub use sp_std::convert::TryInto;
+
 // pub use weights::WeightInfo;
 pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::{
-		dispatch::DispatchResult,
-		pallet_prelude::*,
-	};
-	use frame_system::pallet_prelude::*;
 	use super::*;
+	use frame_support::pallet_prelude::*;
+	use frame_system::pallet_prelude::*;
+	use sp_runtime::DispatchResultWithInfo;
+
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -64,18 +65,26 @@ pub mod pallet {
 
 	#[pallet::config]
 	/// The module configuration trait.
-	pub trait Config: frame_system::Config + orml_currencies::Config + orml_tokens::Config {
+	pub trait Config: frame_system::Config + orml_currencies::Config {
 		/// The overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		/// The balance type
-		type Balance: <Self as orml_currencies::Config>::Balance;
+		type Balance: Parameter + Member + AtLeast32BitUnsigned + Default + Copy + MaybeSerializeDeserialize;
 
 		/// The amount type, should be signed version of `Balance`
-		type Amount: <Self as orml_currencies::Config>::Amount;
+		type Amount: Signed
+			+ TryInto<Self::Balance>
+			+ TryFrom<Self::Balance>
+			+ Parameter
+			+ Member
+			+ arithmetic::SimpleArithmetic
+			+ Default
+			+ Copy
+			+ MaybeSerializeDeserialize;
 
-		/// Identifier for the class of asset.
-		type CurrencyId: <Self as orml_currencies::Config>::CurrencyId;
+		/// The currency ID type
+		type CurrencyId: Parameter + Member + Copy + MaybeSerializeDeserialize + Ord;
 
 		/// The currency mechanism.
 		type Currency: MultiCurrency<Self::AccountId>;
