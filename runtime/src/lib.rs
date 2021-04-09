@@ -816,7 +816,7 @@ impl_runtime_apis! {
 	}
 
 	impl merkle::MerkleApi<Block> for Runtime {
-		fn get_leaves(tree_id: u32, index: u32) -> Option<ScalarData> {
+		fn get_leaf(tree_id: u32, index: u32) -> Option<ScalarData> {
 			let v = Merkle::leaves(tree_id, index);
 			if v == ScalarData::default() {
 				None
