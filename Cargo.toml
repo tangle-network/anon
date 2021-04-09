@@ -3,6 +3,7 @@ members = [
 	"node",
 	"pallets/merkle",
 	"pallets/mixer",
+	"pallets/webb-tokens",
 	"runtime",
 ]
 

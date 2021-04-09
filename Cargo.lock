@@ -4648,6 +4648,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-webb-tokens"
+version = "0.1.0"
+dependencies = [
+ "bencher",
+ "frame-benchmarking 3.1.0",
+ "frame-support",
+ "frame-system",
+ "orml-currencies",
+ "orml-tokens",
+ "orml-traits",
+ "pallet-balances",
+ "parity-scale-codec 2.0.1",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
+]
+
+[[package]]
 name = "parity-db"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
