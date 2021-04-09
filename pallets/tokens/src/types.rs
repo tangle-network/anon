@@ -1,12 +1,9 @@
 use super::*;
 
-pub(super) type DepositBalanceOf<T> = <<T as Config>::Currency as Currency<<T as SystemConfig>::AccountId>>::Balance;
-
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug)]
-pub struct CurrencyDetails<
+pub struct TokenDetails<
 	Balance,
 	AccountId,
-	DepositBalance,
 > {
 	/// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
 	pub(super) owner: AccountId,
@@ -19,7 +16,7 @@ pub struct CurrencyDetails<
 	/// The total supply across all accounts.
 	pub(super) supply: Balance,
 	/// The balance deposited for this currency. This pays for the data stored here.
-	pub(super) deposit: DepositBalance,
+	pub(super) deposit: Balance,
 	/// The ED for virtual accounts.
 	pub(super) min_balance: Balance,
 	/// If `true`, then any account with this currency is given a provider reference. Otherwise, it
@@ -46,20 +43,20 @@ pub struct ApprovalKey<AccountId> {
 
 /// Data concerning an approval.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default)]
-pub struct Approval<Balance, DepositBalance> {
+pub struct Approval<Balance> {
 	/// The amount of funds approved for the balance transfer from the owner to some delegated
 	/// target.
 	pub(super) amount: Balance,
 	/// The amount reserved on the owner's account to hold this item in storage.
-	pub(super) deposit: DepositBalance,
+	pub(super) deposit: Balance,
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default)]
-pub struct CurrencyMetadata<DepositBalance> {
+pub struct TokenMetadata<Balance> {
 	/// The balance deposited for this metadata.
 	///
 	/// This pays for the data stored in this struct.
-	pub(super) deposit: DepositBalance,
+	pub(super) deposit: Balance,
 	/// The user friendly name of this asset. Limited in length by `StringLimit`.
 	pub(super) name: Vec<u8>,
 	/// The ticker symbol for this asset. Limited in length by `StringLimit`.
@@ -84,36 +81,49 @@ pub struct DestroyWitness {
 	pub(super) approvals: u32,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub(super) struct TransferFlags {
-	/// The debited account must stay alive at the end of the operation; an error is returned if
-	/// this cannot be achieved legally.
-	pub(super) keep_alive: bool,
-	/// Less than the amount specified needs be debited by the operation for it to be considered
-	/// successful. If `false`, then the amount debited will always be at least the amount
-	/// specified.
-	pub(super) best_effort: bool,
-	/// Any additional funds debited (due to minimum balance requirements) should be burned rather
-	/// than credited to the destination account.
-	pub(super) burn_dust: bool,
+/// A single lock on a balance. There can be many of these on an account and
+/// they "overlap", so the same balance is frozen by multiple locks.
+#[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug)]
+pub struct BalanceLock<Balance> {
+	/// An identifier for this lock. Only one lock may be in existence for
+	/// each identifier.
+	pub id: LockIdentifier,
+	/// The amount which the free balance may not drop below when this lock
+	/// is in effect.
+	pub amount: Balance,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub(super) struct DebitFlags {
-	/// The debited account must stay alive at the end of the operation; an error is returned if
-	/// this cannot be achieved legally.
-	pub(super) keep_alive: bool,
-	/// Less than the amount specified needs be debited by the operation for it to be considered
-	/// successful. If `false`, then the amount debited will always be at least the amount
-	/// specified.
-	pub(super) best_effort: bool,
+/// balance information for an account.
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug)]
+pub struct AccountData<Balance> {
+	/// Non-reserved part of the balance. There may still be restrictions on
+	/// this, but it is the total pool what may in principle be transferred,
+	/// reserved.
+	///
+	/// This is the only balance that matters in terms of most operations on
+	/// tokens.
+	pub free: Balance,
+	/// Balance which is reserved and may not be used at all.
+	///
+	/// This can still get slashed, but gets slashed last of all.
+	///
+	/// This balance is a 'reserve' balance that other subsystems use in
+	/// order to set aside tokens that are still 'owned' by the account
+	/// holder, but which are suspendable.
+	pub reserved: Balance,
+	/// The amount that `free` may not drop below when withdrawing.
+	pub frozen: Balance,
 }
 
-impl From<TransferFlags> for DebitFlags {
-	fn from(f: TransferFlags) -> Self {
-		Self {
-			keep_alive: f.keep_alive,
-			best_effort: f.best_effort,
-		}
+impl<Balance: Saturating + Copy + Ord> AccountData<Balance> {
+	/// The amount that this account's free balance may not be reduced
+	/// beyond.
+	pub(crate) fn frozen(&self) -> Balance {
+		self.frozen
+	}
+	/// The total balance in this account including any that is reserved and
+	/// ignoring any frozen.
+	pub fn total(&self) -> Balance {
+		self.free.saturating_add(self.reserved)
 	}
 }

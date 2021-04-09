@@ -363,16 +363,29 @@ parameter_type_with_key! {
 
 parameter_types! {
 	pub const NativeCurrencyId: CurrencyId = 0;
+	pub const CurrencyDeposit: u64 = 1;
+	pub const ApprovalDeposit: u64 = 1;
+	pub const StringLimit: u32 = 50;
+	pub const MetadataDepositBase: u64 = 1;
+	pub const MetadataDepositPerByte: u64 = 1;
 }
 
-impl orml_tokens::Config for Runtime {
+
+impl tokens::Config for Runtime {
 	type Amount = Amount;
 	type Balance = Balance;
 	type CurrencyId = CurrencyId;
 	type Event = Event;
+	type ForceOrigin = frame_system::EnsureRoot<u64>;
+	type CurrencyDeposit = CurrencyDeposit;
+	type MetadataDepositBase = MetadataDepositBase;
+	type MetadataDepositPerByte = MetadataDepositPerByte;
+	type ApprovalDeposit = ApprovalDeposit;
+	type StringLimit = StringLimit;
 	type ExistentialDeposits = ExistentialDepositMap;
 	type OnDust = ();
 	type WeightInfo = ();
+	type Extra = ();
 }
 
 impl orml_currencies::Config for Runtime {
@@ -499,7 +512,7 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
 
 		Currencies: orml_currencies::{Module, Storage, Event<T>},
-		Tokens: orml_tokens::{Module, Storage, Event<T>},
+		Tokens: tokens::{Module, Storage, Event<T>},
 		Mixer: mixer::{Module, Call, Storage, Event<T>},
 		Merkle: merkle::{Module, Call, Storage, Event<T>},
 	}
