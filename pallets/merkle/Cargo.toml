@@ -20,6 +20,7 @@ merlin = { version = "2.0.0", default-features = false }
 sha2 = { version = "0.9.1", default-features = false }
 rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"], optional = true}
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
+sp-api = { default-features = false, version = "3.0.0" }
 sp-io = { default-features = false, version = "3.0.0" }
 frame-benchmarking = { default-features = false, version = "3.0.0", optional = true }
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }

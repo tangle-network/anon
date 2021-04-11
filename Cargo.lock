@@ -4566,6 +4566,8 @@ dependencies = [
  "pallet-contracts-rpc",
  "pallet-ethereum",
  "pallet-evm",
+ "pallet-merkle",
+ "pallet-merkle-rpc",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
  "sc-chain-spec 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=rococo-v1)",
@@ -4622,6 +4624,7 @@ dependencies = [
  "pallet-evm-precompile-simple",
  "pallet-grandpa",
  "pallet-merkle",
+ "pallet-merkle-rpc",
  "pallet-mixer",
  "pallet-randomness-collective-flip",
  "pallet-sudo",
@@ -5091,6 +5094,22 @@ dependencies = [
  "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=rococo-v1)",
  "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=rococo-v1)",
  "webb-bulletproofs",
+]
+
+[[package]]
+name = "pallet-merkle-rpc"
+version = "3.0.0"
+dependencies = [
+ "jsonrpc-core 15.1.0",
+ "jsonrpc-core-client 15.1.0",
+ "jsonrpc-derive 15.1.0",
+ "pallet-merkle",
+ "parity-scale-codec 2.0.1",
+ "sc-rpc",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]

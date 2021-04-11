@@ -28,6 +28,7 @@ static_assertions = "1.1.0"
 merkle = { package = "pallet-merkle", version = "3.0.0", default-features = false, path = "../pallets/merkle" }
 mixer = { package = "pallet-mixer", version = "3.0.0", default-features = false, path = "../pallets/mixer" }
 tokens = { package = "pallet-tokens", version = "3.0.0", default-features = false, path = "../pallets/tokens" }
+merkle-rpc = { package = "pallet-merkle-rpc", version = "3.0.0", path = "../pallets/merkle/rpc", optional = true }
 
 # Substrate dependencies
 frame-benchmarking = { default-features = false, optional = true, version = "3.0.0" }
@@ -119,7 +120,8 @@ std = [
     "sp-std/std",
     "sp-transaction-pool/std",
     "sp-version/std",
-	"merkle/std",
+    "merkle/std",
+    "merkle-rpc",
     "mixer/std",
     "tokens/std",
 ]

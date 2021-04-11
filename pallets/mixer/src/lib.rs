@@ -148,10 +148,6 @@ pub mod pallet {
 			T::AccountId,
 			/// Deposit size
 			BalanceOf<T>,
-			/// Number of leaves before insertion
-			u32,
-			/// Leaf data
-			Vec<ScalarData>,
 		),
 		/// Withdrawal from the specific mixer
 		Withdraw(
@@ -270,19 +266,9 @@ pub mod pallet {
 			// add elements to the mixer group's merkle tree and save the leaves
 			T::Tree::add_members(Self::account_id(), mixer_id.into(), data_points.clone())?;
 
-			// number of leaves before the insertion of new leaves
-			let num_leaves_before = mixer_info.leaves.len() as u32;
 			let deposit_size = mixer_info.fixed_deposit_size;
-			mixer_info.leaves.extend(data_points.clone());
-			MixerTrees::<T>::insert(mixer_id, mixer_info);
 
-			Self::deposit_event(Event::Deposit(
-				mixer_id,
-				sender,
-				deposit_size,
-				num_leaves_before,
-				data_points,
-			));
+			Self::deposit_event(Event::Deposit(mixer_id, sender, deposit_size));
 
 			Ok(().into())
 		}
@@ -360,7 +346,7 @@ pub mod pallet {
 
 			let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
 			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth)?;
-			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, Vec::new(), currency_id);
+			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 			MixerTrees::<T>::insert(mixer_id, mixer_info);
 			Ok(().into())
 		}
@@ -482,8 +468,6 @@ pub struct MixerInfo<T: Config> {
 	pub minimum_deposit_length_for_reward: T::BlockNumber,
 	/// Deposit size for the mixer
 	pub fixed_deposit_size: BalanceOf<T>,
-	/// All the leaves/deposits of the mixer
-	pub leaves: Vec<ScalarData>,
 	/// Id of the currency in the mixer
 	pub currency_id: CurrencyIdOf<T>,
 }
@@ -493,23 +477,16 @@ impl<T: Config> core::default::Default for MixerInfo<T> {
 		Self {
 			minimum_deposit_length_for_reward: Zero::zero(),
 			fixed_deposit_size: Zero::zero(),
-			leaves: Vec::new(),
 			currency_id: T::NativeCurrencyId::get(),
 		}
 	}
 }
 
 impl<T: Config> MixerInfo<T> {
-	pub fn new(
-		min_dep_length: T::BlockNumber,
-		dep_size: BalanceOf<T>,
-		leaves: Vec<ScalarData>,
-		currency_id: CurrencyIdOf<T>,
-	) -> Self {
+	pub fn new(min_dep_length: T::BlockNumber, dep_size: BalanceOf<T>, currency_id: CurrencyIdOf<T>) -> Self {
 		Self {
 			minimum_deposit_length_for_reward: min_dep_length,
 			fixed_deposit_size: dep_size,
-			leaves,
 			currency_id,
 		}
 	}
@@ -546,7 +523,7 @@ impl<T: Config> Pallet<T> {
 			// Creating a new merkle group and getting the id back
 			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth)?;
 			// Creating mixer info data
-			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, Vec::new(), T::NativeCurrencyId::get());
+			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, T::NativeCurrencyId::get());
 			// Saving the mixer group to storage
 			MixerTrees::<T>::insert(mixer_id, mixer_info);
 			mixer_ids.push(mixer_id);
@@ -568,7 +545,7 @@ impl<T: Config> ExtendedMixer<T::AccountId, CurrencyIdOf<T>, BalanceOf<T>> for P
 	) -> Result<(), dispatch::DispatchError> {
 		let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
 		let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth)?;
-		let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, Vec::new(), currency_id);
+		let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 		MixerTrees::<T>::insert(mixer_id, mixer_info);
 		Ok(())
 	}
