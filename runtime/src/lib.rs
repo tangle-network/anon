@@ -50,29 +50,19 @@ use frame_support::traits::FindAuthor;
 use merkle::utils::keys::ScalarData;
 use orml_currencies::BasicCurrencyAdapter;
 use orml_traits::parameter_type_with_key;
-use pallet_ethereum::TransactionStatus;
-use pallet_evm::{Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner};
+
+// use pallet_ethereum::TransactionStatus;
+// use pallet_evm::{Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner};
 use sp_core::crypto::Public;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-
-#[cfg(feature = "frontier")]
-use pallet_ethereum::TransactionStatus;
-#[cfg(feature = "frontier")]
-use pallet_evm::{
-	Account as EVMAccount, FeeCalculator, Runner,
-};
-#[cfg(feature = "frontier")]
-use pallet_evm::HashedAddressMapping;
-#[cfg(feature = "frontier")]
-use pallet_evm::EnsureAddressTruncated;
-
-#[cfg(feature = "frontier")]
-use sp_runtime::ConsensusEngineId;
-#[cfg(feature = "frontier")]
-use frame_support::traits::FindAuthor;
-#[cfg(feature = "frontier")]
-use sp_core::crypto::Public;
+// use pallet_ethereum::TransactionStatus
+// use pallet_evm::{
+// 	Account as EVMAccount, FeeCalculator, Runner,
+// }
+// use pallet_evm::HashedAddressMapping
+// use pallet_evm::EnsureAddressTruncated;
+// use sp_runtime::ConsensusEngineId;
 
 
 pub mod currency {
@@ -386,6 +376,7 @@ impl tokens::Config for Runtime {
 	type Amount = Amount;
 	type Balance = Balance;
 	type CurrencyId = CurrencyId;
+	type NativeCurrency = BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
 	type Event = Event;
 	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
 	type CurrencyDeposit = CurrencyDeposit;
@@ -430,101 +421,83 @@ impl mixer::Config for Runtime {
 	type WeightInfo = MixerWeights<Self>;
 }
 
-/// Current approximation of the gas/s consumption considering
-/// EVM execution over compiled WASM (on 4.4Ghz CPU).
-/// Given the 500ms Weight, from which 75% only are used for transactions,
-/// the total EVM execution gas limit is: GAS_PER_SECOND * 0.500 * 0.75 ~= 15_000_000.
-#[cfg(feature = "frontier")]
-pub const GAS_PER_SECOND: u64 = 40_000_000;
+// /// Current approximation of the gas/s consumption considering
+// /// EVM execution over compiled WASM (on 4.4Ghz CPU).
+// /// Given the 500ms Weight, from which 75% only are used for transactions,
+// /// the total EVM execution gas limit is: GAS_PER_SECOND * 0.500 * 0.75 ~= 15_000_000
+// pub const GAS_PER_SECOND: u64 = 40_000_000;
 
-/// Approximate ratio of the amount of Weight per Gas.
-/// u64 works for approximations because Weight is a very small unit compared to gas.
-#[cfg(feature = "frontier")]
-pub const WEIGHT_PER_GAS: u64 = WEIGHT_PER_SECOND / GAS_PER_SECOND;
+// /// Approximate ratio of the amount of Weight per Gas.
+// /// u64 works for approximations because Weight is a very small unit compared to gas
+// pub const WEIGHT_PER_GAS: u64 = WEIGHT_PER_SECOND / GAS_PER_SECOND;
+// pub struct AnonGasWeightMapping;
+// impl pallet_evm::GasWeightMapping for AnonGasWeightMapping {
+// 	fn gas_to_weight(gas: u64) -> Weight {
+// 		gas.saturating_mul(WEIGHT_PER_GAS)
+// 	}
 
-#[cfg(feature = "frontier")]
-pub struct AnonGasWeightMapping;
-
-#[cfg(feature = "frontier")]
-impl pallet_evm::GasWeightMapping for AnonGasWeightMapping {
-	fn gas_to_weight(gas: u64) -> Weight {
-		gas.saturating_mul(WEIGHT_PER_GAS)
-	}
-
-	fn weight_to_gas(weight: Weight) -> u64 {
-		u64::try_from(weight.wrapping_div(WEIGHT_PER_GAS)).unwrap_or(u32::MAX as u64)
-	}
-}
-
-#[cfg(feature = "frontier")]
-/// Fixed gas price of `1`.
-pub struct FixedGasPrice;
-
-#[cfg(feature = "frontier")]
-impl FeeCalculator for FixedGasPrice {
-	fn min_gas_price() -> U256 {
-		// Gas price is always one token per gas.
-		1.into()
-	}
-}
-
-#[cfg(feature = "frontier")]
-parameter_types! {
-	pub const ChainId: u64 = 42;
-	pub BlockGasLimit: U256 = U256::from(u32::max_value());
-}
-
-#[cfg(feature = "frontier")]
-impl pallet_evm::Config for Runtime {
-	type FeeCalculator = FixedGasPrice;
-	type GasWeightMapping = AnonGasWeightMapping;
-	type CallOrigin = EnsureAddressTruncated;
-	type WithdrawOrigin = EnsureAddressTruncated;
-	type AddressMapping = HashedAddressMapping<BlakeTwo256>;
-	type CallOrigin = EnsureAddressTruncated;
-	type ChainId = ChainId;
-	type Currency = Balances;
-	type Event = Event;
-	type FeeCalculator = ();
-	type GasWeightMapping = AnonGasWeightMapping;
-	type OnChargeTransaction = ();
-	type Precompiles = (
-		pallet_evm_precompile_simple::ECRecover,
-		pallet_evm_precompile_simple::Sha256,
-		pallet_evm_precompile_simple::Ripemd160,
-		pallet_evm_precompile_simple::Identity,
-		pallet_evm_precompile_simple::ECRecoverPublicKey,
-		// pallet_evm_precompile_sha3fips::Sha3FIPS256,
-		// pallet_evm_precompile_sha3fips::Sha3FIPS512,
-	);
-	type ChainId = ChainId;
-	type BlockGasLimit = BlockGasLimit;
-	type OnChargeTransaction = ();
-	type Runner = pallet_evm::runner::stack::Runner<Self>;
-}
-
-#[cfg(feature = "frontier")]
-pub struct EthereumFindAuthor<F>(PhantomData<F>);
-impl<F: FindAuthor<u32>> FindAuthor<H160> for EthereumFindAuthor<F> {
-	fn find_author<'a, I>(digests: I) -> Option<H160>
-	where
-		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
-	{
-		if let Some(author_index) = F::find_author(digests) {
-			let authority_id = Aura::authorities()[author_index as usize].clone();
-			return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]));
-		}
-		None
-	}
-}
-
-#[cfg(feature = "frontier")]
-impl pallet_ethereum::Config for Runtime {
-	type BlockGasLimit = BlockGasLimit;
-	type Event = Event;
-	type FindAuthor = EthereumFindAuthor<Aura>;
-	type StateRoot = pallet_ethereum::IntermediateStateRoot;
-}
+// 	fn weight_to_gas(weight: Weight) -> u64 {
+// 		u64::try_from(weight.wrapping_div(WEIGHT_PER_GAS)).unwrap_or(u32::MAX as u64)
+// 	}
+// }
+// /// Fixed gas price of `1`.
+// pub struct FixedGasPrice;
+// impl FeeCalculator for FixedGasPrice {
+// 	fn min_gas_price() -> U256 {
+// 		// Gas price is always one token per gas.
+// 		1.into()
+// 	}
+// }
+// parameter_types! {
+// 	pub const ChainId: u64 = 42;
+// 	pub BlockGasLimit: U256 = U256::from(u32::max_value());
+// }
+// impl pallet_evm::Config for Runtime {
+// 	type FeeCalculator = FixedGasPrice;
+// 	type GasWeightMapping = AnonGasWeightMapping;
+// 	type CallOrigin = EnsureAddressTruncated;
+// 	type WithdrawOrigin = EnsureAddressTruncated;
+// 	type AddressMapping = HashedAddressMapping<BlakeTwo256>;
+// 	type CallOrigin = EnsureAddressTruncated;
+// 	type ChainId = ChainId;
+// 	type Currency = Balances;
+// 	type Event = Event;
+// 	type FeeCalculator = ();
+// 	type GasWeightMapping = AnonGasWeightMapping;
+// 	type OnChargeTransaction = ();
+// 	type Precompiles = (
+// 		pallet_evm_precompile_simple::ECRecover,
+// 		pallet_evm_precompile_simple::Sha256,
+// 		pallet_evm_precompile_simple::Ripemd160,
+// 		pallet_evm_precompile_simple::Identity,
+// 		pallet_evm_precompile_simple::ECRecoverPublicKey,
+// 		// pallet_evm_precompile_sha3fips::Sha3FIPS256,
+// 		// pallet_evm_precompile_sha3fips::Sha3FIPS512,
+// 	);
+// 	type ChainId = ChainId;
+// 	type BlockGasLimit = BlockGasLimit;
+// 	type OnChargeTransaction = ();
+// 	type Runner = pallet_evm::runner::stack::Runner<Self>;
+// }
+// pub struct EthereumFindAuthor<F>(PhantomData<F>);
+// impl<F: FindAuthor<u32>> FindAuthor<H160> for EthereumFindAuthor<F> {
+// 	fn find_author<'a, I>(digests: I) -> Option<H160>
+// 	where
+// 		I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
+// 	{
+// 		if let Some(author_index) = F::find_author(digests) {
+// 			let authority_id = Aura::authorities()[author_index as usize].clone();
+// 			return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]));
+// 		}
+// 		None
+// 	}
+// }
+// impl pallet_ethereum::Config for Runtime {
+// 	type BlockGasLimit = BlockGasLimit;
+// 	type Event = Event;
+// 	type FindAuthor = EthereumFindAuthor<Aura>;
+// 	type StateRoot = pallet_ethereum::IntermediateStateRoot;
+// }
 
 // Create the runtime by composing the FRAME pallets that were previously
 // configured.
@@ -542,10 +515,8 @@ construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Contracts: pallet_contracts::{Pallet, Call, Config<T>, Storage, Event<T>},
 
-		#[cfg(feature = "frontier")]
-		EVM: pallet_evm::{Pallet, Config, Call, Storage, Event<T>},
-		#[cfg(feature = "frontier")]
-		Ethereum: pallet_ethereum::{Pallet, Call, Storage, Event, Config, ValidateUnsigned},
+		// EVM: pallet_evm::{Pallet, Config, Call, Storage, Event<T>},
+		// Ethereum: pallet_ethereum::{Pallet, Call, Storage, Event, Config, ValidateUnsigned},
 
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
@@ -557,24 +528,20 @@ construct_runtime!(
 	}
 );
 
-pub struct TransactionConverter;
-
-#[cfg(feature = "frontier")]
-impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
-	fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> UncheckedExtrinsic {
-		UncheckedExtrinsic::new_unsigned(pallet_ethereum::Call::<Runtime>::transact(transaction).into())
-	}
-}
-
-#[cfg(feature = "frontier")]
-impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConverter {
-	fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> opaque::UncheckedExtrinsic {
-		let extrinsic =
-			UncheckedExtrinsic::new_unsigned(pallet_ethereum::Call::<Runtime>::transact(transaction).into());
-		let encoded = extrinsic.encode();
-		opaque::UncheckedExtrinsic::decode(&mut &encoded[..]).expect("Encoded extrinsic is always valid")
-	}
-}
+// pub struct TransactionConverter;
+// impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
+// 	fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> UncheckedExtrinsic {
+// 		UncheckedExtrinsic::new_unsigned(pallet_ethereum::Call::<Runtime>::transact(transaction).into())
+// 	}
+// }
+// impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConverter {
+// 	fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> opaque::UncheckedExtrinsic {
+// 		let extrinsic =
+// 			UncheckedExtrinsic::new_unsigned(pallet_ethereum::Call::<Runtime>::transact(transaction).into());
+// 		let encoded = extrinsic.encode();
+// 		opaque::UncheckedExtrinsic::decode(&mut &encoded[..]).expect("Encoded extrinsic is always valid")
+// 	}
+// }
 
 /// The address format for describing accounts.
 pub type Address = AccountId;
@@ -743,116 +710,115 @@ impl_runtime_apis! {
 		}
 	}
 
-	#[cfg(feature = "frontier")]
-	impl fp_rpc::EthereumRuntimeRPCApi<Block> for Runtime {
-		fn chain_id() -> u64 {
-			<Runtime as pallet_evm::Config>::ChainId::get()
-		}
+	// impl fp_rpc::EthereumRuntimeRPCApi<Block> for Runtime {
+	// 	fn chain_id() -> u64 {
+	// 		<Runtime as pallet_evm::Config>::ChainId::get()
+	// 	}
 
-		fn account_basic(address: H160) -> EVMAccount {
-			EVM::account_basic(&address)
-		}
+	// 	fn account_basic(address: H160) -> EVMAccount {
+	// 		EVM::account_basic(&address)
+	// 	}
 
-		fn gas_price() -> U256 {
-			<Runtime as pallet_evm::Config>::FeeCalculator::min_gas_price()
-		}
+	// 	fn gas_price() -> U256 {
+	// 		<Runtime as pallet_evm::Config>::FeeCalculator::min_gas_price()
+	// 	}
 
-		fn account_code_at(address: H160) -> Vec<u8> {
-			EVM::account_codes(address)
-		}
+	// 	fn account_code_at(address: H160) -> Vec<u8> {
+	// 		EVM::account_codes(address)
+	// 	}
 
-		fn author() -> H160 {
-			<pallet_ethereum::Module<Runtime>>::find_author()
-		}
+	// 	fn author() -> H160 {
+	// 		<pallet_ethereum::Module<Runtime>>::find_author()
+	// 	}
 
-		fn storage_at(address: H160, index: U256) -> H256 {
-			let mut tmp = [0u8; 32];
-			index.to_big_endian(&mut tmp);
-			EVM::account_storages(address, H256::from_slice(&tmp[..]))
-		}
+	// 	fn storage_at(address: H160, index: U256) -> H256 {
+	// 		let mut tmp = [0u8; 32];
+	// 		index.to_big_endian(&mut tmp);
+	// 		EVM::account_storages(address, H256::from_slice(&tmp[..]))
+	// 	}
 
-		fn call(
-			from: H160,
-			to: H160,
-			data: Vec<u8>,
-			value: U256,
-			gas_limit: U256,
-			gas_price: Option<U256>,
-			nonce: Option<U256>,
-			estimate: bool,
-		) -> Result<pallet_evm::CallInfo, sp_runtime::DispatchError> {
-			let config = if estimate {
-				let mut config = <Runtime as pallet_evm::Config>::config().clone();
-				config.estimate = true;
-				Some(config)
-			} else {
-				None
-			};
+	// 	fn call(
+	// 		from: H160,
+	// 		to: H160,
+	// 		data: Vec<u8>,
+	// 		value: U256,
+	// 		gas_limit: U256,
+	// 		gas_price: Option<U256>,
+	// 		nonce: Option<U256>,
+	// 		estimate: bool,
+	// 	) -> Result<pallet_evm::CallInfo, sp_runtime::DispatchError> {
+	// 		let config = if estimate {
+	// 			let mut config = <Runtime as pallet_evm::Config>::config().clone();
+	// 			config.estimate = true;
+	// 			Some(config)
+	// 		} else {
+	// 			None
+	// 		};
 
-			<Runtime as pallet_evm::Config>::Runner::call(
-				from,
-				to,
-				data,
-				value,
-				gas_limit.low_u64(),
-				gas_price,
-				nonce,
-				config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config()),
-			).map_err(|err| err.into())
-		}
+	// 		<Runtime as pallet_evm::Config>::Runner::call(
+	// 			from,
+	// 			to,
+	// 			data,
+	// 			value,
+	// 			gas_limit.low_u64(),
+	// 			gas_price,
+	// 			nonce,
+	// 			config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config()),
+	// 		).map_err(|err| err.into())
+	// 	}
 
-		fn create(
-			from: H160,
-			data: Vec<u8>,
-			value: U256,
-			gas_limit: U256,
-			gas_price: Option<U256>,
-			nonce: Option<U256>,
-			estimate: bool,
-		) -> Result<pallet_evm::CreateInfo, sp_runtime::DispatchError> {
-			let config = if estimate {
-				let mut config = <Runtime as pallet_evm::Config>::config().clone();
-				config.estimate = true;
-				Some(config)
-			} else {
-				None
-			};
+	// 	fn create(
+	// 		from: H160,
+	// 		data: Vec<u8>,
+	// 		value: U256,
+	// 		gas_limit: U256,
+	// 		gas_price: Option<U256>,
+	// 		nonce: Option<U256>,
+	// 		estimate: bool,
+	// 	) -> Result<pallet_evm::CreateInfo, sp_runtime::DispatchError> {
+	// 		let config = if estimate {
+	// 			let mut config = <Runtime as pallet_evm::Config>::config().clone();
+	// 			config.estimate = true;
+	// 			Some(config)
+	// 		} else {
+	// 			None
+	// 		};
 
-			<Runtime as pallet_evm::Config>::Runner::create(
-				from,
-				data,
-				value,
-				gas_limit.low_u64(),
-				gas_price,
-				nonce,
-				config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config()),
-			).map_err(|err| err.into())
-		}
+	// 		<Runtime as pallet_evm::Config>::Runner::create(
+	// 			from,
+	// 			data,
+	// 			value,
+	// 			gas_limit.low_u64(),
+	// 			gas_price,
+	// 			nonce,
+	// 			config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config()),
+	// 		).map_err(|err| err.into())
+	// 	}
 
-		fn current_transaction_statuses() -> Option<Vec<TransactionStatus>> {
-			Ethereum::current_transaction_statuses()
-		}
+	// 	fn current_transaction_statuses() -> Option<Vec<TransactionStatus>> {
+	// 		Ethereum::current_transaction_statuses()
+	// 	}
 
-		fn current_block() -> Option<pallet_ethereum::Block> {
-			Ethereum::current_block()
-		}
+	// 	fn current_block() -> Option<pallet_ethereum::Block> {
+	// 		Ethereum::current_block()
+	// 	}
 
-		fn current_receipts() -> Option<Vec<pallet_ethereum::Receipt>> {
-			Ethereum::current_receipts()
-		}
+	// 	fn current_receipts() -> Option<Vec<pallet_ethereum::Receipt>> {
+	// 		Ethereum::current_receipts()
+	// 	}
 
-		fn current_all() -> (
-			Option<pallet_ethereum::Block>,
-			Option<Vec<pallet_ethereum::Receipt>>,
-			Option<Vec<TransactionStatus>>
-		) {
-			(
-				Ethereum::current_block(),
-				Ethereum::current_receipts(),
-				Ethereum::current_transaction_statuses()
-			)
-		}
-	}
+	// 	fn current_all() -> (
+	// 		Option<pallet_ethereum::Block>,
+	// 		Option<Vec<pallet_ethereum::Receipt>>,
+	// 		Option<Vec<TransactionStatus>>
+	// 	) {
+	// 		(
+	// 			Ethereum::current_block(),
+	// 			Ethereum::current_receipts(),
+	// 			Ethereum::current_transaction_statuses()
+	// 		)
+	// 	}
+	// }
 
 	impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<
 		Block,

@@ -2,12 +2,12 @@
 
 #![warn(missing_docs)]
 
-use fc_rpc::{SchemaV1Override, StorageOverride};
-use fc_rpc_core::types::{FilterPool, PendingTransactions};
+// use fc_rpc::{SchemaV1Override, StorageOverride};
+// use fc_rpc_core::types::{FilterPool, PendingTransactions};
 use jsonrpc_pubsub::manager::SubscriptionManager;
 use merkle_rpc::{MerkleApi, MerkleClient};
 use node_template_runtime::{opaque::Block, AccountId, Balance, BlockNumber, Hash, Index};
-use pallet_ethereum::EthereumStorageSchema;
+// use pallet_ethereum::EthereumStorageSchema;
 use sc_client_api::{
 	backend::{AuxStore, StorageProvider},
 	client::BlockchainEvents,
@@ -67,12 +67,12 @@ pub struct FullDeps<C, P, SC, B> {
 	pub enable_dev_signer: bool,
 	/// Network service
 	pub network: Arc<NetworkService<Block, Hash>>,
-	/// Ethereum pending transactions.
-	pub pending_transactions: PendingTransactions,
-	/// EthFilterApi pool.
-	pub filter_pool: Option<FilterPool>,
-	/// Backend.
-	pub backend: Arc<fc_db::Backend<Block>>,
+	// /// Ethereum pending transactions.
+	// pub pending_transactions: PendingTransactions,
+	// /// EthFilterApi pool.
+	// pub filter_pool: Option<FilterPool>,
+	// /// Backend.
+	// pub backend: Arc<fc_db::Backend<Block>>,
 	/// Whether to deny unsafe calls
 	pub deny_unsafe: DenyUnsafe,
 	/// GRANDPA specific dependencies.
@@ -93,7 +93,7 @@ where
 	C::Api: pallet_contracts_rpc::ContractsRuntimeApi<Block, AccountId, Balance, BlockNumber>,
 	C::Api: BlockBuilder<Block>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
-	C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
+	// C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
 	C::Api: BlockBuilder<Block>,
 	C::Api: merkle::MerkleApi<Block>,
 	P: TransactionPool<Block = Block> + 'static,
@@ -101,10 +101,10 @@ where
 	B: sc_client_api::Backend<Block> + Send + Sync + 'static,
 	B::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashFor<Block>>,
 {
-	use fc_rpc::{
-		EthApi, EthApiServer, EthDevSigner, EthFilterApi, EthFilterApiServer, EthPubSubApi, EthPubSubApiServer,
-		EthSigner, HexEncodedIdProvider, NetApi, NetApiServer, Web3Api, Web3ApiServer,
-	};
+	// use fc_rpc::{
+	// 	EthApi, EthApiServer, EthDevSigner, EthFilterApi, EthFilterApiServer, EthPubSubApi, EthPubSubApiServer,
+	// 	EthSigner, HexEncodedIdProvider, NetApi, NetApiServer, Web3Api, Web3ApiServer,
+	// };
 	use pallet_contracts_rpc::{Contracts, ContractsApi};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
 	use substrate_frame_rpc_system::{FullSystem, SystemApi};
@@ -149,10 +149,10 @@ where
 		signers.push(Box::new(EthDevSigner::new()) as Box<dyn EthSigner>);
 	}
 	let mut overrides = BTreeMap::new();
-	overrides.insert(
-		EthereumStorageSchema::V1,
-		Box::new(SchemaV1Override::new(client.clone())) as Box<dyn StorageOverride<_> + Send + Sync>,
-	);
+	// overrides.insert(
+	// 	EthereumStorageSchema::V1,
+	// 	Box::new(SchemaV1Override::new(client.clone())) as Box<dyn StorageOverride<_> + Send + Sync>,
+	// );
 	io.extend_with(EthApiServer::to_delegate(EthApi::new(
 		client.clone(),
 		pool.clone(),
