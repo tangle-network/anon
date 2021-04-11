@@ -19,13 +19,6 @@ pub struct TokenDetails<
 	pub(super) deposit: Balance,
 	/// The ED for virtual accounts.
 	pub(super) min_balance: Balance,
-	/// If `true`, then any account with this currency is given a provider reference. Otherwise, it
-	/// requires a consumer reference.
-	pub(super) is_sufficient: bool,
-	/// The total number of accounts.
-	pub(super) accounts: u32,
-	/// The total number of accounts for which we have placed a self-sufficient reference.
-	pub(super) sufficients: u32,
 	/// The total number of approvals.
 	pub(super) approvals: u32,
 	/// Whether the currency is frozen for non-admin transfers.
@@ -113,6 +106,8 @@ pub struct AccountData<Balance> {
 	pub reserved: Balance,
 	/// The amount that `free` may not drop below when withdrawing.
 	pub frozen: Balance,
+	/// The flag representing if the entire account is frozen
+	pub is_frozen: bool,
 }
 
 impl<Balance: Saturating + Copy + Ord> AccountData<Balance> {

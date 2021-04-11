@@ -57,19 +57,18 @@ pub mod weights;
 pub mod traits;
 
 use codec::{Decode, Encode};
-use frame_support::{debug, dispatch, ensure, traits::Get, weights::Weight};
+use frame_support::{dispatch, ensure, traits::Get, weights::Weight, PalletId};
 use frame_system::ensure_signed;
 use merkle::{
 	utils::{
 		keys::{Commitment, ScalarData},
 		permissions::ensure_admin,
 	},
-	Tree as TreeTrait, Module as MerkleModule,
+	Tree as TreeTrait, Pallet as MerklePallet,
 };
 use orml_traits::MultiCurrency;
 use sp_runtime::{
 	traits::{AccountIdConversion, Zero},
-	ModuleId,
 };
 use sp_std::prelude::*;
 use traits::ExtendedMixer;
@@ -83,13 +82,13 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	use sp_runtime::DispatchResultWithInfo;
+	
 
 	/// The pallet's configuration trait.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + merkle::Config + orml_tokens::Config + orml_currencies::Config {
+	pub trait Config: frame_system::Config + merkle::Config + orml_currencies::Config {
 		#[pallet::constant]
-		type ModuleId: Get<ModuleId>;
+		type PalletId: Get<PalletId>;
 		/// The overarching event type.
 		type Event: IsType<<Self as frame_system::Config>::Event> + From<Event<Self>>;
 		/// Currency type for taking deposits
@@ -116,7 +115,7 @@ pub mod pallet {
 	#[pallet::getter(fn initialised)]
 	pub type Initialised<T: Config> = StorageValue<_, bool, ValueQuery>;
 
-	/// The map of mixer treess to their metadata
+	/// The map of mixer trees to their metadata
 	#[pallet::storage]
 	#[pallet::getter(fn mixer_trees)]
 	pub type MixerTrees<T: Config> = StorageMap<_, Blake2_128Concat, T::TreeId, MixerInfo<T>, ValueQuery>;
@@ -211,17 +210,17 @@ pub mod pallet {
 				// this block) if none happened, carry over previous Merkle roots for the cache.
 				let mixer_ids = MixerTreeIds::<T>::get();
 				for i in 0..mixer_ids.len() {
-					let cached_roots = <merkle::Module<T>>::cached_roots(_n, mixer_ids[i]);
+					let cached_roots = <merkle::Pallet<T>>::cached_roots(_n, mixer_ids[i]);
 					// if there are no cached roots, carry forward the current root
 					if cached_roots.len() == 0 {
-						let _ = <merkle::Module<T>>::add_root_to_cache(mixer_ids[i], _n);
+						let _ = <merkle::Pallet<T>>::add_root_to_cache(mixer_ids[i], _n);
 					}
 				}
 			} else {
 				match Self::initialize() {
 					Ok(_) => {}
 					Err(e) => {
-						debug::native::error!("Error initialising: {:?}", e);
+						// frame_support::debug::native::error!("Error initialising: {:?}", e);
 					}
 				}
 			}
@@ -250,7 +249,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
-			ensure!(!<MerkleModule<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
+			ensure!(!<MerklePallet<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
 			// get mixer info, should always exist if the module is initialized
 			let mut mixer_info = Self::get_mixer(mixer_id)?;
 			// ensure the sender has enough balance to cover deposit
@@ -303,7 +302,7 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 			ensure!(
-				!<MerkleModule<T>>::stopped(withdraw_proof.mixer_id),
+				!<MerklePallet<T>>::stopped(withdraw_proof.mixer_id),
 				Error::<T>::MixerStopped
 			);
 			let recipient = withdraw_proof.recipient.unwrap_or(sender.clone());
@@ -516,9 +515,9 @@ impl<T: Config> MixerInfo<T> {
 	}
 }
 
-impl<T: Config> Module<T> {
+impl<T: Config> Pallet<T> {
 	pub fn account_id() -> T::AccountId {
-		T::ModuleId::get().into_account()
+		T::PalletId::get().into_account()
 	}
 
 	pub fn get_mixer(mixer_id: T::TreeId) -> Result<MixerInfo<T>, dispatch::DispatchError> {
@@ -563,7 +562,7 @@ impl<T: Config> Module<T> {
 
 impl<T: Config> ExtendedMixer<T::AccountId, CurrencyIdOf<T>, BalanceOf<T>> for Pallet<T> {
 	fn create_new(
-		account_id: T::AccountId,
+		_account_id: T::AccountId,
 		currency_id: CurrencyIdOf<T>,
 		size: BalanceOf<T>,
 	) -> Result<(), dispatch::DispatchError> {

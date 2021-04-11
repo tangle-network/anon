@@ -23,6 +23,8 @@ use merkle::{
 };
 use merlin::Transcript;
 use sp_runtime::{traits::BadOrigin, DispatchError};
+use crate::mock::TokenPallet;
+use tokens::ExtendedTokenSystem;
 
 fn default_hasher(num_gens: usize) -> Poseidon {
 	let width = 6;
@@ -337,9 +339,17 @@ fn should_not_have_cache_once_cache_length_exceeded() {
 fn should_make_mixer_with_non_native_token() {
 	new_test_ext().execute_with(|| {
 		let currency_id = 1;
+		assert_ok!(<Tokens as ExtendedTokenSystem<AccountId, CurrencyId, Balance>>::create(
+			currency_id,
+			1, // owner
+			1, // admin
+			1  // min_balance
+		));
+
+		assert_ok!(<Tokens as ExtendedTokenSystem<AccountId, CurrencyId, Balance>>::mint(1, 0, 10000000));
 		assert_ok!(Mixer::initialize());
 		assert_ok!(<Mixer as ExtendedMixer<AccountId, CurrencyId, Balance>>::create_new(
-			4,
+			1,
 			currency_id,
 			1_000
 		));

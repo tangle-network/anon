@@ -3,7 +3,7 @@ use crate as tokens;
 use frame_benchmarking::whitelisted_caller;
 use frame_support::{construct_runtime, parameter_types, weights::Weight, PalletId};
 use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
-use orml_currencies::BasicCurrencyAdapter;
+use basic_currency::BasicCurrencyAdapter;
 
 use sp_core::H256;
 use sp_runtime::{
@@ -31,7 +31,6 @@ construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Tokens: tokens::{Pallet, Call, Storage, Event<T>},
-		Currencies: orml_currencies::{Pallet, Storage, Event<T>},
 	}
 );
 
@@ -92,14 +91,6 @@ parameter_types! {
 	pub const NativeCurrencyId: CurrencyId = 0;
 }
 
-impl orml_currencies::Config for Test {
-	type Event = Event;
-	type GetNativeCurrencyId = NativeCurrencyId;
-	type MultiCurrency = TokenModule;
-	type NativeCurrency = BasicCurrencyAdapter<Test, Balances, Amount, BlockNumber>;
-	type WeightInfo = ();
-}
-
 parameter_types! {
 	pub const TokensPalletId: PalletId = PalletId(*b"py/token");
 	pub const CurrencyDeposit: u64 = 1;
@@ -115,18 +106,17 @@ impl Config for Test {
 	type Balance = Balance;
 	type Amount = i128;
 	type CurrencyId = CurrencyId;
+	type NativeCurrency = BasicCurrencyAdapter<Test, Balances, Amount, BlockNumber>;
 	type ForceOrigin = frame_system::EnsureRoot<u64>;
 	type CurrencyDeposit = CurrencyDeposit;
 	type MetadataDepositBase = MetadataDepositBase;
 	type MetadataDepositPerByte = MetadataDepositPerByte;
 	type ApprovalDeposit = ApprovalDeposit;
 	type StringLimit = StringLimit;
-	type OnDust = ();
+	type OnDust = BurnDust<Test>;
 	type WeightInfo = ();
 	type Extra = ();
 }
-
-type TokenModule = Pallet<Test>;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {

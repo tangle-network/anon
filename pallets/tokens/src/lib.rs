@@ -17,6 +17,7 @@ pub mod mock;
 #[cfg(test)]
 mod tests;
 
+mod basic_currency;
 mod traits;
 pub use traits::*;
 mod types;
@@ -54,6 +55,7 @@ use frame_support::{
 use orml_traits::{
 	account::MergeAccount,
 	arithmetic::{self, Signed},
+	BasicCurrencyExtended, BasicLockableCurrency, BasicReservableCurrency,
 	BalanceStatus, LockIdentifier, MultiCurrency, MultiCurrencyExtended, MultiLockableCurrency,
 	MultiReservableCurrency, OnDust,
 };
@@ -96,6 +98,11 @@ pub mod pallet {
 		/// The currency ID type
 		type CurrencyId: Parameter + Member + Copy + MaybeSerializeDeserialize + Ord;
 
+		/// The native currency system
+		type NativeCurrency: BasicCurrencyExtended<Self::AccountId, Balance = Self::Balance, Amount = Self::Amount>
+			+ BasicLockableCurrency<Self::AccountId, Balance = Self::Balance>
+			+ BasicReservableCurrency<Self::AccountId, Balance = Self::Balance>;
+
 		/// The origin which may forcibly create or destroy an asset or otherwise alter privileged
 		/// attributes.
 		type ForceOrigin: EnsureOrigin<Self::Origin>;
@@ -136,6 +143,14 @@ pub mod pallet {
 		Issued(T::CurrencyId, T::AccountId, T::Balance),
 		/// Some assets were destroyed. \[asset_id, owner, balance\]
 		Burned(T::CurrencyId, T::AccountId, T::Balance),
+		/// Some account `who` was frozen. \[asset_id, who\]
+		Frozen(T::CurrencyId, T::AccountId),
+		/// Some account `who` was thawed. \[asset_id, who\]
+		Thawed(T::CurrencyId, T::AccountId),
+		/// Some asset `asset_id` was frozen. \[asset_id\]
+		TokenFrozen(T::CurrencyId),
+		/// Some asset `asset_id` was thawed. \[asset_id\]
+		TokenThawed(T::CurrencyId),
 		/// The management team changed \[asset_id, issuer, admin, freezer\]
 		TeamChanged(T::CurrencyId, T::AccountId, T::AccountId, T::AccountId),
 		/// The owner changed \[asset_id, owner\]
@@ -187,12 +202,16 @@ pub mod pallet {
 		BalanceLow,
 		/// Balance should be non-zero.
 		BalanceZero,
+		/// Amount to be transferred is below minimum existential deposit
+		BelowMinimum,
 		/// The signing account has no permission to do the operation.
 		NoPermission,
 		/// The given currency ID is unknown.
 		Unknown,
 		/// The origin account is frozen.
 		Frozen,
+		/// The token is frozen
+		TokenIsFrozen,
 		/// The currency ID is already taken.
 		InUse,
 		/// Invalid witness data given.
@@ -209,6 +228,8 @@ pub mod pallet {
 		Unapproved,
 		/// The source account would not survive the transfer and it needs to stay alive.
 		WouldDie,
+		/// Invalid amount,
+		InvalidAmount
 	}
 
 	#[pallet::storage]
@@ -339,22 +360,14 @@ pub mod pallet {
 			ensure!(!min_balance.is_zero(), Error::<T>::MinBalanceZero);
 
 			let deposit = T::CurrencyDeposit::get();
-			<Self as MultiReservableCurrency<_>>::reserve(id, &owner, deposit)?;
+			T::NativeCurrency::reserve(&owner, deposit)?;
 
-			Token::<T>::insert(id, TokenDetails {
-				owner: owner.clone(),
-				issuer: admin.clone(),
-				admin: admin.clone(),
-				freezer: admin.clone(),
-				supply: Zero::zero(),
-				deposit,
-				min_balance,
-				is_sufficient: false,
-				accounts: 0,
-				sufficients: 0,
-				approvals: 0,
-				is_frozen: false,
-			});
+			<Self as ExtendedTokenSystem<_,_,_>>::create(
+				id,
+				owner.clone(),
+				admin.clone(),
+				min_balance
+			)?;
 			Self::deposit_event(Event::Created(id, owner, admin));
 			Ok(())
 		}
@@ -385,7 +398,6 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			owner: <T::Lookup as StaticLookup>::Source,
-			is_sufficient: bool,
 			min_balance: T::Balance,
 		) -> DispatchResult {
 			T::ForceOrigin::ensure_origin(origin)?;
@@ -402,9 +414,6 @@ pub mod pallet {
 				supply: Zero::zero(),
 				deposit: Zero::zero(),
 				min_balance,
-				is_sufficient,
-				accounts: 0,
-				sufficients: 0,
 				approvals: 0,
 				is_frozen: false,
 			});
@@ -430,7 +439,6 @@ pub mod pallet {
 		pub(super) fn destroy(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
-			witness: DestroyWitness,
 		) -> DispatchResult {
 			let maybe_check_owner = match T::ForceOrigin::try_origin(origin) {
 				Ok(_) => None,
@@ -441,20 +449,14 @@ pub mod pallet {
 				if let Some(check_owner) = maybe_check_owner {
 					ensure!(details.owner == check_owner, Error::<T>::NoPermission);
 				}
-				ensure!(details.accounts == witness.accounts, Error::<T>::BadWitness);
-				ensure!(details.sufficients == witness.sufficients, Error::<T>::BadWitness);
-				ensure!(details.approvals == witness.approvals, Error::<T>::BadWitness);
 
-				for (who, v) in Accounts::<T>::drain_prefix(id) {
-					Self::dead_account(id, &who, &mut details);
+				for (who, _v) in Accounts::<T>::drain_prefix(id) {
+					Self::dead_account(&who, &mut details);
 					AccountCurrencies::<T>::remove(who, id);
 				}
-				debug_assert_eq!(details.accounts, 0);
-				debug_assert_eq!(details.sufficients, 0);
 
 				let metadata = Metadata::<T>::take(&id);
-				<Self as MultiReservableCurrency<_>>::unreserve(
-					id,
+				T::NativeCurrency::unreserve(
 					&details.owner,
 					details.deposit.saturating_add(metadata.deposit)
 				);
@@ -486,9 +488,14 @@ pub mod pallet {
 			beneficiary: <T::Lookup as StaticLookup>::Source,
 			amount: T::Balance
 		) -> DispatchResult {
-			// TODO: Make this callable by the admin
-			let _ = ensure_signed(origin)?;
+			let sender = ensure_signed(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
+			let details = Token::<T>::get(id).ok_or(Error::<T>::Unknown)?;
+			ensure!(sender == details.issuer, Error::<T>::NoPermission);
+			ensure!(
+				Self::total_balance(id, &beneficiary).saturating_add(amount) >= details.min_balance,
+				Error::<T>::BelowMinimum
+			);
 			<Self as ExtendedTokenSystem<_,_,_>>::mint(id, beneficiary.clone(), amount)?;
 			Self::deposit_event(Event::Issued(id, beneficiary, amount));
 			Ok(())
@@ -516,12 +523,125 @@ pub mod pallet {
 			who: <T::Lookup as StaticLookup>::Source,
 			amount: T::Balance
 		) -> DispatchResult {
-			// TODO: Make this callable by the admin
-			let _ = ensure_signed(origin)?;
+			let sender = ensure_signed(origin)?;
+			let details = Token::<T>::get(id).ok_or(Error::<T>::Unknown)?;
+			ensure!(sender == details.admin, Error::<T>::NoPermission);
 			let who = T::Lookup::lookup(who)?;
 			<Self as ExtendedTokenSystem<_,_,_>>::burn(id, who.clone(), amount)?;
 			Self::deposit_event(Event::Burned(id, who, amount));
 			Ok(())
+		}
+
+		/// Disallow further unprivileged transfers from an account.
+		///
+		/// Origin must be Signed and the sender should be the Freezer of the asset `id`.
+		///
+		/// - `id`: The identifier of the asset to be frozen.
+		/// - `who`: The account to be frozen.
+		///
+		/// Emits `Frozen`.
+		///
+		/// Weight: `O(1)`
+		#[pallet::weight(5_000_000)]
+		pub(super) fn freeze(
+			origin: OriginFor<T>,
+			id: T::CurrencyId,
+			who: <T::Lookup as StaticLookup>::Source
+		) -> DispatchResult {
+			let origin = ensure_signed(origin)?;
+
+			let d = Token::<T>::get(id).ok_or(Error::<T>::Unknown)?;
+			ensure!(&origin == &d.freezer, Error::<T>::NoPermission);
+			let who = T::Lookup::lookup(who)?;
+			ensure!(Accounts::<T>::contains_key(id, &who), Error::<T>::BalanceZero);
+
+			Accounts::<T>::mutate(id, &who, |a| a.is_frozen = true);
+
+			Self::deposit_event(Event::<T>::Frozen(id, who));
+			Ok(())
+		}
+
+		/// Allow unprivileged transfers from an account again.
+		///
+		/// Origin must be Signed and the sender should be the Admin of the asset `id`.
+		///
+		/// - `id`: The identifier of the asset to be frozen.
+		/// - `who`: The account to be unfrozen.
+		///
+		/// Emits `Thawed`.
+		///
+		/// Weight: `O(1)`
+		#[pallet::weight(5_000_000)]
+		pub(super) fn thaw(
+			origin: OriginFor<T>,
+			id: T::CurrencyId,
+			who: <T::Lookup as StaticLookup>::Source
+		) -> DispatchResult {
+			let origin = ensure_signed(origin)?;
+
+			let details = Token::<T>::get(id).ok_or(Error::<T>::Unknown)?;
+			ensure!(&origin == &details.admin, Error::<T>::NoPermission);
+			let who = T::Lookup::lookup(who)?;
+			ensure!(Accounts::<T>::contains_key(id, &who), Error::<T>::BalanceZero);
+
+			Accounts::<T>::mutate(id, &who, |a| a.is_frozen = false);
+
+			Self::deposit_event(Event::<T>::Thawed(id, who));
+			Ok(())
+		}
+
+		/// Disallow further unprivileged transfers for the asset class.
+		///
+		/// Origin must be Signed and the sender should be the Freezer of the asset `id`.
+		///
+		/// - `id`: The identifier of the asset to be frozen.
+		///
+		/// Emits `Frozen`.
+		///
+		/// Weight: `O(1)`
+		#[pallet::weight(5_000_000)]
+		pub(super) fn freeze_asset(
+			origin: OriginFor<T>,
+			id: T::CurrencyId
+		) -> DispatchResult {
+			let origin = ensure_signed(origin)?;
+
+			Token::<T>::try_mutate(id, |maybe_details| {
+				let d = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
+				ensure!(&origin == &d.freezer, Error::<T>::NoPermission);
+
+				d.is_frozen = true;
+
+				Self::deposit_event(Event::<T>::TokenFrozen(id));
+				Ok(())
+			})
+		}
+
+		/// Allow unprivileged transfers for the asset again.
+		///
+		/// Origin must be Signed and the sender should be the Admin of the asset `id`.
+		///
+		/// - `id`: The identifier of the asset to be frozen.
+		///
+		/// Emits `Thawed`.
+		///
+		/// Weight: `O(1)`
+		#[pallet::weight(5_000_000)]
+		pub(super) fn thaw_asset(
+			origin: OriginFor<T>,
+			id: T::CurrencyId
+		) -> DispatchResult {
+			let origin = ensure_signed(origin)?;
+
+			Token::<T>::try_mutate(id, |maybe_details| {
+				let d = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
+				ensure!(&origin == &d.admin, Error::<T>::NoPermission);
+
+				d.is_frozen = false;
+
+				Self::deposit_event(Event::<T>::TokenThawed(id));
+				Ok(())
+			})
 		}
 
 		/// Change the Owner of an asset.
@@ -552,8 +672,7 @@ pub mod pallet {
 				let deposit = details.deposit + metadata_deposit;
 
 				// Move the deposit to the new owner.
-				<Self as MultiReservableCurrency<_>>::repatriate_reserved(
-					id,
+				T::NativeCurrency::repatriate_reserved(
 					&details.owner,
 					&owner,
 					deposit,
@@ -646,9 +765,9 @@ pub mod pallet {
 					.saturating_add(T::MetadataDepositBase::get());
 
 				if new_deposit > old_deposit {
-					<Self as MultiReservableCurrency<_>>::reserve(id, &origin, new_deposit - old_deposit)?;
+					T::NativeCurrency::reserve(&origin, new_deposit - old_deposit)?;
 				} else {
-					<Self as MultiReservableCurrency<_>>::unreserve(id, &origin, old_deposit - new_deposit);
+					T::NativeCurrency::unreserve(&origin, old_deposit - new_deposit);
 				}
 
 				*metadata = Some(TokenMetadata {
@@ -687,7 +806,7 @@ pub mod pallet {
 
 			Metadata::<T>::try_mutate_exists(id, |metadata| {
 				let deposit = metadata.take().ok_or(Error::<T>::Unknown)?.deposit;
-				<Self as MultiReservableCurrency<_>>::unreserve(id, &d.owner, deposit);
+				T::NativeCurrency::unreserve(&d.owner, deposit);
 				Self::deposit_event(Event::MetadataCleared(id));
 				Ok(())
 			})
@@ -758,7 +877,7 @@ pub mod pallet {
 			let d = Token::<T>::get(id).ok_or(Error::<T>::Unknown)?;
 			Metadata::<T>::try_mutate_exists(id, |metadata| {
 				let deposit = metadata.take().ok_or(Error::<T>::Unknown)?.deposit;
-				<Self as MultiReservableCurrency<_>>::unreserve(id, &d.owner, deposit);
+				T::NativeCurrency::unreserve(&d.owner, deposit);
 				Self::deposit_event(Event::MetadataCleared(id));
 				Ok(())
 			})
@@ -775,11 +894,6 @@ pub mod pallet {
 		/// - `freezer`: The new Freezer of this asset.
 		/// - `min_balance`: The minimum balance of this new asset that any single account must
 		/// have. If an account's balance is reduced below this, then it collapses to zero.
-		/// - `is_sufficient`: Whether a non-zero balance of this asset is deposit of sufficient
-		/// value to account for the state bloat associated with its balance storage. If set to
-		/// `true`, then non-zero balances may be stored without a `consumer` reference (and thus
-		/// an ED in the Balances pallet or whatever else is used to control user-account state
-		/// growth).
 		/// - `is_frozen`: Whether this asset class is frozen except for permissioned/admin
 		/// instructions.
 		///
@@ -795,7 +909,6 @@ pub mod pallet {
 			admin: <T::Lookup as StaticLookup>::Source,
 			freezer: <T::Lookup as StaticLookup>::Source,
 			min_balance: T::Balance,
-			is_sufficient: bool,
 			is_frozen: bool,
 		) -> DispatchResult {
 			T::ForceOrigin::ensure_origin(origin)?;
@@ -807,7 +920,6 @@ pub mod pallet {
 				asset.admin = T::Lookup::lookup(admin)?;
 				asset.freezer = T::Lookup::lookup(freezer)?;
 				asset.min_balance = min_balance;
-				asset.is_sufficient = is_sufficient;
 				asset.is_frozen = is_frozen;
 				*maybe_asset = Some(asset);
 
@@ -851,7 +963,7 @@ pub mod pallet {
 				let mut approved = maybe_approved.take().unwrap_or_default();
 				let deposit_required = T::ApprovalDeposit::get();
 				if approved.deposit < deposit_required {
-					<Self as MultiReservableCurrency<_>>::reserve(id, &key.owner, deposit_required - approved.deposit)?;
+					T::NativeCurrency::reserve(&key.owner, deposit_required - approved.deposit)?;
 					approved.deposit = deposit_required;
 				}
 				approved.amount = approved.amount.saturating_add(amount);
@@ -886,7 +998,7 @@ pub mod pallet {
 			let delegate = T::Lookup::lookup(delegate)?;
 			let key = ApprovalKey { owner, delegate };
 			let approval = Approvals::<T>::take(id, &key).ok_or(Error::<T>::Unknown)?;
-			<Self as MultiReservableCurrency<_>>::unreserve(id, &key.owner, approval.deposit);
+			T::NativeCurrency::unreserve(&key.owner, approval.deposit);
 
 			Self::deposit_event(Event::ApprovalCancelled(id, key.owner, key.delegate));
 			Ok(())
@@ -926,7 +1038,7 @@ pub mod pallet {
 
 			let key = ApprovalKey { owner, delegate };
 			let approval = Approvals::<T>::take(id, &key).ok_or(Error::<T>::Unknown)?;
-			<Self as MultiReservableCurrency<_>>::unreserve(id, &key.owner, approval.deposit);
+			T::NativeCurrency::unreserve(&key.owner, approval.deposit);
 
 			Self::deposit_event(Event::ApprovalCancelled(id, key.owner, key.delegate));
 			Ok(())
@@ -970,7 +1082,7 @@ pub mod pallet {
 				<Self as MultiCurrency<_>>::transfer(id, &key.owner, &destination, amount)?;
 
 				if remaining.is_zero() {
-					<Self as MultiReservableCurrency<_>>::unreserve(id, &key.owner, approved.deposit);
+					T::NativeCurrency::unreserve(&key.owner, approved.deposit);
 				} else {
 					approved.amount = remaining;
 					*maybe_approved = Some(approved);
@@ -987,15 +1099,19 @@ pub mod pallet {
 		#[pallet::weight(5_000_000)]
 		pub fn transfer(
 			origin: OriginFor<T>,
+			id: T::CurrencyId,
 			dest: <T::Lookup as StaticLookup>::Source,
-			currency_id: T::CurrencyId,
 			amount: T::Balance,
 		) -> DispatchResult {
 			let from = ensure_signed(origin)?;
 			let to = T::Lookup::lookup(dest)?;
-			<Self as MultiCurrency<_>>::transfer(currency_id, &from, &to, amount)?;
+			let details = Token::<T>::get(id).ok_or(Error::<T>::Unknown)?;
+			ensure!(!details.is_frozen, Error::<T>::TokenIsFrozen);
+			let account_details = Accounts::<T>::get(id, from.clone());
+			ensure!(!account_details.is_frozen, Error::<T>::Frozen);
 
-			Self::deposit_event(Event::Transferred(currency_id, from, to, amount));
+			<Self as MultiCurrency<_>>::transfer(id, &from, &to, amount)?;
+			Self::deposit_event(Event::Transferred(id, from, to, amount));
 			Ok(().into())
 		}
 
@@ -1006,21 +1122,109 @@ pub mod pallet {
 		#[pallet::weight(5_000_000)]
 		pub fn transfer_all(
 			origin: OriginFor<T>,
+			id: T::CurrencyId,
 			dest: <T::Lookup as StaticLookup>::Source,
-			currency_id: T::CurrencyId,
 		) -> DispatchResult {
 			let from = ensure_signed(origin)?;
 			let to = T::Lookup::lookup(dest)?;
-			let balance = <Self as MultiCurrency<T::AccountId>>::free_balance(currency_id, &from);
-			<Self as MultiCurrency<T::AccountId>>::transfer(currency_id, &from, &to, balance)?;
+			let details = Token::<T>::get(id).ok_or(Error::<T>::Unknown)?;
+			ensure!(!details.is_frozen, Error::<T>::TokenIsFrozen);
+			let account_details = Accounts::<T>::get(id, from.clone());
+			ensure!(!account_details.is_frozen, Error::<T>::Frozen);
 
-			Self::deposit_event(Event::Transferred(currency_id, from, to, balance));
+			let balance = <Self as MultiCurrency<T::AccountId>>::free_balance(id, &from);
+			<Self as MultiCurrency<T::AccountId>>::transfer(id, &from, &to, balance)?;
+
+			Self::deposit_event(Event::Transferred(id, from, to, balance));
 			Ok(().into())
+		}
+
+		/// Move some assets from the sender account to another, keeping the sender account alive.
+		///
+		/// Origin must be Signed.
+		///
+		/// - `id`: The identifier of the asset to have some amount transferred.
+		/// - `target`: The account to be credited.
+		/// - `amount`: The amount by which the sender's balance of assets should be reduced and
+		/// `target`'s balance increased. The amount actually transferred may be slightly greater in
+		/// the case that the transfer would otherwise take the sender balance above zero but below
+		/// the minimum balance. Must be greater than zero.
+		///
+		/// Emits `Transferred` with the actual amount transferred. If this takes the source balance
+		/// to below the minimum for the asset, then the amount transferred is increased to take it
+		/// to zero.
+		///
+		/// Weight: `O(1)`
+		/// Modes: Pre-existence of `target`; Post-existence of sender; Prior & post zombie-status
+		/// of sender; Account pre-existence of `target`.
+		#[pallet::weight(5_000_000)]
+		pub(super) fn transfer_keep_alive(
+			origin: OriginFor<T>,
+			id: T::CurrencyId,
+			target: <T::Lookup as StaticLookup>::Source,
+			amount: T::Balance
+		) -> DispatchResult {
+			let from = ensure_signed(origin)?;
+			let to = T::Lookup::lookup(target)?;
+			let balance = <Self as MultiCurrency<T::AccountId>>::free_balance(id, &from);
+			let details = Token::<T>::get(id).ok_or(Error::<T>::Unknown)?;
+			ensure!(!details.is_frozen, Error::<T>::TokenIsFrozen);
+			let account_details = Accounts::<T>::get(id, from.clone());
+			ensure!(!account_details.is_frozen, Error::<T>::Frozen);
+			// Check balance to ensure account is kept alive
+			ensure!(balance - amount >= details.min_balance, Error::<T>::WouldDie);
+			<Self as MultiCurrency<T::AccountId>>::transfer(id, &from, &to, amount)?;
+			Self::deposit_event(Event::Transferred(id, from, to, amount));
+
+			Ok(().into())
+		}
+
+		/// Move some assets from one account to another.
+		///
+		/// Origin must be Signed and the sender should be the Admin of the asset `id`.
+		///
+		/// - `id`: The identifier of the asset to have some amount transferred.
+		/// - `source`: The account to be debited.
+		/// - `dest`: The account to be credited.
+		/// - `amount`: The amount by which the `source`'s balance of assets should be reduced and
+		/// `dest`'s balance increased. The amount actually transferred may be slightly greater in
+		/// the case that the transfer would otherwise take the `source` balance above zero but
+		/// below the minimum balance. Must be greater than zero.
+		///
+		/// Emits `Transferred` with the actual amount transferred. If this takes the source balance
+		/// to below the minimum for the asset, then the amount transferred is increased to take it
+		/// to zero.
+		///
+		/// Weight: `O(1)`
+		/// Modes: Pre-existence of `dest`; Post-existence of `source`; Prior & post zombie-status
+		/// of `source`; Account pre-existence of `dest`.
+		#[pallet::weight(T::WeightInfo::force_transfer())]
+		pub(super) fn force_transfer(
+			origin: OriginFor<T>,
+			id: T::CurrencyId,
+			source: <T::Lookup as StaticLookup>::Source,
+			dest: <T::Lookup as StaticLookup>::Source,
+			amount: T::Balance,
+		) -> DispatchResult {
+			let origin = ensure_signed(origin)?;
+			let from = T::Lookup::lookup(source)?;
+			let to = T::Lookup::lookup(dest)?;
+
+			let details = Token::<T>::get(id).ok_or(Error::<T>::Unknown)?;
+			// Check admin rights.
+			ensure!(&origin == &details.admin, Error::<T>::NoPermission);
+			<Self as MultiCurrency<T::AccountId>>::transfer(id, &from, &to, amount)?;
+			Self::deposit_event(Event::Transferred(id, from, to, amount));
+			Ok(())
 		}
 	}
 }
 
 impl<T: Config> Pallet<T> {
+	fn total_supply(currency_id: T::CurrencyId) -> T::Balance {
+		Self::total_issuance(currency_id)
+	}
+
 	/// Check whether account_id is a module account
 	pub(crate) fn is_module_account_id(account_id: &T::AccountId) -> bool {
 		PalletId::try_from_account(account_id).is_some()
@@ -1146,12 +1350,10 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn dead_account(
-		currency_id: T::CurrencyId,
 		who: &T::AccountId,
 		d: &mut TokenDetails<T::Balance, T::AccountId>,
 	) {
 		frame_system::Pallet::<T>::dec_consumers(who);
-		d.accounts = d.accounts.saturating_sub(1);
 	}
 }
 
@@ -1208,12 +1410,17 @@ impl<T: Config> MultiCurrency<T::AccountId> for Pallet<T> {
 		if amount.is_zero() || from == to {
 			return Ok(());
 		}
+
 		Self::ensure_can_withdraw(currency_id, from, amount)?;
 
 		let from_balance = Self::free_balance(currency_id, from);
 		let to_balance = Self::free_balance(currency_id, to)
 			.checked_add(&amount)
 			.ok_or(Error::<T>::BalanceOverflow)?;
+
+		let details = Token::<T>::get(currency_id).ok_or(Error::<T>::Unknown)?;
+		ensure!(to_balance >= details.min_balance, Error::<T>::BelowMinimum);
+
 		// Cannot underflow because ensure_can_withdraw check
 		Self::set_free_balance(currency_id, from, from_balance - amount);
 		Self::set_free_balance(currency_id, to, to_balance);
@@ -1758,12 +1965,66 @@ impl<T: Config> MergeAccount<T::AccountId> for Pallet<T> {
 }
 
 impl<T: Config> ExtendedTokenSystem<T::AccountId, T::CurrencyId, T::Balance> for Pallet<T> {
-	fn mint(currency_id: T::CurrencyId, account_id: T::AccountId, amount: T::Balance)
-		-> Result<(), DispatchError> {
-			Self::deposit(currency_id, &account_id, amount)
+	fn create(currency_id: T::CurrencyId, owner: T::AccountId, admin: T::AccountId, min_balance: T::Balance) -> Result<(), DispatchError> {
+		Token::<T>::insert(currency_id, TokenDetails {
+			owner: owner.clone(),
+			issuer: admin.clone(),
+			admin: admin.clone(),
+			freezer: admin.clone(),
+			supply: Zero::zero(),
+			deposit: T::CurrencyDeposit::get(),
+			min_balance,
+			approvals: 0,
+			is_frozen: false,
+		});
+
+		Ok(())
+	}
+
+	fn mint(currency_id: T::CurrencyId, account_id: T::AccountId, amount: T::Balance) -> Result<(), DispatchError> {
+		Self::deposit(currency_id, &account_id, amount)?;
+		Ok(())
+	}
+
+	/// Burns a balance from an account. Will burn into reserved balance as well.
+	/// Deducts total burned amount from the token supply. Note, the total burned
+	/// amount might be less than the target burn amount if the user has less balance
+	/// than what is being burnt.
+	fn burn(currency_id: T::CurrencyId, account_id: T::AccountId, amount: T::Balance) -> Result<(), DispatchError> {
+		ensure!(!amount.is_zero(), Error::<T>::InvalidAmount);
+
+		let account = Self::accounts(currency_id, account_id.clone());
+		let free_burn_amount = account.free.min(amount);
+		// Cannot underflow becuase free_burn_amount can never be greater than amount
+		let mut remaining_burn = amount - free_burn_amount;
+
+		// slash free balance
+		if !free_burn_amount.is_zero() {
+			// Cannot underflow becuase free_burn_amount can never be greater than
+			// account.free
+			Self::set_free_balance(currency_id, &account_id, account.free - free_burn_amount);
 		}
-	fn burn(currency_id: T::CurrencyId, account_id: T::AccountId, amount: T::Balance)
-		-> Result<(), DispatchError> {
-			Self::withdraw(currency_id, &account_id, amount)
+
+		// burn reserved balance
+		if !remaining_burn.is_zero() {
+			let reserved_burn_amount = account.reserved.min(remaining_burn);
+			// Cannot underflow due to above line
+			remaining_burn -= reserved_burn_amount;
+			Self::set_reserved_balance(currency_id, &account_id, account.reserved - reserved_burn_amount);
 		}
+
+		// Cannot underflow because the burn value cannot be greater than total
+		// issuance
+		<TotalIssuance<T>>::mutate(currency_id, |v| *v -= amount - remaining_burn);
+		Ok(())
+	}
+}
+
+pub struct BurnDust<T>(marker::PhantomData<T>);
+impl<T: Config> OnDust<T::AccountId, T::CurrencyId, T::Balance> for BurnDust<T> {
+	fn on_dust(who: &T::AccountId, currency_id: T::CurrencyId, amount: T::Balance) {
+		// burn the dust, ignore the result,
+		// if failed will leave some dust which still could be recycled.
+		let _ = Pallet::<T>::withdraw(currency_id, who, amount);
+	}
 }

@@ -1,16 +1,16 @@
 use super::*;
 use crate as pallet_mixer;
 use frame_benchmarking::whitelisted_caller;
-use frame_support::{construct_runtime, parameter_types, traits::GenesisBuild, weights::Weight};
+use frame_support::{construct_runtime, parameter_types, weights::Weight, PalletId};
 use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
 use merkle::weights::Weights as MerkleWeights;
 use orml_currencies::BasicCurrencyAdapter;
-use orml_traits::parameter_type_with_key;
+
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
-	ModuleId, Perbill,
+	Perbill,
 };
 use weights::Weights;
 
@@ -30,12 +30,12 @@ construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: frame_system::{Module, Call, Config, Storage, Event<T>},
-		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
-		MerkleTrees: merkle::{Module, Call, Storage, Event<T>},
-		Mixer: pallet_mixer::{Module, Call, Storage, Event<T>},
-		Currencies: orml_currencies::{Module, Storage, Event<T>},
-		Tokens: orml_tokens::{Module, Storage, Event<T>, Config<T>},
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		MerkleTrees: merkle::{Pallet, Call, Storage, Event<T>},
+		Mixer: pallet_mixer::{Pallet, Call, Storage, Event<T>},
+		Currencies: orml_currencies::{Pallet, Storage, Event<T>},
+		Tokens: tokens::{Pallet, Storage, Event<T>},
 	}
 );
 
@@ -69,6 +69,7 @@ impl frame_system::Config for Test {
 	type PalletInfo = PalletInfo;
 	type SS58Prefix = Prefix;
 	type SystemWeightInfo = ();
+	type OnSetCode = ();
 	type Version = ();
 }
 
@@ -91,26 +92,35 @@ impl balances::Config for Test {
 	type WeightInfo = ();
 }
 
-parameter_type_with_key! {
-	pub ExistentialDepositMap: |k: CurrencyId| -> Balance {
-		match k {
-			_ => 2,
-		}
-	};
-}
-
 parameter_types! {
 	pub const NativeCurrencyId: CurrencyId = 0;
 }
 
-impl orml_tokens::Config for Test {
-	type Amount = Amount;
-	type Balance = Balance;
-	type CurrencyId = CurrencyId;
+parameter_types! {
+	pub const TokensPalletId: PalletId = PalletId(*b"py/token");
+	pub const CurrencyDeposit: u64 = 0;
+	pub const ApprovalDeposit: u64 = 1;
+	pub const StringLimit: u32 = 50;
+	pub const MetadataDepositBase: u64 = 1;
+	pub const MetadataDepositPerByte: u64 = 1;
+}
+
+impl tokens::Config for Test {
+	type PalletId = TokensPalletId;
 	type Event = Event;
-	type ExistentialDeposits = ExistentialDepositMap;
+	type Balance = Balance;
+	type Amount = i128;
+	type CurrencyId = CurrencyId;
+	type NativeCurrency = BasicCurrencyAdapter<Test, Balances, Amount, BlockNumber>;
+	type ForceOrigin = frame_system::EnsureRoot<u64>;
+	type CurrencyDeposit = CurrencyDeposit;
+	type MetadataDepositBase = MetadataDepositBase;
+	type MetadataDepositPerByte = MetadataDepositPerByte;
+	type ApprovalDeposit = ApprovalDeposit;
+	type StringLimit = StringLimit;
 	type OnDust = ();
 	type WeightInfo = ();
+	type Extra = ();
 }
 
 impl orml_currencies::Config for Test {
@@ -130,7 +140,7 @@ impl merkle::Config for Test {
 }
 
 parameter_types! {
-	pub const MixerModuleId: ModuleId = ModuleId(*b"py/mixer");
+	pub const MixerPalletId: PalletId = PalletId(*b"py/mixer");
 	pub const DefaultAdmin: u64 = 4;
 	pub MixerSizes: Vec<Balance> = [1_000, 10_000, 100_000, 1_000_000].to_vec();
 }
@@ -142,37 +152,38 @@ impl Config for Test {
 	type Event = Event;
 	type Tree = MerkleTrees;
 	type MixerSizes = MixerSizes;
-	type ModuleId = MixerModuleId;
+	type PalletId = MixerPalletId;
 	type NativeCurrencyId = NativeCurrencyId;
 	type WeightInfo = Weights<Self>;
 }
 
+pub type TokenPallet = tokens::Pallet<Test>;
 pub type MixerCall = pallet_mixer::Call<Test>;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	use balances::GenesisConfig as BalancesConfig;
-	use orml_tokens::GenesisConfig as TokensConfig;
+	// use tokens::GenesisConfig as TokensConfig;
 	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 
 	BalancesConfig::<Test> {
 		// Total issuance will be 200 with treasury account initialized at ED.
 		balances: vec![
-			(0, 1_000_000_000),
-			(1, 1_000_000_000),
-			(2, 1_000_000_000),
+			(0, 1_000_000_000_000_000_000),
+			(1, 1_000_000_000_000_000_000),
+			(2, 1_000_000_000_000_000_000),
 			(whitelisted_caller(), 1_000_000_000),
 		],
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();
 
-	let token_currency_id: CurrencyId = 1;
-	TokensConfig::<Test> {
-		endowed_accounts: vec![(0, token_currency_id, 1_000_000_000)],
-	}
-	.assimilate_storage(&mut t)
-	.unwrap();
+	let _token_currency_id: CurrencyId = 1;
+	// TokensConfig::<Test> {
+	// 	endowed_accounts: vec![(0, token_currency_id, 1_000_000_000)],
+	// }
+	// .assimilate_storage(&mut t)
+	// .unwrap();
 
 	t.into()
 }

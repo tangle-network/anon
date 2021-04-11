@@ -18,7 +18,7 @@ sp-std = { default-features = false, version = "3.0.0" }
 sp-runtime = { default-features = false, version = "3.0.0" }
 merlin = { version = "2.0.0", default-features = false }
 sha2 = { version = "0.9.1", default-features = false }
-rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
+rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"], optional = true}
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 sp-io = { default-features = false, version = "3.0.0" }
 frame-benchmarking = { default-features = false, version = "3.0.0", optional = true }
@@ -46,6 +46,7 @@ sp-core = { default-features = false, version = "3.0.0" }
 [features]
 default = ["std"]
 std = [
+    "rand_core",
     "serde",
     "sp-runtime/std",
     "sp-io/std",
