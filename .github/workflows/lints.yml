@@ -18,6 +18,16 @@ jobs:
           override: true
           components: clippy, rustfmt
 
+      - name: Cache Cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            target
+          key: ${{ runner.os }}-cargo-lints
+
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
         continue-on-error: false
