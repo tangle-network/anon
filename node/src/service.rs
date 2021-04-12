@@ -174,19 +174,45 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 	let name = config.network.node_name.clone();
 	let enable_grandpa = !config.disable_grandpa;
 	let prometheus_registry = config.prometheus_registry().cloned();
+	let is_authority = role.is_authority();
+	let subscription_task_executor = sc_rpc::SubscriptionTaskExecutor::new(task_manager.spawn_handle());
 
 	let rpc_extensions_builder = {
+		let justification_stream = grandpa_link.justification_stream();
+		let shared_authority_set = grandpa_link.shared_authority_set().clone();
+		let shared_voter_state = sc_finality_grandpa::SharedVoterState::empty();
+		let finality_proof_provider = sc_finality_grandpa::FinalityProofProvider::new_for_service(
+			backend.clone(),
+			Some(shared_authority_set.clone()),
+		);
+
 		let client = client.clone();
 		let pool = transaction_pool.clone();
+		let network = network.clone();
+		let select_chain = select_chain.clone();
 
 		Box::new(move |deny_unsafe, _| {
 			let deps = crate::rpc::FullDeps {
 				client: client.clone(),
 				pool: pool.clone(),
 				deny_unsafe,
+				is_authority,
+				// enable_dev_signer,
+				network: network.clone(),
+				// pending_transactions: pending.clone(),
+				// filter_pool: filter_pool.clone(),
+				// backend: frontier_backend.clone(),
+				select_chain: select_chain.clone(),
+				grandpa: crate::rpc::GrandpaDeps {
+					shared_voter_state: shared_voter_state.clone(),
+					shared_authority_set: shared_authority_set.clone(),
+					justification_stream: justification_stream.clone(),
+					subscription_executor: subscription_task_executor.clone(),
+					finality_provider: finality_proof_provider.clone(),
+				},
 			};
 
-			crate::rpc::create_full(deps)
+			crate::rpc::create_full(deps, subscription_task_executor.clone())
 		})
 	};
 
@@ -224,7 +250,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 			StartAuraParams {
 				slot_duration: sc_consensus_aura::slot_duration(&*client)?,
 				client: client.clone(),
-				select_chain,
+				select_chain: select_chain.clone(),
 				block_import,
 				proposer_factory,
 				inherent_data_providers: inherent_data_providers.clone(),

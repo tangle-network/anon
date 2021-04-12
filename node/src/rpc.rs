@@ -63,8 +63,8 @@ pub struct FullDeps<C, P, SC, B> {
 	pub select_chain: SC,
 	/// The Node authority flag
 	pub is_authority: bool,
-	/// Whether to enable dev signer
-	pub enable_dev_signer: bool,
+	// /// Whether to enable dev signer
+	// pub enable_dev_signer: bool,
 	/// Network service
 	pub network: Arc<NetworkService<Block, Hash>>,
 	// /// Ethereum pending transactions.
@@ -114,13 +114,13 @@ where
 		client,
 		pool,
 		select_chain: _,
-		enable_dev_signer,
+		// enable_dev_signer,
 		is_authority,
 		network,
-		pending_transactions,
+		// pending_transactions,
 		deny_unsafe,
-		filter_pool,
-		backend,
+		// filter_pool,
+		// backend,
 		grandpa,
 	} = deps;
 	let GrandpaDeps {
@@ -144,46 +144,46 @@ where
 		client.clone(),
 	)));
 
-	let mut signers = Vec::new();
-	if enable_dev_signer {
-		signers.push(Box::new(EthDevSigner::new()) as Box<dyn EthSigner>);
-	}
-	let mut overrides = BTreeMap::new();
+	// let mut signers = Vec::new();
+	// if enable_dev_signer {
+	// 	signers.push(Box::new(EthDevSigner::new()) as Box<dyn EthSigner>);
+	// }
+	// let mut overrides = BTreeMap::new();
 	// overrides.insert(
 	// 	EthereumStorageSchema::V1,
 	// 	Box::new(SchemaV1Override::new(client.clone())) as Box<dyn StorageOverride<_> + Send + Sync>,
 	// );
-	io.extend_with(EthApiServer::to_delegate(EthApi::new(
-		client.clone(),
-		pool.clone(),
-		node_template_runtime::TransactionConverter,
-		network.clone(),
-		pending_transactions.clone(),
-		signers,
-		overrides,
-		backend,
-		is_authority,
-	)));
+	// io.extend_with(EthApiServer::to_delegate(EthApi::new(
+	// 	client.clone(),
+	// 	pool.clone(),
+	// 	node_template_runtime::TransactionConverter,
+	// 	network.clone(),
+	// 	pending_transactions.clone(),
+	// 	signers,
+	// 	overrides,
+	// 	backend,
+	// 	is_authority,
+	// )));
 
-	if let Some(filter_pool) = filter_pool {
-		io.extend_with(EthFilterApiServer::to_delegate(EthFilterApi::new(
-			client.clone(),
-			filter_pool.clone(),
-			500 as usize, // max stored filters
-		)));
-	}
+	// if let Some(filter_pool) = filter_pool {
+	// 	io.extend_with(EthFilterApiServer::to_delegate(EthFilterApi::new(
+	// 		client.clone(),
+	// 		filter_pool.clone(),
+	// 		500 as usize, // max stored filters
+	// 	)));
+	// }
 
-	io.extend_with(NetApiServer::to_delegate(NetApi::new(client.clone(), network.clone())));
-	io.extend_with(Web3ApiServer::to_delegate(Web3Api::new(client.clone())));
-	io.extend_with(EthPubSubApiServer::to_delegate(EthPubSubApi::new(
-		pool.clone(),
-		client.clone(),
-		network,
-		SubscriptionManager::<HexEncodedIdProvider>::with_id_provider(
-			HexEncodedIdProvider::default(),
-			Arc::new(subscription_task_executor),
-		),
-	)));
+	// io.extend_with(NetApiServer::to_delegate(NetApi::new(client.clone(), network.clone())));
+	// io.extend_with(Web3ApiServer::to_delegate(Web3Api::new(client.clone())));
+	// io.extend_with(EthPubSubApiServer::to_delegate(EthPubSubApi::new(
+	// 	pool.clone(),
+	// 	client.clone(),
+	// 	network,
+	// 	SubscriptionManager::<HexEncodedIdProvider>::with_id_provider(
+	// 		HexEncodedIdProvider::default(),
+	// 		Arc::new(subscription_task_executor),
+	// 	),
+	// )));
 
 	io.extend_with(MerkleApi::to_delegate(MerkleClient::new(client.clone())));
 
