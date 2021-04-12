@@ -24,11 +24,7 @@ pub trait Tree<AccountId, BlockNumber, TreeId> {
 	/// Can only be called by the current manager
 	fn set_manager(sender: AccountId, id: TreeId, new_manager: AccountId) -> Result<(), dispatch::DispatchError>;
 	/// Creates a new Tree tree, including a manager for that tree
-	fn create_tree(
-		sender: AccountId,
-		is_manager_required: bool,
-		depth: u8,
-	) -> Result<TreeId, dispatch::DispatchError>;
+	fn create_tree(sender: AccountId, is_manager_required: bool, depth: u8) -> Result<TreeId, dispatch::DispatchError>;
 	/// Adds members/leaves to the tree
 	fn add_members(sender: AccountId, id: TreeId, members: Vec<ScalarData>) -> Result<(), dispatch::DispatchError>;
 	/// Adds a nullifier to the storage

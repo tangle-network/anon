@@ -8,8 +8,7 @@ contract NativeAnchor is Anchor {
     uint256 _denomination,
     uint32 _merkleTreeHeight,
     address _operator,
-    uint256 _chainId
-  ) Anchor(_verifier, _denomination, _merkleTreeHeight, _operator, _chainId) public {
+  ) Anchor(_verifier, _denomination, _merkleTreeHeight, _operator) public {
   }
 
   function _processDeposit() override internal {
