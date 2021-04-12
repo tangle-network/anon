@@ -8,7 +8,6 @@ abstract contract IVerifier {
 }
 
 abstract contract Anchor is MerkleTreeWithHistory, ReentrancyGuard {
-  uint256 public CHAIN_ID;
   uint256 public denomination;
   mapping(bytes32 => bool) public nullifierHashes;
   // we store all commitments just to prevent accidental deposits with the same commitment
@@ -38,13 +37,11 @@ abstract contract Anchor is MerkleTreeWithHistory, ReentrancyGuard {
     uint256 _denomination,
     uint32 _merkleTreeHeight,
     address _operator,
-    uint256 _chainId
   ) MerkleTreeWithHistory(_merkleTreeHeight) {
     require(_denomination > 0, "denomination should be greater than 0");
     verifier = _verifier;
     operator = _operator;
     denomination = _denomination;
-    CHAIN_ID = _chainId;
   }
 
   /**

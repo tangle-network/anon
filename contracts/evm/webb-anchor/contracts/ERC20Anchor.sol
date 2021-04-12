@@ -10,9 +10,8 @@ contract ERC20Anchor is Anchor {
     uint256 _denomination,
     uint32 _merkleTreeHeight,
     address _operator,
-    address _token,
-    uint256 _chainId
-  ) Anchor(_verifier, _denomination, _merkleTreeHeight, _operator, _chainId) public {
+    address _token
+  ) Anchor(_verifier, _denomination, _merkleTreeHeight, _operator) public {
     token = _token;
   }
 
