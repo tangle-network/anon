@@ -30,7 +30,7 @@ jobs:
 
       - name: Run cargo clippy
         uses: actions-rs/cargo@v1
-        continue-on-error: false
+        continue-on-error: true # remove this once we start using clippy
         with:
           command: clippy
           args: -- -D warnings
