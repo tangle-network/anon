@@ -1351,7 +1351,7 @@ impl<T: Config> Pallet<T> {
 
 	pub(crate) fn dead_account(
 		who: &T::AccountId,
-		d: &mut TokenDetails<T::Balance, T::AccountId>,
+		_d: &mut TokenDetails<T::Balance, T::AccountId>,
 	) {
 		frame_system::Pallet::<T>::dec_consumers(who);
 	}
