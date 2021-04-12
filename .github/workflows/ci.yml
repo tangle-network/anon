@@ -16,7 +16,7 @@ jobs:
         with:
           profile: minimal
           toolchain: nightly
-          override: true
+          override: false
           components: rustfmt
 
       - name: Cache Cargo
