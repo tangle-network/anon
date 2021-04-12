@@ -27,10 +27,14 @@ jobs:
             ~/.cargo/git
             ~/.cargo/bin
             target
-          key: ${{ runner.os }}-cargo-${{ steps.rust_toolchain.outputs.rustc_hash }}
+          key: ${{ runner.os }}-cargo-cache
 
       - name: Setup Build tools
         run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
       - name: Run Test
         run: ./scripts/test.sh
+
+      - name: Run Build
+        run: ./scripts/build.sh
+
