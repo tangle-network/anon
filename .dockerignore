@@ -4,6 +4,5 @@ runtime/target
 **/*.rs.bk
 /*/**/target
 .vscode
-build
 cache
 artifacts
