@@ -20,7 +20,12 @@
 use super::*;
 use crate::{Error, mock::*};
 use frame_support::{assert_ok, assert_noop, traits::Currency};
-use balances::Error as BalancesError;
+use pallet_balances::Error as BalancesError;
+
+/**
+ * @brief      Assets tests (mostly from pallet-assets)
+ */
+
 
 #[test]
 fn basic_minting_should_work() {
@@ -185,18 +190,18 @@ fn min_balance_should_work() {
 		assert_noop!(Tokens::force_transfer(Origin::signed(1), 0, 1, 2, 9), Error::<Test>::BelowMinimum);
 
 		// When deducting from an account to below minimum, it should be reaped.
-		assert_ok!(Tokens::transfer(Origin::signed(1), 0, 2, 91));
+		assert_ok!(Tokens::transfer(Origin::signed(1), 0, 2, 100));
 		assert!(Tokens::free_balance(0, &1).is_zero());
-		assert_eq!(Tokens::free_balance(0, &2), 91);
-		assert_eq!(Tokens::total_issuance(0), 91);
+		assert_eq!(Tokens::free_balance(0, &2), 100);
+		assert_eq!(Tokens::total_issuance(0), 100);
 		assert_eq!(Accounts::<Test>::iter_prefix_values(0).into_iter().map(|e| e).collect::<Vec<AccountData<Balance>>>().len(), 1);
 
-		assert_ok!(Tokens::force_transfer(Origin::signed(1), 0, 2, 1, 91));
+		assert_ok!(Tokens::force_transfer(Origin::signed(1), 0, 2, 1, 100));
 		assert!(Tokens::free_balance(0, &2).is_zero());
-		assert_eq!(Tokens::free_balance(0, &1), 91);
+		assert_eq!(Tokens::free_balance(0, &1), 100);
 		assert_eq!(Accounts::<Test>::iter_prefix_values(0).into_iter().map(|e| e).collect::<Vec<AccountData<Balance>>>().len(), 1);
 
-		assert_ok!(Tokens::burn(Origin::signed(1), 0, 1, 91));
+		assert_ok!(Tokens::burn(Origin::signed(1), 0, 1, 100));
 		assert!(Tokens::free_balance(0, &1).is_zero());
 		assert_eq!(Accounts::<Test>::iter_prefix_values(0).into_iter().map(|e| e).collect::<Vec<AccountData<Balance>>>().len(), 0);
 	});
@@ -488,6 +493,7 @@ fn force_metadata_should_work() {
 	});
 }
 
+
 #[test]
 fn force_asset_status_should_work(){
 	new_test_ext().execute_with(|| {
@@ -522,9 +528,514 @@ fn force_asset_status_should_work(){
 
 		//account drains to completion when funds dip below min_balance
 		assert_ok!(Tokens::force_asset_status(Origin::root(), 0, 1, 1, 1, 1, 110, false));
+		assert_eq!(Tokens::total_supply(0), 200);
 		assert_ok!(Tokens::transfer(Origin::signed(2), 0, 1, 110));
-		assert_eq!(Tokens::free_balance(0, &1), 110);
+		assert_eq!(Tokens::free_balance(0, &1), 200);
 		assert_eq!(Tokens::free_balance(0, &2), 0);
-		assert_eq!(Tokens::total_supply(0), 110);
+		assert_eq!(Tokens::total_supply(0), 200);
 	});
+}
+
+/**
+ * @brief      Tokens tests (mostly from orml-tokens)
+ */
+ #[test]
+fn minimum_balance_work() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+		assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+		assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+		assert_eq!(Tokens::minimum_balance(BTC), 1);
+		assert_eq!(Tokens::minimum_balance(DOT), 2);
+		assert_eq!(Tokens::minimum_balance(ETH), 1);
+	});
+}
+
+#[test]
+fn remove_dust_work() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+		assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+		assert_ok!(Tokens::deposit(DOT, &DAVE, 100));
+		assert_eq!(Tokens::total_issuance(DOT), 100);
+		assert_eq!(Accounts::<Test>::contains_key(DOT, DAVE), true);
+		assert_eq!(Tokens::free_balance(DOT, &DAVE), 100);
+		assert_eq!(System::providers(&DAVE), 1);
+		assert_eq!(Accounts::<Test>::contains_key(DOT, DustAccount::get()), false);
+		assert_eq!(Tokens::free_balance(DOT, &DustAccount::get()), 0);
+		assert_eq!(System::providers(&DustAccount::get()), 0);
+
+		// total is gte ED, will not handle dust
+		assert_ok!(Tokens::withdraw(DOT, &DAVE, 98));
+		assert_eq!(Tokens::total_issuance(DOT), 2);
+		assert_eq!(Accounts::<Test>::contains_key(DOT, DAVE), true);
+		assert_eq!(Tokens::free_balance(DOT, &DAVE), 2);
+		assert_eq!(System::providers(&DAVE), 1);
+		assert_eq!(Accounts::<Test>::contains_key(DOT, DustAccount::get()), false);
+		assert_eq!(Tokens::free_balance(DOT, &DustAccount::get()), 0);
+		assert_eq!(System::providers(&DustAccount::get()), 0);
+
+		assert_ok!(Tokens::withdraw(DOT, &DAVE, 1));
+		assert_eq!(Tokens::free_balance(DOT, &DAVE), 1);
+		assert_eq!(Tokens::free_balance(DOT, &DustAccount::get()), 1);
+		// total is lte ED, will handle dust
+		assert_eq!(Tokens::total_issuance(DOT), 1);
+		assert_eq!(Accounts::<Test>::contains_key(DOT, DAVE), false);
+		assert_eq!(Tokens::free_balance(DOT, &DAVE), 0);
+		assert_eq!(System::providers(&DAVE), 0);
+
+		// will not handle dust for module account
+		assert_eq!(Accounts::<Test>::contains_key(DOT, DustAccount::get()), true);
+		assert_eq!(Tokens::free_balance(DOT, &DustAccount::get()), 1);
+		assert_eq!(System::providers(&DustAccount::get()), 1);
+
+		let dust_lost_event = mock::Event::tokens(crate::Event::DustLost(DAVE, DOT, 1));
+		assert!(System::events().iter().any(|record| record.event == dust_lost_event));
+	});
+}
+
+#[test]
+fn set_lock_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_ok!(Tokens::set_lock(ID_1, DOT, &ALICE, 10));
+			assert_eq!(Tokens::accounts(&ALICE, DOT).frozen, 10);
+			assert_eq!(Tokens::accounts(&ALICE, DOT).frozen(), 10);
+			assert_eq!(Tokens::locks(ALICE, DOT).len(), 1);
+			assert_ok!(Tokens::set_lock(ID_1, DOT, &ALICE, 50));
+			assert_eq!(Tokens::accounts(&ALICE, DOT).frozen, 50);
+			assert_eq!(Tokens::locks(ALICE, DOT).len(), 1);
+			assert_ok!(Tokens::set_lock(ID_2, DOT, &ALICE, 60));
+			assert_eq!(Tokens::accounts(&ALICE, DOT).frozen, 60);
+			assert_eq!(Tokens::locks(ALICE, DOT).len(), 2);
+		});
+}
+
+#[test]
+fn extend_lock_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_ok!(Tokens::set_lock(ID_1, DOT, &ALICE, 10));
+			assert_eq!(Tokens::locks(ALICE, DOT).len(), 1);
+			assert_eq!(Tokens::accounts(&ALICE, DOT).frozen, 10);
+			assert_ok!(Tokens::extend_lock(ID_1, DOT, &ALICE, 20));
+			assert_eq!(Tokens::locks(ALICE, DOT).len(), 1);
+			assert_eq!(Tokens::accounts(&ALICE, DOT).frozen, 20);
+			assert_ok!(Tokens::extend_lock(ID_2, DOT, &ALICE, 10));
+			assert_ok!(Tokens::extend_lock(ID_1, DOT, &ALICE, 20));
+			assert_eq!(Tokens::locks(ALICE, DOT).len(), 2);
+		});
+}
+
+#[test]
+fn remove_lock_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_ok!(Tokens::set_lock(ID_1, DOT, &ALICE, 10));
+			assert_ok!(Tokens::set_lock(ID_2, DOT, &ALICE, 20));
+			assert_eq!(Tokens::locks(ALICE, DOT).len(), 2);
+			assert_ok!(Tokens::remove_lock(ID_2, DOT, &ALICE));
+			assert_eq!(Tokens::locks(ALICE, DOT).len(), 1);
+		});
+}
+
+#[test]
+fn frozen_can_limit_liquidity() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_ok!(Tokens::set_lock(ID_1, DOT, &ALICE, 90));
+			assert_noop!(
+				<Tokens as MultiCurrency<_>>::transfer(DOT, &ALICE, &BOB, 11),
+				Error::<Test>::LiquidityRestrictions,
+			);
+			assert_ok!(Tokens::set_lock(ID_1, DOT, &ALICE, 10));
+			assert_ok!(<Tokens as MultiCurrency<_>>::transfer(DOT, &ALICE, &BOB, 11),);
+		});
+}
+
+#[test]
+fn can_reserve_is_correct() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_eq!(Tokens::can_reserve(DOT, &ALICE, 0), true);
+			assert_eq!(Tokens::can_reserve(DOT, &ALICE, 101), false);
+			assert_eq!(Tokens::can_reserve(DOT, &ALICE, 100), true);
+		});
+}
+
+#[test]
+fn reserve_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_noop!(Tokens::reserve(DOT, &ALICE, 101), Error::<Test>::BalanceLow,);
+			assert_ok!(Tokens::reserve(DOT, &ALICE, 0));
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 100);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 0);
+			assert_eq!(Tokens::total_balance(DOT, &ALICE), 100);
+			assert_ok!(Tokens::reserve(DOT, &ALICE, 50));
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 50);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 50);
+			assert_eq!(Tokens::total_balance(DOT, &ALICE), 100);
+		});
+}
+
+#[test]
+fn unreserve_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 100);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 0);
+			assert_eq!(Tokens::unreserve(DOT, &ALICE, 0), 0);
+			assert_eq!(Tokens::unreserve(DOT, &ALICE, 50), 50);
+			assert_ok!(Tokens::reserve(DOT, &ALICE, 30));
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 70);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 30);
+			assert_eq!(Tokens::unreserve(DOT, &ALICE, 15), 0);
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 85);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 15);
+			assert_eq!(Tokens::unreserve(DOT, &ALICE, 30), 15);
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 100);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 0);
+		});
+}
+
+#[test]
+fn slash_reserved_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_ok!(Tokens::reserve(DOT, &ALICE, 50));
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 50);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 50);
+			assert_eq!(Tokens::total_issuance(DOT), 200);
+			assert_eq!(Tokens::slash_reserved(DOT, &ALICE, 0), 0);
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 50);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 50);
+			assert_eq!(Tokens::total_issuance(DOT), 200);
+			assert_eq!(Tokens::slash_reserved(DOT, &ALICE, 100), 50);
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 50);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 0);
+			assert_eq!(Tokens::total_issuance(DOT), 150);
+		});
+}
+
+#[test]
+fn repatriate_reserved_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 100);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 0);
+			assert_eq!(
+				Tokens::repatriate_reserved(DOT, &ALICE, &ALICE, 0, BalanceStatus::Free),
+				Ok(0)
+			);
+			assert_eq!(
+				Tokens::repatriate_reserved(DOT, &ALICE, &ALICE, 50, BalanceStatus::Free),
+				Ok(50)
+			);
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 100);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 0);
+
+			assert_eq!(Tokens::free_balance(DOT, &BOB), 100);
+			assert_eq!(Tokens::reserved_balance(DOT, &BOB), 0);
+			assert_ok!(Tokens::reserve(DOT, &BOB, 50));
+			assert_eq!(Tokens::free_balance(DOT, &BOB), 50);
+			assert_eq!(Tokens::reserved_balance(DOT, &BOB), 50);
+			assert_eq!(
+				Tokens::repatriate_reserved(DOT, &BOB, &BOB, 60, BalanceStatus::Reserved),
+				Ok(10)
+			);
+			assert_eq!(Tokens::free_balance(DOT, &BOB), 50);
+			assert_eq!(Tokens::reserved_balance(DOT, &BOB), 50);
+
+			assert_eq!(
+				Tokens::repatriate_reserved(DOT, &BOB, &ALICE, 30, BalanceStatus::Reserved),
+				Ok(0)
+			);
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 100);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 30);
+			assert_eq!(Tokens::free_balance(DOT, &BOB), 50);
+			assert_eq!(Tokens::reserved_balance(DOT, &BOB), 20);
+
+			assert_eq!(
+				Tokens::repatriate_reserved(DOT, &BOB, &ALICE, 30, BalanceStatus::Free),
+				Ok(10)
+			);
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 120);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 30);
+			assert_eq!(Tokens::free_balance(DOT, &BOB), 50);
+			assert_eq!(Tokens::reserved_balance(DOT, &BOB), 0);
+		});
+}
+
+#[test]
+fn slash_draw_reserved_correct() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_ok!(Tokens::reserve(DOT, &ALICE, 50));
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 50);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 50);
+			assert_eq!(Tokens::total_issuance(DOT), 200);
+
+			assert_eq!(Tokens::slash(DOT, &ALICE, 80), 0);
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 0);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 20);
+			assert_eq!(Tokens::total_issuance(DOT), 120);
+
+			assert_eq!(Tokens::slash(DOT, &ALICE, 50), 30);
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 0);
+			assert_eq!(Tokens::reserved_balance(DOT, &ALICE), 0);
+			assert_eq!(Tokens::total_issuance(DOT), 100);
+		});
+}
+
+#[test]
+fn genesis_issuance_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 100);
+			assert_eq!(Tokens::free_balance(DOT, &BOB), 100);
+			assert_eq!(Tokens::total_issuance(DOT), 200);
+		});
+}
+
+#[test]
+fn transfer_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 100);
+			assert_eq!(Tokens::free_balance(DOT, &BOB), 100);
+			System::set_block_number(1);
+
+			assert_ok!(Tokens::transfer(Some(ALICE).into(), DOT, BOB, 50));
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 50);
+			assert_eq!(Tokens::free_balance(DOT, &BOB), 150);
+			assert_eq!(Tokens::total_issuance(DOT), 200);
+
+			let transferred_event = mock::Event::tokens(crate::Event::Transferred(DOT, ALICE, BOB, 50));
+			assert!(System::events().iter().any(|record| record.event == transferred_event));
+
+			assert_noop!(
+				Tokens::transfer(Some(ALICE).into(), DOT, BOB, 60),
+				Error::<Test>::BalanceLow,
+			);
+		});
+}
+
+#[test]
+fn transfer_all_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			System::set_block_number(1);
+
+			assert_ok!(Tokens::transfer_all(Some(ALICE).into(), DOT, BOB));
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 0);
+			assert_eq!(Tokens::free_balance(DOT, &BOB), 200);
+
+			let transferred_event = mock::Event::tokens(crate::Event::Transferred(DOT, ALICE, BOB, 100));
+			assert!(System::events().iter().any(|record| record.event == transferred_event));
+		});
+}
+
+#[test]
+fn deposit_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 200);
+			assert_eq!(Tokens::total_issuance(DOT), 300);
+
+			assert_noop!(
+				Tokens::deposit(DOT, &ALICE, Balance::max_value()),
+				Error::<Test>::TotalIssuanceOverflow,
+			);
+		});
+}
+
+#[test]
+fn withdraw_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_ok!(Tokens::withdraw(DOT, &ALICE, 50));
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 50);
+			assert_eq!(Tokens::total_issuance(DOT), 150);
+
+			assert_noop!(Tokens::withdraw(DOT, &ALICE, 60), Error::<Test>::BalanceLow);
+		});
+}
+
+#[test]
+fn slash_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			// slashed_amount < amount
+			assert_eq!(Tokens::slash(DOT, &ALICE, 50), 0);
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 50);
+			assert_eq!(Tokens::total_issuance(DOT), 150);
+
+			// slashed_amount == amount
+			assert_eq!(Tokens::slash(DOT, &ALICE, 51), 1);
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 0);
+			assert_eq!(Tokens::total_issuance(DOT), 100);
+		});
+}
+
+#[test]
+fn update_balance_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_ok!(Tokens::update_balance(DOT, &ALICE, 50));
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 150);
+			assert_eq!(Tokens::total_issuance(DOT), 250);
+
+			assert_ok!(Tokens::update_balance(DOT, &BOB, -50));
+			assert_eq!(Tokens::free_balance(DOT, &BOB), 50);
+			assert_eq!(Tokens::total_issuance(DOT), 200);
+
+			assert_noop!(Tokens::update_balance(DOT, &BOB, -60), Error::<Test>::BalanceLow);
+		});
+}
+
+#[test]
+fn ensure_can_withdraw_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_noop!(
+				Tokens::ensure_can_withdraw(DOT, &ALICE, 101),
+				Error::<Test>::BalanceLow
+			);
+
+			assert_ok!(Tokens::ensure_can_withdraw(DOT, &ALICE, 1));
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 100);
+		});
+}
+
+#[test]
+fn no_op_if_amount_is_zero() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(Tokens::ensure_can_withdraw(DOT, &ALICE, 0));
+		assert_ok!(Tokens::transfer(Some(ALICE).into(), DOT, BOB, 0));
+		assert_ok!(Tokens::transfer(Some(ALICE).into(), DOT, ALICE, 0));
+		assert_ok!(Tokens::deposit(DOT, &ALICE, 0));
+		assert_ok!(Tokens::withdraw(DOT, &ALICE, 0));
+		assert_eq!(Tokens::slash(DOT, &ALICE, 0), 0);
+		assert_eq!(Tokens::slash(DOT, &ALICE, 1), 1);
+		assert_ok!(Tokens::update_balance(DOT, &ALICE, 0));
+	});
+}
+
+#[test]
+fn merge_account_should_work() {
+	new_test_ext().execute_with(|| {
+			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
+			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
+			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
+			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
+
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 100);
+			assert_eq!(Tokens::free_balance(BTC, &ALICE), 200);
+			assert_eq!(Tokens::free_balance(DOT, &BOB), 0);
+
+			assert_ok!(Tokens::reserve(DOT, &ALICE, 1));
+			assert_noop!(
+				Tokens::merge_account(&ALICE, &BOB),
+				Error::<Test>::StillHasActiveReserved
+			);
+			Tokens::unreserve(DOT, &ALICE, 1);
+
+			assert_ok!(Tokens::merge_account(&ALICE, &BOB));
+			assert_eq!(Tokens::free_balance(DOT, &ALICE), 0);
+			assert_eq!(Tokens::free_balance(BTC, &ALICE), 0);
+			assert_eq!(Tokens::free_balance(DOT, &BOB), 100);
+			assert_eq!(Tokens::free_balance(BTC, &BOB), 200);
+		});
 }

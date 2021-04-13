@@ -4632,6 +4632,7 @@ dependencies = [
  "orml-currencies",
  "orml-traits",
  "pallet-balances 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=rococo-v1)",
+ "pallet-treasury",
  "parity-scale-codec 2.1.0",
  "serde",
  "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=rococo-v1)",
@@ -4682,6 +4683,21 @@ dependencies = [
  "parity-scale-codec 2.1.0",
  "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=rococo-v1)",
  "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=rococo-v1)",
+]
+
+[[package]]
+name = "pallet-treasury"
+version = "3.0.0"
+source = "git+https://github.com/paritytech/substrate.git?branch=rococo-v1#816ed3d4e77a2463c86e69ec5a26fc307ef452b9"
+dependencies = [
+ "frame-support 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=rococo-v1)",
+ "frame-system 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=rococo-v1)",
+ "impl-trait-for-tuples 0.2.1",
+ "pallet-balances 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=rococo-v1)",
+ "parity-scale-codec 2.1.0",
+ "serde",
+ "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=rococo-v1)",
+ "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=rococo-v1)",
 ]
 
 [[package]]
@@ -9718,11 +9734,6 @@ source = "git+https://github.com/paritytech/substrate.git?branch=rococo-v1#816ed
 
 [[patch.unused]]
 name = "pallet-staking-reward-curve"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=rococo-v1#816ed3d4e77a2463c86e69ec5a26fc307ef452b9"
-
-[[patch.unused]]
-name = "pallet-treasury"
 version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate.git?branch=rococo-v1#816ed3d4e77a2463c86e69ec5a26fc307ef452b9"
 

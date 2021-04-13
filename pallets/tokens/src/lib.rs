@@ -131,6 +131,9 @@ pub mod pallet {
 
 		/// Handler to burn or transfer account's dust
 		type OnDust: OnDust<Self::AccountId, Self::CurrencyId, Self::Balance>;
+		
+		// /// Handler to assign different balance updates
+		// type OnTransfer: OnTransfer<Self::AccountId, Self::CurrencyId, Self::Balance>;
 	}
 
 	#[pallet::event]
@@ -1421,9 +1424,23 @@ impl<T: Config> MultiCurrency<T::AccountId> for Pallet<T> {
 		let details = Token::<T>::get(currency_id).ok_or(Error::<T>::Unknown)?;
 		ensure!(to_balance >= details.min_balance, Error::<T>::BelowMinimum);
 
+		// check if sender goes below min balance and send remaining to recipient
+		let dust = if from_balance - amount < details.min_balance {
+			from_balance - amount
+		} else {
+			T::Balance::zero()
+		};
+
+		// update the sender's balance in the event there is dust being reaped
+		let new_from_balance = if dust > T::Balance::zero() {
+			T::Balance::zero()
+		} else {
+			from_balance - amount
+		};
+
 		// Cannot underflow because ensure_can_withdraw check
-		Self::set_free_balance(currency_id, from, from_balance - amount);
-		Self::set_free_balance(currency_id, to, to_balance);
+		Self::set_free_balance(currency_id, from, new_from_balance);
+		Self::set_free_balance(currency_id, to, to_balance + dust);
 
 		Ok(())
 	}
@@ -1452,11 +1469,9 @@ impl<T: Config> MultiCurrency<T::AccountId> for Pallet<T> {
 			return Ok(());
 		}
 		Self::ensure_can_withdraw(currency_id, who, amount)?;
-
 		// Cannot underflow because ensure_can_withdraw check
 		<TotalIssuance<T>>::mutate(currency_id, |v| *v -= amount);
 		Self::set_free_balance(currency_id, who, Self::free_balance(currency_id, who) - amount);
-
 		Ok(())
 	}
 
@@ -2017,6 +2032,19 @@ impl<T: Config> ExtendedTokenSystem<T::AccountId, T::CurrencyId, T::Balance> for
 		// issuance
 		<TotalIssuance<T>>::mutate(currency_id, |v| *v -= amount - remaining_burn);
 		Ok(())
+	}
+}
+
+pub struct TransferDust<T, GetAccountId>(marker::PhantomData<(T, GetAccountId)>);
+impl<T, GetAccountId> OnDust<T::AccountId, T::CurrencyId, T::Balance> for TransferDust<T, GetAccountId>
+where
+	T: Config,
+	GetAccountId: Get<T::AccountId>,
+{
+	fn on_dust(who: &T::AccountId, currency_id: T::CurrencyId, amount: T::Balance) {
+		// transfer the dust to treasury account, ignore the result,
+		// if failed will leave some dust which still could be recycled.
+		let _ = <Pallet<T> as MultiCurrency<T::AccountId>>::transfer(currency_id, who, &GetAccountId::get(), amount);
 	}
 }
 

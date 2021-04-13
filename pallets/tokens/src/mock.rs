@@ -4,6 +4,7 @@ use frame_benchmarking::whitelisted_caller;
 use frame_support::{construct_runtime, parameter_types, weights::Weight, PalletId};
 use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
 use basic_currency::BasicCurrencyAdapter;
+use sp_runtime::{Permill};
 
 use sp_core::H256;
 use sp_runtime::{
@@ -18,6 +19,16 @@ pub type CurrencyId = u64;
 pub type AccountId = u64;
 pub type BlockNumber = u64;
 
+pub const DOT: CurrencyId = 1;
+pub const BTC: CurrencyId = 2;
+pub const ETH: CurrencyId = 3;
+pub const ALICE: AccountId = 1u64;
+pub const BOB: AccountId = 2u64;
+pub const DAVE: AccountId = 4u64;
+pub const TREASURY_ACCOUNT: AccountId = 3u64;
+pub const ID_1: LockIdentifier = *b"1       ";
+pub const ID_2: LockIdentifier = *b"2       ";
+
 // Configure a mock runtime to test the pallet.
 type UncheckedExtrinsic = MockUncheckedExtrinsic<Test>;
 type Block = MockBlock<Test>;
@@ -29,8 +40,9 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Tokens: tokens::{Pallet, Call, Storage, Event<T>},
+		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>},
 	}
 );
 
@@ -43,7 +55,7 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
-	type AccountData = balances::AccountData<u64>;
+	type AccountData = pallet_balances::AccountData<u64>;
 	type AccountId = AccountId;
 	type BaseCallFilter = ();
 	type BlockHashCount = BlockHashCount;
@@ -77,13 +89,38 @@ parameter_types! {
 	pub const MinimumDepositLength: u64 = 10 * 60 * 24 * 28;
 }
 
-impl balances::Config for Test {
+impl pallet_balances::Config for Test {
 	type AccountStore = System;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type Event = Event;
 	type ExistentialDeposit = ExistentialDeposit;
 	type MaxLocks = MaxLocks;
+	type WeightInfo = ();
+}
+
+parameter_types! {
+	pub const ProposalBond: Permill = Permill::from_percent(5);
+	pub const ProposalBondMinimum: u64 = 1;
+	pub const SpendPeriod: u64 = 2;
+	pub const Burn: Permill = Permill::from_percent(50);
+	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
+	pub const GetTokenId: CurrencyId = DOT;
+}
+
+impl pallet_treasury::Config for Test {
+	type PalletId = TreasuryPalletId;
+	type Currency = CurrencyAdapter<Test, GetTokenId>;
+	type ApproveOrigin = frame_system::EnsureRoot<AccountId>;
+	type RejectOrigin = frame_system::EnsureRoot<AccountId>;
+	type Event = Event;
+	type OnSlash = ();
+	type ProposalBond = ProposalBond;
+	type ProposalBondMinimum = ProposalBondMinimum;
+	type SpendPeriod = SpendPeriod;
+	type Burn = Burn;
+	type BurnDestination = ();
+	type SpendFunds = ();
 	type WeightInfo = ();
 }
 
@@ -100,6 +137,10 @@ parameter_types! {
 	pub const MetadataDepositPerByte: u64 = 1;
 }
 
+parameter_types! {
+	pub DustAccount: AccountId = PalletId(*b"orml/dst").into_account();
+}
+
 impl Config for Test {
 	type PalletId = TokensPalletId;
 	type Event = Event;
@@ -113,23 +154,26 @@ impl Config for Test {
 	type MetadataDepositPerByte = MetadataDepositPerByte;
 	type ApprovalDeposit = ApprovalDeposit;
 	type StringLimit = StringLimit;
-	type OnDust = BurnDust<Test>;
+	type OnDust = TransferDust<Test, DustAccount>;
+	// type OnDust = BurnDust<Test>;
 	type WeightInfo = ();
 	type Extra = ();
 }
 
+pub type TreasuryCurrencyAdapter = <Test as pallet_treasury::Config>::Currency;
+
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	use balances::GenesisConfig as BalancesConfig;
+	use pallet_balances::GenesisConfig as BalancesConfig;
 	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 
 	BalancesConfig::<Test> {
 		// Total issuance will be 200 with treasury account initialized at ED.
 		balances: vec![
-			(0, 1_000_000_000),
-			(1, 1_000_000_000),
-			(2, 1_000_000_000),
-			(whitelisted_caller(), 1_000_000_000),
+			(0, 1_000_000_000_000_000_000),
+			(1, 1_000_000_000_000_000_000),
+			(2, 1_000_000_000_000_000_000),
+			(whitelisted_caller(), 1_000_000_000_000_000_000),
 		],
 	}
 	.assimilate_storage(&mut t)
