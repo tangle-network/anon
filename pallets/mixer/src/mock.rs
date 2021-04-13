@@ -134,8 +134,8 @@ impl orml_currencies::Config for Test {
 impl merkle::Config for Test {
 	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
-	type TreeId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
+	type TreeId = u32;
 	type WeightInfo = MerkleWeights<Self>;
 }
 
@@ -150,10 +150,10 @@ impl Config for Test {
 	type DefaultAdmin = DefaultAdmin;
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
-	type Tree = MerkleTrees;
 	type MixerSizes = MixerSizes;
 	type PalletId = MixerPalletId;
 	type NativeCurrencyId = NativeCurrencyId;
+	type Tree = MerkleTrees;
 	type WeightInfo = Weights<Self>;
 }
 

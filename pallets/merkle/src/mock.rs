@@ -83,8 +83,8 @@ impl balances::Config for Test {
 impl Config for Test {
 	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
-	type TreeId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
+	type TreeId = u32;
 	type WeightInfo = Weights<Self>;
 }
 
