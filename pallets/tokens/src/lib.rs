@@ -447,15 +447,15 @@ pub mod pallet {
 				Ok(_) => None,
 				Err(origin) => Some(ensure_signed(origin)?),
 			};
+			// TODO: Ensure we clean up everything
 			Token::<T>::try_mutate_exists(id, |maybe_details| {
-				let mut details = maybe_details.take().ok_or(Error::<T>::Unknown)?;
+				let details = maybe_details.take().ok_or(Error::<T>::Unknown)?;
 				if let Some(check_owner) = maybe_check_owner {
 					ensure!(details.owner == check_owner, Error::<T>::NoPermission);
 				}
 
 				for (who, _v) in Accounts::<T>::drain_prefix(id) {
-					Self::dead_account(&who, &mut details);
-					AccountCurrencies::<T>::remove(who, id);
+					Self::dead_account(id, &who);
 				}
 
 				let metadata = Metadata::<T>::take(&id);
@@ -1270,11 +1270,15 @@ impl<T: Config> Pallet<T> {
 				// and the account storage in frame_system shouldn't be repeaded.
 				let _ = frame_system::Pallet::<T>::dec_providers(who);
 			} else if !existed && exists {
+				// Add existential currency identifier to this account
+				AccountCurrencies::<T>::insert(who, currency_id, true);
 				// if new, increase account provider
 				frame_system::Pallet::<T>::inc_providers(who);
 			}
 
 			if let Some(dust_amount) = handle_dust {
+				// Remove existential currency identifier to this account
+				AccountCurrencies::<T>::remove(who, currency_id);
 				// `OnDust` maybe get/set storage `Accounts` of `who`, trigger handler here
 				// to avoid some unexpected errors.
 				T::OnDust::on_dust(who, currency_id, dust_amount);
@@ -1353,10 +1357,11 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub(crate) fn dead_account(
+		id: T::CurrencyId,
 		who: &T::AccountId,
-		_d: &mut TokenDetails<T::Balance, T::AccountId>,
 	) {
 		frame_system::Pallet::<T>::dec_consumers(who);
+		AccountCurrencies::<T>::remove(who, id)
 	}
 }
 

@@ -544,10 +544,8 @@ fn minimum_balance_work() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 		assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-		assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
 		assert_eq!(Tokens::minimum_balance(BTC), 1);
 		assert_eq!(Tokens::minimum_balance(DOT), 2);
-		assert_eq!(Tokens::minimum_balance(ETH), 1);
 	});
 }
 
@@ -599,7 +597,7 @@ fn set_lock_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -621,7 +619,7 @@ fn extend_lock_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -642,7 +640,7 @@ fn remove_lock_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -659,7 +657,7 @@ fn frozen_can_limit_liquidity() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -678,7 +676,7 @@ fn can_reserve_is_correct() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -693,7 +691,7 @@ fn reserve_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -714,7 +712,7 @@ fn unreserve_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -739,7 +737,7 @@ fn slash_reserved_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -763,7 +761,7 @@ fn repatriate_reserved_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -817,7 +815,7 @@ fn slash_draw_reserved_correct() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -843,7 +841,7 @@ fn genesis_issuance_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -858,7 +856,7 @@ fn transfer_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 			assert_eq!(Tokens::free_balance(DOT, &ALICE), 100);
@@ -885,7 +883,7 @@ fn transfer_all_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -905,7 +903,7 @@ fn deposit_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -925,7 +923,7 @@ fn withdraw_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -942,7 +940,7 @@ fn slash_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -963,7 +961,7 @@ fn update_balance_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -984,7 +982,7 @@ fn ensure_can_withdraw_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
 			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
@@ -1017,9 +1015,8 @@ fn merge_account_should_work() {
 	new_test_ext().execute_with(|| {
 			assert_ok!(Tokens::force_create(Origin::root(), BTC, 1, 1));
 			assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
-			assert_ok!(Tokens::force_create(Origin::root(), ETH, 1, 1));
+			assert_ok!(Tokens::deposit(BTC, &ALICE, 200));
 			assert_ok!(Tokens::deposit(DOT, &ALICE, 100));
-			assert_ok!(Tokens::deposit(DOT, &BOB, 100));
 
 			assert_eq!(Tokens::free_balance(DOT, &ALICE), 100);
 			assert_eq!(Tokens::free_balance(BTC, &ALICE), 200);
