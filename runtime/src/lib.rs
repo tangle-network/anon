@@ -384,7 +384,7 @@ impl tokens::Config for Runtime {
 	type MetadataDepositPerByte = MetadataDepositPerByte;
 	type ApprovalDeposit = ApprovalDeposit;
 	type StringLimit = StringLimit;
-	type OnDust = ();
+	type DustAccount = ();
 	type WeightInfo = ();
 	type Extra = ();
 }

@@ -1,6 +1,12 @@
 use super::*;
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug)]
+pub enum DustHandlerType<AccountId> {
+	Burn,
+	Transfer(AccountId),
+}
+
+#[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug)]
 pub struct TokenDetails<
 	Balance,
 	AccountId,
@@ -23,6 +29,8 @@ pub struct TokenDetails<
 	pub(super) approvals: u32,
 	/// Whether the currency is frozen for non-admin transfers.
 	pub(super) is_frozen: bool,
+	/// The type of handler used to clean up dust
+	pub(super) dust_type: DustHandlerType<AccountId>,
 }
 
 /// A pair to act as a key for the approval storage map.

@@ -10,22 +10,22 @@ use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
-	Perbill,
+	Perbill, AccountId32,
 };
 
 pub(crate) type Balance = u64;
 pub type Amount = i128;
 pub type CurrencyId = u64;
-pub type AccountId = u64;
+pub type AccountId = AccountId32;
 pub type BlockNumber = u64;
 
 pub const DOT: CurrencyId = 1;
 pub const BTC: CurrencyId = 2;
 pub const ETH: CurrencyId = 3;
-pub const ALICE: AccountId = 1u64;
-pub const BOB: AccountId = 2u64;
-pub const DAVE: AccountId = 4u64;
-pub const TREASURY_ACCOUNT: AccountId = 3u64;
+pub const ALICE: AccountId = AccountId32::new([0u8; 32]);
+pub const BOB: AccountId = AccountId32::new([1u8; 32]);
+pub const TREASURY_ACCOUNT: AccountId = AccountId32::new([2u8; 32]);
+pub const DAVE: AccountId = AccountId::new([4u8; 32]);
 pub const ID_1: LockIdentifier = *b"1       ";
 pub const ID_2: LockIdentifier = *b"2       ";
 
@@ -138,7 +138,7 @@ parameter_types! {
 }
 
 parameter_types! {
-	pub DustAccount: AccountId = PalletId(*b"orml/dst").into_account();
+	pub DustAccount: AccountId = PalletId(*b"webb/dst").into_account();
 }
 
 impl Config for Test {
@@ -148,14 +148,13 @@ impl Config for Test {
 	type Amount = i128;
 	type CurrencyId = CurrencyId;
 	type NativeCurrency = BasicCurrencyAdapter<Test, Balances, Amount, BlockNumber>;
-	type ForceOrigin = frame_system::EnsureRoot<u64>;
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
 	type CurrencyDeposit = CurrencyDeposit;
 	type MetadataDepositBase = MetadataDepositBase;
 	type MetadataDepositPerByte = MetadataDepositPerByte;
 	type ApprovalDeposit = ApprovalDeposit;
 	type StringLimit = StringLimit;
-	type OnDust = TransferDust<Test, DustAccount>;
-	// type OnDust = BurnDust<Test>;
+	type DustAccount = DustAccount;
 	type WeightInfo = ();
 	type Extra = ();
 }
@@ -170,9 +169,9 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	BalancesConfig::<Test> {
 		// Total issuance will be 200 with treasury account initialized at ED.
 		balances: vec![
-			(0, 1_000_000_000_000_000_000),
-			(1, 1_000_000_000_000_000_000),
-			(2, 1_000_000_000_000_000_000),
+			(ALICE, 1_000_000_000_000_000_000),
+			(BOB, 1_000_000_000_000_000_000),
+			(TREASURY_ACCOUNT, 1_000_000_000_000_000_000),
 			(whitelisted_caller(), 1_000_000_000_000_000_000),
 		],
 	}

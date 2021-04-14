@@ -57,7 +57,7 @@ use orml_traits::{
 	arithmetic::{self, Signed},
 	BasicCurrencyExtended, BasicLockableCurrency, BasicReservableCurrency,
 	BalanceStatus, LockIdentifier, MultiCurrency, MultiCurrencyExtended, MultiLockableCurrency,
-	MultiReservableCurrency, OnDust,
+	MultiReservableCurrency,
 };
 
 pub use weights::WeightInfo;
@@ -128,12 +128,9 @@ pub mod pallet {
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
-
-		/// Handler to burn or transfer account's dust
-		type OnDust: OnDust<Self::AccountId, Self::CurrencyId, Self::Balance>;
 		
-		// /// Handler to assign different balance updates
-		// type OnTransfer: OnTransfer<Self::AccountId, Self::CurrencyId, Self::Balance>;
+		/// The default account to send dust to.
+		type DustAccount: Get<Self::AccountId>;
 	}
 
 	#[pallet::event]
@@ -185,6 +182,8 @@ pub mod pallet {
 		/// ExistentialDeposit, resulting in an outright loss. \[account,
 		/// currency_id, amount\]
 		DustLost(T::AccountId, T::CurrencyId, T::Balance),
+		/// Dust handler change success. \[currency_id, dust_type\]
+		DustHandlerChange(T::CurrencyId, DustHandlerType<T::AccountId>),
 	}
 
 	#[pallet::error]
@@ -419,6 +418,7 @@ pub mod pallet {
 				min_balance,
 				approvals: 0,
 				is_frozen: false,
+				dust_type: DustHandlerType::Transfer(T::DustAccount::get()),
 			});
 			Self::deposit_event(Event::ForceCreated(id, owner));
 			Ok(())
@@ -1220,6 +1220,39 @@ pub mod pallet {
 			Self::deposit_event(Event::Transferred(id, from, to, amount));
 			Ok(())
 		}
+
+		/// Set the dust handler type.
+		///
+		/// Origin must be Signed and the sender should be the Admin of the asset `id`.
+		///
+		/// - `id`: The identifier of the asset to have some amount transferred.
+		/// - `source`: The account to be debited.
+		/// - `dest`: The account to be credited.
+		/// - `amount`: The amount by which the `source`'s balance of assets should be reduced and
+		/// `dest`'s balance increased. The amount actually transferred may be slightly greater in
+		/// the case that the transfer would otherwise take the `source` balance above zero but
+		/// below the minimum balance. Must be greater than zero.
+		///
+		/// Emits `DustHandlerChange` with the currency_id and new handler type.
+		///
+		/// Weight: `O(1)`
+		#[pallet::weight(5_000_000)]
+		pub(super) fn set_dust_type(
+			origin: OriginFor<T>,
+			id: T::CurrencyId,
+			dust_type: DustHandlerType<T::AccountId>,
+		) -> DispatchResult {
+			let origin = ensure_signed(origin)?;
+
+			Token::<T>::try_mutate(id, |maybe_details| {
+				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
+				ensure!(&origin == &details.admin, Error::<T>::NoPermission);
+
+				details.dust_type = dust_type.clone();
+				Self::deposit_event(Event::DustHandlerChange(id, dust_type));
+				Ok(())
+			})
+		}
 	}
 }
 
@@ -1281,7 +1314,7 @@ impl<T: Config> Pallet<T> {
 				AccountCurrencies::<T>::remove(who, currency_id);
 				// `OnDust` maybe get/set storage `Accounts` of `who`, trigger handler here
 				// to avoid some unexpected errors.
-				T::OnDust::on_dust(who, currency_id, dust_amount);
+				<Self as ExtendedTokenSystem<_,_,_>>::handle_dust(currency_id, who, dust_amount);
 				Self::deposit_event(Event::DustLost(who.clone(), currency_id, dust_amount));
 			}
 
@@ -1363,6 +1396,10 @@ impl<T: Config> Pallet<T> {
 		frame_system::Pallet::<T>::dec_consumers(who);
 		AccountCurrencies::<T>::remove(who, id)
 	}
+
+	pub(crate) fn get_pallet_account() -> T::AccountId {
+		T::PalletId::get().into_account()
+	}
 }
 
 impl<T: Config> MultiCurrency<T::AccountId> for Pallet<T> {
@@ -1427,7 +1464,9 @@ impl<T: Config> MultiCurrency<T::AccountId> for Pallet<T> {
 			.ok_or(Error::<T>::BalanceOverflow)?;
 
 		let details = Token::<T>::get(currency_id).ok_or(Error::<T>::Unknown)?;
-		ensure!(to_balance >= details.min_balance, Error::<T>::BelowMinimum);
+		if !Self::is_module_account_id(to) {
+			ensure!(to_balance >= details.min_balance, Error::<T>::BelowMinimum);
+		}
 
 		// check if sender goes below min balance and send remaining to recipient
 		let dust = if from_balance - amount < details.min_balance {
@@ -1868,7 +1907,6 @@ where
 		let currency_id = GetCurrencyId::get();
 		Pallet::<T>::ensure_can_withdraw(currency_id, who, value)?;
 		Pallet::<T>::set_free_balance(currency_id, who, Pallet::<T>::free_balance(currency_id, who) - value);
-
 		Ok(Self::NegativeImbalance::new(value))
 	}
 
@@ -1996,6 +2034,7 @@ impl<T: Config> ExtendedTokenSystem<T::AccountId, T::CurrencyId, T::Balance> for
 			min_balance,
 			approvals: 0,
 			is_frozen: false,
+			dust_type: DustHandlerType::Transfer(T::DustAccount::get()),
 		});
 
 		Ok(())
@@ -2038,26 +2077,17 @@ impl<T: Config> ExtendedTokenSystem<T::AccountId, T::CurrencyId, T::Balance> for
 		<TotalIssuance<T>>::mutate(currency_id, |v| *v -= amount - remaining_burn);
 		Ok(())
 	}
-}
 
-pub struct TransferDust<T, GetAccountId>(marker::PhantomData<(T, GetAccountId)>);
-impl<T, GetAccountId> OnDust<T::AccountId, T::CurrencyId, T::Balance> for TransferDust<T, GetAccountId>
-where
-	T: Config,
-	GetAccountId: Get<T::AccountId>,
-{
-	fn on_dust(who: &T::AccountId, currency_id: T::CurrencyId, amount: T::Balance) {
-		// transfer the dust to treasury account, ignore the result,
-		// if failed will leave some dust which still could be recycled.
-		let _ = <Pallet<T> as MultiCurrency<T::AccountId>>::transfer(currency_id, who, &GetAccountId::get(), amount);
-	}
-}
-
-pub struct BurnDust<T>(marker::PhantomData<T>);
-impl<T: Config> OnDust<T::AccountId, T::CurrencyId, T::Balance> for BurnDust<T> {
-	fn on_dust(who: &T::AccountId, currency_id: T::CurrencyId, amount: T::Balance) {
-		// burn the dust, ignore the result,
-		// if failed will leave some dust which still could be recycled.
-		let _ = Pallet::<T>::withdraw(currency_id, who, amount);
+	fn handle_dust(currency_id: T::CurrencyId, who: &T::AccountId, amount: T::Balance) {
+		if let Some(token) = Token::<T>::get(currency_id) {
+			match token.dust_type {
+				DustHandlerType::Burn => {
+					let _ =Pallet::<T>::withdraw(currency_id, who, amount);
+				},
+				DustHandlerType::Transfer(acc) => {
+					let _ = <Pallet<T> as MultiCurrency<T::AccountId>>::transfer(currency_id, who, &acc, amount);
+				}
+			}
+		}
 	}
 }
