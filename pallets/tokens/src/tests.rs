@@ -999,6 +999,7 @@ fn ensure_can_withdraw_should_work() {
 #[test]
 fn no_op_if_amount_is_zero() {
 	new_test_ext().execute_with(|| {
+		assert_ok!(Tokens::force_create(Origin::root(), DOT, 1, 2));
 		assert_ok!(Tokens::ensure_can_withdraw(DOT, &ALICE, 0));
 		assert_ok!(Tokens::transfer(Some(ALICE).into(), DOT, BOB, 0));
 		assert_ok!(Tokens::transfer(Some(ALICE).into(), DOT, ALICE, 0));
