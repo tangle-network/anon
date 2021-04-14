@@ -573,8 +573,9 @@ fn remove_dust_work() {
 		assert_eq!(Tokens::free_balance(DOT, &DustAccount::get()), 0);
 		assert_eq!(System::providers(&DustAccount::get()), 0);
 
+		assert_eq!(Tokens::total_issuance(DOT), 2);
 		assert_ok!(Tokens::withdraw(DOT, &DAVE, 1));
-		assert_eq!(Tokens::free_balance(DOT, &DAVE), 1);
+		assert_eq!(Tokens::total_issuance(DOT), 1);
 		assert_eq!(Tokens::free_balance(DOT, &DustAccount::get()), 1);
 		// total is lte ED, will handle dust
 		assert_eq!(Tokens::total_issuance(DOT), 1);
