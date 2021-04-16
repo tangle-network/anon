@@ -11,10 +11,10 @@ jsonrpc-derive = "15"
 sc-rpc = "3.0.0"
 
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
-sp-core = { version = "3.0.0" }
-sp-api = { version = "3.0.0" }
-sp-blockchain = { version = "3.0.0" }
-sp-runtime = { version = "3.0.0" }
+sp-core = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-api = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-blockchain = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-runtime = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
 
 merkle = { package = "pallet-merkle", path = "../", default-features = false }
 
