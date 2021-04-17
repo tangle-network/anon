@@ -52,7 +52,7 @@ use frame_support::{
 };
 
 
-use orml_traits::{
+use webb_traits::{
 	account::MergeAccount,
 	arithmetic::{self, Signed},
 	BasicCurrencyExtended, BasicLockableCurrency, BasicReservableCurrency,

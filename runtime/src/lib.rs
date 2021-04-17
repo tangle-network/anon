@@ -48,20 +48,14 @@ use sp_consensus_aura::SlotDuration;
 
 use frame_support::traits::FindAuthor;
 use merkle::utils::keys::ScalarData;
-use orml_currencies::BasicCurrencyAdapter;
-use orml_traits::parameter_type_with_key;
+use webb_currencies::BasicCurrencyAdapter;
+use webb_traits::parameter_type_with_key;
 
 use pallet_ethereum::TransactionStatus;
 use pallet_evm::{Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner};
 use sp_core::crypto::Public;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-use pallet_ethereum::TransactionStatus
-use pallet_evm::{
-	Account as EVMAccount, FeeCalculator, Runner,
-}
-use pallet_evm::HashedAddressMapping
-use pallet_evm::EnsureAddressTruncated;
 use sp_runtime::ConsensusEngineId;
 
 
@@ -371,7 +365,7 @@ parameter_types! {
 }
 
 
-impl tokens::Config for Runtime {
+impl webb_tokens::Config for Runtime {
 	type PalletId = TokensPalletId;
 	type Amount = Amount;
 	type Balance = Balance;
@@ -389,7 +383,7 @@ impl tokens::Config for Runtime {
 	type Extra = ();
 }
 
-impl orml_currencies::Config for Runtime {
+impl webb_currencies::Config for Runtime {
 	type Event = Event;
 	type GetNativeCurrencyId = NativeCurrencyId;
 	type MultiCurrency = Tokens;
@@ -454,17 +448,13 @@ parameter_types! {
 }
 impl pallet_evm::Config for Runtime {
 	type FeeCalculator = FixedGasPrice;
-	type GasWeightMapping = AnonGasWeightMapping;
-	type CallOrigin = EnsureAddressTruncated;
 	type WithdrawOrigin = EnsureAddressTruncated;
 	type AddressMapping = HashedAddressMapping<BlakeTwo256>;
 	type CallOrigin = EnsureAddressTruncated;
 	type ChainId = ChainId;
 	type Currency = Balances;
 	type Event = Event;
-	type FeeCalculator = ();
 	type GasWeightMapping = AnonGasWeightMapping;
-	type OnChargeTransaction = ();
 	type Precompiles = (
 		pallet_evm_precompile_simple::ECRecover,
 		pallet_evm_precompile_simple::Sha256,
@@ -474,7 +464,6 @@ impl pallet_evm::Config for Runtime {
 		// pallet_evm_precompile_sha3fips::Sha3FIPS256,
 		// pallet_evm_precompile_sha3fips::Sha3FIPS512,
 	);
-	type ChainId = ChainId;
 	type BlockGasLimit = BlockGasLimit;
 	type OnChargeTransaction = ();
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
@@ -493,7 +482,6 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for EthereumFindAuthor<F> {
 	}
 }
 impl pallet_ethereum::Config for Runtime {
-	type BlockGasLimit = BlockGasLimit;
 	type Event = Event;
 	type FindAuthor = EthereumFindAuthor<Aura>;
 	type StateRoot = pallet_ethereum::IntermediateStateRoot;
@@ -515,14 +503,14 @@ construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Contracts: pallet_contracts::{Pallet, Call, Config<T>, Storage, Event<T>},
 
-		EVM: pallet_evm::{Pallet, Config, Call, Storage, Event<T>},
-		Ethereum: pallet_ethereum::{Pallet, Call, Storage, Event, Config, ValidateUnsigned},
+		Ethereum: pallet_ethereum::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
+		EVM: pallet_evm::{Pallet, Config<T>, Call, Storage, Event<T>},
 
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 
-		Currencies: orml_currencies::{Pallet, Storage, Event<T>},
-		Tokens: tokens::{Pallet, Storage, Event<T>},
+		Currencies: webb_currencies::{Pallet, Storage, Event<T>},
+		Tokens: webb_tokens::{Pallet, Storage, Event<T>},
 		Mixer: mixer::{Pallet, Call, Storage, Event<T>},
 		Merkle: merkle::{Pallet, Call, Storage, Event<T>},
 	}
@@ -569,7 +557,7 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
 pub type Executive =
-	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllModules>;
+	frame_executive::Executive<Runtime, Block, frame_system::ChainContext<Runtime>, Runtime, AllPallets>;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -683,7 +671,9 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl pallet_contracts_rpc_runtime_api::ContractsApi<Block, AccountId, Balance, BlockNumber>
+	impl pallet_contracts_rpc_runtime_api::ContractsApi<
+		Block, AccountId, Balance, BlockNumber, Hash,
+	>
 		for Runtime
 	{
 		fn call(
@@ -694,6 +684,18 @@ impl_runtime_apis! {
 			input_data: Vec<u8>,
 		) -> pallet_contracts_primitives::ContractExecResult {
 			Contracts::bare_call(origin, dest, value, gas_limit, input_data)
+		}
+
+		fn instantiate(
+			origin: AccountId,
+			endowment: Balance,
+			gas_limit: u64,
+			code: pallet_contracts_primitives::Code<Hash>,
+			data: Vec<u8>,
+			salt: Vec<u8>,
+		) -> pallet_contracts_primitives::ContractInstantiateResult<AccountId, BlockNumber>
+		{
+			Contracts::bare_instantiate(origin, endowment, gas_limit, code, data, salt, true)
 		}
 
 		fn get_storage(

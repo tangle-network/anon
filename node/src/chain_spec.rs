@@ -1,7 +1,7 @@
 use frame_benchmarking::whitelisted_caller;
 use node_template_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
-	// EVMConfig,
+	EVMConfig,
 	SystemConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
@@ -135,14 +135,14 @@ fn testnet_genesis(
 	endowed_accounts: Vec<AccountId>,
 	_enable_println: bool,
 ) -> GenesisConfig {
-	// let alice_evm_account_id = H160::from_str("19e7e376e7c213b7e7e7e46cc70a5dd086daff2a").unwrap();
-	// let mut evm_accounts = BTreeMap::new();
-	// evm_accounts.insert(alice_evm_account_id, pallet_evm::GenesisAccount {
-	// 	nonce: 0.into(),
-	// 	balance: U256::from(123456_123_000_000_000_000_000u128),
-	// 	storage: BTreeMap::new(),
-	// 	code: vec![],
-	// });
+	let alice_evm_account_id = H160::from_str("19e7e376e7c213b7e7e7e46cc70a5dd086daff2a").unwrap();
+	let mut evm_accounts = BTreeMap::new();
+	evm_accounts.insert(alice_evm_account_id, pallet_evm::GenesisAccount {
+		nonce: 0.into(),
+		balance: U256::from(123456_123_000_000_000_000_000u128),
+		storage: BTreeMap::new(),
+		code: vec![],
+	});
 
 	GenesisConfig {
 		frame_system: SystemConfig {
@@ -165,7 +165,6 @@ fn testnet_genesis(
 			// Assign network admin rights.
 			key: root_key,
 		},
-		// pallet_evm: Some(EVMConfig { accounts: evm_accounts }),
-		// pallet_ethereum: Some(Default::default()),
+		pallet_evm: EVMConfig { accounts: evm_accounts, marker: core::marker::PhantomData },
 	}
 }

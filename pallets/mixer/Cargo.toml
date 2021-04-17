@@ -12,20 +12,20 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
 balances = { version = "3.0.0", default-features = false, package = "pallet-balances" }
-frame-support = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
-frame-system = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
-sp-std = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
-sp-runtime = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
+frame-support = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", rev = "22f09c602704aeee2b59b14f427f73f6cb8b5e2f" }
+frame-system = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", rev = "22f09c602704aeee2b59b14f427f73f6cb8b5e2f" }
+sp-std = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", rev = "22f09c602704aeee2b59b14f427f73f6cb8b5e2f" }
+sp-runtime = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", rev = "22f09c602704aeee2b59b14f427f73f6cb8b5e2f" }
 
 merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
-tokens = { package = "pallet-tokens", path = "../tokens", default-features = false }
+tokens = { package = "webb-tokens", path = "../tokens", default-features = false }
 
 
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 merlin = { version = "2.0.0", default-features = false }
-frame-benchmarking = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", optional = true }
-orml-traits = { version = "0.4.0", default-features = false }
-orml-currencies = { version = "0.4.0", default-features = false }
+frame-benchmarking = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", rev = "22f09c602704aeee2b59b14f427f73f6cb8b5e2f", optional = true }
+webb-traits = { default-features = false, path = "../traits" }
+webb-currencies = { default-features = false, path = "../currencies" }
 
 [dependencies.bulletproofs]
 version = "2.0.0"
@@ -47,8 +47,8 @@ features = ["u64_backend", "alloc"]
 version = "0.1.5"
 
 [dev-dependencies]
-sp-core = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
-sp-io = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git" }
+sp-core = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", rev = "22f09c602704aeee2b59b14f427f73f6cb8b5e2f" }
+sp-io = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", rev = "22f09c602704aeee2b59b14f427f73f6cb8b5e2f" }
 
 [features]
 default = ["std"]

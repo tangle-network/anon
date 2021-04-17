@@ -4,7 +4,7 @@ use frame_benchmarking::whitelisted_caller;
 use frame_support::{construct_runtime, parameter_types, weights::Weight, PalletId};
 use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
 use merkle::weights::Weights as MerkleWeights;
-use orml_currencies::BasicCurrencyAdapter;
+use webb_currencies::BasicCurrencyAdapter;
 
 use sp_core::H256;
 use sp_runtime::{
@@ -34,7 +34,7 @@ construct_runtime!(
 		Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		MerkleTrees: merkle::{Pallet, Call, Storage, Event<T>},
 		Mixer: pallet_mixer::{Pallet, Call, Storage, Event<T>},
-		Currencies: orml_currencies::{Pallet, Storage, Event<T>},
+		Currencies: webb_currencies::{Pallet, Storage, Event<T>},
 		Tokens: tokens::{Pallet, Storage, Event<T>},
 	}
 );
@@ -123,7 +123,7 @@ impl tokens::Config for Test {
 	type Extra = ();
 }
 
-impl orml_currencies::Config for Test {
+impl webb_currencies::Config for Test {
 	type Event = Event;
 	type GetNativeCurrencyId = NativeCurrencyId;
 	type MultiCurrency = Tokens;

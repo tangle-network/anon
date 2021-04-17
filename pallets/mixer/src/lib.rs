@@ -66,7 +66,7 @@ use merkle::{
 	},
 	Tree as TreeTrait, Pallet as MerklePallet,
 };
-use orml_traits::MultiCurrency;
+use webb_traits::MultiCurrency;
 use sp_runtime::{
 	traits::{AccountIdConversion, Zero},
 };
@@ -86,7 +86,7 @@ pub mod pallet {
 
 	/// The pallet's configuration trait.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + merkle::Config + orml_currencies::Config {
+	pub trait Config: frame_system::Config + merkle::Config + webb_currencies::Config {
 		#[pallet::constant]
 		type PalletId: Get<PalletId>;
 		/// The overarching event type.
@@ -452,9 +452,9 @@ impl<T: Config> std::fmt::Debug for WithdrawProof<T> {
 	}
 }
 
-/// Type alias for the orml_traits::MultiCurrency::Balance type
+/// Type alias for the webb_traits::MultiCurrency::Balance type
 pub type BalanceOf<T> = <<T as Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::Balance;
-/// Type alias for the orml_traits::MultiCurrency::CurrencyId type
+/// Type alias for the webb_traits::MultiCurrency::CurrencyId type
 pub type CurrencyIdOf<T> =
 	<<T as pallet::Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::CurrencyId;
 
