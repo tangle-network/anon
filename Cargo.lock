@@ -4338,6 +4338,7 @@ dependencies = [
  "sp-finality-grandpa",
  "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?rev=22f09c602704aeee2b59b14f427f73f6cb8b5e2f)",
  "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?rev=22f09c602704aeee2b59b14f427f73f6cb8b5e2f)",
+ "sp-timestamp",
  "sp-transaction-pool 3.0.0 (git+https://github.com/paritytech/substrate.git?rev=22f09c602704aeee2b59b14f427f73f6cb8b5e2f)",
  "structopt",
  "substrate-build-script-utils",

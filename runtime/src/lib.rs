@@ -250,11 +250,14 @@ parameter_types! {
 }
 
 impl pallet_timestamp::Config for Runtime {
-	type MinimumPeriod = MinimumPeriod;
 	/// A timestamp: milliseconds since the unix epoch.
 	type Moment = u64;
-	type OnTimestampSet = Aura;
+	type MinimumPeriod = MinimumPeriod;
 	type WeightInfo = ();
+	#[cfg(feature = "aura")]
+	type OnTimestampSet = Aura;
+	#[cfg(feature = "manual-seal")]
+	type OnTimestampSet = ();
 }
 
 parameter_types! {

@@ -80,7 +80,7 @@ pub fn run() -> sc_cli::Result<()> {
 					task_manager,
 					import_queue,
 					..
-				} = service::new_partial(&config)?;
+				} = service::new_partial(&config, &cli)?;
 				Ok((cmd.run(client, import_queue), task_manager))
 			})
 		}
@@ -89,7 +89,7 @@ pub fn run() -> sc_cli::Result<()> {
 			runner.async_run(|config| {
 				let PartialComponents {
 					client, task_manager, ..
-				} = service::new_partial(&config)?;
+				} = service::new_partial(&config, &cli)?;
 				Ok((cmd.run(client, config.database), task_manager))
 			})
 		}
@@ -98,7 +98,7 @@ pub fn run() -> sc_cli::Result<()> {
 			runner.async_run(|config| {
 				let PartialComponents {
 					client, task_manager, ..
-				} = service::new_partial(&config)?;
+				} = service::new_partial(&config, &cli)?;
 				Ok((cmd.run(client, config.chain_spec), task_manager))
 			})
 		}
@@ -110,7 +110,7 @@ pub fn run() -> sc_cli::Result<()> {
 					task_manager,
 					import_queue,
 					..
-				} = service::new_partial(&config)?;
+				} = service::new_partial(&config, &cli)?;
 				Ok((cmd.run(client, import_queue), task_manager))
 			})
 		}
@@ -126,7 +126,7 @@ pub fn run() -> sc_cli::Result<()> {
 					task_manager,
 					backend,
 					..
-				} = service::new_partial(&config)?;
+				} = service::new_partial(&config, &cli)?;
 				Ok((cmd.run(client, backend), task_manager))
 			})
 		}
@@ -148,7 +148,7 @@ pub fn run() -> sc_cli::Result<()> {
 					Role::Light => service::new_light(config),
 					_ => service::new_full(
 						config,
-						// cli.run.enable_dev_signer
+						&cli
 					),
 				}
 				.map_err(sc_cli::Error::Service)
