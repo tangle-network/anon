@@ -1,5 +1,5 @@
 use frame_benchmarking::whitelisted_caller;
-use node_template_runtime::{
+use webb_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
 	EVMConfig,
 	SystemConfig, WASM_BINARY,

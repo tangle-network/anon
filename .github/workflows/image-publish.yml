@@ -43,7 +43,7 @@ jobs:
         run: ./scripts/build.sh
 
       - name: Copy binaries
-        run: mkdir -p build && cp target/release/node-template build/webb-node
+        run: mkdir -p build && cp target/release/webb-node build/webb-node
 
       - name: Build Image
         run: docker build . --tag image

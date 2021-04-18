@@ -1,16 +1,16 @@
 [package]
 authors = ["Substrate DevHub <https://github.com/substrate-developer-hub>"]
 build = "build.rs"
-description = "A fresh FRAME-based Substrate node, ready for hacking."
+description = "The Webb node"
 edition = "2018"
 homepage = "https://substrate.dev"
 license = "Unlicense"
-name = "node-template"
+name = "webb-node"
 repository = "https://github.com/substrate-developer-hub/substrate-node-template/"
 version = "3.0.0"
 
 [[bin]]
-name = "node-template"
+name = "webb-node"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -26,7 +26,7 @@ jsonrpc-core = "15.1.0"
 jsonrpc-pubsub = "15.0.0"
 
 # local dependencies
-node-template-runtime = { path = "../runtime", version = "3.0.0" }
+webb-runtime = { path = "../runtime", version = "3.0.0" }
 
 # Substrate dependencies
 frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", rev = "22f09c602704aeee2b59b14f427f73f6cb8b5e2f" }
@@ -79,4 +79,4 @@ merkle-rpc = { package = "pallet-merkle-rpc", path = "../pallets/merkle/rpc" }
 
 [features]
 default = ["aura"]
-aura = ["node-template-runtime/aura"]
+aura = ["webb-runtime/aura"]

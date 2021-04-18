@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use std::collections::BTreeMap;
 use fc_rpc_core::types::{PendingTransactions, FilterPool};
-use node_template_runtime::{Hash, AccountId, Index, opaque::Block, Balance};
+use webb_runtime::{Hash, AccountId, Index, opaque::Block, Balance};
 use sp_api::ProvideRuntimeApi;
 use sp_transaction_pool::TransactionPool;
 use sp_blockchain::{Error as BlockChainError, HeaderMetadata, HeaderBackend};
@@ -119,7 +119,7 @@ pub fn create_full<C, P, BE>(
 		EthApiServer::to_delegate(EthApi::new(
 			client.clone(),
 			pool.clone(),
-			node_template_runtime::TransactionConverter,
+			webb_runtime::TransactionConverter,
 			network.clone(),
 			pending_transactions.clone(),
 			signers,
