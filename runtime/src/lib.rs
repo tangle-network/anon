@@ -49,7 +49,7 @@ use sp_consensus_aura::SlotDuration;
 use frame_support::traits::FindAuthor;
 use merkle::utils::keys::ScalarData;
 use webb_currencies::BasicCurrencyAdapter;
-use webb_traits::parameter_type_with_key;
+
 
 use pallet_ethereum::TransactionStatus;
 use pallet_evm::{Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner};
