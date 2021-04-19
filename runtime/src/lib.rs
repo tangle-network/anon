@@ -50,13 +50,14 @@ use frame_support::traits::FindAuthor;
 use merkle::utils::keys::ScalarData;
 use webb_currencies::BasicCurrencyAdapter;
 
-
 use pallet_ethereum::TransactionStatus;
 use pallet_evm::{Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner};
+
 use sp_core::crypto::Public;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 use sp_runtime::ConsensusEngineId;
+
 
 
 pub mod currency {
@@ -366,7 +367,6 @@ parameter_types! {
 	pub const MetadataDepositBase: u64 = 1;
 	pub const MetadataDepositPerByte: u64 = 1;
 }
-
 
 impl webb_tokens::Config for Runtime {
 	type PalletId = TokensPalletId;

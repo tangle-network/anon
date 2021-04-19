@@ -595,7 +595,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 				Leaves::<T>::insert(id, tree.leaf_count, *data);
 			}
 		}
-		let block_number: T::BlockNumber = <frame_system::Module<T>>::block_number();
+		let block_number: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
 		CachedRoots::<T>::append(block_number, id, tree.root_hash);
 		Trees::<T>::insert(id, Some(tree));
 

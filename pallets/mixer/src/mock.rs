@@ -31,7 +31,7 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		MerkleTrees: merkle::{Pallet, Call, Storage, Event<T>},
 		Mixer: pallet_mixer::{Pallet, Call, Storage, Event<T>},
 		Currencies: webb_currencies::{Pallet, Storage, Event<T>},
@@ -48,7 +48,7 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
-	type AccountData = balances::AccountData<u64>;
+	type AccountData = pallet_balances::AccountData<u64>;
 	type AccountId = AccountId;
 	type BaseCallFilter = ();
 	type BlockHashCount = BlockHashCount;
@@ -82,7 +82,7 @@ parameter_types! {
 	pub const MinimumDepositLength: u64 = 10 * 60 * 24 * 28;
 }
 
-impl balances::Config for Test {
+impl pallet_balances::Config for Test {
 	type AccountStore = System;
 	type Balance = Balance;
 	type DustRemoval = ();
@@ -162,7 +162,7 @@ pub type MixerCall = pallet_mixer::Call<Test>;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	use balances::GenesisConfig as BalancesConfig;
+	use pallet_balances::GenesisConfig as BalancesConfig;
 	// use tokens::GenesisConfig as TokensConfig;
 	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 

@@ -4,22 +4,30 @@ use std::sync::Arc;
 
 use std::collections::BTreeMap;
 use fc_rpc_core::types::{PendingTransactions, FilterPool};
-use webb_runtime::{Hash, AccountId, Index, opaque::Block, Balance};
+use webb_runtime::{Hash, AccountId, Index, opaque::Block, Balance, BlockNumber};
 use sp_api::ProvideRuntimeApi;
 use sp_transaction_pool::TransactionPool;
 use sp_blockchain::{Error as BlockChainError, HeaderMetadata, HeaderBackend};
 use sc_rpc_api::DenyUnsafe;
 use sc_client_api::{
-	backend::{StorageProvider, Backend, StateBackend, AuxStore},
+	backend::{StorageProvider, AuxStore},
 	client::BlockchainEvents
 };
 use sc_rpc::SubscriptionTaskExecutor;
-use sp_runtime::traits::BlakeTwo256;
+
 use sp_block_builder::BlockBuilder;
 use sc_network::NetworkService;
 use jsonrpc_pubsub::manager::SubscriptionManager;
 use pallet_ethereum::EthereumStorageSchema;
 use fc_rpc::{StorageOverride, SchemaV1Override, OverrideHandle, RuntimeApiStorageOverride};
+use sp_consensus::SelectChain;
+use merkle_rpc::MerkleApi;
+use merkle_rpc::MerkleClient;
+use sc_finality_grandpa::FinalityProofProvider;
+use sc_finality_grandpa::GrandpaJustificationStream;
+use sc_finality_grandpa::SharedAuthoritySet;
+use sc_finality_grandpa::SharedVoterState;
+use sc_finality_grandpa_rpc::GrandpaRpcHandler;
 
 /// Light client extra dependencies.
 pub struct LightDeps<C, F, P> {
@@ -33,20 +41,38 @@ pub struct LightDeps<C, F, P> {
 	pub fetcher: Arc<F>,
 }
 
+/// Extra dependencies for GRANDPA
+pub struct GrandpaDeps<B> {
+	/// Voting round info.
+	pub shared_voter_state: SharedVoterState,
+	/// Authority set info.
+	pub shared_authority_set: SharedAuthoritySet<Hash, BlockNumber>,
+	/// Receives notifications about justification events from Grandpa.
+	pub justification_stream: GrandpaJustificationStream<Block>,
+	/// Executor to drive the subscription manager in the Grandpa RPC handler.
+	pub subscription_executor: SubscriptionTaskExecutor,
+	/// Finality proof provider.
+	pub finality_provider: Arc<FinalityProofProvider<B, Block>>,
+}
+
 /// Full client dependencies.
-pub struct FullDeps<C, P> {
+pub struct FullDeps<C, P, SC, B> {
 	/// The client instance to use.
 	pub client: Arc<C>,
 	/// Transaction pool instance.
 	pub pool: Arc<P>,
-	/// Whether to deny unsafe calls
-	pub deny_unsafe: DenyUnsafe,
+	/// The SelectChain Strategy
+	pub select_chain: SC,
 	/// The Node authority flag
 	pub is_authority: bool,
 	/// Whether to enable dev signer
 	pub enable_dev_signer: bool,
 	/// Network service
 	pub network: Arc<NetworkService<Block, Hash>>,
+	/// Whether to deny unsafe calls
+	pub deny_unsafe: DenyUnsafe,
+	/// GRANDPA specific dependencies.
+	pub grandpa: GrandpaDeps<B>,
 	/// Ethereum pending transactions.
 	pub pending_transactions: PendingTransactions,
 	/// EthFilterApi pool.
@@ -56,21 +82,25 @@ pub struct FullDeps<C, P> {
 }
 
 /// Instantiate all Full RPC extensions.
-pub fn create_full<C, P, BE>(
-	deps: FullDeps<C, P>,
-	subscription_task_executor: SubscriptionTaskExecutor
-) -> jsonrpc_core::IoHandler<sc_rpc::Metadata> where
-	BE: Backend<Block> + 'static,
-	BE::State: StateBackend<BlakeTwo256>,
-	C: ProvideRuntimeApi<Block> + StorageProvider<Block, BE> + AuxStore,
-	C: BlockchainEvents<Block>,
-	C: HeaderBackend<Block> + HeaderMetadata<Block, Error=BlockChainError>,
+pub fn create_full<C, P, SC, B>(
+	deps: FullDeps<C, P, SC, B>,
+	subscription_task_executor: SubscriptionTaskExecutor,
+) -> jsonrpc_core::IoHandler<sc_rpc_api::Metadata> where
+	C: ProvideRuntimeApi<Block> + StorageProvider<Block, B> + AuxStore,
+	C: HeaderBackend<Block> + HeaderMetadata<Block, Error=BlockChainError> + 'static,
 	C: Send + Sync + 'static,
+	C: BlockchainEvents<Block>,
 	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
+	C::Api: pallet_contracts_rpc::ContractsRuntimeApi<Block, AccountId, Balance, BlockNumber, Hash>,
 	C::Api: BlockBuilder<Block>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
 	C::Api: fp_rpc::EthereumRuntimeRPCApi<Block>,
+	C::Api: BlockBuilder<Block>,
+	C::Api: merkle::MerkleApi<Block>,
 	P: TransactionPool<Block=Block> + 'static,
+	SC: SelectChain<Block> +'static,
+	B: sc_client_api::Backend<Block> + Send + Sync + 'static,
+	B::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashFor<Block>>,
 {
 	use substrate_frame_rpc_system::{FullSystem, SystemApi};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
@@ -84,6 +114,7 @@ pub fn create_full<C, P, BE>(
 	let FullDeps {
 		client,
 		pool,
+		select_chain: _,
 		deny_unsafe,
 		is_authority,
 		network,
@@ -91,7 +122,16 @@ pub fn create_full<C, P, BE>(
 		filter_pool,
 		backend,
 		enable_dev_signer,
+		grandpa,
 	} = deps;
+
+	let GrandpaDeps {
+		shared_voter_state,
+		shared_authority_set,
+		justification_stream,
+		subscription_executor,
+		finality_provider,
+	} = grandpa;
 
 	io.extend_with(
 		SystemApi::to_delegate(FullSystem::new(client.clone(), pool.clone(), deny_unsafe))
@@ -165,6 +205,18 @@ pub fn create_full<C, P, BE>(
 			overrides
 		))
 	);
+
+	io.extend_with(MerkleApi::to_delegate(MerkleClient::new(client.clone())));
+
+	io.extend_with(sc_finality_grandpa_rpc::GrandpaApi::to_delegate(
+		GrandpaRpcHandler::new(
+			shared_authority_set.clone(),
+			shared_voter_state,
+			justification_stream,
+			subscription_executor,
+			finality_provider,
+		),
+	));
 
 	io
 }

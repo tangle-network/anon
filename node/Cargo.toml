@@ -78,5 +78,4 @@ merkle = { package = "pallet-merkle", path = "../pallets/merkle" }
 merkle-rpc = { package = "pallet-merkle-rpc", path = "../pallets/merkle/rpc" }
 
 [features]
-default = ["aura"]
-aura = ["webb-runtime/aura"]
+default = []

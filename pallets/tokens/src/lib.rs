@@ -51,7 +51,6 @@ use frame_support::{
 	transactional,
 };
 
-
 use webb_traits::{
 	account::MergeAccount,
 	arithmetic::{self, Signed},
@@ -1257,10 +1256,6 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	fn total_supply(currency_id: T::CurrencyId) -> T::Balance {
-		Self::total_issuance(currency_id)
-	}
-
 	/// Check whether account_id is a module account
 	pub(crate) fn is_module_account_id(account_id: &T::AccountId) -> bool {
 		PalletId::try_from_account(account_id).is_some()
@@ -1395,10 +1390,6 @@ impl<T: Config> Pallet<T> {
 	) {
 		frame_system::Pallet::<T>::dec_consumers(who);
 		AccountCurrencies::<T>::remove(who, id)
-	}
-
-	pub(crate) fn get_pallet_account() -> T::AccountId {
-		T::PalletId::get().into_account()
 	}
 }
 

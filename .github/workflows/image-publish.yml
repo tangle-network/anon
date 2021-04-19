@@ -43,7 +43,11 @@ jobs:
         run: ./scripts/build.sh
 
       - name: Copy binaries
+<<<<<<< HEAD
         run: mkdir -p build && cp target/release/webb-node build/webb-node
+=======
+        run: mkdir -p build && cp target/release/node-template build/webb-node
+>>>>>>> develop
 
       - name: Build Image
         run: docker build . --tag image
@@ -53,7 +57,7 @@ jobs:
 
       - name: Push image
         run: |
-          IMAGE_ID=docker.pkg.github.com/webb-tools/anon
+          IMAGE_ID=docker.pkg.github.com/webb-tools/anon/node
 
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')

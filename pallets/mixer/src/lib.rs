@@ -216,7 +216,7 @@ pub mod pallet {
 				match Self::initialize() {
 					Ok(_) => {}
 					Err(e) => {
-						// frame_support::debug::native::error!("Error initialising: {:?}", e);
+						log::error!("Error initialising: {:?}", e);
 					}
 				}
 			}
@@ -247,7 +247,7 @@ pub mod pallet {
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 			ensure!(!<MerklePallet<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
 			// get mixer info, should always exist if the module is initialized
-			let mut mixer_info = Self::get_mixer(mixer_id)?;
+			let mixer_info = Self::get_mixer(mixer_id)?;
 			// ensure the sender has enough balance to cover deposit
 			let balance = T::Currency::free_balance(mixer_info.currency_id, &sender);
 			// TODO: Multiplication by usize should be possible
