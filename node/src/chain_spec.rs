@@ -1,6 +1,7 @@
 use frame_benchmarking::whitelisted_caller;
 use node_template_runtime::{
-	AccountId, AuraConfig, BalancesConfig, EVMConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
+	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
+	// EVMConfig,
 	SystemConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
@@ -134,37 +135,37 @@ fn testnet_genesis(
 	endowed_accounts: Vec<AccountId>,
 	_enable_println: bool,
 ) -> GenesisConfig {
-	let alice_evm_account_id = H160::from_str("19e7e376e7c213b7e7e7e46cc70a5dd086daff2a").unwrap();
-	let mut evm_accounts = BTreeMap::new();
-	evm_accounts.insert(alice_evm_account_id, pallet_evm::GenesisAccount {
-		nonce: 0.into(),
-		balance: U256::from(123456_123_000_000_000_000_000u128),
-		storage: BTreeMap::new(),
-		code: vec![],
-	});
+	// let alice_evm_account_id = H160::from_str("19e7e376e7c213b7e7e7e46cc70a5dd086daff2a").unwrap();
+	// let mut evm_accounts = BTreeMap::new();
+	// evm_accounts.insert(alice_evm_account_id, pallet_evm::GenesisAccount {
+	// 	nonce: 0.into(),
+	// 	balance: U256::from(123456_123_000_000_000_000_000u128),
+	// 	storage: BTreeMap::new(),
+	// 	code: vec![],
+	// });
 
 	GenesisConfig {
-		frame_system: Some(SystemConfig {
+		frame_system: SystemConfig {
 			// Add Wasm runtime to storage.
 			code: wasm_binary.to_vec(),
 			changes_trie_config: Default::default(),
-		}),
-		pallet_balances: Some(BalancesConfig {
+		},
+		pallet_balances: BalancesConfig {
 			// Configure endowed accounts with initial balance of 1 << 60.
 			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
-		}),
-		pallet_contracts: Some(Default::default()),
-		pallet_aura: Some(AuraConfig {
+		},
+		pallet_contracts: Default::default(),
+		pallet_aura: AuraConfig {
 			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
-		}),
-		pallet_grandpa: Some(GrandpaConfig {
+		},
+		pallet_grandpa: GrandpaConfig {
 			authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
-		}),
-		pallet_sudo: Some(SudoConfig {
+		},
+		pallet_sudo: SudoConfig {
 			// Assign network admin rights.
 			key: root_key,
-		}),
-		pallet_evm: Some(EVMConfig { accounts: evm_accounts }),
-		pallet_ethereum: Some(Default::default()),
+		},
+		// pallet_evm: Some(EVMConfig { accounts: evm_accounts }),
+		// pallet_ethereum: Some(Default::default()),
 	}
 }

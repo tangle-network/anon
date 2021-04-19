@@ -27,6 +27,7 @@ static_assertions = "1.1.0"
 
 merkle = { package = "pallet-merkle", version = "3.0.0", default-features = false, path = "../pallets/merkle" }
 mixer = { package = "pallet-mixer", version = "3.0.0", default-features = false, path = "../pallets/mixer" }
+tokens = { package = "pallet-tokens", version = "3.0.0", default-features = false, path = "../pallets/tokens" }
 merkle-rpc = { package = "pallet-merkle-rpc", version = "3.0.0", path = "../pallets/merkle/rpc", optional = true }
 
 # Substrate dependencies
@@ -42,10 +43,10 @@ pallet-contracts = { default-features = false, version = "3.0.0" }
 pallet-contracts-primitives = { default-features = false, version = "3.0.0" }
 pallet-contracts-rpc-runtime-api = { default-features = false, version = "3.0.0" }
 
-pallet-evm = { git = "https://github.com/paritytech/frontier", default-features = false }
-pallet-ethereum = { default-features = false, git = "https://github.com/paritytech/frontier" }
-fp-rpc = { default-features = false, git = "https://github.com/paritytech/frontier" }
-pallet-evm-precompile-simple = { version = "3.0", git = "https://github.com/paritytech/frontier", default-features = false }
+pallet-evm = { git = "https://github.com/paritytech/frontier", default-features = false, optional = true }
+pallet-ethereum = { default-features = false, git = "https://github.com/paritytech/frontier", optional = true}
+fp-rpc = { default-features = false, git = "https://github.com/paritytech/frontier", optional = true}
+pallet-evm-precompile-simple = { version = "1.0.0", git = "https://github.com/paritytech/frontier", default-features = false, optional = true}
 
 pallet-grandpa = { default-features = false, version = "3.0.0" }
 pallet-randomness-collective-flip = { default-features = false, version = "3.0.0" }
@@ -65,7 +66,6 @@ sp-std = { default-features = false, version = "3.0.0" }
 sp-transaction-pool = { default-features = false, version = "3.0.0" }
 sp-version = { default-features = false, version = "3.0.0" }
 
-orml-tokens = { version = "0.4.0", default-features = false }
 orml-currencies = { version = "0.4.0", default-features = false }
 orml-traits = { version = "0.4.0", default-features = false }
 
@@ -83,6 +83,14 @@ runtime-benchmarks = [
 	"mixer/runtime-benchmarks",
     "sp-runtime/runtime-benchmarks",
 ]
+
+frontier = [
+    "fp-rpc/std",
+    "pallet-ethereum/std",
+    "pallet-evm/std",
+    "pallet-evm-precompile-simple/std",
+]
+
 std = [
     "codec/std",
     "serde",
@@ -90,15 +98,11 @@ std = [
     "frame-support/std",
     "frame-system/std",
     "frame-system-rpc-runtime-api/std",
-    "fp-rpc/std",
     "pallet-aura/std",
     "pallet-balances/std",
     "pallet-contracts/std",
     "pallet-contracts-primitives/std",
     "pallet-contracts-rpc-runtime-api/std",
-    "pallet-ethereum/std",
-    "pallet-evm/std",
-    "pallet-evm-precompile-simple/std",
     "pallet-grandpa/std",
     "pallet-randomness-collective-flip/std",
     "pallet-sudo/std",
@@ -119,4 +123,5 @@ std = [
     "merkle/std",
     "merkle-rpc",
     "mixer/std",
+    "tokens/std",
 ]

@@ -62,16 +62,16 @@ substrate-frame-rpc-system = { version = "3.0.0" }
 
 pallet-contracts-rpc = { version = "3.0.0" }
 
-fc-consensus = { git = "https://github.com/paritytech/frontier" }
-fp-consensus = { git = "https://github.com/paritytech/frontier" }
-fc-rpc = { git = "https://github.com/paritytech/frontier" }
-fp-rpc = { git = "https://github.com/paritytech/frontier" }
-fc-rpc-core = { git = "https://github.com/paritytech/frontier" }
-fc-db = { git = "https://github.com/paritytech/frontier" }
-fc-mapping-sync = { git = "https://github.com/paritytech/frontier" }
+# fc-consensus = { git = "https://github.com/paritytech/frontier" }
+# fp-consensus = { git = "https://github.com/paritytech/frontier" }
+# fc-rpc = { git = "https://github.com/paritytech/frontier" }
+# fp-rpc = { git = "https://github.com/paritytech/frontier" }
+# fc-rpc-core = { git = "https://github.com/paritytech/frontier" }
+# fc-db = { git = "https://github.com/paritytech/frontier" }
+# fc-mapping-sync = { git = "https://github.com/paritytech/frontier" }
 
-pallet-evm = { git = "https://github.com/paritytech/frontier" }
-pallet-ethereum = { git = "https://github.com/paritytech/frontier" }
+# pallet-evm = { git = "https://github.com/paritytech/frontier" }
+# pallet-ethereum = { git = "https://github.com/paritytech/frontier" }
 merkle = { package = "pallet-merkle", version = "3.0.0", path = "../pallets/merkle" }
 merkle-rpc = { package = "pallet-merkle-rpc", version = "3.0.0", path = "../pallets/merkle/rpc" }
 

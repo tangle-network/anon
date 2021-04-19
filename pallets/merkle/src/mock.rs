@@ -22,9 +22,9 @@ construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: system::{Module, Call, Config, Storage, Event<T>},
-		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
-		MerkleTrees: pallet_merkle::{Module, Call, Storage, Event<T>},
+		System: system::{Pallet, Call, Config, Storage, Event<T>},
+		Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		MerkleTrees: pallet_merkle::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -58,6 +58,7 @@ impl frame_system::Config for Test {
 	type SS58Prefix = Prefix;
 	type SystemWeightInfo = ();
 	type Version = ();
+	type OnSetCode = ();
 }
 
 parameter_types! {

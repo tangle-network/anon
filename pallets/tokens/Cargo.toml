@@ -1,47 +1,23 @@
 [package]
-authors = ['Drew Stone <drew@commonwealth.im>, Filip Lazovic']
-description = 'Pallet for mixing native assets in a zero-knowledge mixer'
-edition = '2018'
-license = 'Unlicense'
-name = 'pallet-mixer'
-version = '3.0.0'
+name = "pallet-tokens"
+version = "3.0.0"
+authors = ["Drew Stone <drewstone329@gmail.com>"]
+edition = "2018"
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
-balances = { version = "3.0.0", default-features = false, package = "pallet-balances" }
+pallet-balances = { version = "3.0.0", default-features = false }
+pallet-treasury = { version = "3.0.0", default-features = false }
 frame-support = { default-features = false, version = '3.0.0' }
 frame-system = { default-features = false, version = '3.0.0' }
 sp-std = { default-features = false, version = "3.0.0" }
 sp-runtime = { default-features = false, version = '3.0.0' }
-
-merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
-tokens = { package = "pallet-tokens", path = "../tokens", default-features = false }
-
-
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
-merlin = { version = "2.0.0", default-features = false }
 frame-benchmarking = { default-features = false, version = "3.0.0", optional = true }
 orml-traits = { version = "0.4.0", default-features = false }
-orml-currencies = { version = "0.4.0", default-features = false }
-
-[dependencies.bulletproofs]
-version = "2.0.0"
-package = "webb-bulletproofs"
-default-features = false
-features = ["yoloproofs"]
-
-[dependencies.bulletproofs-gadgets]
-branch = "main"
-version = "2.0.0"
-default-features = false
-
-[dependencies.curve25519-dalek]
-version = "3.0.0"
-default-features = false
-features = ["u64_backend", "alloc"]
 
 [dependencies.bencher]
 version = "0.1.5"
@@ -49,18 +25,19 @@ version = "0.1.5"
 [dev-dependencies]
 sp-core = { default-features = false, version = '3.0.0' }
 sp-io = { default-features = false, version = '3.0.0' }
+orml-currencies = { version = "0.4.0", default-features = false }
 
 [features]
 default = ['std']
 std = [
     "serde",
     "codec/std",
-    "balances/std",
+    "pallet-balances/std",
+    "pallet-treasury/std",
     "frame-support/std",
     "frame-system/std",
-    "tokens/std",
     "frame-benchmarking/std",
-    "merkle/std",
+    "orml-traits/std",
 ]
 runtime-benchmarks = [
     "frame-benchmarking",
