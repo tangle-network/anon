@@ -104,6 +104,7 @@ pub mod pallet {
 				"duplicate endowed accounts in genesis."
 			);
 
+			// ensure no duplicates exist.
 			let unique_tokens = self
 				.tokens
 				.iter()
@@ -127,7 +128,9 @@ pub mod pallet {
 						initial_balance >= token_min_balance_map.get(&currency_id).unwrap(),
 						"the balance of any account should always be more than existential deposit.",
 					);
-					Pallet::<T>::set_free_balance(*currency_id, account_id, *initial_balance);
+					Pallet::<T>::mutate_account(account_id, *currency_id, |account_data, _| {
+						account_data.free = *initial_balance
+					});
 					assert!(
 						Pallet::<T>::free_balance(*currency_id, account_id) == *initial_balance,
 						"the balance is wrong"
