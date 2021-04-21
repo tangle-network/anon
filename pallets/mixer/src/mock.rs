@@ -35,7 +35,7 @@ construct_runtime!(
 		MerkleTrees: merkle::{Pallet, Call, Storage, Event<T>},
 		Mixer: pallet_mixer::{Pallet, Call, Storage, Event<T>},
 		Currencies: webb_currencies::{Pallet, Storage, Event<T>},
-		Tokens: tokens::{Pallet, Storage, Event<T>},
+		Tokens: webb_tokens::{Pallet, Storage, Event<T>},
 	}
 );
 
@@ -105,20 +105,24 @@ parameter_types! {
 	pub const MetadataDepositPerByte: u64 = 1;
 }
 
-impl tokens::Config for Test {
+parameter_types! {
+	pub DustAccount: AccountId = PalletId(*b"webb/dst").into_account();
+}
+
+impl webb_tokens::Config for Test {
 	type PalletId = TokensPalletId;
 	type Event = Event;
 	type Balance = Balance;
 	type Amount = i128;
 	type CurrencyId = CurrencyId;
 	type NativeCurrency = BasicCurrencyAdapter<Test, Balances, Amount, BlockNumber>;
-	type ForceOrigin = frame_system::EnsureRoot<u64>;
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
 	type CurrencyDeposit = CurrencyDeposit;
 	type MetadataDepositBase = MetadataDepositBase;
 	type MetadataDepositPerByte = MetadataDepositPerByte;
 	type ApprovalDeposit = ApprovalDeposit;
 	type StringLimit = StringLimit;
-	type OnDust = ();
+	type DustAccount = DustAccount;
 	type WeightInfo = ();
 	type Extra = ();
 }
@@ -157,7 +161,7 @@ impl Config for Test {
 	type WeightInfo = Weights<Self>;
 }
 
-pub type TokenPallet = tokens::Pallet<Test>;
+pub type TokenPallet = webb_tokens::Pallet<Test>;
 pub type MixerCall = pallet_mixer::Call<Test>;
 
 // Build genesis storage according to the mock runtime.

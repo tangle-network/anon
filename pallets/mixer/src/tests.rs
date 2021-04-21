@@ -22,8 +22,7 @@ use merkle::{
 };
 use merlin::Transcript;
 use sp_runtime::{traits::BadOrigin, DispatchError};
-use crate::mock::TokenPallet;
-use tokens::ExtendedTokenSystem;
+use webb_tokens::ExtendedTokenSystem;
 
 fn default_hasher(num_gens: usize) -> Poseidon {
 	let width = 6;

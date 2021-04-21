@@ -4,7 +4,7 @@
 
 use super::*;
 use frame_support::{construct_runtime, parameter_types, PalletId};
-use webb_traits::parameter_type_with_key;
+
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
@@ -47,6 +47,8 @@ impl frame_system::Config for Runtime {
 
 type CurrencyId = u32;
 type Balance = u64;
+type BlockNumber = u32;
+type Amount = i64;
 
 parameter_types! {
 	pub const ExistentialDeposit: u64 = 1;
@@ -62,10 +64,14 @@ impl pallet_balances::Config for Runtime {
 	type WeightInfo = ();
 }
 
-parameter_type_with_key! {
-	pub ExistentialDeposits: |_currency_id: CurrencyId| -> Balance {
-		Default::default()
-	};
+
+parameter_types! {
+	pub const TokensPalletId: PalletId = PalletId(*b"py/token");
+	pub const CurrencyDeposit: u64 = 1;
+	pub const ApprovalDeposit: u64 = 1;
+	pub const StringLimit: u32 = 50;
+	pub const MetadataDepositBase: u64 = 1;
+	pub const MetadataDepositPerByte: u64 = 1;
 }
 
 parameter_types! {
@@ -73,13 +79,21 @@ parameter_types! {
 }
 
 impl webb_tokens::Config for Runtime {
+	type PalletId = TokensPalletId;
 	type Event = Event;
 	type Balance = Balance;
 	type Amount = i64;
 	type CurrencyId = CurrencyId;
+	type NativeCurrency = BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+	type CurrencyDeposit = CurrencyDeposit;
+	type MetadataDepositBase = MetadataDepositBase;
+	type MetadataDepositPerByte = MetadataDepositPerByte;
+	type ApprovalDeposit = ApprovalDeposit;
+	type StringLimit = StringLimit;
+	type DustAccount = DustAccount;
 	type WeightInfo = ();
-	type ExistentialDeposits = ExistentialDeposits;
-	type OnDust = webb_tokens::TransferDust<Runtime, DustAccount>;
+	type Extra = ();
 }
 
 pub const NATIVE_CURRENCY_ID: CurrencyId = 1;
@@ -97,7 +111,7 @@ impl Config for Runtime {
 	type WeightInfo = ();
 }
 pub type NativeCurrency = NativeCurrencyOf<Runtime>;
-pub type AdaptedBasicCurrency = BasicCurrencyAdapter<Runtime, PalletBalances, i64, u64>;
+pub type AdaptedBasicCurrency = BasicCurrencyAdapter<Runtime, Balances, i64, u64>;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 type Block = frame_system::mocking::MockBlock<Runtime>;
@@ -109,9 +123,9 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Storage, Config, Event<T>},
-		Currencies: currencies::{Pallet, Call, Event<T>},
-		Tokens: webb_tokens::{Pallet, Storage, Event<T>, Config<T>},
-		PalletBalances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Currencies: currencies::{Pallet, Storage, Event<T>},
+		Tokens: webb_tokens::{Pallet, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 	}
 );
 
@@ -165,6 +179,7 @@ impl ExtBuilder {
 		.unwrap();
 
 		webb_tokens::GenesisConfig::<Runtime> {
+			tokens: vec![(X_TOKEN_ID, 1)],
 			endowed_accounts: self
 				.endowed_accounts
 				.into_iter()

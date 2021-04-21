@@ -16,7 +16,7 @@ fn multi_lockable_currency_should_work() {
 			assert_ok!(Currencies::set_lock(ID_1, X_TOKEN_ID, &ALICE, 50));
 			assert_eq!(Tokens::locks(&ALICE, X_TOKEN_ID).len(), 1);
 			assert_ok!(Currencies::set_lock(ID_1, NATIVE_CURRENCY_ID, &ALICE, 50));
-			assert_eq!(PalletBalances::locks(&ALICE).len(), 1);
+			assert_eq!(Balances::locks(&ALICE).len(), 1);
 		});
 }
 
@@ -28,8 +28,8 @@ fn multi_reservable_currency_should_work() {
 		.execute_with(|| {
 			assert_eq!(Currencies::total_issuance(NATIVE_CURRENCY_ID), 200);
 			assert_eq!(Currencies::total_issuance(X_TOKEN_ID), 200);
-			assert_eq!(Currencies::free_balance(X_TOKEN_ID, &ALICE), 100);
 			assert_eq!(NativeCurrency::free_balance(&ALICE), 100);
+			assert_eq!(Currencies::free_balance(X_TOKEN_ID, &ALICE), 100);
 
 			assert_ok!(Currencies::reserve(X_TOKEN_ID, &ALICE, 30));
 			assert_ok!(Currencies::reserve(NATIVE_CURRENCY_ID, &ALICE, 40));
@@ -45,9 +45,9 @@ fn native_currency_lockable_should_work() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(NativeCurrency::set_lock(ID_1, &ALICE, 10));
-			assert_eq!(PalletBalances::locks(&ALICE).len(), 1);
+			assert_eq!(Balances::locks(&ALICE).len(), 1);
 			assert_ok!(NativeCurrency::remove_lock(ID_1, &ALICE));
-			assert_eq!(PalletBalances::locks(&ALICE).len(), 0);
+			assert_eq!(Balances::locks(&ALICE).len(), 0);
 		});
 }
 
@@ -69,9 +69,9 @@ fn basic_currency_adapting_pallet_balances_lockable() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(AdaptedBasicCurrency::set_lock(ID_1, &ALICE, 10));
-			assert_eq!(PalletBalances::locks(&ALICE).len(), 1);
+			assert_eq!(Balances::locks(&ALICE).len(), 1);
 			assert_ok!(AdaptedBasicCurrency::remove_lock(ID_1, &ALICE));
-			assert_eq!(PalletBalances::locks(&ALICE).len(), 0);
+			assert_eq!(Balances::locks(&ALICE).len(), 0);
 		});
 }
 
@@ -156,13 +156,13 @@ fn basic_currency_adapting_pallet_balances_transfer() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(AdaptedBasicCurrency::transfer(&ALICE, &BOB, 50));
-			assert_eq!(PalletBalances::total_balance(&ALICE), 50);
-			assert_eq!(PalletBalances::total_balance(&BOB), 150);
+			assert_eq!(Balances::total_balance(&ALICE), 50);
+			assert_eq!(Balances::total_balance(&BOB), 150);
 
 			// creation fee
 			assert_ok!(AdaptedBasicCurrency::transfer(&ALICE, &EVA, 10));
-			assert_eq!(PalletBalances::total_balance(&ALICE), 40);
-			assert_eq!(PalletBalances::total_balance(&EVA), 10);
+			assert_eq!(Balances::total_balance(&ALICE), 40);
+			assert_eq!(Balances::total_balance(&EVA), 10);
 		});
 }
 
@@ -173,8 +173,8 @@ fn basic_currency_adapting_pallet_balances_deposit() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(AdaptedBasicCurrency::deposit(&EVA, 50));
-			assert_eq!(PalletBalances::total_balance(&EVA), 50);
-			assert_eq!(PalletBalances::total_issuance(), 250);
+			assert_eq!(Balances::total_balance(&EVA), 50);
+			assert_eq!(Balances::total_issuance(), 250);
 		});
 }
 
@@ -185,8 +185,8 @@ fn basic_currency_adapting_pallet_balances_withdraw() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(AdaptedBasicCurrency::withdraw(&ALICE, 100));
-			assert_eq!(PalletBalances::total_balance(&ALICE), 0);
-			assert_eq!(PalletBalances::total_issuance(), 100);
+			assert_eq!(Balances::total_balance(&ALICE), 0);
+			assert_eq!(Balances::total_issuance(), 100);
 		});
 }
 
@@ -197,8 +197,8 @@ fn basic_currency_adapting_pallet_balances_slash() {
 		.build()
 		.execute_with(|| {
 			assert_eq!(AdaptedBasicCurrency::slash(&ALICE, 101), 1);
-			assert_eq!(PalletBalances::total_balance(&ALICE), 0);
-			assert_eq!(PalletBalances::total_issuance(), 100);
+			assert_eq!(Balances::total_balance(&ALICE), 0);
+			assert_eq!(Balances::total_issuance(), 100);
 		});
 }
 
@@ -209,8 +209,8 @@ fn basic_currency_adapting_pallet_balances_update_balance() {
 		.build()
 		.execute_with(|| {
 			assert_ok!(AdaptedBasicCurrency::update_balance(&ALICE, -10));
-			assert_eq!(PalletBalances::total_balance(&ALICE), 90);
-			assert_eq!(PalletBalances::total_issuance(), 190);
+			assert_eq!(Balances::total_balance(&ALICE), 90);
+			assert_eq!(Balances::total_issuance(), 190);
 		});
 }
 

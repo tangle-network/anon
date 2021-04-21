@@ -19,7 +19,7 @@ sp-std = { default-features = false, version = "3.0.0", git = "https://github.co
 sp-runtime = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", rev = "22f09c602704aeee2b59b14f427f73f6cb8b5e2f" }
 
 merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
-tokens = { package = "webb-tokens", path = "../tokens", default-features = false }
+webb-tokens = { path = "../tokens", default-features = false }
 
 
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
@@ -59,7 +59,7 @@ std = [
     "pallet-balances/std",
     "frame-support/std",
     "frame-system/std",
-    "tokens/std",
+    "webb-tokens/std",
     "frame-benchmarking/std",
     "merkle/std",
 ]
