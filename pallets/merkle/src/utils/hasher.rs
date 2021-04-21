@@ -1,7 +1,3 @@
-use bulletproofs::{
-	r1cs::{LinearCombination, Prover, Verifier},
-	PedersenGens,
-};
 use curve25519_dalek::scalar::Scalar;
 
 pub trait Hasher {

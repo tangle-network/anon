@@ -398,7 +398,7 @@ fn burning_asset_balance_with_zero_balance_does_nothing() {
 		assert_eq!(Tokens::free_balance(DOT, &BOB), 0);
 		assert_ok!(Tokens::burn(Origin::signed(ALICE), DOT, BOB, u64::max_value()));
 		assert_eq!(Tokens::free_balance(DOT, &BOB), 0);
-		assert_eq!(Tokens::total_supply(DOT), 100);
+		assert_eq!(Tokens::total_issuance(DOT), 100);
 	});
 }
 
@@ -515,7 +515,7 @@ fn force_asset_status_should_work(){
 		assert_ok!(Tokens::transfer(Origin::signed(ALICE), DOT, BOB, 50));
 		assert_eq!(Tokens::free_balance(DOT, &ALICE), 0);
 		assert_eq!(Tokens::free_balance(DOT, &BOB), 200);
-		assert_eq!(Tokens::total_supply(DOT), 200);
+		assert_eq!(Tokens::total_issuance(DOT), 200);
 
 		//won't create new account with balance below min_balance
 		assert_noop!(Tokens::transfer(Origin::signed(BOB), DOT, TREASURY_ACCOUNT, 50), Error::<Test>::BelowMinimum);
@@ -528,11 +528,11 @@ fn force_asset_status_should_work(){
 
 		//account drains to completion when funds dip below min_balance
 		assert_ok!(Tokens::force_asset_status(Origin::root(), DOT, ALICE, ALICE, ALICE, ALICE, 110, false));
-		assert_eq!(Tokens::total_supply(DOT), 200);
+		assert_eq!(Tokens::total_issuance(DOT), 200);
 		assert_ok!(Tokens::transfer(Origin::signed(BOB), DOT, ALICE, 110));
 		assert_eq!(Tokens::free_balance(DOT, &ALICE), 200);
 		assert_eq!(Tokens::free_balance(DOT, &BOB), 0);
-		assert_eq!(Tokens::total_supply(DOT), 200);
+		assert_eq!(Tokens::total_issuance(DOT), 200);
 	});
 }
 

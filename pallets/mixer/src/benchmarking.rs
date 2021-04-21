@@ -7,7 +7,7 @@ use frame_support::traits::OnFinalize;
 use frame_system::RawOrigin;
 use merkle::{default_hasher, utils::keys::ScalarData};
 use merlin::Transcript;
-use orml_traits::MultiCurrency;
+use webb_traits::MultiCurrency;
 use sp_runtime::traits::Bounded;
 
 use crate::{Config, Module as Mixer};

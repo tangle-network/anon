@@ -51,15 +51,14 @@ use frame_support::{
 	transactional,
 };
 
-
-use orml_traits::{
+use webb_traits::{
 	account::MergeAccount,
 	arithmetic::{self, Signed},
 	BasicCurrencyExtended, BasicLockableCurrency, BasicReservableCurrency,
 	BalanceStatus, LockIdentifier, MultiCurrency, MultiCurrencyExtended, MultiLockableCurrency,
 	MultiReservableCurrency,
 };
-
+use sp_std::collections::btree_map::BTreeMap;
 pub use weights::WeightInfo;
 pub use pallet::*;
 
@@ -72,6 +71,78 @@ pub mod pallet {
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
+
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		// tokens to create + min_balance for that token
+		pub tokens: Vec<(T::CurrencyId, T::Balance)>,
+		// endowed accounts for a token + their balances
+		pub endowed_accounts: Vec<(T::AccountId, T::CurrencyId, T::Balance)>,
+	}
+
+	#[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			GenesisConfig {
+				tokens: vec![],
+				endowed_accounts: vec![],
+			}
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			// ensure no duplicates exist.
+			let unique_endowed_accounts = self
+				.endowed_accounts
+				.iter()
+				.map(|(account_id, currency_id, _)| (account_id, currency_id))
+				.collect::<std::collections::BTreeSet<_>>();
+			assert!(
+				unique_endowed_accounts.len() == self.endowed_accounts.len(),
+				"duplicate endowed accounts in genesis."
+			);
+
+			// ensure no duplicates exist.
+			let unique_tokens = self
+				.tokens
+				.iter()
+				.map(|(currency_id, min_balance)| (currency_id, min_balance))
+				.collect::<std::collections::BTreeSet<_>>();
+
+			assert!(
+				unique_tokens.len() == self.tokens.len(),
+				"duplicate tokens in genesis."
+			);
+
+			let mut token_min_balance_map: BTreeMap<T::CurrencyId, T::Balance> = BTreeMap::new();
+			for i in 0..self.tokens.len() {
+				token_min_balance_map.insert(self.tokens[i].0, self.tokens[i].1);
+			}
+
+			self.endowed_accounts
+				.iter()
+				.for_each(|(account_id, currency_id, initial_balance)| {
+					assert!(
+						initial_balance >= token_min_balance_map.get(&currency_id).unwrap(),
+						"the balance of any account should always be more than existential deposit.",
+					);
+					Pallet::<T>::mutate_account(account_id, *currency_id, |account_data, _| {
+						account_data.free = *initial_balance
+					});
+					assert!(
+						Pallet::<T>::free_balance(*currency_id, account_id) == *initial_balance,
+						"the balance is wrong"
+					);
+					TotalIssuance::<T>::mutate(*currency_id, |total_issuance| {
+						*total_issuance = total_issuance
+							.checked_add(initial_balance)
+							.expect("total issuance cannot overflow when building genesis")
+					});
+				});
+		}
+	}
 
 	#[pallet::config]
 	/// The module configuration trait.
@@ -1257,10 +1328,6 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	fn total_supply(currency_id: T::CurrencyId) -> T::Balance {
-		Self::total_issuance(currency_id)
-	}
-
 	/// Check whether account_id is a module account
 	pub(crate) fn is_module_account_id(account_id: &T::AccountId) -> bool {
 		PalletId::try_from_account(account_id).is_some()
@@ -1339,6 +1406,8 @@ impl<T: Config> Pallet<T> {
 	/// expected to do it.
 	pub(crate) fn set_free_balance(currency_id: T::CurrencyId, who: &T::AccountId, amount: T::Balance) {
 		Self::mutate_account(who, currency_id, |account, _| {
+			#[cfg(feature="std")]
+			println!("{:?}", account);
 			account.free = amount;
 		});
 	}
@@ -1395,10 +1464,6 @@ impl<T: Config> Pallet<T> {
 	) {
 		frame_system::Pallet::<T>::dec_consumers(who);
 		AccountCurrencies::<T>::remove(who, id)
-	}
-
-	pub(crate) fn get_pallet_account() -> T::AccountId {
-		T::PalletId::get().into_account()
 	}
 }
 

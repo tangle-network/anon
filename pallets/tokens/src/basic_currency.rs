@@ -5,7 +5,7 @@ use sp_std::{
 	marker, result,
 };
 use codec::Codec;
-use orml_traits::{
+use webb_traits::{
 	arithmetic::{Signed, SimpleArithmetic},
 	BalanceStatus, BasicCurrency, BasicCurrencyExtended, BasicLockableCurrency, BasicReservableCurrency,
 	LockIdentifier

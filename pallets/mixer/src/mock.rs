@@ -4,7 +4,7 @@ use frame_benchmarking::whitelisted_caller;
 use frame_support::{construct_runtime, parameter_types, weights::Weight, PalletId};
 use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
 use merkle::weights::Weights as MerkleWeights;
-use orml_currencies::BasicCurrencyAdapter;
+use webb_currencies::BasicCurrencyAdapter;
 
 use sp_core::H256;
 use sp_runtime::{
@@ -31,11 +31,11 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		MerkleTrees: merkle::{Pallet, Call, Storage, Event<T>},
 		Mixer: pallet_mixer::{Pallet, Call, Storage, Event<T>},
-		Currencies: orml_currencies::{Pallet, Storage, Event<T>},
-		Tokens: tokens::{Pallet, Storage, Event<T>},
+		Currencies: webb_currencies::{Pallet, Storage, Event<T>},
+		Tokens: webb_tokens::{Pallet, Storage, Event<T>},
 	}
 );
 
@@ -48,7 +48,7 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
-	type AccountData = balances::AccountData<u64>;
+	type AccountData = pallet_balances::AccountData<u64>;
 	type AccountId = AccountId;
 	type BaseCallFilter = ();
 	type BlockHashCount = BlockHashCount;
@@ -82,7 +82,7 @@ parameter_types! {
 	pub const MinimumDepositLength: u64 = 10 * 60 * 24 * 28;
 }
 
-impl balances::Config for Test {
+impl pallet_balances::Config for Test {
 	type AccountStore = System;
 	type Balance = Balance;
 	type DustRemoval = ();
@@ -105,25 +105,29 @@ parameter_types! {
 	pub const MetadataDepositPerByte: u64 = 1;
 }
 
-impl tokens::Config for Test {
+parameter_types! {
+	pub DustAccount: AccountId = PalletId(*b"webb/dst").into_account();
+}
+
+impl webb_tokens::Config for Test {
 	type PalletId = TokensPalletId;
 	type Event = Event;
 	type Balance = Balance;
 	type Amount = i128;
 	type CurrencyId = CurrencyId;
 	type NativeCurrency = BasicCurrencyAdapter<Test, Balances, Amount, BlockNumber>;
-	type ForceOrigin = frame_system::EnsureRoot<u64>;
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
 	type CurrencyDeposit = CurrencyDeposit;
 	type MetadataDepositBase = MetadataDepositBase;
 	type MetadataDepositPerByte = MetadataDepositPerByte;
 	type ApprovalDeposit = ApprovalDeposit;
 	type StringLimit = StringLimit;
-	type OnDust = ();
+	type DustAccount = DustAccount;
 	type WeightInfo = ();
 	type Extra = ();
 }
 
-impl orml_currencies::Config for Test {
+impl webb_currencies::Config for Test {
 	type Event = Event;
 	type GetNativeCurrencyId = NativeCurrencyId;
 	type MultiCurrency = Tokens;
@@ -157,12 +161,12 @@ impl Config for Test {
 	type WeightInfo = Weights<Self>;
 }
 
-pub type TokenPallet = tokens::Pallet<Test>;
+pub type TokenPallet = webb_tokens::Pallet<Test>;
 pub type MixerCall = pallet_mixer::Call<Test>;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-	use balances::GenesisConfig as BalancesConfig;
+	use pallet_balances::GenesisConfig as BalancesConfig;
 	// use tokens::GenesisConfig as TokensConfig;
 	let mut t = frame_system::GenesisConfig::default().build_storage::<Test>().unwrap();
 
