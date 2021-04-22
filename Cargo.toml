@@ -1,6 +1,7 @@
 [workspace]
 members = [
 	"node",
+	"pallets/bridge",
 	"pallets/currencies",
 	"pallets/merkle",
 	"pallets/merkle/rpc",

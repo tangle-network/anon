@@ -17,12 +17,12 @@ pub mod mock;
 #[cfg(test)]
 mod tests;
 
-mod basic_currency;
-mod traits;
+pub mod basic_currency;
+pub mod traits;
 pub use traits::*;
-mod types;
+pub mod types;
 pub use types::*;
-mod imbalance;
+pub mod imbalance;
 pub use imbalance::*;
 
 use sp_std::{
@@ -31,7 +31,7 @@ use sp_std::{
 	prelude::*,
 	vec::Vec,
 };
-
+use sp_runtime::traits::One;
 use codec::{Decode, Encode};
 use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
@@ -165,7 +165,7 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize;
 
 		/// The currency ID type
-		type CurrencyId: Parameter + Member + Copy + MaybeSerializeDeserialize + Ord;
+		type CurrencyId: Parameter + Member + Copy + MaybeSerializeDeserialize + Ord + Default + arithmetic::SimpleArithmetic;
 
 		/// The native currency system
 		type NativeCurrency: BasicCurrencyExtended<Self::AccountId, Balance = Self::Balance, Amount = Self::Amount>
@@ -2124,6 +2124,14 @@ impl<T: Config> ExtendedTokenSystem<T::AccountId, T::CurrencyId, T::Balance> for
 		});
 
 		Ok(())
+	}
+
+	fn exists(currency_id: T::CurrencyId) -> bool {
+		Token::<T>::contains_key(currency_id)
+	}
+
+	fn increment(currency_id: T::CurrencyId) -> T::CurrencyId {
+		currency_id + One::one()
 	}
 
 	fn mint(currency_id: T::CurrencyId, account_id: T::AccountId, amount: T::Balance) -> Result<(), DispatchError> {
