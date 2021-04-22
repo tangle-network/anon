@@ -32,6 +32,16 @@ use sp_std::{
 	vec::Vec,
 };
 
+use codec::{Decode, Encode};
+use frame_support::{
+	dispatch::{DispatchError, DispatchResult},
+	ensure, log,
+	traits::{
+		Currency as PalletCurrency, ExistenceRequirement, Get, Imbalance, LockableCurrency as PalletLockableCurrency,
+		ReservableCurrency as PalletReservableCurrency, SignedImbalance, WithdrawReasons,
+	},
+	transactional, PalletId,
+};
 use sp_runtime::{
 	traits::{
 		AccountIdConversion, AtLeast32BitUnsigned, Bounded, CheckedAdd, CheckedSub, MaybeSerializeDeserialize, Member,
@@ -39,28 +49,16 @@ use sp_runtime::{
 	},
 	RuntimeDebug,
 };
-use codec::{Encode, Decode};
-use frame_support::{ensure, dispatch::{DispatchError, DispatchResult}, PalletId};
-use frame_support::{
-	log,
-	traits::{
-		Currency as PalletCurrency, ExistenceRequirement, Get, Imbalance,
-		LockableCurrency as PalletLockableCurrency, ReservableCurrency as PalletReservableCurrency, SignedImbalance,
-		WithdrawReasons,
-	},
-	transactional,
-};
 
+pub use pallet::*;
+use sp_std::collections::btree_map::BTreeMap;
 use webb_traits::{
 	account::MergeAccount,
 	arithmetic::{self, Signed},
-	BasicCurrencyExtended, BasicLockableCurrency, BasicReservableCurrency,
-	BalanceStatus, LockIdentifier, MultiCurrency, MultiCurrencyExtended, MultiLockableCurrency,
-	MultiReservableCurrency,
+	BalanceStatus, BasicCurrencyExtended, BasicLockableCurrency, BasicReservableCurrency, LockIdentifier,
+	MultiCurrency, MultiCurrencyExtended, MultiLockableCurrency, MultiReservableCurrency,
 };
-use sp_std::collections::btree_map::BTreeMap;
 pub use weights::WeightInfo;
-pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -111,36 +109,36 @@ pub mod pallet {
 				.map(|(currency_id, min_balance)| (currency_id, min_balance))
 				.collect::<std::collections::BTreeSet<_>>();
 
-			assert!(
-				unique_tokens.len() == self.tokens.len(),
-				"duplicate tokens in genesis."
-			);
+			assert!(unique_tokens.len() == self.tokens.len(), "duplicate tokens in genesis.");
 
 			let mut token_min_balance_map: BTreeMap<T::CurrencyId, T::Balance> = BTreeMap::new();
 			for i in 0..self.tokens.len() {
 				token_min_balance_map.insert(self.tokens[i].0, self.tokens[i].1);
 			}
-
-			self.endowed_accounts
-				.iter()
-				.for_each(|(account_id, currency_id, initial_balance)| {
-					assert!(
-						initial_balance >= token_min_balance_map.get(&currency_id).unwrap(),
-						"the balance of any account should always be more than existential deposit.",
-					);
-					Pallet::<T>::mutate_account(account_id, *currency_id, |account_data, _| {
-						account_data.free = *initial_balance
-					});
-					assert!(
-						Pallet::<T>::free_balance(*currency_id, account_id) == *initial_balance,
-						"the balance is wrong"
-					);
-					TotalIssuance::<T>::mutate(*currency_id, |total_issuance| {
-						*total_issuance = total_issuance
-							.checked_add(initial_balance)
-							.expect("total issuance cannot overflow when building genesis")
-					});
+			for (account_id, currency_id, initial_balance) in &self.endowed_accounts {
+				// create a token with the currency_id.
+				<Pallet<T> as ExtendedTokenSystem<_, _, _>>::create(
+					*currency_id,
+					account_id.clone(),
+					account_id.clone(),
+					Zero::zero(),
+				)
+				.unwrap();
+				assert!(
+					initial_balance >= token_min_balance_map.get(&currency_id).unwrap(),
+					"the balance of any account should always be more than existential deposit.",
+				);
+				Pallet::<T>::set_free_balance(*currency_id, &account_id, *initial_balance);
+				assert!(
+					Pallet::<T>::free_balance(*currency_id, &account_id) == *initial_balance,
+					"the balance is wrong"
+				);
+				TotalIssuance::<T>::mutate(&currency_id, |total_issuance| {
+					*total_issuance = total_issuance
+						.checked_add(&initial_balance)
+						.expect("total issuance cannot overflow when building genesis")
 				});
+			}
 		}
 	}
 
@@ -174,21 +172,23 @@ pub mod pallet {
 			+ BasicLockableCurrency<Self::AccountId, Balance = Self::Balance>
 			+ BasicReservableCurrency<Self::AccountId, Balance = Self::Balance>;
 
-		/// The origin which may forcibly create or destroy an asset or otherwise alter privileged
-		/// attributes.
+		/// The origin which may forcibly create or destroy an asset or
+		/// otherwise alter privileged attributes.
 		type ForceOrigin: EnsureOrigin<Self::Origin>;
- 
+
 		/// The basic amount of funds that must be reserved for an asset.
 		type CurrencyDeposit: Get<Self::Balance>;
 
-		/// The basic amount of funds that must be reserved when adding metadata to your asset.
+		/// The basic amount of funds that must be reserved when adding metadata
+		/// to your asset.
 		type MetadataDepositBase: Get<Self::Balance>;
 
-		/// The additional funds that must be reserved for the number of bytes you store in your
-		/// metadata.
+		/// The additional funds that must be reserved for the number of bytes
+		/// you store in your metadata.
 		type MetadataDepositPerByte: Get<Self::Balance>;
 
-		/// The amount of funds that must be reserved when creating a new approval.
+		/// The amount of funds that must be reserved when creating a new
+		/// approval.
 		type ApprovalDeposit: Get<Self::Balance>;
 
 		/// The maximum length of a name or symbol stored on-chain.
@@ -199,7 +199,7 @@ pub mod pallet {
 
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
-		
+
 		/// The default account to send dust to.
 		type DustAccount: Get<Self::AccountId>;
 	}
@@ -230,18 +230,19 @@ pub mod pallet {
 		Destroyed(T::CurrencyId),
 		/// Some asset class was force-created. \[asset_id, owner\]
 		ForceCreated(T::CurrencyId, T::AccountId),
-		/// New metadata has been set for an asset. \[asset_id, name, symbol, decimals, is_frozen\]
+		/// New metadata has been set for an asset. \[asset_id, name, symbol,
+		/// decimals, is_frozen\]
 		MetadataSet(T::CurrencyId, Vec<u8>, Vec<u8>, u8, bool),
 		/// Metadata has been cleared for an asset. \[asset_id\]
 		MetadataCleared(T::CurrencyId),
-		/// (Additional) funds have been approved for transfer to a destination account.
-		/// \[asset_id, source, delegate, amount\]
+		/// (Additional) funds have been approved for transfer to a destination
+		/// account. \[asset_id, source, delegate, amount\]
 		ApprovedTransfer(T::CurrencyId, T::AccountId, T::AccountId, T::Balance),
 		/// An approval for account `delegate` was cancelled by `owner`.
 		/// \[id, owner, delegate\]
 		ApprovalCancelled(T::CurrencyId, T::AccountId, T::AccountId),
-		/// An `amount` was transferred in its entirety from `owner` to `destination` by
-		/// the approved `delegate`.
+		/// An `amount` was transferred in its entirety from `owner` to
+		/// `destination` by the approved `delegate`.
 		/// \[id, owner, delegate, destination\]
 		TransferredApproved(T::CurrencyId, T::AccountId, T::AccountId, T::AccountId, T::Balance),
 		/// An asset has had its attributes changed by the `Force` origin.
@@ -271,7 +272,8 @@ pub mod pallet {
 		LiquidityRestrictions,
 		/// Account still has active reserved
 		StillHasActiveReserved,
-		/// Account balance must be greater than or equal to the transfer amount.
+		/// Account balance must be greater than or equal to the transfer
+		/// amount.
 		BalanceLow,
 		/// Balance should be non-zero.
 		BalanceZero,
@@ -293,32 +295,31 @@ pub mod pallet {
 		MinBalanceZero,
 		/// A mint operation lead to an overflow.
 		Overflow,
-		/// No provider reference exists to allow a non-zero balance of a non-self-sufficient currency.
+		/// No provider reference exists to allow a non-zero balance of a
+		/// non-self-sufficient currency.
 		NoProvider,
 		/// Invalid metadata given.
 		BadMetadata,
 		/// No approval exists that would allow the transfer.
 		Unapproved,
-		/// The source account would not survive the transfer and it needs to stay alive.
+		/// The source account would not survive the transfer and it needs to
+		/// stay alive.
 		WouldDie,
 		/// Invalid amount,
-		InvalidAmount
+		InvalidAmount,
 	}
 
 	#[pallet::storage]
 	#[pallet::getter(fn currency)]
 	/// Details of an asset.
-	pub(super) type Token<T: Config> = StorageMap<
-		_,
-		Blake2_128Concat,
-		T::CurrencyId,
-		TokenDetails<T::Balance, T::AccountId>,
-	>;
+	pub(super) type Token<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::CurrencyId, TokenDetails<T::Balance, T::AccountId>>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn approvals)]
-	/// Approved balance transfers. First balance is the amount approved for transfer. Second
-	/// is the amount of `T::Currency` reserved for storing this.
+	/// Approved balance transfers. First balance is the amount approved for
+	/// transfer. Second is the amount of `T::Currency` reserved for storing
+	/// this.
 	pub(super) type Approvals<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
@@ -332,13 +333,8 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn metadata)]
 	/// Metadata of an currency.
-	pub(super) type Metadata<T: Config> = StorageMap<
-		_,
-		Blake2_128Concat,
-		T::CurrencyId,
-		TokenMetadata<T::Balance>,
-		ValueQuery,
-	>;
+	pub(super) type Metadata<T: Config> =
+		StorageMap<_, Blake2_128Concat, T::CurrencyId, TokenMetadata<T::Balance>, ValueQuery>;
 
 	/// The total issuance of a token type.
 	#[pallet::storage]
@@ -385,15 +381,8 @@ pub mod pallet {
 	/// balances.
 	#[pallet::storage]
 	#[pallet::getter(fn account_currencies)]
-	pub type AccountCurrencies<T: Config> = StorageDoubleMap<
-		_,
-		Blake2_128Concat,
-		T::AccountId,
-		Twox64Concat,
-		T::CurrencyId,
-		bool,
-		ValueQuery,
-	>;
+	pub type AccountCurrencies<T: Config> =
+		StorageDoubleMap<_, Blake2_128Concat, T::AccountId, Twox64Concat, T::CurrencyId, bool, ValueQuery>;
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
@@ -402,23 +391,29 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// Issue a new class of fungible assets from a public origin.
 		///
-		/// This new asset class has no assets initially and its owner is the origin.
+		/// This new asset class has no assets initially and its owner is the
+		/// origin.
 		///
-		/// The origin must be Signed and the sender must have sufficient funds free.
+		/// The origin must be Signed and the sender must have sufficient funds
+		/// free.
 		///
 		/// Funds of sender are reserved by `CurrencyDeposit`.
 		///
 		/// Parameters:
-		/// - `id`: The identifier of the new asset. This must not be currently in use to identify
+		/// - `id`: The identifier of the new asset. This must not be currently
+		///   in use to identify
 		/// an existing asset.
-		/// - `admin`: The admin of this class of assets. The admin is the initial address of each
+		/// - `admin`: The admin of this class of assets. The admin is the
+		///   initial address of each
 		/// member of the asset class's admin team.
-		/// - `min_balance`: The minimum balance of this new asset that any single account must
-		/// have. If an account's balance is reduced below this, then it collapses to zero.
+		/// - `min_balance`: The minimum balance of this new asset that any
+		///   single account must
+		/// have. If an account's balance is reduced below this, then it
+		/// collapses to zero.
 		///
 		/// Emits `Created` event when successful.
 		///
-		/// Weight: `O(1)`
+		/// Weight: `O(5_000_000)`
 		#[pallet::weight(5_000_000)]
 		pub(super) fn create(
 			origin: OriginFor<T>,
@@ -435,12 +430,7 @@ pub mod pallet {
 			let deposit = T::CurrencyDeposit::get();
 			T::NativeCurrency::reserve(&owner, deposit)?;
 
-			<Self as ExtendedTokenSystem<_,_,_>>::create(
-				id,
-				owner.clone(),
-				admin.clone(),
-				min_balance
-			)?;
+			<Self as ExtendedTokenSystem<_, _, _>>::create(id, owner.clone(), admin.clone(), min_balance)?;
 			Self::deposit_event(Event::Created(id, owner, admin));
 			Ok(())
 		}
@@ -453,15 +443,20 @@ pub mod pallet {
 		///
 		/// Unlike `create`, no funds are reserved.
 		///
-		/// - `id`: The identifier of the new asset. This must not be currently in use to identify
+		/// - `id`: The identifier of the new asset. This must not be currently
+		///   in use to identify
 		/// an existing asset.
-		/// - `owner`: The owner of this class of assets. The owner has full superuser permissions
-		/// over this asset, but may later change and configure the permissions using `transfer_ownership`
-		/// and `set_team`.
-		/// - `max_zombies`: The total number of accounts which may hold assets in this class yet
+		/// - `owner`: The owner of this class of assets. The owner has full
+		///   superuser permissions
+		/// over this asset, but may later change and configure the permissions
+		/// using `transfer_ownership` and `set_team`.
+		/// - `max_zombies`: The total number of accounts which may hold assets
+		///   in this class yet
 		/// have no existential deposit.
-		/// - `min_balance`: The minimum balance of this new asset that any single account must
-		/// have. If an account's balance is reduced below this, then it collapses to zero.
+		/// - `min_balance`: The minimum balance of this new asset that any
+		///   single account must
+		/// have. If an account's balance is reduced below this, then it
+		/// collapses to zero.
 		///
 		/// Emits `ForceCreated` event when successful.
 		///
@@ -497,10 +492,11 @@ pub mod pallet {
 
 		/// Destroy a class of fungible assets.
 		///
-		/// The origin must conform to `ForceOrigin` or must be Signed and the sender must be the
-		/// owner of the asset `id`.
+		/// The origin must conform to `ForceOrigin` or must be Signed and the
+		/// sender must be the owner of the asset `id`.
 		///
-		/// - `id`: The identifier of the asset to be destroyed. This must identify an existing
+		/// - `id`: The identifier of the asset to be destroyed. This must
+		///   identify an existing
 		/// asset.
 		///
 		/// Emits `Destroyed` event when successful.
@@ -510,10 +506,7 @@ pub mod pallet {
 		/// - `s = witness.sufficients`
 		/// - `a = witness.approvals`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn destroy(
-			origin: OriginFor<T>,
-			id: T::CurrencyId,
-		) -> DispatchResult {
+		pub(super) fn destroy(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
 			let maybe_check_owner = match T::ForceOrigin::try_origin(origin) {
 				Ok(_) => None,
 				Err(origin) => Some(ensure_signed(origin)?),
@@ -530,22 +523,21 @@ pub mod pallet {
 				}
 
 				let metadata = Metadata::<T>::take(&id);
-				T::NativeCurrency::unreserve(
-					&details.owner,
-					details.deposit.saturating_add(metadata.deposit)
-				);
+				T::NativeCurrency::unreserve(&details.owner, details.deposit.saturating_add(metadata.deposit));
 
 				Approvals::<T>::remove_prefix(&id);
 				Self::deposit_event(Event::Destroyed(id));
 
-				// NOTE: could use postinfo to reflect the actual number of accounts/sufficient/approvals
+				// NOTE: could use postinfo to reflect the actual number of
+				// accounts/sufficient/approvals
 				Ok(())
 			})
 		}
 
 		/// Mint assets of a particular class.
 		///
-		/// The origin must be Signed and the sender must be the Issuer of the asset `id`.
+		/// The origin must be Signed and the sender must be the Issuer of the
+		/// asset `id`.
 		///
 		/// - `id`: The identifier of the asset to have some amount minted.
 		/// - `beneficiary`: The account to be credited with the minted assets.
@@ -554,13 +546,14 @@ pub mod pallet {
 		/// Emits `Destroyed` event when successful.
 		///
 		/// Weight: `O(1)`
-		/// Modes: Pre-existing balance of `beneficiary`; Account pre-existence of `beneficiary`.
+		/// Modes: Pre-existing balance of `beneficiary`; Account pre-existence
+		/// of `beneficiary`.
 		#[pallet::weight(5_000_000)]
 		pub(super) fn mint(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			beneficiary: <T::Lookup as StaticLookup>::Source,
-			amount: T::Balance
+			amount: T::Balance,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let beneficiary = T::Lookup::lookup(beneficiary)?;
@@ -570,23 +563,27 @@ pub mod pallet {
 				Self::total_balance(id, &beneficiary).saturating_add(amount) >= details.min_balance,
 				Error::<T>::BelowMinimum
 			);
-			<Self as ExtendedTokenSystem<_,_,_>>::mint(id, beneficiary.clone(), amount)?;
+			<Self as ExtendedTokenSystem<_, _, _>>::mint(id, beneficiary.clone(), amount)?;
 			Self::deposit_event(Event::Issued(id, beneficiary, amount));
 			Ok(())
 		}
 
-		/// Reduce the balance of `who` by as much as possible up to `amount` assets of `id`.
+		/// Reduce the balance of `who` by as much as possible up to `amount`
+		/// assets of `id`.
 		///
-		/// Origin must be Signed and the sender should be the Manager of the asset `id`.
+		/// Origin must be Signed and the sender should be the Manager of the
+		/// asset `id`.
 		///
 		/// Bails with `BalanceZero` if the `who` is already dead.
 		///
 		/// - `id`: The identifier of the asset to have some amount burned.
 		/// - `who`: The account to be debited from.
-		/// - `amount`: The maximum amount by which `who`'s balance should be reduced.
+		/// - `amount`: The maximum amount by which `who`'s balance should be
+		///   reduced.
 		///
-		/// Emits `Burned` with the actual amount burned. If this takes the balance to below the
-		/// minimum for the asset, then the amount burned is increased to take it to zero.
+		/// Emits `Burned` with the actual amount burned. If this takes the
+		/// balance to below the minimum for the asset, then the amount burned
+		/// is increased to take it to zero.
 		///
 		/// Weight: `O(1)`
 		/// Modes: Post-existence of `who`; Pre & post Zombie-status of `who`.
@@ -595,20 +592,21 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			who: <T::Lookup as StaticLookup>::Source,
-			amount: T::Balance
+			amount: T::Balance,
 		) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 			let details = Token::<T>::get(id).ok_or(Error::<T>::Unknown)?;
 			ensure!(sender == details.admin, Error::<T>::NoPermission);
 			let who = T::Lookup::lookup(who)?;
-			<Self as ExtendedTokenSystem<_,_,_>>::burn(id, who.clone(), amount)?;
+			<Self as ExtendedTokenSystem<_, _, _>>::burn(id, who.clone(), amount)?;
 			Self::deposit_event(Event::Burned(id, who, amount));
 			Ok(())
 		}
 
 		/// Disallow further unprivileged transfers from an account.
 		///
-		/// Origin must be Signed and the sender should be the Freezer of the asset `id`.
+		/// Origin must be Signed and the sender should be the Freezer of the
+		/// asset `id`.
 		///
 		/// - `id`: The identifier of the asset to be frozen.
 		/// - `who`: The account to be frozen.
@@ -620,7 +618,7 @@ pub mod pallet {
 		pub(super) fn freeze(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
-			who: <T::Lookup as StaticLookup>::Source
+			who: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
@@ -637,7 +635,8 @@ pub mod pallet {
 
 		/// Allow unprivileged transfers from an account again.
 		///
-		/// Origin must be Signed and the sender should be the Admin of the asset `id`.
+		/// Origin must be Signed and the sender should be the Admin of the
+		/// asset `id`.
 		///
 		/// - `id`: The identifier of the asset to be frozen.
 		/// - `who`: The account to be unfrozen.
@@ -649,7 +648,7 @@ pub mod pallet {
 		pub(super) fn thaw(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
-			who: <T::Lookup as StaticLookup>::Source
+			who: <T::Lookup as StaticLookup>::Source,
 		) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
@@ -666,7 +665,8 @@ pub mod pallet {
 
 		/// Disallow further unprivileged transfers for the asset class.
 		///
-		/// Origin must be Signed and the sender should be the Freezer of the asset `id`.
+		/// Origin must be Signed and the sender should be the Freezer of the
+		/// asset `id`.
 		///
 		/// - `id`: The identifier of the asset to be frozen.
 		///
@@ -674,10 +674,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn freeze_asset(
-			origin: OriginFor<T>,
-			id: T::CurrencyId
-		) -> DispatchResult {
+		pub(super) fn freeze_asset(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
 			Token::<T>::try_mutate(id, |maybe_details| {
@@ -693,7 +690,8 @@ pub mod pallet {
 
 		/// Allow unprivileged transfers for the asset again.
 		///
-		/// Origin must be Signed and the sender should be the Admin of the asset `id`.
+		/// Origin must be Signed and the sender should be the Admin of the
+		/// asset `id`.
 		///
 		/// - `id`: The identifier of the asset to be frozen.
 		///
@@ -701,10 +699,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn thaw_asset(
-			origin: OriginFor<T>,
-			id: T::CurrencyId
-		) -> DispatchResult {
+		pub(super) fn thaw_asset(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
 			Token::<T>::try_mutate(id, |maybe_details| {
@@ -720,7 +715,8 @@ pub mod pallet {
 
 		/// Change the Owner of an asset.
 		///
-		/// Origin must be Signed and the sender should be the Owner of the asset `id`.
+		/// Origin must be Signed and the sender should be the Owner of the
+		/// asset `id`.
 		///
 		/// - `id`: The identifier of the asset.
 		/// - `owner`: The new Owner of this asset.
@@ -740,18 +736,15 @@ pub mod pallet {
 			Token::<T>::try_mutate(id, |maybe_details| {
 				let details = maybe_details.as_mut().ok_or(Error::<T>::Unknown)?;
 				ensure!(&origin == &details.owner, Error::<T>::NoPermission);
-				if details.owner == owner { return Ok(()) }
+				if details.owner == owner {
+					return Ok(());
+				}
 
 				let metadata_deposit = Metadata::<T>::get(id).deposit;
 				let deposit = details.deposit + metadata_deposit;
 
 				// Move the deposit to the new owner.
-				T::NativeCurrency::repatriate_reserved(
-					&details.owner,
-					&owner,
-					deposit,
-					BalanceStatus::Reserved
-				)?;
+				T::NativeCurrency::repatriate_reserved(&details.owner, &owner, deposit, BalanceStatus::Reserved)?;
 
 				details.owner = owner.clone();
 
@@ -762,7 +755,8 @@ pub mod pallet {
 
 		/// Change the Issuer, Admin and Freezer of an asset.
 		///
-		/// Origin must be Signed and the sender should be the Owner of the asset `id`.
+		/// Origin must be Signed and the sender should be the Owner of the
+		/// asset `id`.
 		///
 		/// - `id`: The identifier of the asset to be frozen.
 		/// - `issuer`: The new Issuer of this asset.
@@ -800,16 +794,20 @@ pub mod pallet {
 
 		/// Set the metadata for an asset.
 		///
-		/// Origin must be Signed and the sender should be the Owner of the asset `id`.
+		/// Origin must be Signed and the sender should be the Owner of the
+		/// asset `id`.
 		///
 		/// Funds of sender are reserved according to the formula:
-		/// `MetadataDepositBase + MetadataDepositPerByte * (name.len + symbol.len)` taking into
-		/// account any already reserved funds.
+		/// `MetadataDepositBase + MetadataDepositPerByte * (name.len +
+		/// symbol.len)` taking into account any already reserved funds.
 		///
 		/// - `id`: The identifier of the asset to update.
-		/// - `name`: The user friendly name of this asset. Limited in length by `StringLimit`.
-		/// - `symbol`: The exchange symbol for this asset. Limited in length by `StringLimit`.
-		/// - `decimals`: The number of decimals this asset uses to represent one unit.
+		/// - `name`: The user friendly name of this asset. Limited in length by
+		///   `StringLimit`.
+		/// - `symbol`: The exchange symbol for this asset. Limited in length by
+		///   `StringLimit`.
+		/// - `decimals`: The number of decimals this asset uses to represent
+		///   one unit.
 		///
 		/// Emits `MetadataSet`.
 		///
@@ -831,7 +829,10 @@ pub mod pallet {
 			ensure!(&origin == &d.owner, Error::<T>::NoPermission);
 
 			Metadata::<T>::try_mutate_exists(id, |metadata| {
-				ensure!(metadata.as_ref().map_or(true, |m| !m.is_frozen), Error::<T>::NoPermission);
+				ensure!(
+					metadata.as_ref().map_or(true, |m| !m.is_frozen),
+					Error::<T>::NoPermission
+				);
 
 				let old_deposit = metadata.take().map_or(Zero::zero(), |m| m.deposit);
 				let new_deposit = T::MetadataDepositPerByte::get()
@@ -859,7 +860,8 @@ pub mod pallet {
 
 		/// Clear the metadata for an asset.
 		///
-		/// Origin must be Signed and the sender should be the Owner of the asset `id`.
+		/// Origin must be Signed and the sender should be the Owner of the
+		/// asset `id`.
 		///
 		/// Any deposit is freed for the asset owner.
 		///
@@ -869,10 +871,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn clear_metadata(
-			origin: OriginFor<T>,
-			id: T::CurrencyId,
-		) -> DispatchResult {
+		pub(super) fn clear_metadata(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
 			let d = Token::<T>::get(id).ok_or(Error::<T>::Unknown)?;
@@ -893,13 +892,17 @@ pub mod pallet {
 		/// Any deposit is left alone.
 		///
 		/// - `id`: The identifier of the asset to update.
-		/// - `name`: The user friendly name of this asset. Limited in length by `StringLimit`.
-		/// - `symbol`: The exchange symbol for this asset. Limited in length by `StringLimit`.
-		/// - `decimals`: The number of decimals this asset uses to represent one unit.
+		/// - `name`: The user friendly name of this asset. Limited in length by
+		///   `StringLimit`.
+		/// - `symbol`: The exchange symbol for this asset. Limited in length by
+		///   `StringLimit`.
+		/// - `decimals`: The number of decimals this asset uses to represent
+		///   one unit.
 		///
 		/// Emits `MetadataSet`.
 		///
-		/// Weight: `O(N + S)` where N and S are the length of the name and symbol respectively.
+		/// Weight: `O(N + S)` where N and S are the length of the name and
+		/// symbol respectively.
 		#[pallet::weight(5_000_000)]
 		pub(super) fn force_set_metadata(
 			origin: OriginFor<T>,
@@ -942,10 +945,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn force_clear_metadata(
-			origin: OriginFor<T>,
-			id: T::CurrencyId,
-		) -> DispatchResult {
+		pub(super) fn force_clear_metadata(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
 			T::ForceOrigin::ensure_origin(origin)?;
 
 			let d = Token::<T>::get(id).ok_or(Error::<T>::Unknown)?;
@@ -966,9 +966,12 @@ pub mod pallet {
 		/// - `issuer`: The new Issuer of this asset.
 		/// - `admin`: The new Admin of this asset.
 		/// - `freezer`: The new Freezer of this asset.
-		/// - `min_balance`: The minimum balance of this new asset that any single account must
-		/// have. If an account's balance is reduced below this, then it collapses to zero.
-		/// - `is_frozen`: Whether this asset class is frozen except for permissioned/admin
+		/// - `min_balance`: The minimum balance of this new asset that any
+		///   single account must
+		/// have. If an account's balance is reduced below this, then it
+		/// collapses to zero.
+		/// - `is_frozen`: Whether this asset class is frozen except for
+		///   permissioned/admin
 		/// instructions.
 		///
 		/// Emits `CurrencyStatusChanged` with the identity of the asset.
@@ -1002,21 +1005,24 @@ pub mod pallet {
 			})
 		}
 
-		/// Approve an amount of asset for transfer by a delegated third-party account.
+		/// Approve an amount of asset for transfer by a delegated third-party
+		/// account.
 		///
 		/// Origin must be Signed.
 		///
-		/// Ensures that `ApprovalDeposit` worth of `Currency` is reserved from signing account
-		/// for the purpose of holding the approval. If some non-zero amount of assets is already
-		/// approved from signing account to `delegate`, then it is topped up or unreserved to
-		/// meet the right value.
+		/// Ensures that `ApprovalDeposit` worth of `Currency` is reserved from
+		/// signing account for the purpose of holding the approval. If some
+		/// non-zero amount of assets is already approved from signing account
+		/// to `delegate`, then it is topped up or unreserved to meet the right
+		/// value.
 		///
-		/// NOTE: The signing account does not need to own `amount` of assets at the point of
-		/// making this call.
+		/// NOTE: The signing account does not need to own `amount` of assets at
+		/// the point of making this call.
 		///
 		/// - `id`: The identifier of the asset.
 		/// - `delegate`: The account to delegate permission to transfer asset.
-		/// - `amount`: The amount of asset that may be transferred by `delegate`. If there is
+		/// - `amount`: The amount of asset that may be transferred by
+		///   `delegate`. If there is
 		/// already an approval in place, then this acts additively.
 		///
 		/// Emits `ApprovedTransfer` on success.
@@ -1049,12 +1055,14 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Cancel all of some asset approved for delegated transfer by a third-party account.
+		/// Cancel all of some asset approved for delegated transfer by a
+		/// third-party account.
 		///
-		/// Origin must be Signed and there must be an approval in place between signer and
-		/// `delegate`.
+		/// Origin must be Signed and there must be an approval in place between
+		/// signer and `delegate`.
 		///
-		/// Unreserves any deposit previously reserved by `approve_transfer` for the approval.
+		/// Unreserves any deposit previously reserved by `approve_transfer` for
+		/// the approval.
 		///
 		/// - `id`: The identifier of the asset.
 		/// - `delegate`: The account delegated permission to transfer asset.
@@ -1078,12 +1086,14 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Cancel all of some asset approved for delegated transfer by a third-party account.
+		/// Cancel all of some asset approved for delegated transfer by a
+		/// third-party account.
 		///
-		/// Origin must be either ForceOrigin or Signed origin with the signer being the Admin
-		/// account of the asset `id`.
+		/// Origin must be either ForceOrigin or Signed origin with the signer
+		/// being the Admin account of the asset `id`.
 		///
-		/// Unreserves any deposit previously reserved by `approve_transfer` for the approval.
+		/// Unreserves any deposit previously reserved by `approve_transfer` for
+		/// the approval.
 		///
 		/// - `id`: The identifier of the asset.
 		/// - `delegate`: The account delegated permission to transfer asset.
@@ -1118,19 +1128,21 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// Transfer some asset balance from a previously delegated account to some third-party
-		/// account.
+		/// Transfer some asset balance from a previously delegated account to
+		/// some third-party account.
 		///
-		/// Origin must be Signed and there must be an approval in place by the `owner` to the
-		/// signer.
+		/// Origin must be Signed and there must be an approval in place by the
+		/// `owner` to the signer.
 		///
-		/// If the entire amount approved for transfer is transferred, then any deposit previously
-		/// reserved by `approve_transfer` is unreserved.
+		/// If the entire amount approved for transfer is transferred, then any
+		/// deposit previously reserved by `approve_transfer` is unreserved.
 		///
 		/// - `id`: The identifier of the asset.
-		/// - `owner`: The account which previously approved for a transfer of at least `amount` and
+		/// - `owner`: The account which previously approved for a transfer of
+		///   at least `amount` and
 		/// from which the asset balance will be withdrawn.
-		/// - `destination`: The account to which the asset balance of `amount` will be transferred.
+		/// - `destination`: The account to which the asset balance of `amount`
+		///   will be transferred.
 		/// - `amount`: The amount of assets to transfer.
 		///
 		/// Emits `TransferredApproved` on success.
@@ -1213,30 +1225,33 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		/// Move some assets from the sender account to another, keeping the sender account alive.
+		/// Move some assets from the sender account to another, keeping the
+		/// sender account alive.
 		///
 		/// Origin must be Signed.
 		///
 		/// - `id`: The identifier of the asset to have some amount transferred.
 		/// - `target`: The account to be credited.
-		/// - `amount`: The amount by which the sender's balance of assets should be reduced and
-		/// `target`'s balance increased. The amount actually transferred may be slightly greater in
-		/// the case that the transfer would otherwise take the sender balance above zero but below
-		/// the minimum balance. Must be greater than zero.
+		/// - `amount`: The amount by which the sender's balance of assets
+		///   should be reduced and
+		/// `target`'s balance increased. The amount actually transferred may be
+		/// slightly greater in the case that the transfer would otherwise take
+		/// the sender balance above zero but below the minimum balance. Must be
+		/// greater than zero.
 		///
-		/// Emits `Transferred` with the actual amount transferred. If this takes the source balance
-		/// to below the minimum for the asset, then the amount transferred is increased to take it
-		/// to zero.
+		/// Emits `Transferred` with the actual amount transferred. If this
+		/// takes the source balance to below the minimum for the asset, then
+		/// the amount transferred is increased to take it to zero.
 		///
 		/// Weight: `O(1)`
-		/// Modes: Pre-existence of `target`; Post-existence of sender; Prior & post zombie-status
-		/// of sender; Account pre-existence of `target`.
+		/// Modes: Pre-existence of `target`; Post-existence of sender; Prior &
+		/// post zombie-status of sender; Account pre-existence of `target`.
 		#[pallet::weight(5_000_000)]
 		pub(super) fn transfer_keep_alive(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			target: <T::Lookup as StaticLookup>::Source,
-			amount: T::Balance
+			amount: T::Balance,
 		) -> DispatchResult {
 			let from = ensure_signed(origin)?;
 			let to = T::Lookup::lookup(target)?;
@@ -1255,23 +1270,26 @@ pub mod pallet {
 
 		/// Move some assets from one account to another.
 		///
-		/// Origin must be Signed and the sender should be the Admin of the asset `id`.
+		/// Origin must be Signed and the sender should be the Admin of the
+		/// asset `id`.
 		///
 		/// - `id`: The identifier of the asset to have some amount transferred.
 		/// - `source`: The account to be debited.
 		/// - `dest`: The account to be credited.
-		/// - `amount`: The amount by which the `source`'s balance of assets should be reduced and
-		/// `dest`'s balance increased. The amount actually transferred may be slightly greater in
-		/// the case that the transfer would otherwise take the `source` balance above zero but
-		/// below the minimum balance. Must be greater than zero.
+		/// - `amount`: The amount by which the `source`'s balance of assets
+		///   should be reduced and
+		/// `dest`'s balance increased. The amount actually transferred may be
+		/// slightly greater in the case that the transfer would otherwise take
+		/// the `source` balance above zero but below the minimum balance. Must
+		/// be greater than zero.
 		///
-		/// Emits `Transferred` with the actual amount transferred. If this takes the source balance
-		/// to below the minimum for the asset, then the amount transferred is increased to take it
-		/// to zero.
+		/// Emits `Transferred` with the actual amount transferred. If this
+		/// takes the source balance to below the minimum for the asset, then
+		/// the amount transferred is increased to take it to zero.
 		///
 		/// Weight: `O(1)`
-		/// Modes: Pre-existence of `dest`; Post-existence of `source`; Prior & post zombie-status
-		/// of `source`; Account pre-existence of `dest`.
+		/// Modes: Pre-existence of `dest`; Post-existence of `source`; Prior &
+		/// post zombie-status of `source`; Account pre-existence of `dest`.
 		#[pallet::weight(T::WeightInfo::force_transfer())]
 		pub(super) fn force_transfer(
 			origin: OriginFor<T>,
@@ -1294,15 +1312,18 @@ pub mod pallet {
 
 		/// Set the dust handler type.
 		///
-		/// Origin must be Signed and the sender should be the Admin of the asset `id`.
+		/// Origin must be Signed and the sender should be the Admin of the
+		/// asset `id`.
 		///
 		/// - `id`: The identifier of the asset to have some amount transferred.
 		/// - `source`: The account to be debited.
 		/// - `dest`: The account to be credited.
-		/// - `amount`: The amount by which the `source`'s balance of assets should be reduced and
-		/// `dest`'s balance increased. The amount actually transferred may be slightly greater in
-		/// the case that the transfer would otherwise take the `source` balance above zero but
-		/// below the minimum balance. Must be greater than zero.
+		/// - `amount`: The amount by which the `source`'s balance of assets
+		///   should be reduced and
+		/// `dest`'s balance increased. The amount actually transferred may be
+		/// slightly greater in the case that the transfer would otherwise take
+		/// the `source` balance above zero but below the minimum balance. Must
+		/// be greater than zero.
 		///
 		/// Emits `DustHandlerChange` with the currency_id and new handler type.
 		///
@@ -1349,13 +1370,14 @@ impl<T: Config> Pallet<T> {
 				} else {
 					// if non_zero total is below existential deposit and the account is not a
 					// module account, should handle the dust.
-					match Token::<T>::get(currency_id) {
+					let token = Token::<T>::get(currency_id);
+					match token {
 						Some(token_data) => {
 							if total < token_data.min_balance && !Self::is_module_account_id(who) {
 								handle_dust = Some(total);
 							}
 							Some(account)
-						},
+						}
 						None => None,
 					}
 				};
@@ -1381,7 +1403,7 @@ impl<T: Config> Pallet<T> {
 				AccountCurrencies::<T>::remove(who, currency_id);
 				// `OnDust` maybe get/set storage `Accounts` of `who`, trigger handler here
 				// to avoid some unexpected errors.
-				<Self as ExtendedTokenSystem<_,_,_>>::handle_dust(currency_id, who, dust_amount);
+				<Self as ExtendedTokenSystem<_, _, _>>::handle_dust(currency_id, who, dust_amount);
 				Self::deposit_event(Event::DustLost(who.clone(), currency_id, dust_amount));
 			}
 
@@ -1406,8 +1428,6 @@ impl<T: Config> Pallet<T> {
 	/// expected to do it.
 	pub(crate) fn set_free_balance(currency_id: T::CurrencyId, who: &T::AccountId, amount: T::Balance) {
 		Self::mutate_account(who, currency_id, |account, _| {
-			#[cfg(feature="std")]
-			println!("{:?}", account);
 			account.free = amount;
 		});
 	}
@@ -1458,18 +1478,15 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	pub(crate) fn dead_account(
-		id: T::CurrencyId,
-		who: &T::AccountId,
-	) {
+	pub(crate) fn dead_account(id: T::CurrencyId, who: &T::AccountId) {
 		frame_system::Pallet::<T>::dec_consumers(who);
 		AccountCurrencies::<T>::remove(who, id)
 	}
 }
 
 impl<T: Config> MultiCurrency<T::AccountId> for Pallet<T> {
-	type CurrencyId = T::CurrencyId;
 	type Balance = T::Balance;
+	type CurrencyId = T::CurrencyId;
 
 	fn minimum_balance(currency_id: Self::CurrencyId) -> Self::Balance {
 		match Token::<T>::get(currency_id) {
@@ -1844,8 +1861,8 @@ where
 	GetCurrencyId: Get<T::CurrencyId>,
 {
 	type Balance = T::Balance;
-	type PositiveImbalance = PositiveImbalance<T, GetCurrencyId>;
 	type NegativeImbalance = NegativeImbalance<T, GetCurrencyId>;
+	type PositiveImbalance = PositiveImbalance<T, GetCurrencyId>;
 
 	fn total_balance(who: &T::AccountId) -> Self::Balance {
 		Pallet::<T>::total_balance(GetCurrencyId::get(), who)
@@ -2003,8 +2020,8 @@ where
 						};
 						account.free = value;
 						Ok(imbalance)
-					},
-					None => { Err(()) },
+					}
+					None => Err(()),
 				}
 			},
 		)
@@ -2053,8 +2070,8 @@ where
 	T: Config,
 	GetCurrencyId: Get<T::CurrencyId>,
 {
-	type Moment = T::BlockNumber;
 	type MaxLocks = ();
+	type Moment = T::BlockNumber;
 
 	fn set_lock(id: LockIdentifier, who: &T::AccountId, amount: Self::Balance, _reasons: WithdrawReasons) {
 		let _ = Pallet::<T>::set_lock(id, GetCurrencyId::get(), who, amount);
@@ -2068,7 +2085,6 @@ where
 		let _ = Pallet::<T>::remove_lock(id, GetCurrencyId::get(), who);
 	}
 }
-
 
 impl<T: Config> MergeAccount<T::AccountId> for Pallet<T> {
 	#[transactional]
@@ -2088,7 +2104,12 @@ impl<T: Config> MergeAccount<T::AccountId> for Pallet<T> {
 }
 
 impl<T: Config> ExtendedTokenSystem<T::AccountId, T::CurrencyId, T::Balance> for Pallet<T> {
-	fn create(currency_id: T::CurrencyId, owner: T::AccountId, admin: T::AccountId, min_balance: T::Balance) -> Result<(), DispatchError> {
+	fn create(
+		currency_id: T::CurrencyId,
+		owner: T::AccountId,
+		admin: T::AccountId,
+		min_balance: T::Balance,
+	) -> Result<(), DispatchError> {
 		Token::<T>::insert(currency_id, TokenDetails {
 			owner: owner.clone(),
 			issuer: admin.clone(),
@@ -2110,10 +2131,10 @@ impl<T: Config> ExtendedTokenSystem<T::AccountId, T::CurrencyId, T::Balance> for
 		Ok(())
 	}
 
-	/// Burns a balance from an account. Will burn into reserved balance as well.
-	/// Deducts total burned amount from the token supply. Note, the total burned
-	/// amount might be less than the target burn amount if the user has less balance
-	/// than what is being burnt.
+	/// Burns a balance from an account. Will burn into reserved balance as
+	/// well. Deducts total burned amount from the token supply. Note, the total
+	/// burned amount might be less than the target burn amount if the user has
+	/// less balance than what is being burnt.
 	fn burn(currency_id: T::CurrencyId, account_id: T::AccountId, amount: T::Balance) -> Result<(), DispatchError> {
 		ensure!(!amount.is_zero(), Error::<T>::InvalidAmount);
 
@@ -2147,8 +2168,8 @@ impl<T: Config> ExtendedTokenSystem<T::AccountId, T::CurrencyId, T::Balance> for
 		if let Some(token) = Token::<T>::get(currency_id) {
 			match token.dust_type {
 				DustHandlerType::Burn => {
-					let _ =Pallet::<T>::withdraw(currency_id, who, amount);
-				},
+					let _ = Pallet::<T>::withdraw(currency_id, who, amount);
+				}
 				DustHandlerType::Transfer(acc) => {
 					let _ = <Pallet<T> as MultiCurrency<T::AccountId>>::transfer(currency_id, who, &acc, amount);
 				}
