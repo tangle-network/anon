@@ -175,6 +175,20 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		#[pallet::weight(5_000_000)]
+		pub fn deposit(
+			origin: OriginFor<T>,
+			currency_id: CurrencyIdOf<T>,
+			amount: BalanceOf<T>,
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			// ensure token exists
+			ensure!(T::Currency::exists(currency_id), Error::<T>::NoneValue);
+			// ensure token is a webb wrapped token
+			ensure!(IsWrappedToken::<T>::contains_key(currency_id), Error::<T>::NoneValue);
+			Ok(().into())
+		}
+
 		/// Transfers the admin from the caller to the specified `to` account.
 		/// Can only be called by the current admin or the root origin.
 		///
