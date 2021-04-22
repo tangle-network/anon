@@ -7,7 +7,7 @@ contract NativeAnchor is Anchor {
     IVerifier _verifier,
     uint256 _denomination,
     uint32 _merkleTreeHeight,
-    address _operator,
+    address _operator
   ) Anchor(_verifier, _denomination, _merkleTreeHeight, _operator) public {
   }
 

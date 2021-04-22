@@ -8,7 +8,7 @@ const fs = require('fs')
 const { toBN } = require('web3-utils')
 const { takeSnapshot, revertSnapshot } = require('../lib/ganacheHelper')
 
-const Tornado = artifacts.require('./ERC20Tornado.sol')
+const Tornado = artifacts.require('./ERC20Anchor.sol')
 const BadRecipient = artifacts.require('./BadRecipient.sol')
 const Token = artifacts.require('./ERC20Mock.sol')
 const USDTToken = artifacts.require('./IUSDT.sol')
@@ -38,7 +38,7 @@ function generateDeposit() {
   return deposit
 }
 
-contract('ERC20Tornado', accounts => {
+contract('ERC20Anchor', accounts => {
   let tornado
   let token
   let usdtToken
