@@ -3,7 +3,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { createTestPairs, TestKeyringMap } from '@polkadot/keyring/testingPairs';
 import { u8aToString } from '@polkadot/util';
 import { assert } from 'chai';
-import { spec } from '@edgeware/node-types';
+import { options } from '@webb-tools/api';
 import { TypeRegistry } from '@polkadot/types';
 import BN from 'bn.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
@@ -17,10 +17,7 @@ describeWithAnon('Upgrade Tests', async (context) => {
   before(async () => {
     const polkadotUrl = 'ws://localhost:9944';
     const provider = new WsProvider(polkadotUrl);
-    api = await ApiPromise.create({
-      provider,
-      ...spec,
-    });
+    api = await ApiPromise.create(options({ provider }));
     pairs = createTestPairs();
   });
 
