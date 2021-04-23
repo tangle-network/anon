@@ -83,7 +83,7 @@ pub mod pallet {
 	#[pallet::getter(fn wrapped_token_ids)]
 	pub type WrappedTokenIds<T: Config> = StorageValue<_, Option<Vec<CurrencyIdOf<T>>>, ValueQuery>;
 
-	/// Webb wrapped token registry
+	/// Mapping of non-Webb tokens to Webb wrapped token ids
 	#[pallet::storage]
 	#[pallet::getter(fn wrapped_token_registry)]
 	pub type WrappedTokenRegistry<T: Config> = StorageMap<
@@ -93,14 +93,14 @@ pub mod pallet {
 		CurrencyIdOf<T>,
 	>;
 
-	/// Webb wrapped token registry
+	/// Mapping of Webb wrapped tokens to non-Webb token ids
 	#[pallet::storage]
 	#[pallet::getter(fn is_wrapped_token)]
-	pub type IsWrappedToken<T: Config> = StorageMap<
+	pub type ReverseWrappedTokenRegistry<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
 		CurrencyIdOf<T>,
-		bool,
+		Vec<CurrencyIdOf<T>>,
 	>;
 
 	/// Administrator of the mixer pallet.
@@ -169,8 +169,35 @@ pub mod pallet {
 						One::one(), // min_balance for the token, use smallest value
 					)?;
 
-					IsWrappedToken::<T>::insert(temp_id, true);
+					ReverseWrappedTokenRegistry::<T>::insert(temp_id, currency_id);
 				}
+			}
+			Ok(().into())
+		}
+
+		#[pallet::weight(5_000_000)]
+		pub fn unwrap(
+			origin: OriginFor<T>,
+			currency_id: CurrencyIdOf<T>,
+			amount: BalanceOf<T>,
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			ensure!(T::Currency::exists(currency_id) || currency_id == T::NativeCurrencyId::get(), Error::<T>::NoneValue);
+			ensure!(ReverseWrappedTokenRegistry::<T>::contains_key(currency_id), Error::<T>::NoneValue);
+			if let Some(unwrapped_currency_id) = ReverseWrappedTokenRegistry::<T>::get(currency_id) {
+				// transfer original token from bridge to sender
+				<T::Currency as MultiCurrency<_>>::transfer(
+					unwrapped_currency_id,
+					&Self::account_id(),
+					&sender,
+					amount
+				)?;
+				// burn webb wrapped token
+				<T::Currency as ExtendedTokenSystem<_,_,_>>::burn(
+					wrapped_currency_id,
+					sender,
+					amount
+				)?;
 			}
 			Ok(().into())
 		}
