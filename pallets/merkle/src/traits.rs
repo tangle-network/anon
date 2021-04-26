@@ -9,6 +9,8 @@ use sp_std::vec::Vec;
 pub trait Tree<AccountId, BlockNumber, TreeId> {
 	/// Check if nullifier is already used, in which case return an error
 	fn has_used_nullifier(id: TreeId, nullifier: ScalarData) -> Result<(), dispatch::DispatchError>;
+	/// Check if nullifier is already used, in which case return an error
+	fn is_stopped(id: TreeId) -> bool;
 	/// Sets stopped flag in storage. This flag doesn't do much by itself, it is
 	/// up to higher-level pallet to find the use for it
 	/// Can only be called by the manager, regardless if the manager is required

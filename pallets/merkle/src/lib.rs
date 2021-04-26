@@ -535,6 +535,10 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		Ok(tree_id)
 	}
 
+	fn is_stopped(id: T::TreeId) -> bool {
+		Stopped::<T>::get(id)
+	}
+
 	fn set_stopped(sender: T::AccountId, id: T::TreeId, stopped: bool) -> Result<(), dispatch::DispatchError> {
 		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		ensure!(sender == manager_data.account_id, Error::<T>::ManagerIsRequired);

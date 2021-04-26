@@ -165,7 +165,7 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize;
 
 		/// The currency ID type
-		type CurrencyId: Parameter + Member + Copy + MaybeSerializeDeserialize + Ord + Default + arithmetic::SimpleArithmetic;
+		type CurrencyId: Parameter + Member + Copy + MaybeSerializeDeserialize + Ord + Default + arithmetic::SimpleArithmetic + PartialEq;
 
 		/// The native currency system
 		type NativeCurrency: BasicCurrencyExtended<Self::AccountId, Balance = Self::Balance, Amount = Self::Amount>
