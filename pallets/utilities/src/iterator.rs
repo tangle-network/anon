@@ -262,8 +262,8 @@ where
 	G::Hasher1: ReversibleStorageHasher,
 	G::Hasher2: ReversibleStorageHasher,
 {
-	type PrefixIterator = MapIteratorShim<(K2, V)>;
 	type Iterator = MapIteratorShim<(K1, K2, V)>;
+	type PrefixIterator = MapIteratorShim<(K2, V)>;
 
 	fn iter_prefix(
 		k1: impl EncodeLike<K1>,

@@ -1,15 +1,14 @@
 use frame_benchmarking::whitelisted_caller;
-use webb_runtime::{
-	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
-	EVMConfig,
-	SystemConfig, WASM_BINARY,
-};
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{sr25519, Pair, Public, H160, U256};
 use sp_finality_grandpa::AuthorityId as GrandpaId;
 use sp_runtime::traits::{IdentifyAccount, Verify};
 use std::{collections::BTreeMap, str::FromStr};
+use webb_runtime::{
+	AccountId, AuraConfig, BalancesConfig, EVMConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
+	SystemConfig, WASM_BINARY,
+};
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -165,6 +164,9 @@ fn testnet_genesis(
 			// Assign network admin rights.
 			key: root_key,
 		},
-		pallet_evm: EVMConfig { accounts: evm_accounts, marker: core::marker::PhantomData },
+		pallet_evm: EVMConfig {
+			accounts: evm_accounts,
+			marker: core::marker::PhantomData,
+		},
 	}
 }

@@ -5,7 +5,7 @@ use frame_support::traits::OnFinalize;
 use frame_system::{Pallet as System, RawOrigin};
 use utils::keys::ScalarData;
 
-use crate::{Pallet as Merkle};
+use crate::Pallet as Merkle;
 
 const MAX_DEPTH: u8 = 32;
 const NUM_LEAVES: u32 = 10;

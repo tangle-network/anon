@@ -341,7 +341,9 @@ fn should_make_mixer_with_non_native_token() {
 			1  // min_balance
 		));
 
-		assert_ok!(<Tokens as ExtendedTokenSystem<AccountId, CurrencyId, Balance>>::mint(1, 0, 10000000));
+		assert_ok!(<Tokens as ExtendedTokenSystem<AccountId, CurrencyId, Balance>>::mint(
+			1, 0, 10000000
+		));
 		assert_ok!(Mixer::initialize());
 		assert_ok!(<Mixer as ExtendedMixer<AccountId, CurrencyId, Balance>>::create_new(
 			1,
