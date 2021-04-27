@@ -79,6 +79,8 @@ pub struct FullDeps<C, P, SC, B> {
 	pub filter_pool: Option<FilterPool>,
 	/// Backend.
 	pub backend: Arc<fc_db::Backend<Block>>,
+	/// Maximum number of logs in a query.
+	pub max_past_logs: u32,
 }
 
 /// Instantiate all Full RPC extensions.
@@ -123,6 +125,7 @@ pub fn create_full<C, P, SC, B>(
 		backend,
 		enable_dev_signer,
 		grandpa,
+		max_past_logs,
 	} = deps;
 
 	let GrandpaDeps {
@@ -166,6 +169,7 @@ pub fn create_full<C, P, SC, B>(
 			overrides.clone(),
 			backend,
 			is_authority,
+			max_past_logs,
 		))
 	);
 
@@ -176,9 +180,11 @@ pub fn create_full<C, P, SC, B>(
 				filter_pool.clone(),
 				500 as usize, // max stored filters
 				overrides.clone(),
+				max_past_logs,
 			))
 		);
 	}
+
 
 	io.extend_with(
 		NetApiServer::to_delegate(NetApi::new(

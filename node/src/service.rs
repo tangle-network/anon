@@ -240,6 +240,7 @@ pub fn new_full(
 			Some(shared_authority_set.clone()),
 		);
 
+		let max_past_logs = cli.run.max_past_logs;
 		let rpc_setup = (shared_voter_state.clone(), finality_proof_provider.clone());
 
 		let rpc_extensions_builder = move |deny_unsafe, _| {
@@ -261,6 +262,7 @@ pub fn new_full(
 					subscription_executor: subscription_task_executor.clone(),
 					finality_provider: finality_proof_provider.clone(),
 				},
+				max_past_logs,
 			};
 			crate::rpc::create_full(
 				deps,
