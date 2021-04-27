@@ -3,7 +3,7 @@ name = "webb-currencies"
 description = "Provide `MultiCurrency` implementation using `pallet-balances` and `webb-tokens` module."
 repository = "https://github.com/open-web3-stack/open-runtime-module-library/tree/master/currencies"
 license = "Apache-2.0"
-version = "0.4.1-dev"
+version = "3.0.0"
 authors = ["Laminar Developers <hello@laminar.one>"]
 edition = "2018"
 
@@ -21,6 +21,7 @@ webb-traits = { path = "../traits", default-features = false }
 webb-utilities = { path = "../utilities", default-features = false }
 
 funty = { version = "=1.1.0", default-features = false } # https://github.com/bitvecto-rs/bitvec/issues/105
+frame-benchmarking = { default-features = false, version = "3.0.0", optional = true, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 
 [dev-dependencies]
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
@@ -39,4 +40,9 @@ std = [
 	"frame-system/std",
 	"webb-traits/std",
 	"webb-utilities/std",
+]
+runtime-benchmarks = [
+    "frame-benchmarking",
+    "frame-system/runtime-benchmarks",
+    "frame-support/runtime-benchmarks",
 ]

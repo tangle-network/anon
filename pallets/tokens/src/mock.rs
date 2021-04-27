@@ -106,6 +106,7 @@ parameter_types! {
 	pub const Burn: Permill = Permill::from_percent(50);
 	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
 	pub const GetTokenId: CurrencyId = DOT;
+	pub const MaxApprovals: u32 = 100;
 }
 
 impl pallet_treasury::Config for Test {
@@ -120,6 +121,7 @@ impl pallet_treasury::Config for Test {
 	type SpendPeriod = SpendPeriod;
 	type Burn = Burn;
 	type BurnDestination = ();
+	type MaxApprovals = MaxApprovals;
 	type SpendFunds = ();
 	type WeightInfo = ();
 }

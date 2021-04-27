@@ -10,9 +10,9 @@ use merlin::Transcript;
 use webb_traits::MultiCurrency;
 use sp_runtime::traits::Bounded;
 
-use crate::{Config, Module as Mixer};
-use balances::Module as Balances;
-use merkle::{Config as MerkleConfig, Module as Merkle};
+use crate::{Config, Pallet as Mixer};
+use pallet_balances::{Pallet as Balances};
+use merkle::{Config as MerkleConfig, Pallet as Merkle};
 
 const NUM_DEPOSITS: u32 = 10;
 const NUM_WITHDRAWALS: u32 = 5;

@@ -2,10 +2,10 @@ use super::*;
 use bulletproofs_gadgets::poseidon::Poseidon_hash_2;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::OnFinalize;
-use frame_system::{Module as System, RawOrigin};
+use frame_system::{Pallet as System, RawOrigin};
 use utils::keys::ScalarData;
 
-use crate::Module as Merkle;
+use crate::{Pallet as Merkle};
 
 const MAX_DEPTH: u8 = 32;
 const NUM_LEAVES: u32 = 10;
@@ -13,7 +13,7 @@ const VERIFY_DEPTH: u8 = 10;
 
 fn setup_tree<T: Config>(caller: T::AccountId, depth: u32) {
 	let manager_required = true;
-	<Merkle<T> as Group<T::AccountId, T::BlockNumber, T::TreeId>>::create_group(caller, manager_required, depth as u8)
+	<Merkle<T> as Tree<T::AccountId, T::BlockNumber, T::TreeId>>::create_tree(caller, manager_required, depth as u8)
 		.unwrap();
 }
 
@@ -29,7 +29,7 @@ fn get_proof(depth: u32) -> Vec<(bool, ScalarData)> {
 }
 
 benchmarks! {
-	create_group {
+	create_tree {
 		// Testing the function for all depths between 0 to 32
 		// Creates a weight function that accepts tree depth
 		// and calculates the weights on the run
@@ -37,10 +37,10 @@ benchmarks! {
 		let caller = whitelisted_caller();
 	}: _(RawOrigin::Signed(caller), false, Some(d as u8))
 	verify {
-		let next_id: T::TreeId = Merkle::<T>::next_group_id();
+		let next_id: T::TreeId = Merkle::<T>::next_tree_id();
 		let curr_id = next_id - 1u32.into();
-		let group: GroupTree = Groups::<T>::get(curr_id).unwrap();
-		assert_eq!(group.depth, d as u8);
+		let tree: MerkleTree = Trees::<T>::get(curr_id).unwrap();
+		assert_eq!(tree.depth, d as u8);
 	}
 
 	set_manager_required {
@@ -52,8 +52,8 @@ benchmarks! {
 	_(RawOrigin::Signed(caller.clone()), 0u32.into(), false)
 	verify {
 		// Checking if manager is caller and is not required
-		let group_id: T::TreeId = 0u32.into();
-		let manager = Managers::<T>::get(group_id).unwrap();
+		let tree_id: T::TreeId = 0u32.into();
+		let manager = Managers::<T>::get(tree_id).unwrap();
 		assert_eq!(manager.required, false);
 		assert_eq!(manager.account_id, caller.into());
 	}
@@ -67,8 +67,8 @@ benchmarks! {
 	// Transfering the admin role to `new_admin`
 	_(RawOrigin::Signed(caller), 0u32.into(), new_admin.clone())
 	verify {
-		let group_id: T::TreeId = 0u32.into();
-		let manager = Managers::<T>::get(group_id).unwrap();
+		let tree_id: T::TreeId = 0u32.into();
+		let manager = Managers::<T>::get(tree_id).unwrap();
 		assert_eq!(manager.required, true);
 		assert_eq!(manager.account_id, new_admin);
 	}
@@ -81,8 +81,8 @@ benchmarks! {
 	// any other functionality of the tree
 	_(RawOrigin::Signed(caller.clone()), 0u32.into(), true)
 	verify {
-		let group_id: T::TreeId = 0u32.into();
-		let stopped = Stopped::<T>::get(group_id);
+		let tree_id: T::TreeId = 0u32.into();
+		let stopped = Stopped::<T>::get(tree_id);
 		assert!(stopped);
 	}
 
@@ -98,9 +98,9 @@ benchmarks! {
 		setup_tree::<T>(caller.clone(), 32);
 	}: _(RawOrigin::Signed(caller.clone()), 0u32.into(), leaves)
 	verify {
-		let group_id: T::TreeId = 0u32.into();
-		let group_tree: GroupTree = Groups::<T>::get(group_id).unwrap();
-		assert_eq!(group_tree.leaf_count, n);
+		let tree_id: T::TreeId = 0u32.into();
+		let tree: MerkleTree = Trees::<T>::get(tree_id).unwrap();
+		assert_eq!(tree.leaf_count, n);
 	}
 
 	verify_path {
@@ -157,9 +157,9 @@ mod bench_tests {
 	use frame_support::assert_ok;
 
 	#[test]
-	fn test_create_group() {
+	fn test_create_tree() {
 		new_test_ext().execute_with(|| {
-			assert_ok!(test_benchmark_create_group::<Test>());
+			assert_ok!(test_benchmark_create_tree::<Test>());
 		});
 	}
 

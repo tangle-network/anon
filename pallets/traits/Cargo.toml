@@ -2,7 +2,7 @@
 name = "webb-traits"
 description = "Shared traits including `BasicCurrency`, `MultiCurrency`, `Auction` and more."
 license = "Apache-2.0"
-version = "0.4.1-dev"
+version = "3.0.0"
 authors = ["Laminar Developers <hello@laminar.one>"]
 edition = "2018"
 
@@ -30,4 +30,6 @@ std = [
 	"num-traits/std",
 	"frame-support/std",
 	"webb-utilities/std",
+]
+runtime-benchmarks = [
 ]
