@@ -61,6 +61,7 @@ impl<T: Config, GetCurrencyId: Get<T::CurrencyId>> Imbalance<T::Balance> for Pos
 	fn zero() -> Self {
 		Self::new(Zero::zero())
 	}
+
 	fn drop_zero(self) -> result::Result<(), Self> {
 		if self.0.is_zero() {
 			Ok(())
@@ -68,6 +69,7 @@ impl<T: Config, GetCurrencyId: Get<T::CurrencyId>> Imbalance<T::Balance> for Pos
 			Err(self)
 		}
 	}
+
 	fn split(self, amount: T::Balance) -> (Self, Self) {
 		let first = self.0.min(amount);
 		let second = self.0 - first;
@@ -75,16 +77,19 @@ impl<T: Config, GetCurrencyId: Get<T::CurrencyId>> Imbalance<T::Balance> for Pos
 		mem::forget(self);
 		(Self::new(first), Self::new(second))
 	}
+
 	fn merge(mut self, other: Self) -> Self {
 		self.0 = self.0.saturating_add(other.0);
 		mem::forget(other);
 
 		self
 	}
+
 	fn subsume(&mut self, other: Self) {
 		self.0 = self.0.saturating_add(other.0);
 		mem::forget(other);
 	}
+
 	// allow to make the impl same with `pallet-balances`
 	#[allow(clippy::comparison_chain)]
 	fn offset(self, other: Self::Opposite) -> SameOrOther<Self, Self::Opposite> {
@@ -99,6 +104,7 @@ impl<T: Config, GetCurrencyId: Get<T::CurrencyId>> Imbalance<T::Balance> for Pos
 			SameOrOther::None
 		}
 	}
+
 	fn peek(&self) -> T::Balance {
 		self.0
 	}
@@ -116,6 +122,7 @@ impl<T: Config, GetCurrencyId: Get<T::CurrencyId>> Imbalance<T::Balance> for Neg
 	fn zero() -> Self {
 		Self::new(Zero::zero())
 	}
+
 	fn drop_zero(self) -> result::Result<(), Self> {
 		if self.0.is_zero() {
 			Ok(())
@@ -123,6 +130,7 @@ impl<T: Config, GetCurrencyId: Get<T::CurrencyId>> Imbalance<T::Balance> for Neg
 			Err(self)
 		}
 	}
+
 	fn split(self, amount: T::Balance) -> (Self, Self) {
 		let first = self.0.min(amount);
 		let second = self.0 - first;
@@ -130,16 +138,19 @@ impl<T: Config, GetCurrencyId: Get<T::CurrencyId>> Imbalance<T::Balance> for Neg
 		mem::forget(self);
 		(Self::new(first), Self::new(second))
 	}
+
 	fn merge(mut self, other: Self) -> Self {
 		self.0 = self.0.saturating_add(other.0);
 		mem::forget(other);
 
 		self
 	}
+
 	fn subsume(&mut self, other: Self) {
 		self.0 = self.0.saturating_add(other.0);
 		mem::forget(other);
 	}
+
 	// allow to make the impl same with `pallet-balances`
 	#[allow(clippy::comparison_chain)]
 	fn offset(self, other: Self::Opposite) -> SameOrOther<Self, Self::Opposite> {
@@ -154,6 +165,7 @@ impl<T: Config, GetCurrencyId: Get<T::CurrencyId>> Imbalance<T::Balance> for Neg
 			SameOrOther::None
 		}
 	}
+
 	fn peek(&self) -> T::Balance {
 		self.0
 	}

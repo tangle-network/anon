@@ -11,10 +11,10 @@ jsonrpc-derive = "15"
 sc-rpc = "3.0.0"
 
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
-sp-core = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git", rev = "22f09c602704aeee2b59b14f427f73f6cb8b5e2f" }
-sp-api = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git", rev = "22f09c602704aeee2b59b14f427f73f6cb8b5e2f" }
-sp-blockchain = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git", rev = "22f09c602704aeee2b59b14f427f73f6cb8b5e2f" }
-sp-runtime = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git", rev = "22f09c602704aeee2b59b14f427f73f6cb8b5e2f" }
+sp-core = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-api = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-blockchain = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-runtime = { version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 
 merkle = { package = "pallet-merkle", path = "../", default-features = false }
 

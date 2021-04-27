@@ -1,24 +1,22 @@
 use super::*;
-use sp_std::{
-	convert::{TryFrom, TryInto},
-	fmt::Debug,
-	marker, result,
-};
 use codec::Codec;
-use webb_traits::{
-	arithmetic::{Signed, SimpleArithmetic},
-	BalanceStatus, BasicCurrency, BasicCurrencyExtended, BasicLockableCurrency, BasicReservableCurrency,
-	LockIdentifier
+use frame_support::traits::{
+	Currency as PalletCurrency, ExistenceRequirement, LockableCurrency as PalletLockableCurrency,
+	ReservableCurrency as PalletReservableCurrency, WithdrawReasons,
 };
 use sp_runtime::{
 	traits::{CheckedSub, MaybeSerializeDeserialize},
 	DispatchError, DispatchResult,
 };
-use frame_support::{
-	traits::{
-		Currency as PalletCurrency, ExistenceRequirement, LockableCurrency as PalletLockableCurrency,
-		ReservableCurrency as PalletReservableCurrency, WithdrawReasons,
-	},
+use sp_std::{
+	convert::{TryFrom, TryInto},
+	fmt::Debug,
+	marker, result,
+};
+use webb_traits::{
+	arithmetic::{Signed, SimpleArithmetic},
+	BalanceStatus, BasicCurrency, BasicCurrencyExtended, BasicLockableCurrency, BasicReservableCurrency,
+	LockIdentifier,
 };
 
 /// Adapt other currency traits implementation to `BasicCurrency`.

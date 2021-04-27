@@ -64,14 +64,12 @@ use merkle::{
 		keys::{Commitment, ScalarData},
 		permissions::ensure_admin,
 	},
-	Tree as TreeTrait, Pallet as MerklePallet,
+	Pallet as MerklePallet, Tree as TreeTrait,
 };
-use webb_traits::MultiCurrency;
-use sp_runtime::{
-	traits::{AccountIdConversion, Zero},
-};
+use sp_runtime::traits::{AccountIdConversion, Zero};
 use sp_std::prelude::*;
 use traits::ExtendedMixer;
+use webb_traits::MultiCurrency;
 use weights::WeightInfo;
 
 pub use pallet::*;
@@ -82,7 +80,6 @@ pub mod pallet {
 	use super::*;
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	
 
 	/// The pallet's configuration trait.
 	#[pallet::config]

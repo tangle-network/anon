@@ -103,6 +103,7 @@ mod tests {
 				fn get_no_op(_: &u8) -> Option<u8> {
 					$price.with(|v| *v.borrow())
 				}
+
 				fn get_all_values() -> Vec<(u8, Option<u8>)> {
 					vec![(0, Self::get_no_op(&0))]
 				}

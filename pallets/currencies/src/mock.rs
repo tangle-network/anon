@@ -20,29 +20,29 @@ parameter_types! {
 
 pub type AccountId = AccountId32;
 impl frame_system::Config for Runtime {
-	type Origin = Origin;
-	type Call = Call;
-	type Index = u64;
+	type AccountData = pallet_balances::AccountData<u64>;
+	type AccountId = AccountId;
+	type BaseCallFilter = ();
+	type BlockHashCount = BlockHashCount;
+	type BlockLength = ();
 	type BlockNumber = u64;
+	type BlockWeights = ();
+	type Call = Call;
+	type DbWeight = ();
+	type Event = Event;
 	type Hash = H256;
 	type Hashing = ::sp_runtime::traits::BlakeTwo256;
-	type AccountId = AccountId;
-	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
-	type Event = Event;
-	type BlockHashCount = BlockHashCount;
-	type BlockWeights = ();
-	type BlockLength = ();
-	type Version = ();
-	type PalletInfo = PalletInfo;
-	type AccountData = pallet_balances::AccountData<u64>;
-	type OnNewAccount = ();
+	type Index = u64;
+	type Lookup = IdentityLookup<Self::AccountId>;
 	type OnKilledAccount = ();
-	type DbWeight = ();
-	type BaseCallFilter = ();
-	type SystemWeightInfo = ();
-	type SS58Prefix = ();
+	type OnNewAccount = ();
 	type OnSetCode = ();
+	type Origin = Origin;
+	type PalletInfo = PalletInfo;
+	type SS58Prefix = ();
+	type SystemWeightInfo = ();
+	type Version = ();
 }
 
 type CurrencyId = u32;
@@ -55,15 +55,14 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Runtime {
+	type AccountStore = frame_system::Pallet<Runtime>;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type Event = Event;
 	type ExistentialDeposit = ExistentialDeposit;
-	type AccountStore = frame_system::Pallet<Runtime>;
 	type MaxLocks = ();
 	type WeightInfo = ();
 }
-
 
 parameter_types! {
 	pub const TokensPalletId: PalletId = PalletId(*b"py/token");
@@ -79,21 +78,21 @@ parameter_types! {
 }
 
 impl webb_tokens::Config for Runtime {
-	type PalletId = TokensPalletId;
-	type Event = Event;
-	type Balance = Balance;
 	type Amount = i64;
-	type CurrencyId = CurrencyId;
-	type NativeCurrency = BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
-	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+	type ApprovalDeposit = ApprovalDeposit;
+	type Balance = Balance;
 	type CurrencyDeposit = CurrencyDeposit;
+	type CurrencyId = CurrencyId;
+	type DustAccount = DustAccount;
+	type Event = Event;
+	type Extra = ();
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
 	type MetadataDepositBase = MetadataDepositBase;
 	type MetadataDepositPerByte = MetadataDepositPerByte;
-	type ApprovalDeposit = ApprovalDeposit;
+	type NativeCurrency = BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
+	type PalletId = TokensPalletId;
 	type StringLimit = StringLimit;
-	type DustAccount = DustAccount;
 	type WeightInfo = ();
-	type Extra = ();
 }
 
 pub const NATIVE_CURRENCY_ID: CurrencyId = 1;
@@ -105,9 +104,9 @@ parameter_types! {
 
 impl Config for Runtime {
 	type Event = Event;
+	type GetNativeCurrencyId = GetNativeCurrencyId;
 	type MultiCurrency = Tokens;
 	type NativeCurrency = AdaptedBasicCurrency;
-	type GetNativeCurrencyId = GetNativeCurrencyId;
 	type WeightInfo = ();
 }
 pub type NativeCurrency = NativeCurrencyOf<Runtime>;
