@@ -22,9 +22,9 @@ construct_runtime!(
 		NodeBlock = Block,
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
-		System: system::{Module, Call, Config, Storage, Event<T>},
-		Balances: balances::{Module, Call, Storage, Config<T>, Event<T>},
-		MerkleGroups: pallet_merkle::{Module, Call, Storage, Event<T>},
+		System: system::{Pallet, Call, Config, Storage, Event<T>},
+		Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		MerkleTrees: pallet_merkle::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -53,6 +53,7 @@ impl frame_system::Config for Test {
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type OnKilledAccount = ();
 	type OnNewAccount = ();
+	type OnSetCode = ();
 	type Origin = Origin;
 	type PalletInfo = PalletInfo;
 	type SS58Prefix = Prefix;
@@ -82,8 +83,8 @@ impl balances::Config for Test {
 impl Config for Test {
 	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
-	type GroupId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
+	type TreeId = u32;
 	type WeightInfo = Weights<Self>;
 }
 

@@ -33,7 +33,7 @@ use sp_std::marker::PhantomData;
 
 /// Weight functions needed for pallet_merkle.
 pub trait WeightInfo {
-	fn create_group(n: u32) -> Weight;
+	fn create_tree(n: u32) -> Weight;
 	fn set_manager_required() -> Weight;
 	fn set_manager() -> Weight;
 	fn set_stopped() -> Weight;
@@ -45,7 +45,7 @@ pub trait WeightInfo {
 /// Weight functions for pallet_merkle.
 pub struct Weights<T>(PhantomData<T>);
 impl<T: frame_system::Config + Config> WeightInfo for Weights<T> {
-	fn create_group(d: u32) -> Weight {
+	fn create_tree(d: u32) -> Weight {
 		(8_356_000 as Weight)
 			// Standard Error: 4_000
 			.saturating_add((151_000 as Weight).saturating_mul(d as Weight))
