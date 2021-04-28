@@ -1,6 +1,27 @@
 # anon
 Substrate based mixer w/ relayable transactions using bulletproofs and Curve25519.
 
+## Overview
+At the highest-level, this is a cryptocurrency mixing pallet that uses non-trusted setup zero-knowledge proofs to facilitate mixing operations. It uses the bulletproofs library built from [dalek-cryptography](https://github.com/dalek-cryptography). The repo contains pallets that allow for creation of merkle trees with elements in Curve25519's scalar field and a mixer that utilises these merkle trees to built an on-chain application or protocol.
+
+### Dependencies
+The library utilises a variety of zero-knowledge primitives, gadgets, circuits, etc. that are all implemented using bulletproofs R1CS api with Curve25519. You can find more about the components below and descriptions following thereafter.
+- [Bulletproof zero-knowledge gadgets](https://github.com/webb-tools/bulletproof-gadgets)
+- [Transaction Relayer](https://github.com/webb-tools/relayer)
+- [Mixer CLI](https://github.com/webb-tools/cli)
+- [Mixer dApp](https://github.com/webb-tools/webb-dapp)
+- [Anon Typescript API](https://github.com/webb-tools/webb.js)
+
+The architecture for the project is as follows. We have pallets in this repo and a Substrate chain for running this runtime logic. We developed zero-knowledge gadgets that expose a prover and a verifier for interacting with this runtime. Specifically, we embed the gadget's verifiers on-chain so that proofs can be verified on-chain to eliminate any trust involved in mixing currencies. Users are responsible with generating proofs, using the tools in the gadget repo, off-chain and broadcasting these proofs to the network using a signed extrinsic or a live relayer.
+
+Relayers are used to relay transactions on behalf of users. This is necessary because extrinsics normally charge a fee for submission and so we enable a "fee-less" experience by allowing users to offload extrinsic submission to a third-party relayer who can submit transactions on behalf of users who wish to remain more anonymous. Note that there should still be more work put into the fee-mechanism to ensure that relayers are incentivised to run such a service in production.
+
+### Tools
+
+The flow for integrating these tools into your Substrate project are fairly straightforward. You will add the pallets of interest to your Substrate project and follow the runtime implementations necessary to get your node to compile. From there, you will have integrated a mixer to your Substrate project.
+
+It is possible by extending your dApp with our types in our Typescript API to have this functionality in a front-end application for users to interact with. It is also possible to run a transaction relayer to submit withdrawal transactions from the mixers on behalf of users. Please refer to the documentation in these respective projects when facing issues and asking questions.
+
 ## Build
 
 Install Rust:
@@ -28,48 +49,11 @@ cargo build --release
 Purge any existing developer chain state:
 
 ```bash
-./target/release/node-template purge-chain --dev
+./target/release/webb-node purge-chain --dev
 ```
 
 Start a development chain with:
 
 ```bash
-./target/release/node-template --dev
+./target/release/webb-node --dev
 ```
-
-Detailed logs may be shown by running the node with the following environment variables set: `RUST_LOG=debug RUST_BACKTRACE=1 cargo run -- --dev`.
-
-### Multi-node local testnet
-
-If you want to see the multi-node consensus algorithm in action locally, then you can create a local testnet with two validator nodes for Alice and Bob, who are the initial authorities of the genesis chain that have been endowed with testnet units.
-
-Optionally, give each node a name and expose them so they are listed on the Polkadot [telemetry site](https://telemetry.polkadot.io/#/Local%20Testnet).
-
-You'll need two terminal windows open.
-
-We'll start Alice's substrate node first on default TCP port 30333 with her chain database stored locally at `/tmp/alice`. The bootnode ID of her node is `QmRpheLN4JWdAnY7HGJfWFNbfkQCb6tFf4vvA6hgjMZKrR`, which is generated from the `--node-key` value that we specify below:
-
-```bash
-cargo run -- \
-  --base-path /tmp/alice \
-  --chain=local \
-  --alice \
-  --node-key 0000000000000000000000000000000000000000000000000000000000000001 \
-  --telemetry-url ws://telemetry.polkadot.io:1024 \
-  --validator
-```
-
-In the second terminal, we'll start Bob's substrate node on a different TCP port of 30334, and with his chain database stored locally at `/tmp/bob`. We'll specify a value for the `--bootnodes` option that will connect his node to Alice's bootnode ID on TCP port 30333:
-
-```bash
-cargo run -- \
-  --base-path /tmp/bob \
-  --bootnodes /ip4/127.0.0.1/tcp/30333/p2p/QmRpheLN4JWdAnY7HGJfWFNbfkQCb6tFf4vvA6hgjMZKrR \
-  --chain=local \
-  --bob \
-  --port 30334 \
-  --telemetry-url ws://telemetry.polkadot.io:1024 \
-  --validator
-```
-
-Additional CLI usage options are available and may be shown by running `cargo run -- --help`.
