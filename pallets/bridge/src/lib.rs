@@ -6,10 +6,6 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
-// #[cfg(feature = "runtime-benchmarks")]
-// mod benchmarking;
-// pub mod weights;
-
 pub mod traits;
 pub use traits::*;
 
