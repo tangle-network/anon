@@ -7,10 +7,7 @@ pub enum DustHandlerType<AccountId> {
 }
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug)]
-pub struct TokenDetails<
-	Balance,
-	AccountId,
-> {
+pub struct TokenDetails<Balance, AccountId> {
 	/// Can change `owner`, `issuer`, `freezer` and `admin` accounts.
 	pub(super) owner: AccountId,
 	/// Can mint tokens.
@@ -21,7 +18,8 @@ pub struct TokenDetails<
 	pub(super) freezer: AccountId,
 	/// The total supply across all accounts.
 	pub(super) supply: Balance,
-	/// The balance deposited for this currency. This pays for the data stored here.
+	/// The balance deposited for this currency. This pays for the data stored
+	/// here.
 	pub(super) deposit: Balance,
 	/// The ED for virtual accounts.
 	pub(super) min_balance: Balance,
@@ -45,8 +43,8 @@ pub struct ApprovalKey<AccountId> {
 /// Data concerning an approval.
 #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, Default)]
 pub struct Approval<Balance> {
-	/// The amount of funds approved for the balance transfer from the owner to some delegated
-	/// target.
+	/// The amount of funds approved for the balance transfer from the owner to
+	/// some delegated target.
 	pub(super) amount: Balance,
 	/// The amount reserved on the owner's account to hold this item in storage.
 	pub(super) deposit: Balance,
@@ -58,7 +56,8 @@ pub struct TokenMetadata<Balance> {
 	///
 	/// This pays for the data stored in this struct.
 	pub(super) deposit: Balance,
-	/// The user friendly name of this asset. Limited in length by `StringLimit`.
+	/// The user friendly name of this asset. Limited in length by
+	/// `StringLimit`.
 	pub(super) name: Vec<u8>,
 	/// The ticker symbol for this asset. Limited in length by `StringLimit`.
 	pub(super) symbol: Vec<u8>,
@@ -74,7 +73,8 @@ pub struct DestroyWitness {
 	/// The number of accounts holding the asset.
 	#[codec(compact)]
 	pub(super) accounts: u32,
-	/// The number of accounts holding the asset with a self-sufficient reference.
+	/// The number of accounts holding the asset with a self-sufficient
+	/// reference.
 	#[codec(compact)]
 	pub(super) sufficients: u32,
 	/// The number of transfer-approvals of the asset.
@@ -124,6 +124,7 @@ impl<Balance: Saturating + Copy + Ord> AccountData<Balance> {
 	pub(crate) fn frozen(&self) -> Balance {
 		self.frozen
 	}
+
 	/// The total balance in this account including any that is reserved and
 	/// ignoring any frozen.
 	pub fn total(&self) -> Balance {

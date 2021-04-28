@@ -48,13 +48,6 @@ use frame_support::{
 	},
 };
 use frame_system::{ensure_root, ensure_signed, pallet_prelude::*};
-use webb_traits::{
-	account::MergeAccount,
-	arithmetic::{Signed, SimpleArithmetic},
-	BalanceStatus, BasicCurrency, BasicCurrencyExtended, BasicLockableCurrency, BasicReservableCurrency,
-	LockIdentifier, MultiCurrency, MultiCurrencyExtended, MultiLockableCurrency, MultiReservableCurrency,
-};
-use webb_utilities::with_transaction_result;
 use sp_runtime::{
 	traits::{CheckedSub, MaybeSerializeDeserialize, StaticLookup, Zero},
 	DispatchError, DispatchResult,
@@ -64,6 +57,13 @@ use sp_std::{
 	fmt::Debug,
 	marker, result,
 };
+use webb_traits::{
+	account::MergeAccount,
+	arithmetic::{Signed, SimpleArithmetic},
+	BalanceStatus, BasicCurrency, BasicCurrencyExtended, BasicLockableCurrency, BasicReservableCurrency,
+	LockIdentifier, MultiCurrency, MultiCurrencyExtended, MultiLockableCurrency, MultiReservableCurrency,
+};
+use webb_utilities::with_transaction_result;
 
 mod default_weight;
 mod mock;
@@ -193,8 +193,8 @@ pub mod module {
 }
 
 impl<T: Config> MultiCurrency<T::AccountId> for Pallet<T> {
-	type CurrencyId = CurrencyIdOf<T>;
 	type Balance = BalanceOf<T>;
+	type CurrencyId = CurrencyIdOf<T>;
 
 	fn minimum_balance(currency_id: Self::CurrencyId) -> Self::Balance {
 		if currency_id == T::GetNativeCurrencyId::get() {
