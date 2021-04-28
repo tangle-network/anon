@@ -261,11 +261,6 @@
     "@babel/helper-validator-identifier" "^7.12.11"
     to-fast-properties "^2.0.0"
 
-"@edgeware/node-types@^3.1.0-beta.14":
-  version "3.1.0-beta.14"
-  resolved "https://registry.yarnpkg.com/@edgeware/node-types/-/node-types-3.1.0-beta.14.tgz#d55b01c5bcc5e5201d74a4259258aece5f3fcc07"
-  integrity sha512-Iz7nzUnNbAw46aAfVwioceNsaT0DKTJUqrDsILY/7lXCZeclaibyXuHghBkCHRSDnztYxCG/8gfjyHH6+s16rQ==
-
 "@ethersproject/abi@5.0.0-beta.153":
   version "5.0.0-beta.153"
   resolved "https://registry.yarnpkg.com/@ethersproject/abi/-/abi-5.0.0-beta.153.tgz#43a37172b33794e4562999f6e2d555b7599a8eee"
@@ -1209,27 +1204,27 @@
     "@uniswap/lib" "1.1.1"
     "@uniswap/v2-core" "1.0.0"
 
-"@webb-tools/api@^0.1.2-62":
-  version "0.1.2-62"
-  resolved "https://registry.yarnpkg.com/@webb-tools/api/-/api-0.1.2-62.tgz#746b7cb9b10435f09d7fa730b3c2d58f1dd0f623"
-  integrity sha512-TmN3g/1w4MLI4p2Ghvuf31ZaZ8sjHfHJnSJEZwBclovvx8Z0TUancX73WzajLNGIoBvvhPLOf+xqlzIv7Gby5Q==
+"@webb-tools/api@^0.1.2-64":
+  version "0.1.2-64"
+  resolved "https://registry.yarnpkg.com/@webb-tools/api/-/api-0.1.2-64.tgz#ca76cdeecb4f64f073461c2a394acf5299b6928f"
+  integrity sha512-RSojegogpvQZrBJSYMwroLzEIuTR8AulsvJn9Ezm9aO4Ekbnpnr2etuD81IofQtgmTuZk90tGAXaHav8fyC0Hg==
   dependencies:
     "@babel/runtime" "^7.10.2"
     "@polkadot/api" "^3.4.1"
     "@polkadot/rpc-core" "^3.4.1"
-    "@webb-tools/types" "0.1.2-62"
+    "@webb-tools/types" "0.1.2-64"
 
-"@webb-tools/type-definitions@0.1.2-62":
-  version "0.1.2-62"
-  resolved "https://registry.yarnpkg.com/@webb-tools/type-definitions/-/type-definitions-0.1.2-62.tgz#8b19c157fa366423971036bb8eb3a46612745b3e"
-  integrity sha512-vqXm13BsI7DDI5Pq4sGN5mUCEvCGKIieLVPpkPRJoHAmbwK2CnpWwp192R/A2vG3s7o9OtxsYWhxzYN6rqN2Ug==
+"@webb-tools/type-definitions@0.1.2-64":
+  version "0.1.2-64"
+  resolved "https://registry.yarnpkg.com/@webb-tools/type-definitions/-/type-definitions-0.1.2-64.tgz#e3de7d9a6857652a34a59e92ef3bd869bb54fa5d"
+  integrity sha512-vyXPGZji8nf+yuTem/ZhRTWpALXvFn/G3TWlogQ92+RxXG93VcNRMZV4Q6gBI1U+tggB9ivmKHEuMJ0+zi6H6A==
   dependencies:
     "@open-web3/orml-type-definitions" "^0.8.2-6"
 
-"@webb-tools/types@0.1.2-62":
-  version "0.1.2-62"
-  resolved "https://registry.yarnpkg.com/@webb-tools/types/-/types-0.1.2-62.tgz#ee7c07c7655ec7d058c6db99987953fdfd721c41"
-  integrity sha512-eFLhBtwX7N0nuSPIhGGNCyqryCsljzJbKdgFBAs3DuTDOcmuW+VhOR7wZU2oSmDNnfpaQmZl/yjHsWZ1K0H8Zw==
+"@webb-tools/types@0.1.2-64":
+  version "0.1.2-64"
+  resolved "https://registry.yarnpkg.com/@webb-tools/types/-/types-0.1.2-64.tgz#fa300b09d2f30fb1ed009d236e7ece56db71234b"
+  integrity sha512-KGPhqrcyGXX3pzlFIDsBSziVLTWgJX1ZGaO61/SgZBZExbDXh0+oyJiiCoSznSgI1Z7XcFnHb4yNUadf0nryTw==
   dependencies:
     "@babel/runtime" "^7.10.2"
     "@open-web3/api-mobx" "^0.8.2-6"
@@ -1237,7 +1232,7 @@
     "@polkadot/api" "^3.4.1"
     "@polkadot/typegen" "^3.4.1"
     "@polkadot/types" "^3.4.1"
-    "@webb-tools/type-definitions" "0.1.2-62"
+    "@webb-tools/type-definitions" "0.1.2-64"
 
 abstract-leveldown@~2.6.0:
   version "2.6.3"
