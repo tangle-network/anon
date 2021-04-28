@@ -7,12 +7,12 @@ use frame_support::traits::OnFinalize;
 use frame_system::RawOrigin;
 use merkle::{default_hasher, utils::keys::ScalarData};
 use merlin::Transcript;
-use webb_traits::MultiCurrency;
 use sp_runtime::traits::Bounded;
+use webb_traits::MultiCurrency;
 
-use crate::{Config, Module as Mixer};
-use balances::Module as Balances;
-use merkle::{Config as MerkleConfig, Module as Merkle};
+use crate::{Config, Pallet as Mixer};
+use merkle::{Config as MerkleConfig, Pallet as Merkle};
+use pallet_balances::Pallet as Balances;
 
 const NUM_DEPOSITS: u32 = 10;
 const NUM_WITHDRAWALS: u32 = 5;

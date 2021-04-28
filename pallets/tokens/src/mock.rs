@@ -1,16 +1,16 @@
 use super::*;
 use crate as tokens;
+use basic_currency::BasicCurrencyAdapter;
 use frame_benchmarking::whitelisted_caller;
 use frame_support::{construct_runtime, parameter_types, weights::Weight, PalletId};
 use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
-use basic_currency::BasicCurrencyAdapter;
-use sp_runtime::{Permill};
+use sp_runtime::Permill;
 
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
 	traits::{BlakeTwo256, IdentityLookup},
-	Perbill, AccountId32,
+	AccountId32, Perbill,
 };
 
 pub(crate) type Balance = u64;
@@ -72,11 +72,11 @@ impl frame_system::Config for Test {
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type OnKilledAccount = ();
 	type OnNewAccount = ();
+	type OnSetCode = ();
 	type Origin = Origin;
 	type PalletInfo = PalletInfo;
 	type SS58Prefix = Prefix;
 	type SystemWeightInfo = ();
-	type OnSetCode = ();
 	type Version = ();
 }
 
@@ -106,21 +106,23 @@ parameter_types! {
 	pub const Burn: Permill = Permill::from_percent(50);
 	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
 	pub const GetTokenId: CurrencyId = DOT;
+	pub const MaxApprovals: u32 = 100;
 }
 
 impl pallet_treasury::Config for Test {
-	type PalletId = TreasuryPalletId;
-	type Currency = CurrencyAdapter<Test, GetTokenId>;
 	type ApproveOrigin = frame_system::EnsureRoot<AccountId>;
-	type RejectOrigin = frame_system::EnsureRoot<AccountId>;
-	type Event = Event;
-	type OnSlash = ();
-	type ProposalBond = ProposalBond;
-	type ProposalBondMinimum = ProposalBondMinimum;
-	type SpendPeriod = SpendPeriod;
 	type Burn = Burn;
 	type BurnDestination = ();
+	type Currency = CurrencyAdapter<Test, GetTokenId>;
+	type Event = Event;
+	type MaxApprovals = MaxApprovals;
+	type OnSlash = ();
+	type PalletId = TreasuryPalletId;
+	type ProposalBond = ProposalBond;
+	type ProposalBondMinimum = ProposalBondMinimum;
+	type RejectOrigin = frame_system::EnsureRoot<AccountId>;
 	type SpendFunds = ();
+	type SpendPeriod = SpendPeriod;
 	type WeightInfo = ();
 }
 
@@ -142,21 +144,21 @@ parameter_types! {
 }
 
 impl Config for Test {
-	type PalletId = TokensPalletId;
-	type Event = Event;
-	type Balance = Balance;
 	type Amount = i128;
-	type CurrencyId = CurrencyId;
-	type NativeCurrency = BasicCurrencyAdapter<Test, Balances, Amount, BlockNumber>;
-	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+	type ApprovalDeposit = ApprovalDeposit;
+	type Balance = Balance;
 	type CurrencyDeposit = CurrencyDeposit;
+	type CurrencyId = CurrencyId;
+	type DustAccount = DustAccount;
+	type Event = Event;
+	type Extra = ();
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
 	type MetadataDepositBase = MetadataDepositBase;
 	type MetadataDepositPerByte = MetadataDepositPerByte;
-	type ApprovalDeposit = ApprovalDeposit;
+	type NativeCurrency = BasicCurrencyAdapter<Test, Balances, Amount, BlockNumber>;
+	type PalletId = TokensPalletId;
 	type StringLimit = StringLimit;
-	type DustAccount = DustAccount;
 	type WeightInfo = ();
-	type Extra = ();
 }
 
 pub type TreasuryCurrencyAdapter = <Test as pallet_treasury::Config>::Currency;

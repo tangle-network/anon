@@ -17,7 +17,7 @@ use sp_core::{
 	crypto::{AccountId32, KeyTypeId},
 	OpaqueMetadata, H160, H256, U256,
 };
-use sp_inherents::{InherentData, CheckInherentsResult};
+use sp_inherents::{CheckInherentsResult, InherentData};
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
 	traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, NumberFor, Verify},
@@ -32,13 +32,15 @@ use static_assertions::const_assert;
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
-	construct_runtime, parameter_types, pallet_prelude::PhantomData, PalletId,
+	construct_runtime,
+	pallet_prelude::PhantomData,
+	parameter_types,
 	traits::{Currency, Imbalance, KeyOwnerProofSystem, LockIdentifier, OnUnbalanced, Randomness, U128CurrencyToVote},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
 		DispatchClass, IdentityFee, Weight,
 	},
-	StorageValue,
+	PalletId, StorageValue,
 };
 pub use frame_system::limits::{BlockLength, BlockWeights};
 pub use pallet_balances::Call as BalancesCall;
@@ -57,8 +59,6 @@ use sp_core::crypto::Public;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 use sp_runtime::ConsensusEngineId;
-
-
 
 pub mod currency {
 	use super::Balance;
@@ -223,12 +223,12 @@ impl frame_system::Config for Runtime {
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type OnKilledAccount = ();
 	type OnNewAccount = ();
+	type OnSetCode = ();
 	type Origin = Origin;
 	type PalletInfo = PalletInfo;
 	type SS58Prefix = Prefix;
 	type SystemWeightInfo = frame_system::weights::SubstrateWeight<Runtime>;
 	type Version = Version;
-	type OnSetCode = ();
 }
 
 impl pallet_aura::Config for Runtime {
@@ -251,14 +251,14 @@ parameter_types! {
 }
 
 impl pallet_timestamp::Config for Runtime {
+	type MinimumPeriod = MinimumPeriod;
 	/// A timestamp: milliseconds since the unix epoch.
 	type Moment = u64;
-	type MinimumPeriod = MinimumPeriod;
-	type WeightInfo = ();
 	#[cfg(feature = "aura")]
 	type OnTimestampSet = Aura;
 	#[cfg(feature = "manual-seal")]
 	type OnTimestampSet = ();
+	type WeightInfo = ();
 }
 
 parameter_types! {
@@ -304,26 +304,26 @@ parameter_types! {
 }
 
 impl pallet_contracts::Config for Runtime {
-	type Time = Timestamp;
-	type Randomness = RandomnessCollectiveFlip;
+	type ChainExtension = ();
 	type Currency = Balances;
-	type Event = Event;
-	type RentPayment = ();
-	type SignedClaimHandicap = SignedClaimHandicap;
-	type TombstoneDeposit = TombstoneDeposit;
+	type DeletionQueueDepth = DeletionQueueDepth;
+	type DeletionWeightLimit = DeletionWeightLimit;
 	type DepositPerContract = DepositPerContract;
 	type DepositPerStorageByte = DepositPerStorageByte;
 	type DepositPerStorageItem = DepositPerStorageItem;
-	type RentFraction = RentFraction;
-	type SurchargeReward = SurchargeReward;
+	type Event = Event;
+	type MaxCodeSize = MaxCodeSize;
 	type MaxDepth = MaxDepth;
 	type MaxValueSize = MaxValueSize;
-	type WeightPrice = pallet_transaction_payment::Module<Self>;
+	type Randomness = RandomnessCollectiveFlip;
+	type RentFraction = RentFraction;
+	type RentPayment = ();
+	type SignedClaimHandicap = SignedClaimHandicap;
+	type SurchargeReward = SurchargeReward;
+	type Time = Timestamp;
+	type TombstoneDeposit = TombstoneDeposit;
 	type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
-	type ChainExtension = ();
-	type DeletionQueueDepth = DeletionQueueDepth;
-	type DeletionWeightLimit = DeletionWeightLimit;
-	type MaxCodeSize = MaxCodeSize;
+	type WeightPrice = pallet_transaction_payment::Module<Self>;
 }
 
 parameter_types! {
@@ -369,21 +369,21 @@ parameter_types! {
 }
 
 impl webb_tokens::Config for Runtime {
-	type PalletId = TokensPalletId;
 	type Amount = Amount;
+	type ApprovalDeposit = ApprovalDeposit;
 	type Balance = Balance;
-	type CurrencyId = CurrencyId;
-	type NativeCurrency = BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
-	type Event = Event;
-	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
 	type CurrencyDeposit = CurrencyDeposit;
+	type CurrencyId = CurrencyId;
+	type DustAccount = ();
+	type Event = Event;
+	type Extra = ();
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
 	type MetadataDepositBase = MetadataDepositBase;
 	type MetadataDepositPerByte = MetadataDepositPerByte;
-	type ApprovalDeposit = ApprovalDeposit;
+	type NativeCurrency = BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
+	type PalletId = TokensPalletId;
 	type StringLimit = StringLimit;
-	type DustAccount = ();
 	type WeightInfo = ();
-	type Extra = ();
 }
 
 impl webb_currencies::Config for Runtime {
@@ -412,8 +412,8 @@ impl mixer::Config for Runtime {
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
 	type MixerSizes = MixerSizes;
-	type PalletId = MixerPalletId;
 	type NativeCurrencyId = NativeCurrencyId;
+	type PalletId = MixerPalletId;
 	type Tree = Merkle;
 	type WeightInfo = MixerWeights<Self>;
 }
@@ -421,11 +421,13 @@ impl mixer::Config for Runtime {
 /// Current approximation of the gas/s consumption considering
 /// EVM execution over compiled WASM (on 4.4Ghz CPU).
 /// Given the 500ms Weight, from which 75% only are used for transactions,
-/// the total EVM execution gas limit is: GAS_PER_SECOND * 0.500 * 0.75 ~= 15_000_000
+/// the total EVM execution gas limit is: GAS_PER_SECOND * 0.500 * 0.75 ~=
+/// 15_000_000
 pub const GAS_PER_SECOND: u64 = 40_000_000;
 
 /// Approximate ratio of the amount of Weight per Gas.
-/// u64 works for approximations because Weight is a very small unit compared to gas
+/// u64 works for approximations because Weight is a very small unit compared to
+/// gas
 pub const WEIGHT_PER_GAS: u64 = WEIGHT_PER_SECOND / GAS_PER_SECOND;
 pub struct AnonGasWeightMapping;
 impl pallet_evm::GasWeightMapping for AnonGasWeightMapping {
@@ -450,26 +452,26 @@ parameter_types! {
 	pub BlockGasLimit: U256 = U256::from(u32::max_value());
 }
 impl pallet_evm::Config for Runtime {
-	type FeeCalculator = FixedGasPrice;
-	type WithdrawOrigin = EnsureAddressTruncated;
 	type AddressMapping = HashedAddressMapping<BlakeTwo256>;
+	type BlockGasLimit = BlockGasLimit;
 	type CallOrigin = EnsureAddressTruncated;
 	type ChainId = ChainId;
 	type Currency = Balances;
 	type Event = Event;
+	type FeeCalculator = FixedGasPrice;
 	type GasWeightMapping = AnonGasWeightMapping;
+	type OnChargeTransaction = ();
 	type Precompiles = (
 		pallet_evm_precompile_simple::ECRecover,
 		pallet_evm_precompile_simple::Sha256,
 		pallet_evm_precompile_simple::Ripemd160,
 		pallet_evm_precompile_simple::Identity,
 		pallet_evm_precompile_simple::ECRecoverPublicKey,
-		// pallet_evm_precompile_sha3fips::Sha3FIPS256,
-		// pallet_evm_precompile_sha3fips::Sha3FIPS512,
+		/* pallet_evm_precompile_sha3fips::Sha3FIPS256,
+		 * pallet_evm_precompile_sha3fips::Sha3FIPS512, */
 	);
-	type BlockGasLimit = BlockGasLimit;
-	type OnChargeTransaction = ();
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
+	type WithdrawOrigin = EnsureAddressTruncated;
 }
 pub struct EthereumFindAuthor<F>(PhantomData<F>);
 impl<F: FindAuthor<u32>> FindAuthor<H160> for EthereumFindAuthor<F> {

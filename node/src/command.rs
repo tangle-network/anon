@@ -20,9 +20,9 @@ use crate::{
 	cli::{Cli, Subcommand},
 	service,
 };
-use webb_runtime::Block;
 use sc_cli::{ChainSpec, Role, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
+use webb_runtime::Block;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
@@ -146,10 +146,7 @@ pub fn run() -> sc_cli::Result<()> {
 			runner.run_node_until_exit(|config| async move {
 				match config.role {
 					Role::Light => service::new_light(config),
-					_ => service::new_full(
-						config,
-						&cli
-					),
+					_ => service::new_full(config, &cli),
 				}
 				.map_err(sc_cli::Error::Service)
 			})
