@@ -46,13 +46,15 @@ describeWithAnon('Substrate <> EVM balances test', async (context) => {
     web3Url = 'http://localhost:9933';
     web3 = new Web3(web3Url);
     id = await web3.eth.net.getId();
-    assert.equal(id, 2021);
+    assert.equal(id, 42);
 
     // init polkadot
     const polkadotUrl = 'ws://localhost:9944';
-    api = new ApiPromise(options({ provider: new WsProvider(polkadotUrl) }));
+    api = ApiPromise.create(options({ provider: new WsProvider(polkadotUrl) }));
+    await api.isReady;
     const { ss58Format } = await api.rpc.system.properties();
     const substrateId = +ss58Format.unwrap();
+    console.log(substrateId);
 
     // init addresses
     keyring = new Keyring({ ss58Format: substrateId, type: 'sr25519' }).addFromUri('//Alice');
