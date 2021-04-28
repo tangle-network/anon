@@ -35,6 +35,7 @@ pub trait GovernableBridgeSystem {
 	type CurrencyId;
 	type Balance;
 	type TreeId;
+	type ChainId;
 	type Scalar;
 	type IndividualKeyShare;
 	type DistributedPublicKey;
@@ -42,9 +43,9 @@ pub trait GovernableBridgeSystem {
 
 	fn create_new(account_id: Self::AccountId, currency_id: Self::CurrencyId, size: Self::Balance, sig: Self::Signature)
 		-> Result<(), dispatch::DispatchError>;
-	fn add_anchor_root(anchor_id: Self::TreeId, root: Self::Scalar, index: u16, sig: Self::Signature)
+	fn add_anchor_root(anchor_id: Self::TreeId, chain_id: Self::ChainId, root: Self::Scalar, sig: Self::Signature)
 		-> Result<(), dispatch::DispatchError>;
-	fn remove_anchor_root(anchor_id: Self::TreeId, root: Self::Scalar, index: u16, sig: Self::Signature)
+	fn remove_anchor_root(anchor_id: Self::TreeId, chain_id: Self::ChainId, sig: Self::Signature)
 		-> Result<(), dispatch::DispatchError>;
 	fn set_fee(anchor_id: Self::TreeId, fee: Self::Balance, sig: Self::Signature)
 		-> Result<(), dispatch::DispatchError>;

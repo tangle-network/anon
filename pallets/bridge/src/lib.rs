@@ -30,6 +30,8 @@ use sp_runtime::{
 };
 use sp_std::prelude::*;
 use sp_runtime::traits::One;
+use sp_runtime::traits::AtLeast32Bit;
+
 // use weights::WeightInfo;
 pub mod types;
 pub use types::*;
@@ -49,7 +51,6 @@ pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
 	
-
 	/// The pallet's configuration trait.
 	#[pallet::config]
 	pub trait Config: frame_system::Config + pallet_merkle::Config + webb_currencies::Config {
@@ -59,6 +60,8 @@ pub mod pallet {
 		type Event: IsType<<Self as frame_system::Config>::Event> + From<Event<Self>>;
 		/// Currency type for taking deposits
 		type Currency: MultiCurrency<Self::AccountId> + ExtendedTokenSystem<Self::AccountId, CurrencyIdOf<Self>, BalanceOf<Self>>;
+		/// The overarching merkle tree trait
+		type ChainId: Encode + Decode + Parameter + AtLeast32Bit + Default + Copy;
 		/// Scalar type for elements of trees
 		type Scalar: Parameter + Member + Default + Copy + MaybeSerializeDeserialize;
 		/// Signature type for threshold signatures
@@ -69,31 +72,31 @@ pub mod pallet {
 		/// Default admin key
 		#[pallet::constant]
 		type DefaultAdmin: Get<Self::AccountId>;
-
 		/// The overarching merkle tree trait
 		type Tree: TreeTrait<Self::AccountId, Self::BlockNumber, Self::TreeId>;
 	}
 
 	/// The map of mixer trees to their metadata
 	#[pallet::storage]
-	#[pallet::getter(fn mixer_trees)]
+	#[pallet::getter(fn anchors)]
 	pub type Anchors<T: Config> = StorageMap<_, Blake2_128Concat, T::TreeId, AnchorInfo<T>, ValueQuery>;
 
-	/// The vector of bridge ids
+	/// The map of mixer trees to their metadata
 	#[pallet::storage]
-	#[pallet::getter(fn mixer_group_ids)]
+	#[pallet::getter(fn anchor_edges)]
+	pub type AnchorEdges<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		T::TreeId,
+		Blake2_128Concat,
+		T::ChainId,
+		T::Scalar,
+		ValueQuery>;
+
+	/// The vector of tree ids on the bridge ids
+	#[pallet::storage]
+	#[pallet::getter(fn bridge_tree_ids)]
 	pub type BridgeTreeIds<T: Config> = StorageValue<_, Vec<T::TreeId>, ValueQuery>;
-
-	/// The vector of bridge ids
-	#[pallet::storage]
-	#[pallet::getter(fn anchor_roots_of_tree)]
-	pub type AnchorRootsOfTree<T: Config> = StorageMap<_, Blake2_128Concat, T::TreeId, Vec<T::Scalar>, ValueQuery>;
-
-	/// The TVL per group
-	#[pallet::storage]
-	#[pallet::getter(fn total_value_locked)]
-	pub type TotalValueLocked<T: Config> = StorageMap<_, Blake2_128Concat, T::TreeId, BalanceOf<T>, ValueQuery>;
-
 
 	/// Flag indicating if the mixer is initialized
 	#[pallet::storage]
@@ -104,11 +107,6 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn last_token_id)]
 	pub type LatestTokenId<T: Config> = StorageValue<_, Option<CurrencyIdOf<T>>, ValueQuery>;
-
-	/// Webb wrapped token ids
-	#[pallet::storage]
-	#[pallet::getter(fn wrapped_token_ids)]
-	pub type WrappedTokenIds<T: Config> = StorageValue<_, Option<Vec<CurrencyIdOf<T>>>, ValueQuery>;
 
 	/// Mapping of non-Webb tokens to Webb wrapped token ids
 	#[pallet::storage]
@@ -275,32 +273,14 @@ pub mod pallet {
 		pub fn deposit(
 			origin: OriginFor<T>,
 			tree_id: T::TreeId,
+			leaf: T::Scalar,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
-			// ensure token exists
-			ensure!(T::Currency::exists(currency_id), Error::<T>::NoneValue);
-			// ensure token has a webb-wrapped token (it is not a webb-wrapped token)
-			ensure!(WrappedTokenRegistry::<T>::contains_key(currency_id), Error::<T>::NoneValue);
 
-			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 			ensure!(!T::Tree::is_stopped(tree_id), Error::<T>::MixerStopped);
-			// get mixer info, should always exist if the module is initialized
-			let anchor_info = Self::get_anchor_info(tree_id)?;
-			// ensure the sender has enough balance to cover deposit
-			let balance = T::Currency::free_balance(anchor_info.currency_id, &sender);
-			ensure!(balance >= anchor_info.size, Error::<T>::InsufficientBalance);
-			// transfer the deposit to the module
-			T::Currency::transfer(anchor_info.currency_id, &sender, &Self::account_id(), deposit)?;
-			// update the total value locked
-			let tvl = Self::total_value_locked(tree_id);
-			<TotalValueLocked<T>>::insert(tree_id, tvl + deposit);
-			// add elements to the mixer group's merkle tree and save the leaves
-			T::Tree::add_members(Self::account_id(), tree_id.into(), data_points.clone())?;
 
-			let deposit_size = anchor_info.fixed_deposit_size;
-
-			Self::deposit_event(Event::Deposit(tree_id, sender, deposit_size));
+			<Self as PrivacyBridgeSystem>::deposit(sender, tree_id, leaf)?;
 
 			Ok(().into())
 		}
@@ -341,6 +321,204 @@ pub mod pallet {
 			Admin::<T>::set(to);
 			Ok(().into())
 		}
+
+		#[pallet::weight(5_000_000)]
+		pub fn wrap_and_deposit(
+			origin: OriginFor<T>,
+			tree_id: T::TreeId,
+			leaf: T::Scalar,
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+
+			<Self as PrivacyBridgeSystem>::wrap_and_deposit(sender, tree_id, leaf)?;
+
+			Ok(().into())
+		}
+		#[pallet::weight(5_000_000)]
+		pub fn withdraw_zk(
+			origin: OriginFor<T>,
+			tree_id: T::TreeId,
+			proof: Vec<u8>,
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+
+			<Self as PrivacyBridgeSystem>::withdraw_zk(sender, tree_id, proof)?;
+
+			Ok(().into())
+		}
+		#[pallet::weight(5_000_000)]
+		pub fn withdraw_public(
+			origin: OriginFor<T>,
+			tree_id: T::TreeId,
+			proof: Vec<u8>,
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+
+			<Self as PrivacyBridgeSystem>::withdraw_public(sender, tree_id, proof)?;
+
+			Ok(().into())
+		}
+		#[pallet::weight(5_000_000)]
+		pub fn withdraw_zk_and_unwrap(
+			origin: OriginFor<T>,
+			tree_id: T::TreeId,
+			proof: Vec<u8>,
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+
+			<Self as PrivacyBridgeSystem>::withdraw_zk_and_unwrap(sender, tree_id, proof)?;
+
+			Ok(().into())
+		}
+		#[pallet::weight(5_000_000)]
+		pub fn withdraw_public_and_unwrap(
+			origin: OriginFor<T>,
+			tree_id: T::TreeId,
+			proof: Vec<u8>,
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+
+			<Self as PrivacyBridgeSystem>::withdraw_public_and_unwrap(sender, tree_id, proof)?;
+
+			Ok(().into())
+		}
+		#[pallet::weight(5_000_000)]
+		pub fn remix_zk(
+			origin: OriginFor<T>,
+			tree_id: T::TreeId,
+			proof: Vec<u8>,
+			leaf: T::Scalar,
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+
+			<Self as PrivacyBridgeSystem>::remix_zk(
+				sender,
+				tree_id,
+				proof,
+				leaf,
+			)?;
+
+			Ok(().into())
+		}
+		#[pallet::weight(5_000_000)]
+		pub fn remix_public(
+			origin: OriginFor<T>,
+			tree_id: T::TreeId,
+			proof: Vec<u8>,
+			leaf: T::Scalar,
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+
+			<Self as PrivacyBridgeSystem>::remix_public(
+				sender,
+				tree_id,
+				proof,
+				leaf,
+			)?;
+
+			Ok(().into())
+		}
+		#[pallet::weight(5_000_000)]
+		pub fn create_new(
+			origin: OriginFor<T>,
+			currency_id: CurrencyIdOf<T>,
+			size: BalanceOf<T>,
+			sig: T::ThresholdSignature,
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+
+			<Self as GovernableBridgeSystem>::create_new(
+				sender,
+				currency_id,
+				size,
+				sig,
+			)?;
+
+			Ok(().into())
+		}
+		#[pallet::weight(5_000_000)]
+		pub fn add_anchor_root(
+			origin: OriginFor<T>,
+			tree_id: T::TreeId,
+			chain_id: T::ChainId,
+			root: T::Scalar,
+			sig: T::ThresholdSignature,
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+
+			<Self as GovernableBridgeSystem>::add_anchor_root(
+				tree_id,
+				chain_id,
+				root,
+				sig,
+			)?;
+
+			Ok(().into())
+		}
+		#[pallet::weight(5_000_000)]
+		pub fn remove_anchor_root(
+			origin: OriginFor<T>,
+			tree_id: T::TreeId,
+			chain_id: T::ChainId,
+			sig: T::ThresholdSignature,
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+
+			<Self as GovernableBridgeSystem>::remove_anchor_root(
+				tree_id,
+				chain_id,
+				sig,
+			)?;
+
+			Ok(().into())
+		}
+		#[pallet::weight(5_000_000)]
+		pub fn set_fee(
+			origin: OriginFor<T>,
+			tree_id: T::TreeId,
+			new_fee: BalanceOf<T>,
+			sig: T::ThresholdSignature,
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+
+			<Self as GovernableBridgeSystem>::set_fee(tree_id, new_fee, sig)?;
+
+			Ok(().into())
+		}
+		#[pallet::weight(5_000_000)]
+		pub fn set_multi_party_key(
+			origin: OriginFor<T>,
+			tree_id: T::TreeId,
+			new_key: T::Scalar,
+			sig: T::ThresholdSignature
+		) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+
+			<Self as GovernableBridgeSystem>::set_multi_party_key(tree_id, new_key, sig)?;
+
+			Ok(().into())
+		}
+		#[pallet::weight(5_000_000)]
+		pub fn register(origin: OriginFor<T>, threshold_key_share: T::Scalar) -> DispatchResultWithPostInfo {
+			let sender = ensure_signed(origin)?;
+			ensure!(Self::initialised(), Error::<T>::NotInitialised);
+
+			<Self as GovernableBridgeSystem>::register(sender, threshold_key_share)?;
+
+			Ok(().into())
+		}
 	}
 }
 
@@ -350,7 +528,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub fn get_anchor_info(tree_id: T::TreeId) -> Result<AnchorInfo<T>, dispatch::DispatchError> {
-		let anchor_info = BridgeTrees::<T>::get(tree_id);
+		let anchor_info = Anchors::<T>::get(tree_id);
 		// ensure anchor_info has a non-zero deposit, otherwise, the mixer doesn't
 		// exist for this id
 		ensure!(anchor_info.size > Zero::zero(), Error::<T>::NoMixerForId); // return the mixer info
@@ -381,7 +559,23 @@ impl<T: Config> PrivacyBridgeSystem for Pallet<T> {
 	fn unwrap(account_id: Self::AccountId, currency_id: Self::CurrencyId, amount: Self::Balance)
 		-> Result<(), dispatch::DispatchError> { Ok(()) }
 	fn deposit(account_id: Self::AccountId, tree_id: Self::TreeId, leaf: Self::Scalar)
-		-> Result<(), dispatch::DispatchError> { Ok(()) }
+		-> Result<(), dispatch::DispatchError> {
+			let anchor = Self::get_anchor_info(tree_id)?;
+			let currency_id = anchor.currency_id;
+			// ensure token exists
+			ensure!(T::Currency::exists(currency_id), Error::<T>::NoneValue);
+			// ensure token has a webb-wrapped token (it is not a webb-wrapped token)
+			ensure!(WrappedTokenRegistry::<T>::contains_key(currency_id), Error::<T>::NoneValue);
+			// ensure the account_id has enough balance to cover anchor size
+			let balance = T::Currency::free_balance(anchor.currency_id, &account_id);
+			ensure!(balance >= anchor.size, Error::<T>::InsufficientBalance);
+			// transfer the anchor size to the module
+			T::Currency::transfer(anchor.currency_id, &account_id, &Self::account_id(), anchor.size)?;
+			// add elements to the mixer group's merkle tree and save the leaves
+			T::Tree::add_members(Self::account_id(), tree_id.into(), vec![pallet_merkle::utils::keys::ScalarData::zero()])?;
+			Self::deposit_event(Event::Deposit(tree_id, account_id, anchor.size));
+			Ok(())
+		}
 	fn wrap_and_deposit(account_id: Self::AccountId, tree_id: Self::TreeId, leaf: Self::Scalar)
 		-> Result<(), dispatch::DispatchError> { Ok(()) }
 	fn withdraw_zk(account_id: Self::AccountId, tree_id: Self::TreeId, proof: Vec<u8>)
@@ -403,6 +597,7 @@ impl<T: Config> GovernableBridgeSystem for Pallet<T> {
 	type CurrencyId = CurrencyIdOf<T>;
 	type Balance = BalanceOf<T>;
 	type TreeId = T::TreeId;
+	type ChainId = T::ChainId;
 	type Scalar = T::Scalar;
 	type IndividualKeyShare = T::Scalar;
 	type DistributedPublicKey = T::Scalar;
@@ -410,9 +605,9 @@ impl<T: Config> GovernableBridgeSystem for Pallet<T> {
 
 	fn create_new(account_id: Self::AccountId, currency_id: Self::CurrencyId, size: Self::Balance, sig: Self::Signature)
 		-> Result<(), dispatch::DispatchError> { Ok(()) }
-	fn add_anchor_root(anchor_id: Self::TreeId, root: Self::Scalar, index: u16, sig: Self::Signature)
+	fn add_anchor_root(anchor_id: Self::TreeId, chain_id: Self::ChainId, root: Self::Scalar, sig: Self::Signature)
 		-> Result<(), dispatch::DispatchError> { Ok(()) }
-	fn remove_anchor_root(anchor_id: Self::TreeId, root: Self::Scalar, index: u16, sig: Self::Signature)
+	fn remove_anchor_root(anchor_id: Self::TreeId, chain_id: Self::ChainId, sig: Self::Signature)
 		-> Result<(), dispatch::DispatchError> { Ok(()) }
 	fn set_fee(anchor_id: Self::TreeId, fee: Self::Balance, sig: Self::Signature)
 		-> Result<(), dispatch::DispatchError> { Ok(()) }
