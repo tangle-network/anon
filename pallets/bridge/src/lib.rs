@@ -40,7 +40,7 @@ pub type CurrencyIdOf<T> =
 	<<T as pallet::Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::CurrencyId;
 
 
-/// Implementation of Mixer pallet
+/// Implementation of Bridge pallet
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -72,12 +72,12 @@ pub mod pallet {
 		type Tree: TreeTrait<Self::AccountId, Self::BlockNumber, Self::TreeId>;
 	}
 
-	/// The map of mixer trees to their metadata
+	/// The map of merkle tree ids to their anchor metadata
 	#[pallet::storage]
 	#[pallet::getter(fn anchors)]
 	pub type Anchors<T: Config> = StorageMap<_, Blake2_128Concat, T::TreeId, AnchorInfo<T>, ValueQuery>;
 
-	/// The map of mixer trees to their metadata
+	/// The map of merkle tree ids to chain ids to their current merkle roots
 	#[pallet::storage]
 	#[pallet::getter(fn anchor_edges)]
 	pub type AnchorEdges<T: Config> = StorageDoubleMap<
@@ -94,7 +94,7 @@ pub mod pallet {
 	#[pallet::getter(fn bridge_tree_ids)]
 	pub type BridgeTreeIds<T: Config> = StorageValue<_, Vec<T::TreeId>, ValueQuery>;
 
-	/// Flag indicating if the mixer is initialized
+	/// Flag indicating if the bridge is initialized
 	#[pallet::storage]
 	#[pallet::getter(fn initialised)]
 	pub type Initialised<T: Config> = StorageValue<_, bool, ValueQuery>;
@@ -124,8 +124,8 @@ pub mod pallet {
 		Vec<CurrencyIdOf<T>>,
 	>;
 
-	/// Administrator of the mixer pallet.
-	/// This account that can stop/start operations of the mixer
+	/// Administrator of the bridge pallet.
+	/// This account that can stop/start operations of the bridge
 	#[pallet::storage]
 	#[pallet::getter(fn admin)]
 	pub type Admin<T: Config> = StorageValue<_, T::AccountId, ValueQuery>;
@@ -134,18 +134,18 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	#[pallet::metadata(T::AccountId = "AccountId", T::TreeId = "TreeId", BalanceOf<T> = "Balance")]
 	pub enum Event<T: Config> {
-		/// New deposit added to the specific mixer
+		/// New deposit added to the specific bridge anchor
 		Deposit(
-			/// Id of the tree
+			/// Id of the anchor
 			T::TreeId,
 			/// Account id of the sender
 			T::AccountId,
 			/// Deposit size
 			BalanceOf<T>,
 		),
-		/// Withdrawal from the specific mixer
+		/// Withdrawal from the specific bridge anchor
 		Withdraw(
-			/// Id of the tree
+			/// Id of the anchor
 			T::TreeId,
 			/// Account id of the sender
 			T::AccountId,
@@ -154,7 +154,7 @@ pub mod pallet {
 			/// Account id of the relayer
 			T::AccountId,
 			/// Merkle root
-			ScalarData,
+			T::Scalar,
 		),
 	}
 
@@ -162,18 +162,18 @@ pub mod pallet {
 	pub enum Error<T> {
 		/// Value was None
 		NoneValue,
-		/// Mixer not found for specified id
-		NoMixerForId,
-		/// Mixer is not initialized
+		/// Anchor not found for specified id
+		NoAnchorForId,
+		/// Anchor is not initialized
 		NotInitialised,
-		/// Mixer is already initialized
+		/// Anchor is already initialized
 		AlreadyInitialised,
 		/// User doesn't have enough balance for the deposit
 		InsufficientBalance,
 		/// Caller doesn't have permission to make a call
 		UnauthorizedCall,
-		/// Mixer is stopped
-		MixerStopped,
+		/// Anchor is stopped
+		AnchorStopped,
 	}
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -274,14 +274,14 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?;
 
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
-			ensure!(!T::Tree::is_stopped(tree_id), Error::<T>::MixerStopped);
+			ensure!(!T::Tree::is_stopped(tree_id), Error::<T>::AnchorStopped);
 
 			<Self as PrivacyBridgeSystem>::deposit(sender, tree_id, leaf)?;
 
 			Ok(().into())
 		}
 
-		/// Stops the operation of all the mixers managed by the pallet.
+		/// Stops the operation of all the anchors managed by the pallet.
 		/// Can only be called by the admin or the root origin.
 		///
 		/// Weights:
@@ -293,7 +293,7 @@ pub mod pallet {
 		pub fn set_stopped(origin: OriginFor<T>, stopped: bool) -> DispatchResultWithPostInfo {
 			// Ensure the caller is admin or root
 			ensure_admin(origin, &Self::admin())?;
-			// Set the mixer state, `stopped` can be true or false
+			// Set the anchor state, `stopped` can be true or false
 			let tree_ids = BridgeTreeIds::<T>::get();
 			for i in 0..tree_ids.len() {
 				T::Tree::set_stopped(Self::account_id(), tree_ids[i], stopped)?;
@@ -525,9 +525,9 @@ impl<T: Config> Pallet<T> {
 
 	pub fn get_anchor_info(tree_id: T::TreeId) -> Result<AnchorInfo<T>, dispatch::DispatchError> {
 		let anchor_info = Anchors::<T>::get(tree_id);
-		// ensure anchor_info has a non-zero deposit, otherwise, the mixer doesn't
+		// ensure anchor_info has a non-zero deposit, otherwise, the anchor doesn't
 		// exist for this id
-		ensure!(anchor_info.size > Zero::zero(), Error::<T>::NoMixerForId); // return the mixer info
+		ensure!(anchor_info.size > Zero::zero(), Error::<T>::NoAnchorForId);
 		Ok(anchor_info)
 	}
 
@@ -567,7 +567,7 @@ impl<T: Config> PrivacyBridgeSystem for Pallet<T> {
 			ensure!(balance >= anchor.size, Error::<T>::InsufficientBalance);
 			// transfer the anchor size to the module
 			T::Currency::transfer(anchor.currency_id, &account_id, &Self::account_id(), anchor.size)?;
-			// add elements to the mixer group's merkle tree and save the leaves
+			// add elements to the anchor's merkle tree and save the leaves
 			T::Tree::add_members(Self::account_id(), tree_id.into(), vec![pallet_merkle::utils::keys::ScalarData::zero()])?;
 			Self::deposit_event(Event::Deposit(tree_id, account_id, anchor.size));
 			Ok(())
