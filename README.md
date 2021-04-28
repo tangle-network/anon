@@ -4,6 +4,10 @@ Substrate based mixer w/ relayable transactions using bulletproofs and Curve2551
 ## Overview
 At the highest-level, this is a cryptocurrency mixing pallet that uses non-trusted setup zero-knowledge proofs to facilitate mixing operations. It uses the bulletproofs library built from [dalek-cryptography](https://github.com/dalek-cryptography). The repo contains pallets that allow for creation of merkle trees with elements in Curve25519's scalar field and a mixer that utilises these merkle trees to built an on-chain application or protocol.
 
+### Pallet documentation
+- https://docs.rs/pallet-mixer/3.0.0/pallet_mixer/
+- https://docs.rs/pallet-merkle/3.0.0/pallet_merkle/
+
 ### Dependencies
 The library utilises a variety of zero-knowledge primitives, gadgets, circuits, etc. that are all implemented using bulletproofs R1CS api with Curve25519. You can find more about the components below and descriptions following thereafter.
 - [Bulletproof zero-knowledge gadgets](https://github.com/webb-tools/bulletproof-gadgets)
