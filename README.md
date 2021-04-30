@@ -1,8 +1,5 @@
 
 <h1 align="center">Webb Anon</h1>
-<p align="center">
-  <img src="https://i.imgur.com/0FVWRrO.png" alt="Webb Anon" width="300"></img>
-</p>
 <br />
 <p align="center">
     <strong>🕸️  The Webb Anon Node 🕵️‍♂️</strong>
