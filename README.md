@@ -46,6 +46,11 @@ Build Wasm and native code:
 cargo build --release
 ```
 
+To import the submodules, run:
+```bash
+git submodule update --init --recursive
+```
+
 ## Run
 
 ### Single node development chain
