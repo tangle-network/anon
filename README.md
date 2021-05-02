@@ -24,7 +24,7 @@ At the highest-level, this is a cryptocurrency mixing pallet that uses non-trust
 The library utilises a variety of zero-knowledge primitives, gadgets, circuits, etc. that are all implemented using bulletproofs R1CS api with Curve25519. You can find more about the components below and descriptions following thereafter:
 
 - 🔐 [Bulletproof zero-knowledge gadgets](https://github.com/webb-tools/bulletproof-gadgets)
--  🧑‍✈️ [Transaction Relayer](https://github.com/webb-tools/relayer)
+- 🧑‍✈️ [Transaction Relayer](https://github.com/webb-tools/relayer)
 - 🧰 [Mixer CLI](https://github.com/webb-tools/cli)
 - 🖥️ [Mixer dApp](https://github.com/webb-tools/webb-dapp)
 - 🔋 [Webb.js SDK](https://github.com/webb-tools/webb.js)
