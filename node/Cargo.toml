@@ -26,7 +26,7 @@ jsonrpc-core = "15.1.0"
 jsonrpc-pubsub = "15.0.0"
 
 # local dependencies
-webb-runtime = { path = "../runtime", version = "3.0.0" }
+webb-runtime = { path = "../runtime", features = ["std"] }
 
 # Substrate dependencies
 frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
