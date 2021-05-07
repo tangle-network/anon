@@ -345,6 +345,10 @@ pub mod pallet {
 			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth)?;
 			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 			MixerTrees::<T>::insert(mixer_id, mixer_info);
+
+			let mut ids = MixerTreeIds::<T>::get();
+			ids.push(mixer_id);
+			MixerTreeIds::<T>::set(ids);
 			Ok(().into())
 		}
 
