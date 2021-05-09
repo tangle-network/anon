@@ -36,6 +36,12 @@ pallet-balances = { default-features = false, git = "https://github.com/parityte
 pallet-contracts = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-contracts-primitives = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-contracts-rpc-runtime-api = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
+
+pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
+pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
+fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+pallet-evm-precompile-simple = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
+
 pallet-grandpa = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-randomness-collective-flip = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-sudo = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
@@ -53,11 +59,6 @@ sp-session = { default-features = false, git = "https://github.com/paritytech/su
 sp-std = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-transaction-pool = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-version = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-
-pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "drew-frontier-to-master", default-features = false }
-pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "drew-frontier-to-master", default-features = false }
-fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "drew-frontier-to-master" }
-pallet-evm-precompile-simple = { git = "https://github.com/webb-tools/frontier", branch = "drew-frontier-to-master", default-features = false }
 
 merkle = { package = "pallet-merkle", default-features = false, path = "../pallets/merkle" }
 mixer = { package = "pallet-mixer", default-features = false, path = "../pallets/mixer" }

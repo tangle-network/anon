@@ -416,12 +416,11 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "backtrace"
-version = "0.3.58"
+version = "0.3.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88fb5a785d6b44fd9d6700935608639af1b8356de1e55d5f7c2740f4faa15d82"
+checksum = "78ed203b9ba68b242c62b3fb7480f589dd49829be1edb3fe8fc8b4ffda2dcb8d"
 dependencies = [
  "addr2line",
- "cc",
  "cfg-if 1.0.0",
  "libc",
  "miniz_oxide",
@@ -1461,9 +1460,9 @@ checksum = "f7531096570974c3a9dcf9e4b8e1cede1ec26cf5046219fb3b9d897503b9be59"
 
 [[package]]
 name = "evm"
-version = "0.25.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b4bd1fb06a4962a243c8be285d8a9b2493ffa79acb32633ad07a0bc523b1acd"
+checksum = "1202e8dfa45bea73ee003c4be2f3549d60cb2e2ac5b0c1db563bd4653213efde"
 dependencies = [
  "ethereum",
  "evm-core",
@@ -1479,9 +1478,9 @@ dependencies = [
 
 [[package]]
 name = "evm-core"
-version = "0.25.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b4eea3882c798813a6f92e8855ec1fc3f5ababd8b274cb81d4bedee701b478e"
+checksum = "9aeed00c943f6347108393c98907f432d8f2b82683725dfefbd734d335faace4"
 dependencies = [
  "funty",
  "parity-scale-codec 2.1.1",
@@ -1491,9 +1490,9 @@ dependencies = [
 
 [[package]]
 name = "evm-gasometer"
-version = "0.25.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a8f04dcc8b0296652eabfa443a08ebed6071a1178e0f42a7f7b63a612bddf0b"
+checksum = "463412356790c5e34e8a13cd23ba06284d9afa999e82e8c64497aed2ee625375"
 dependencies = [
  "evm-core",
  "evm-runtime",
@@ -1502,9 +1501,9 @@ dependencies = [
 
 [[package]]
 name = "evm-runtime"
-version = "0.25.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54c302f29ca8bba82a382aa52d427869964179e4f24eae57bde70958ce9b7607"
+checksum = "0c08f510e5535cee2352adb9b93ff24dc80f8ca1bad445a9aa1292ce144b45a1"
 dependencies = [
  "evm-core",
  "primitive-types",
@@ -1566,7 +1565,7 @@ dependencies = [
 [[package]]
 name = "fc-consensus"
 version = "1.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=drew-frontier-to-master#d39d4904b781f8511bcedb4a6e1ad3990e7807e3"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#d53eaa0dc3308e1f17267735b30f348a1e274727"
 dependencies = [
  "async-trait",
  "derive_more",
@@ -1574,7 +1573,6 @@ dependencies = [
  "fp-consensus",
  "fp-rpc",
  "futures 0.3.14",
- "futures-util",
  "log",
  "parity-scale-codec 2.1.1",
  "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=master)",
@@ -1592,7 +1590,7 @@ dependencies = [
 [[package]]
 name = "fc-db"
 version = "1.0.0"
-source = "git+https://github.com/webb-tools/frontier?branch=drew-frontier-to-master#d39d4904b781f8511bcedb4a6e1ad3990e7807e3"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#d53eaa0dc3308e1f17267735b30f348a1e274727"
 dependencies = [
  "kvdb",
  "kvdb-rocksdb",
@@ -1606,7 +1604,7 @@ dependencies = [
 [[package]]
 name = "fc-mapping-sync"
 version = "1.1.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=drew-frontier-to-master#d39d4904b781f8511bcedb4a6e1ad3990e7807e3"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#d53eaa0dc3308e1f17267735b30f348a1e274727"
 dependencies = [
  "fc-consensus",
  "fc-db",
@@ -1624,7 +1622,7 @@ dependencies = [
 [[package]]
 name = "fc-rpc"
 version = "2.0.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=drew-frontier-to-master#d39d4904b781f8511bcedb4a6e1ad3990e7807e3"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#d53eaa0dc3308e1f17267735b30f348a1e274727"
 dependencies = [
  "ethereum",
  "ethereum-types",
@@ -1665,7 +1663,7 @@ dependencies = [
 [[package]]
 name = "fc-rpc-core"
 version = "1.1.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=drew-frontier-to-master#d39d4904b781f8511bcedb4a6e1ad3990e7807e3"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#d53eaa0dc3308e1f17267735b30f348a1e274727"
 dependencies = [
  "ethereum-types",
  "jsonrpc-core 15.1.0",
@@ -1769,7 +1767,7 @@ dependencies = [
 [[package]]
 name = "fp-consensus"
 version = "1.0.0"
-source = "git+https://github.com/webb-tools/frontier?branch=drew-frontier-to-master#d39d4904b781f8511bcedb4a6e1ad3990e7807e3"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#d53eaa0dc3308e1f17267735b30f348a1e274727"
 dependencies = [
  "ethereum",
  "parity-scale-codec 2.1.1",
@@ -1783,7 +1781,7 @@ dependencies = [
 [[package]]
 name = "fp-evm"
 version = "1.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=drew-frontier-to-master#d39d4904b781f8511bcedb4a6e1ad3990e7807e3"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#d53eaa0dc3308e1f17267735b30f348a1e274727"
 dependencies = [
  "evm",
  "impl-trait-for-tuples 0.1.3",
@@ -1796,7 +1794,7 @@ dependencies = [
 [[package]]
 name = "fp-rpc"
 version = "1.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=drew-frontier-to-master#d39d4904b781f8511bcedb4a6e1ad3990e7807e3"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#d53eaa0dc3308e1f17267735b30f348a1e274727"
 dependencies = [
  "ethereum",
  "ethereum-types",
@@ -1812,7 +1810,7 @@ dependencies = [
 [[package]]
 name = "fp-storage"
 version = "1.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=drew-frontier-to-master#d39d4904b781f8511bcedb4a6e1ad3990e7807e3"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#d53eaa0dc3308e1f17267735b30f348a1e274727"
 dependencies = [
  "ethereum",
  "ethereum-types",
@@ -2355,9 +2353,9 @@ dependencies = [
 
 [[package]]
 name = "handlebars"
-version = "3.5.5"
+version = "3.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4498fc115fa7d34de968184e473529abb40eeb6be8bc5f7faba3d08c316cb3e3"
+checksum = "580b6f551b29a3a02436318aed09ba1c58eea177dc49e39beac627ad356730a5"
 dependencies = [
  "log",
  "pest",
@@ -3199,7 +3197,7 @@ dependencies = [
  "libp2p-swarm-derive",
  "libp2p-tcp 0.28.0",
  "libp2p-uds",
- "libp2p-wasm-ext 0.28.2",
+ "libp2p-wasm-ext 0.28.1",
  "libp2p-websocket 0.29.0",
  "libp2p-yamux",
  "parity-multiaddr",
@@ -3343,9 +3341,9 @@ dependencies = [
 
 [[package]]
 name = "libp2p-gossipsub"
-version = "0.30.1"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7b0c8506a6ec3344b9e706d7c7a6dba826f8ede735cfe13dde12a8c263c4af9"
+checksum = "73cb9a89a301afde1e588c73f7e9131e12a5388725f290a9047b878862db1b53"
 dependencies = [
  "asynchronous-codec 0.6.0",
  "base64 0.13.0",
@@ -3663,9 +3661,9 @@ dependencies = [
 
 [[package]]
 name = "libp2p-wasm-ext"
-version = "0.28.2"
+version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2d413e4cf9b8e5dfbcd2a60d3dc5a3391308bdb463684093d4f67137b7113de"
+checksum = "cef45d61e43c313531b5e903e4e8415212ff6338e0c54c47da5b9b412b5760de"
 dependencies = [
  "futures 0.3.14",
  "js-sys",
@@ -3799,9 +3797,9 @@ dependencies = [
 
 [[package]]
 name = "lock_api"
-version = "0.4.4"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0382880606dff6d15c9476c416d18690b72742aa7b605bb6dd6ec9030fbf07eb"
+checksum = "5a3c91c24eae6777794bb1997ad98bbb87daf92890acab859f7eaa4320333176"
 dependencies = [
  "scopeguard",
 ]
@@ -4458,7 +4456,7 @@ dependencies = [
 [[package]]
 name = "pallet-ethereum"
 version = "1.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=drew-frontier-to-master#d39d4904b781f8511bcedb4a6e1ad3990e7807e3"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#d53eaa0dc3308e1f17267735b30f348a1e274727"
 dependencies = [
  "ethereum",
  "ethereum-types",
@@ -4486,7 +4484,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm"
 version = "3.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=drew-frontier-to-master#d39d4904b781f8511bcedb4a6e1ad3990e7807e3"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#d53eaa0dc3308e1f17267735b30f348a1e274727"
 dependencies = [
  "evm",
  "evm-gasometer",
@@ -4511,7 +4509,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-simple"
 version = "1.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=drew-frontier-to-master#d39d4904b781f8511bcedb4a6e1ad3990e7807e3"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#d53eaa0dc3308e1f17267735b30f348a1e274727"
 dependencies = [
  "evm",
  "fp-evm",
@@ -4928,7 +4926,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d7744ac029df22dca6284efe4e898991d28e3085c706c972bcd7da4a27a15eb"
 dependencies = [
  "instant",
- "lock_api 0.4.4",
+ "lock_api 0.4.3",
  "parking_lot_core 0.8.3",
 ]
 
@@ -4970,7 +4968,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "instant",
  "libc",
- "redox_syscall 0.2.8",
+ "redox_syscall 0.2.6",
  "smallvec 1.6.1",
  "winapi 0.3.9",
 ]
@@ -5584,9 +5582,9 @@ checksum = "41cc0f7e4d5d4544e8861606a285bb08d3e70712ccc7d2b84d7c0ccfaf4b05ce"
 
 [[package]]
 name = "redox_syscall"
-version = "0.2.8"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "742739e41cd49414de871ea5e549afb7e2a3ac77b589bcbebe8c82fab37147fc"
+checksum = "8270314b5ccceb518e7e578952f0b72b88222d02e8f77f5ecf7abbb673539041"
 dependencies = [
  "bitflags",
 ]
@@ -5598,7 +5596,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "528532f3d801c87aec9def2add9ca802fe569e44a544afe633765267840abe64"
 dependencies = [
  "getrandom 0.2.2",
- "redox_syscall 0.2.8",
+ "redox_syscall 0.2.6",
 ]
 
 [[package]]
@@ -5635,9 +5633,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.5.3"
+version = "1.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce5f1ceb7f74abbce32601642fcf8e8508a8a8991e0621c7d750295b9095702b"
+checksum = "2a26af418b574bd56588335b3a3659a65725d4e636eb1016c2f9e3b38c7cc759"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -5766,9 +5764,9 @@ dependencies = [
 
 [[package]]
 name = "rustc-demangle"
-version = "0.1.19"
+version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "410f7acf3cb3a44527c5d9546bad4bf4e6c460915d5f9f2fc524498bfe8f70ce"
+checksum = "6e3bad0ee36814ca07d7968269dd4b7ec89ec2da10c4bb613928d3077083c232"
 
 [[package]]
 name = "rustc-hash"
@@ -8754,9 +8752,9 @@ checksum = "1e81da0851ada1f3e9d4312c704aa4f8806f0f9d69faaf8df2f3464b4a9437c2"
 
 [[package]]
 name = "syn"
-version = "1.0.72"
+version = "1.0.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1e8cdbefb79a9a5a65e0db8b47b723ee907b7c7f8496c76a1770b5c310bab82"
+checksum = "b9505f307c872bab8eb46f77ae357c8eba1fdacead58ee5a850116b1d7f82883"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -8802,7 +8800,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "libc",
  "rand 0.8.3",
- "redox_syscall 0.2.8",
+ "redox_syscall 0.2.6",
  "remove_dir_all",
  "winapi 0.3.9",
 ]
@@ -9260,9 +9258,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.2.18"
+version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa5553bf0883ba7c9cbe493b085c29926bd41b66afc31ff72cf17ff4fb60dcd5"
+checksum = "705096c6f83bf68ea5d357a6aa01829ddbdac531b357b45abeca842938085baa"
 dependencies = [
  "ansi_term 0.12.1",
  "chrono",

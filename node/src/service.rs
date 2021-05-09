@@ -49,32 +49,6 @@ pub type ConsensusResult = (
 	sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
 );
 
-// /// Provide a mock duration starting at 0 in millisecond for timestamp inherent.
-// /// Each call will increment timestamp by slot_duration making Aura think time
-// /// has passed.
-// pub struct MockTimestampInherentDataProvider;
-
-// pub const INHERENT_IDENTIFIER: InherentIdentifier = *b"timstap0";
-
-// thread_local!(static TIMESTAMP: RefCell<u64> = RefCell::new(0));
-
-// impl ProvideInherentData for MockTimestampInherentDataProvider {
-// 	fn inherent_identifier(&self) -> &'static InherentIdentifier {
-// 		&INHERENT_IDENTIFIER
-// 	}
-
-// 	fn provide_inherent_data(&self, inherent_data: &mut InherentData) -> Result<(), sp_inherents::Error> {
-// 		TIMESTAMP.with(|x| {
-// 			*x.borrow_mut() += SLOT_DURATION;
-// 			inherent_data.put_data(INHERENT_IDENTIFIER, &*x.borrow())
-// 		})
-// 	}
-
-// 	fn error_to_string(&self, error: &[u8]) -> Option<String> {
-// 		InherentError::try_from(&INHERENT_IDENTIFIER, error).map(|e| format!("{:?}", e))
-// 	}
-// }
-
 pub fn open_frontier_backend(config: &Configuration) -> Result<Arc<fc_db::Backend<Block>>, String> {
 	let config_dir = config
 		.base_path
@@ -130,10 +104,11 @@ pub fn new_partial(
 	)?;
 	let client = Arc::new(client);
 
-	let telemetry = telemetry.map(|(worker, telemetry)| {
-		task_manager.spawn_handle().spawn("telemetry", worker.run());
-		telemetry
-	});
+	let telemetry = telemetry
+		.map(|(worker, telemetry)| {
+			task_manager.spawn_handle().spawn("telemetry", worker.run());
+			telemetry
+		});
 
 	let select_chain = sc_consensus::LongestChain::new(backend.clone());
 
@@ -161,9 +136,9 @@ pub fn new_partial(
 	let frontier_block_import =
 		FrontierBlockImport::new(grandpa_block_import.clone(), client.clone(), frontier_backend.clone());
 
-	let aura_block_import =
-		sc_consensus_aura::AuraBlockImport::<_, _, _, AuraPair>::new(frontier_block_import, client.clone());
-
+	let aura_block_import = sc_consensus_aura::AuraBlockImport::<_, _, _, AuraPair>::new(
+		frontier_block_import, client.clone(),
+	);
 	let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
 	let raw_slot_duration = slot_duration.slot_duration();
 
@@ -268,7 +243,6 @@ pub fn new_full(mut config: Configuration, cli: &Cli) -> Result<TaskManager, Ser
 			backend.clone(),
 			Some(shared_authority_set.clone()),
 		);
-
 		let max_past_logs = cli.run.max_past_logs;
 		let rpc_setup = (shared_voter_state.clone(), finality_proof_provider.clone());
 
