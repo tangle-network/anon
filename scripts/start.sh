@@ -1,2 +1,2 @@
-./target/release/node-template purge-chain --dev -y
-./target/release/node-template --dev
+./target/release/webb-node purge-chain --dev -y
+./target/release/webb-node --dev
