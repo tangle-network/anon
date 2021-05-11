@@ -617,7 +617,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		assert_ok!(MerkleTrees::verify_zk_membership_proof(
+		assert_ok!(MerkleTrees::verify_zk_bulletproofs(
 			0,
 			0,
 			root,
@@ -674,7 +674,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		assert_err!(
-			MerkleTrees::verify_zk_membership_proof(
+			MerkleTrees::verify_zk_bulletproofs(
 				0,
 				0,
 				root,
@@ -686,7 +686,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 				ScalarData::zero(),
 				ScalarData::zero(),
 			),
-			Error::<Test>::ZkVericationFailed
+			Error::<Test>::ZkVerificationFailed
 		);
 	});
 }
@@ -735,7 +735,7 @@ fn should_not_verify_invalid_private_inputs() {
 		comms.push(Commitment(RistrettoPoint::random(&mut rng).compress()));
 
 		assert_err!(
-			MerkleTrees::verify_zk_membership_proof(
+			MerkleTrees::verify_zk_bulletproofs(
 				0,
 				0,
 				root,
@@ -795,7 +795,7 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 		leaf_index_comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
 		proof_comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
 		assert_err!(
-			MerkleTrees::verify_zk_membership_proof(
+			MerkleTrees::verify_zk_bulletproofs(
 				0,
 				0,
 				root,
@@ -807,7 +807,7 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 				ScalarData::zero(),
 				ScalarData::zero(),
 			),
-			Error::<Test>::ZkVericationFailed
+			Error::<Test>::ZkVerificationFailed
 		);
 	});
 }
@@ -852,7 +852,7 @@ fn should_not_verify_invalid_transcript() {
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		assert_err!(
-			MerkleTrees::verify_zk_membership_proof(
+			MerkleTrees::verify_zk_bulletproofs(
 				0,
 				0,
 				root,
@@ -864,7 +864,7 @@ fn should_not_verify_invalid_transcript() {
 				ScalarData::zero(),
 				ScalarData::zero(),
 			),
-			Error::<Test>::ZkVericationFailed
+			Error::<Test>::ZkVerificationFailed
 		);
 	});
 }
@@ -925,7 +925,7 @@ fn should_verify_zk_proof_of_membership() {
 		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		assert_ok!(MerkleTrees::verify_zk_membership_proof(
+		assert_ok!(MerkleTrees::verify_zk_bulletproofs(
 			0,
 			0,
 			root,
@@ -977,7 +977,7 @@ fn should_verify_large_zk_proof_of_membership() {
 		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		assert_ok!(MerkleTrees::verify_zk_membership_proof(
+		assert_ok!(MerkleTrees::verify_zk_bulletproofs(
 			0,
 			0,
 			root,

@@ -91,23 +91,14 @@ pub mod tests;
 mod benchmarking;
 pub mod weights;
 
-use bulletproofs::{
-	r1cs::{R1CSProof, Verifier},
-	PedersenGens,
-};
-use bulletproofs_gadgets::{
-	fixed_deposit_tree::mixer_verif_gadget, poseidon::allocate_statics_for_verifier, utils::AllocatedScalar,
-};
 use codec::{Decode, Encode};
-use frame_support::{dispatch, ensure, traits::Get, weights::Weight, Parameter};
+use frame_support::{dispatch::DispatchError, ensure, fail, traits::Get, weights::Weight, Parameter};
 use frame_system::ensure_signed;
-use merlin::Transcript;
-use rand_core::OsRng;
 use sp_runtime::traits::{AtLeast32Bit, One};
 use sp_std::prelude::*;
 pub use traits::Tree;
 use utils::{
-	hasher::{Backend, HashFunction, Setup},
+	hasher::{Backend, HashFunction, Setup, SetupError},
 	keys::{Commitment, ScalarData},
 	permissions::ensure_admin,
 };
@@ -154,7 +145,7 @@ pub mod pallet {
 		/// Nullifier is already used
 		AlreadyUsedNullifier,
 		/// Failed to verify zero-knowladge proof
-		ZkVericationFailed,
+		ZkVerificationFailed,
 		/// Invalid zero-knowladge data
 		InvalidZkProof,
 		/// Invalid depth of the tree specified
@@ -481,7 +472,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		hasher: HashFunction,
 		backend: Backend,
 		depth: u8,
-	) -> Result<T::TreeId, dispatch::DispatchError> {
+	) -> Result<T::TreeId, DispatchError> {
 		ensure!(
 			depth <= T::MaxTreeDepth::get() && depth > 0,
 			Error::<T>::InvalidTreeDepth
@@ -504,18 +495,14 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		Ok(tree_id)
 	}
 
-	fn set_stopped(sender: T::AccountId, id: T::TreeId, stopped: bool) -> Result<(), dispatch::DispatchError> {
+	fn set_stopped(sender: T::AccountId, id: T::TreeId, stopped: bool) -> Result<(), DispatchError> {
 		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		ensure!(sender == manager_data.account_id, Error::<T>::ManagerIsRequired);
 		Stopped::<T>::insert(id, stopped);
 		Ok(())
 	}
 
-	fn set_manager_required(
-		sender: T::AccountId,
-		id: T::TreeId,
-		manager_required: bool,
-	) -> Result<(), dispatch::DispatchError> {
+	fn set_manager_required(sender: T::AccountId, id: T::TreeId, manager_required: bool) -> Result<(), DispatchError> {
 		let mut manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		// Changing manager required should always require an extrinsic from the
 		// manager even if the tree doesn't explicitly require managers for
@@ -526,11 +513,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		Ok(())
 	}
 
-	fn set_manager(
-		sender: T::AccountId,
-		id: T::TreeId,
-		new_manager: T::AccountId,
-	) -> Result<(), dispatch::DispatchError> {
+	fn set_manager(sender: T::AccountId, id: T::TreeId, new_manager: T::AccountId) -> Result<(), DispatchError> {
 		let mut manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		ensure!(sender == manager_data.account_id, Error::<T>::ManagerIsRequired);
 		manager_data.account_id = new_manager;
@@ -538,11 +521,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		Ok(())
 	}
 
-	fn add_members(
-		sender: T::AccountId,
-		id: T::TreeId,
-		members: Vec<ScalarData>,
-	) -> Result<(), dispatch::DispatchError> {
+	fn add_members(sender: T::AccountId, id: T::TreeId, members: Vec<ScalarData>) -> Result<(), DispatchError> {
 		let mut tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
 		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		// Check if the tree requires extrinsics to be called from a manager
@@ -573,11 +552,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		Ok(())
 	}
 
-	fn add_nullifier(
-		sender: T::AccountId,
-		id: T::TreeId,
-		nullifier_hash: ScalarData,
-	) -> Result<(), dispatch::DispatchError> {
+	fn add_nullifier(sender: T::AccountId, id: T::TreeId, nullifier_hash: ScalarData) -> Result<(), DispatchError> {
 		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		// Check if the tree requires extrinsics to be called from a manager
 		ensure!(
@@ -588,7 +563,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		Ok(())
 	}
 
-	fn has_used_nullifier(id: T::TreeId, nullifier: ScalarData) -> Result<(), dispatch::DispatchError> {
+	fn has_used_nullifier(id: T::TreeId, nullifier: ScalarData) -> Result<(), DispatchError> {
 		let _ = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
 
 		ensure!(
@@ -598,7 +573,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		Ok(())
 	}
 
-	fn verify(id: T::TreeId, leaf: ScalarData, path: Vec<(bool, ScalarData)>) -> Result<(), dispatch::DispatchError> {
+	fn verify(id: T::TreeId, leaf: ScalarData, path: Vec<(bool, ScalarData)>) -> Result<(), DispatchError> {
 		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
 
 		ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
@@ -614,7 +589,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		Ok(())
 	}
 
-	fn verify_zk_membership_proof(
+	fn verify_zk_bulletproofs(
 		tree_id: T::TreeId,
 		cached_block: T::BlockNumber,
 		cached_root: ScalarData,
@@ -625,7 +600,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		proof_commitments: Vec<Commitment>,
 		recipient: ScalarData,
 		relayer: ScalarData,
-	) -> Result<(), dispatch::DispatchError> {
+	) -> Result<(), DispatchError> {
 		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
 		ensure!(
 			tree.edge_nodes.len() == proof_commitments.len(),
@@ -637,76 +612,24 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 			old_roots.iter().any(|r| *r == cached_root),
 			Error::<T>::InvalidMerkleRoot
 		);
-		// TODO: Initialise these generators with the pallet
-		let pc_gens = PedersenGens::default();
-		let label = b"zk_membership_proof";
-		let mut verifier_transcript = Transcript::new(label);
-		let mut verifier = Verifier::new(&mut verifier_transcript);
-
-		ensure!(comms.len() == 3, Error::<T>::InvalidPrivateInputs);
-		let r_val = verifier.commit(comms[0].0);
-		let r_alloc = AllocatedScalar {
-			variable: r_val,
-			assignment: None,
-		};
-		let nullifier_val = verifier.commit(comms[1].0);
-		let nullifier_alloc = AllocatedScalar {
-			variable: nullifier_val,
-			assignment: None,
-		};
-
-		let var_leaf = verifier.commit(comms[2].0);
-		let leaf_alloc_scalar = AllocatedScalar {
-			variable: var_leaf,
-			assignment: None,
-		};
-
-		let mut leaf_index_alloc_scalars = vec![];
-		for l in leaf_index_commitments {
-			let v = verifier.commit(l.0);
-			leaf_index_alloc_scalars.push(AllocatedScalar {
-				variable: v,
-				assignment: None,
-			});
-		}
-
-		let mut proof_alloc_scalars = vec![];
-		for p in proof_commitments {
-			let v = verifier.commit(p.0);
-			proof_alloc_scalars.push(AllocatedScalar {
-				variable: v,
-				assignment: None,
-			});
-		}
-
-		let num_statics = 4;
-		let statics = allocate_statics_for_verifier(&mut verifier, num_statics, &pc_gens);
-		let hasher = tree.setup.get_bulletproofs_poseidon();
-		let gadget_res = mixer_verif_gadget(
-			&mut verifier,
-			&recipient.to_scalar(),
-			&relayer.to_scalar(),
+		let res = tree.setup.verify_bulletproofs_poseidon(
 			tree.depth as usize,
-			&cached_root.0,
-			&nullifier_hash.0,
-			r_alloc,
-			nullifier_alloc,
-			leaf_alloc_scalar,
-			leaf_index_alloc_scalars,
-			proof_alloc_scalars,
-			statics,
-			&hasher,
+			cached_root,
+			comms,
+			nullifier_hash,
+			proof_bytes,
+			leaf_index_commitments,
+			proof_commitments,
+			recipient,
+			relayer,
 		);
-		ensure!(gadget_res.is_ok(), Error::<T>::InvalidZkProof);
-
-		let proof = R1CSProof::from_bytes(&proof_bytes);
-		ensure!(proof.is_ok(), Error::<T>::InvalidZkProof);
-		let proof = proof.unwrap();
-
-		let mut rng = OsRng::default();
-		let verify_res = verifier.verify_with_rng(&proof, &hasher.pc_gens, &hasher.bp_gens, &mut rng);
-		ensure!(verify_res.is_ok(), Error::<T>::ZkVericationFailed);
-		Ok(())
+		match res {
+			Err(SetupError::InvalidPrivateInputs) => fail!(Error::<T>::InvalidPrivateInputs),
+			Err(SetupError::ConstraintSystemUnsatisfied) => fail!(Error::<T>::InvalidMembershipProof),
+			Err(SetupError::VerificationFailed) => fail!(Error::<T>::ZkVerificationFailed),
+			Err(SetupError::InvalidProof) => fail!(Error::<T>::InvalidMembershipProof),
+			Ok(_) => Ok(()),
+		}
 	}
 }
 
@@ -715,18 +638,18 @@ impl<T: Config> Pallet<T> {
 		Self::cached_roots(block_number, tree_id)
 	}
 
-	pub fn get_merkle_root(tree_id: T::TreeId) -> Result<ScalarData, dispatch::DispatchError> {
+	pub fn get_merkle_root(tree_id: T::TreeId) -> Result<ScalarData, DispatchError> {
 		let tree = Self::get_tree(tree_id)?;
 		Ok(tree.root_hash)
 	}
 
-	pub fn add_root_to_cache(tree_id: T::TreeId, block_number: T::BlockNumber) -> Result<(), dispatch::DispatchError> {
+	pub fn add_root_to_cache(tree_id: T::TreeId, block_number: T::BlockNumber) -> Result<(), DispatchError> {
 		let root = Self::get_merkle_root(tree_id)?;
 		CachedRoots::<T>::append(block_number, tree_id, root);
 		Ok(())
 	}
 
-	pub fn get_tree(tree_id: T::TreeId) -> Result<MerkleTree, dispatch::DispatchError> {
+	pub fn get_tree(tree_id: T::TreeId) -> Result<MerkleTree, DispatchError> {
 		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
 		Ok(tree)
 	}
