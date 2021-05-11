@@ -1,7 +1,9 @@
 //! All the traits exposed to be used in other custom pallets
 
-use crate::utils::keys::{Commitment, ScalarData};
-use bulletproofs::PedersenGens;
+use crate::utils::{
+	hasher::{Backend, HashFunction},
+	keys::{Commitment, ScalarData},
+};
 pub use frame_support::dispatch;
 use sp_std::vec::Vec;
 
@@ -24,7 +26,13 @@ pub trait Tree<AccountId, BlockNumber, TreeId> {
 	/// Can only be called by the current manager
 	fn set_manager(sender: AccountId, id: TreeId, new_manager: AccountId) -> Result<(), dispatch::DispatchError>;
 	/// Creates a new Tree tree, including a manager for that tree
-	fn create_tree(sender: AccountId, is_manager_required: bool, depth: u8) -> Result<TreeId, dispatch::DispatchError>;
+	fn create_tree(
+		sender: AccountId,
+		is_manager_required: bool,
+		hasher: HashFunction,
+		backend: Backend,
+		depth: u8,
+	) -> Result<TreeId, dispatch::DispatchError>;
 	/// Adds members/leaves to the tree
 	fn add_members(sender: AccountId, id: TreeId, members: Vec<ScalarData>) -> Result<(), dispatch::DispatchError>;
 	/// Adds a nullifier to the storage
@@ -37,18 +45,6 @@ pub trait Tree<AccountId, BlockNumber, TreeId> {
 		tree_id: TreeId,
 		cached_block: BlockNumber,
 		cached_root: ScalarData,
-		comms: Vec<Commitment>,
-		nullifier_hash: ScalarData,
-		proof_bytes: Vec<u8>,
-		leaf_index_commitments: Vec<Commitment>,
-		proof_commitments: Vec<Commitment>,
-		recipient: ScalarData,
-		relayer: ScalarData,
-	) -> Result<(), dispatch::DispatchError>;
-	fn verify_zk(
-		pc_gens: PedersenGens,
-		m_root: ScalarData,
-		depth: u8,
 		comms: Vec<Commitment>,
 		nullifier_hash: ScalarData,
 		proof_bytes: Vec<u8>,

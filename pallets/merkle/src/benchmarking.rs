@@ -3,7 +3,10 @@ use bulletproofs_gadgets::poseidon::Poseidon_hash_2;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::OnFinalize;
 use frame_system::{Pallet as System, RawOrigin};
-use utils::keys::ScalarData;
+use utils::{
+	hasher::{default_bulletproofs_poseidon_hasher, Backend, HashFunction},
+	keys::ScalarData,
+};
 
 use crate::Pallet as Merkle;
 
@@ -13,12 +16,20 @@ const VERIFY_DEPTH: u8 = 10;
 
 fn setup_tree<T: Config>(caller: T::AccountId, depth: u32) {
 	let manager_required = true;
-	<Merkle<T> as Tree<T::AccountId, T::BlockNumber, T::TreeId>>::create_tree(caller, manager_required, depth as u8)
-		.unwrap();
+	let hasher = HashFunction::PoseidonDefault;
+	let backend = Backend::Bulletproofs;
+	<Merkle<T> as Tree<T::AccountId, T::BlockNumber, T::TreeId>>::create_tree(
+		caller,
+		manager_required,
+		hasher,
+		backend,
+		depth as u8,
+	)
+	.unwrap();
 }
 
 fn get_proof(depth: u32) -> Vec<(bool, ScalarData)> {
-	let hasher = default_hasher();
+	let hasher = default_bulletproofs_poseidon_hasher();
 	let mut d = ScalarData::zero();
 	let mut path = Vec::new();
 	for i in 0..depth {
