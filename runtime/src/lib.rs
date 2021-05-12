@@ -508,8 +508,8 @@ construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Contracts: pallet_contracts::{Pallet, Call, Config<T>, Storage, Event<T>},
 
-		Ethereum: pallet_ethereum::{Pallet, Call, Storage, Event<T>, ValidateUnsigned},
-		EVM: pallet_evm::{Pallet, Config<T>, Call, Storage, Event<T>},
+		Ethereum: pallet_ethereum::{Pallet, Call, Storage, Event, Config, ValidateUnsigned},
+		EVM: pallet_evm::{Pallet, Config, Call, Storage, Event<T>},
 
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
@@ -600,10 +600,6 @@ impl_runtime_apis! {
 
 		fn check_inherents(block: Block, data: InherentData) -> CheckInherentsResult {
 			data.check_extrinsics(&block)
-		}
-
-		fn random_seed() -> <Block as BlockT>::Hash {
-			RandomnessCollectiveFlip::random_seed().0
 		}
 	}
 

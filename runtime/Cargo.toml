@@ -37,10 +37,10 @@ pallet-contracts = { default-features = false, git = "https://github.com/parityt
 pallet-contracts-primitives = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-contracts-rpc-runtime-api = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 
-pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "drew-anon-master", default-features = false }
-pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "drew-anon-master", default-features = false }
-fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "drew-anon-master" }
-pallet-evm-precompile-simple = { git = "https://github.com/webb-tools/frontier", branch = "drew-anon-master", default-features = false }
+pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
+pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
+fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+pallet-evm-precompile-simple = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
 
 pallet-grandpa = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-randomness-collective-flip = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }

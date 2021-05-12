@@ -26,7 +26,7 @@ jsonrpc-core = "15.1.0"
 jsonrpc-pubsub = "15.0.0"
 
 # local dependencies
-webb-runtime = { path = "../runtime", version = "3.0.0" }
+webb-runtime = { path = "../runtime", features = ["std"] }
 
 # Substrate dependencies
 frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
@@ -63,16 +63,16 @@ substrate-frame-rpc-system = { git = "https://github.com/paritytech/substrate.gi
 
 pallet-contracts-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
 
-fc-consensus = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "drew-anon-master" }
-fp-consensus = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "drew-anon-master" }
-fc-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "drew-anon-master" }
-fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "drew-anon-master" }
-fc-rpc-core = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "drew-anon-master" }
-fc-db = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "drew-anon-master" }
-fc-mapping-sync = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "drew-anon-master" }
+fc-consensus = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+fp-consensus = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+fc-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+fc-rpc-core = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+fc-db = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+fc-mapping-sync = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
 
-pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "drew-anon-master" }
-pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "drew-anon-master" }
+pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
 
 merkle = { package = "pallet-merkle", path = "../pallets/merkle" }
 merkle-rpc = { package = "pallet-merkle-rpc", path = "../pallets/merkle/rpc" }

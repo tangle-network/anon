@@ -1,6 +1,50 @@
-## Build
+<h1 align="center">Webb Anon</h1>
+<br />
+<p align="center">
+    <strong>🕸️  The Webb Anon Node 🕵️‍♂️</strong>
+    <br />
+    <sub> ⚠️ Under Heavy Development ⚠️ </sub>
+</p>
 
-Install Rust:
+<br />
+
+✨ Substrate based Mixer w/ Relayable transactions using bulletproofs and Curve25519 ✨.
+
+## Overview 📜
+
+At the highest-level, this is a cryptocurrency mixing pallet that uses non-trusted 👤 setup [zero-knowledge proofs](https://en.wikipedia.org/wiki/Zero-knowledge_proof) to facilitate mixing operations. It uses the bulletproofs library built from [dalek-cryptography](https://github.com/dalek-cryptography). The repo contains pallets that allow for creation of merkle trees with elements in Curve25519's scalar field and a mixer that utilises these merkle trees to built an on-chain application or protocol.
+
+### Pallet documentation 💎
+- Mixer Pallet: [Docs](https://docs.rs/pallet-mixer)
+- Merkle Pallet: [Docs](https://docs.rs/pallet-merkle)
+
+### Dependencies 🧱
+
+The library utilises a variety of zero-knowledge primitives, gadgets, circuits, etc. that are all implemented using bulletproofs R1CS api with Curve25519. You can find more about the components below and descriptions following thereafter:
+
+- 🔐 [Bulletproof zero-knowledge gadgets](https://github.com/webb-tools/bulletproof-gadgets)
+- 🧑‍✈️ [Transaction Relayer](https://github.com/webb-tools/relayer)
+- 🧰 [Mixer CLI](https://github.com/webb-tools/cli)
+- 🖥️ [Mixer dApp](https://github.com/webb-tools/webb-dapp)
+- 🔋 [Webb.js SDK](https://github.com/webb-tools/webb.js)
+
+### Architecture 🏗️
+
+The architecture for the project is as follows: 
+
+We have pallets in this repo and a Substrate chain for running this runtime logic. We developed zero-knowledge gadgets that expose a prover and a verifier for interacting with this runtime. Specifically, we embed the gadget's verifiers on-chain so that proofs can be verified on-chain to eliminate any trust involved in mixing currencies. Users are responsible with generating proofs, using the tools in the gadget repo, off-chain and broadcasting these proofs to the network using a signed extrinsic or a live relayer.
+
+Relayers are used to relay transactions on behalf of users. This is necessary because extrinsics normally charge a fee for submission and so we enable a "fee-less" experience by allowing users to offload extrinsic submission to a third-party relayer who can submit transactions on behalf of users who wish to remain more anonymous. Note that there should still be more work put into the fee-mechanism to ensure that relayers are incentivised to run such a service in production.
+
+### Tools 🛠️
+
+The flow for integrating these tools into your Substrate project are fairly straightforward. You will add the pallets of interest to your Substrate project and follow the runtime implementations necessary to get your node to compile. From there, you will have integrated a mixer to your Substrate project.
+
+It is possible by extending your dApp with our types in our Typescript API to have this functionality in a front-end application for users to interact with. It is also possible to run a transaction relayer to submit withdrawal transactions from the mixers on behalf of users. Please refer to the documentation in these respective projects when facing issues and asking questions.
+
+## Build 👷
+
+Install Rust 🦀:
 
 ```bash
 curl https://sh.rustup.rs -sSf | sh
@@ -15,58 +59,79 @@ Initialize your Wasm Build environment:
 Build Wasm and native code:
 
 ```bash
-cargo build --release
+./scripts/build.sh
 ```
 
-## Run
+To import the submodules, run:
+```bash
+git submodule update --init --recursive
+```
+
+## Run 🚀
 
 ### Single node development chain
 
-Purge any existing developer chain state:
+Simply Run:
 
 ```bash
-./target/release/node-template purge-chain --dev
+./scripts/start.sh
 ```
 
-Start a development chain with:
+Or, you could, first by purge any existing developer chain state:
 
 ```bash
-./target/release/node-template --dev
+./target/release/webb-node purge-chain --dev
 ```
 
-Detailed logs may be shown by running the node with the following environment variables set: `RUST_LOG=debug RUST_BACKTRACE=1 cargo run -- --dev`.
-
-### Multi-node local testnet
-
-If you want to see the multi-node consensus algorithm in action locally, then you can create a local testnet with two validator nodes for Alice and Bob, who are the initial authorities of the genesis chain that have been endowed with testnet units.
-
-Optionally, give each node a name and expose them so they are listed on the Polkadot [telemetry site](https://telemetry.polkadot.io/#/Local%20Testnet).
-
-You'll need two terminal windows open.
-
-We'll start Alice's substrate node first on default TCP port 30333 with her chain database stored locally at `/tmp/alice`. The bootnode ID of her node is `QmRpheLN4JWdAnY7HGJfWFNbfkQCb6tFf4vvA6hgjMZKrR`, which is generated from the `--node-key` value that we specify below:
+and then, start a development chain with:
 
 ```bash
-cargo run -- \
-  --base-path /tmp/alice \
-  --chain=local \
-  --alice \
-  --node-key 0000000000000000000000000000000000000000000000000000000000000001 \
-  --telemetry-url ws://telemetry.polkadot.io:1024 \
-  --validator
+./target/release/webb-node --dev
 ```
 
-In the second terminal, we'll start Bob's substrate node on a different TCP port of 30334, and with his chain database stored locally at `/tmp/bob`. We'll specify a value for the `--bootnodes` option that will connect his node to Alice's bootnode ID on TCP port 30333:
+## Using Docker 🐳
+
+We have a 3 pipelines right now, one for the main/master branch and this should be the stable release, and one is `edge` from the `develop` branch:
+
+1. Pull the Docker Image
 
 ```bash
-cargo run -- \
-  --base-path /tmp/bob \
-  --bootnodes /ip4/127.0.0.1/tcp/30333/p2p/QmRpheLN4JWdAnY7HGJfWFNbfkQCb6tFf4vvA6hgjMZKrR \
-  --chain=local \
-  --bob \
-  --port 30334 \
-  --telemetry-url ws://telemetry.polkadot.io:1024 \
-  --validator
+$ docker pull docker.pkg.github.com/webb-tools/anon/node:edge # change edge to latest for the master branch
 ```
 
-Additional CLI usage options are available and may be shown by running `cargo run -- --help`.
+2. Run the node using docker
+
+```bash
+$ docker run --rm -it docker.pkg.github.com/webb-tools/anon/node:edge webb-node --dev
+```
+This will run the node in dev mode, **without** saving any state, that is easy for testing and development.
+
+
+## Safety ⚡
+
+This crate uses `#![deny(unsafe_code)]` to ensure everything implemented in
+100% Safe Rust.
+
+## Contributing 🧑‍🤝‍🧑
+
+Want to join us? take a look at some of these issues:
+
+- [Issues labeled "good first issue"][good-first-issue]
+- [Issues labeled "help wanted"][help-wanted]
+
+[good-first-issue]: https://github.com/webb-tools/anon/labels/good%20first%20issue
+[help-wanted]: https://github.com/webb-tools/anon/labels/help%20wanted
+
+## License
+
+<sup>
+Licensed under <a href="LICENSE">The Unlicense</a>.
+</sup>
+
+<br/>
+
+<sub>
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in this crate by you, as defined in the `The Unlicense` license, shall
+be licensed as above, without any additional terms or conditions.
+</sub>

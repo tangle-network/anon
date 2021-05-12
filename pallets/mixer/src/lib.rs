@@ -540,6 +540,10 @@ impl<T: Config> ExtendedMixer<T::AccountId, CurrencyIdOf<T>, BalanceOf<T>> for P
 		let mixer_id: T::TreeId = T::Tree::create_tree(account_id, true, depth)?;
 		let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 		MixerTrees::<T>::insert(mixer_id, mixer_info);
+		// Add new id to list
+		let mut ids = MixerTreeIds::<T>::get();
+		ids.push(mixer_id);
+		MixerTreeIds::<T>::set(ids);
 		Ok(())
 	}
 }
