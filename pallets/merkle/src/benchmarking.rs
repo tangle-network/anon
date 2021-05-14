@@ -31,7 +31,7 @@ fn get_proof<T: Config>(tree_id: T::TreeId, depth: u32) -> Vec<(bool, ScalarByte
 	let mut d = Scalar::zero().to_bytes().to_vec();
 	let mut path = Vec::new();
 	for i in 0..depth {
-		path.push((true, d));
+		path.push((true, d.clone()));
 		d = tree.setup.hash(&d, &d);
 	}
 	path
@@ -44,7 +44,7 @@ benchmarks! {
 		// and calculates the weights on the run
 		let d in 1 .. MAX_DEPTH as u32;
 		let caller = whitelisted_caller();
-	}: _(RawOrigin::Signed(caller), false, Some(d as u8))
+	}: _(RawOrigin::Signed(caller), false, HashFunction::PoseidonDefault, Backend::Bulletproofs, Some(d as u8))
 	verify {
 		let next_id: T::TreeId = Merkle::<T>::next_tree_id();
 		let curr_id = next_id - 1u32.into();

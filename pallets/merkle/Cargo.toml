@@ -24,7 +24,6 @@ sp-api = { default-features = false, version = "3.0.0", git = "https://github.co
 sp-io = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 frame-benchmarking = { default-features = false, version = "3.0.0", optional = true, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
-arkworks-gadgets = { version = "0.1.0", git = "https://github.com/webb-tools/arkworks-gadgets.git", rev = "9e41ef8" }
 
 [dependencies.curve25519-dalek]
 version = "3.0.0"
