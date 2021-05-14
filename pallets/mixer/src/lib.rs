@@ -61,7 +61,8 @@ use frame_support::{dispatch, ensure, traits::Get, weights::Weight, PalletId};
 use frame_system::ensure_signed;
 use merkle::{
 	utils::{
-		keys::{Commitment, ScalarData},
+		hasher::{Backend, HashFunction},
+		keys::ScalarBytes,
 		permissions::ensure_admin,
 	},
 	Pallet as MerklePallet, Tree as TreeTrait,
@@ -157,7 +158,7 @@ pub mod pallet {
 			/// Account id of the relayer
 			T::AccountId,
 			/// Merkle root
-			ScalarData,
+			ScalarBytes,
 		),
 	}
 
@@ -238,7 +239,7 @@ pub mod pallet {
 		pub fn deposit(
 			origin: OriginFor<T>,
 			mixer_id: T::TreeId,
-			data_points: Vec<ScalarData>,
+			data_points: Vec<ScalarBytes>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
@@ -292,19 +293,19 @@ pub mod pallet {
 			let relayer = withdraw_proof.relayer.unwrap_or(sender.clone());
 			let mixer_info = MixerTrees::<T>::get(withdraw_proof.mixer_id);
 			// check if the nullifier has been used
-			T::Tree::has_used_nullifier(withdraw_proof.mixer_id.into(), withdraw_proof.nullifier_hash)?;
+			T::Tree::has_used_nullifier(withdraw_proof.mixer_id.into(), withdraw_proof.nullifier_hash.clone())?;
 			// Verify the zero-knowledge proof of membership provided
-			T::Tree::verify_zk_membership_proof(
+			T::Tree::verify_zk_bulletproofs(
 				withdraw_proof.mixer_id.into(),
 				withdraw_proof.cached_block,
-				withdraw_proof.cached_root,
+				withdraw_proof.cached_root.clone(),
 				withdraw_proof.comms,
-				withdraw_proof.nullifier_hash,
+				withdraw_proof.nullifier_hash.clone(),
 				withdraw_proof.proof_bytes,
 				withdraw_proof.leaf_index_commitments,
 				withdraw_proof.proof_commitments,
-				ScalarData::from_slice(&recipient.encode()),
-				ScalarData::from_slice(&relayer.encode()),
+				recipient.encode().to_vec(),
+				relayer.encode().to_vec(),
 			)?;
 			// transfer the fixed deposit size to the sender
 			T::Currency::transfer(
@@ -337,12 +338,14 @@ pub mod pallet {
 		pub fn create_new(
 			origin: OriginFor<T>,
 			currency_id: CurrencyIdOf<T>,
+			hasher: HashFunction,
+			backend: Backend,
 			size: BalanceOf<T>,
 		) -> DispatchResultWithPostInfo {
 			ensure_admin(origin, &Self::admin())?;
 
 			let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
-			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth)?;
+			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, hasher, backend, depth)?;
 			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 			MixerTrees::<T>::insert(mixer_id, mixer_info);
 
@@ -399,17 +402,17 @@ pub struct WithdrawProof<T: Config> {
 	/// The cached block for the cached root being proven against
 	cached_block: T::BlockNumber,
 	/// The cached root being proven against
-	cached_root: ScalarData,
+	cached_root: ScalarBytes,
 	/// The individual scalar commitments (to the randomness and nullifier)
-	comms: Vec<Commitment>,
+	comms: Vec<ScalarBytes>,
 	/// The nullifier hash with itself
-	nullifier_hash: ScalarData,
+	nullifier_hash: ScalarBytes,
 	/// The proof in bytes representation
 	proof_bytes: Vec<u8>,
 	/// The leaf index scalar commitments to decide on which side to hash
-	leaf_index_commitments: Vec<Commitment>,
+	leaf_index_commitments: Vec<ScalarBytes>,
 	/// The scalar commitments to merkle proof path elements
-	proof_commitments: Vec<Commitment>,
+	proof_commitments: Vec<ScalarBytes>,
 	/// The recipient to withdraw amount of currency to
 	recipient: Option<T::AccountId>,
 	/// The recipient to withdraw amount of currency to
@@ -420,12 +423,12 @@ impl<T: Config> WithdrawProof<T> {
 	pub fn new(
 		mixer_id: T::TreeId,
 		cached_block: T::BlockNumber,
-		cached_root: ScalarData,
-		comms: Vec<Commitment>,
-		nullifier_hash: ScalarData,
+		cached_root: ScalarBytes,
+		comms: Vec<ScalarBytes>,
+		nullifier_hash: ScalarBytes,
 		proof_bytes: Vec<u8>,
-		leaf_index_commitments: Vec<Commitment>,
-		proof_commitments: Vec<Commitment>,
+		leaf_index_commitments: Vec<ScalarBytes>,
+		proof_commitments: Vec<ScalarBytes>,
 		recipient: Option<T::AccountId>,
 		relayer: Option<T::AccountId>,
 	) -> Self {
@@ -522,7 +525,13 @@ impl<T: Config> Pallet<T> {
 		// Iterating over configured sizes and initializing the mixers
 		for size in sizes.into_iter() {
 			// Creating a new merkle group and getting the id back
-			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth)?;
+			let mixer_id: T::TreeId = T::Tree::create_tree(
+				Self::account_id(),
+				true,
+				HashFunction::PoseidonDefault,
+				Backend::Bulletproofs,
+				depth,
+			)?;
 			// Creating mixer info data
 			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, T::NativeCurrencyId::get());
 			// Saving the mixer group to storage
@@ -542,10 +551,12 @@ impl<T: Config> ExtendedMixer<T::AccountId, CurrencyIdOf<T>, BalanceOf<T>> for P
 	fn create_new(
 		_account_id: T::AccountId,
 		currency_id: CurrencyIdOf<T>,
+		hasher: HashFunction,
+		backend: Backend,
 		size: BalanceOf<T>,
 	) -> Result<(), dispatch::DispatchError> {
 		let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
-		let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth)?;
+		let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, hasher, backend, depth)?;
 		let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 		MixerTrees::<T>::insert(mixer_id, mixer_info);
 		Ok(())
