@@ -1,12 +1,9 @@
 use super::*;
-use bulletproofs_gadgets::poseidon::Poseidon_hash_2;
+use curve25519_dalek::scalar::Scalar;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::OnFinalize;
 use frame_system::{Pallet as System, RawOrigin};
-use utils::{
-	hasher::{default_bulletproofs_poseidon_hasher, Backend, HashFunction},
-	keys::ScalarData,
-};
+use utils::hasher::{default_bulletproofs_poseidon_hasher, Backend, HashFunction};
 
 use crate::Pallet as Merkle;
 
@@ -28,13 +25,14 @@ fn setup_tree<T: Config>(caller: T::AccountId, depth: u32) {
 	.unwrap();
 }
 
-fn get_proof(depth: u32) -> Vec<(bool, ScalarData)> {
+fn get_proof<T: Config>(tree_id: T::TreeId, depth: u32) -> Vec<(bool, ScalarBytes)> {
 	let hasher = default_bulletproofs_poseidon_hasher();
-	let mut d = ScalarData::zero();
+	let tree = Merkle::<T>::get_tree(tree_id).unwrap();
+	let mut d = Scalar::zero().to_bytes().to_vec();
 	let mut path = Vec::new();
 	for i in 0..depth {
 		path.push((true, d));
-		d = ScalarData(Poseidon_hash_2(d.0, d.0, &hasher));
+		d = tree.setup.hash(&d, &d);
 	}
 	path
 }
@@ -104,7 +102,7 @@ benchmarks! {
 		let n in 1 .. NUM_LEAVES;
 		let caller: T::AccountId = whitelisted_caller();
 		// Create leaves based on `n`
-		let leaves = vec![ScalarData::zero(); n as usize];
+		let leaves = vec![Scalar::zero().to_bytes().to_vec(); n as usize];
 
 		setup_tree::<T>(caller.clone(), 32);
 	}: _(RawOrigin::Signed(caller.clone()), 0u32.into(), leaves)
@@ -117,9 +115,10 @@ benchmarks! {
 	verify_path {
 		let d in 1 .. VERIFY_DEPTH as u32;
 		let caller: T::AccountId = whitelisted_caller();
-		let leaf_data = ScalarData::zero();
+		let leaf_data = Scalar::zero().to_bytes().to_vec();
 		setup_tree::<T>(caller.clone(), d);
-		let path = get_proof(d);
+		let tree_id: T::TreeId = 0u32.into();
+		let path = get_proof::<T>(tree_id, d);
 	}: verify(RawOrigin::Signed(caller), 0u32.into(), leaf_data, path)
 	verify {
 	}
@@ -143,7 +142,7 @@ benchmarks! {
 			// Bumping the block number so that we can add cached roots to it
 			System::<T>::set_block_number(curr_block_number);
 			// Adding 100 leaves every block
-			let leaves = vec![ScalarData::from([42; 32]); 100];
+			let leaves = vec![Scalar::zero().to_bytes().to_vec(); 100];
 			Merkle::<T>::add_members(RawOrigin::Signed(caller.clone()).into(), 0u32.into(), leaves).unwrap();
 		}
 	}: {

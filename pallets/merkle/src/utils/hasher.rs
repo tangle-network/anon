@@ -1,4 +1,4 @@
-use crate::utils::keys::{Commitment, ScalarData};
+use crate::utils::keys::{slice_to_bytes_32, ScalarBytes};
 use bulletproofs::{
 	r1cs::{R1CSProof, Verifier},
 	BulletproofGens, PedersenGens,
@@ -14,12 +14,14 @@ use bulletproofs_gadgets::{
 	utils::AllocatedScalar,
 };
 use codec::{Decode, Encode};
+use curve25519_dalek::{ristretto::CompressedRistretto, scalar::Scalar};
 use lazy_static::lazy_static;
 use merlin::Transcript;
 use rand_core::OsRng;
 
 lazy_static! {
 	static ref DEFAULT_POSEIDON_HASHER: Poseidon = default_bulletproofs_poseidon_hasher();
+	// static ref POSEIDON_PARAMETERS: PoseidonParameters =
 }
 
 /// Default hasher instance used to construct the tree
@@ -38,6 +40,7 @@ pub fn default_bulletproofs_poseidon_hasher() -> Poseidon {
 #[derive(Clone, Encode, Decode, PartialEq)]
 pub enum HashFunction {
 	PoseidonDefault,
+	// First argument is width, second is exponentiation
 	Poseidon(u8, u8),
 	MiMC,
 	Blake2,
@@ -70,13 +73,18 @@ impl Setup {
 		Self { hasher, backend }
 	}
 
-	pub fn hash(&self, xl: ScalarData, xr: ScalarData) -> ScalarData {
-		let res = match self.hasher {
-			HashFunction::PoseidonDefault => Poseidon_hash_2(xl.0, xr.0, &DEFAULT_POSEIDON_HASHER),
-			_ => Poseidon_hash_2(xl.0, xr.0, &DEFAULT_POSEIDON_HASHER),
-		};
-
-		ScalarData(res)
+	pub fn hash(&self, xl: &ScalarBytes, xr: &ScalarBytes) -> ScalarBytes {
+		match self.backend {
+			Backend::Bulletproofs => match self.hasher {
+				HashFunction::PoseidonDefault | HashFunction::Poseidon(6, 3) => {
+					let sl = Scalar::from_bytes_mod_order(slice_to_bytes_32(xl));
+					let sr = Scalar::from_bytes_mod_order(slice_to_bytes_32(xr));
+					Poseidon_hash_2(sl, sr, &DEFAULT_POSEIDON_HASHER).to_bytes().to_vec()
+				}
+				_ => panic!("Unsupported hash function"),
+			},
+			_ => panic!("Unsupported backend"),
+		}
 	}
 
 	pub fn get_bulletproofs_poseidon(&self) -> &Poseidon {
@@ -89,28 +97,73 @@ impl Setup {
 		}
 	}
 
-	pub fn generate_zero_tree(&self, depth: usize) -> (Vec<ScalarData>, ScalarData) {
+	pub fn generate_zero_tree(&self, depth: usize) -> (Vec<ScalarBytes>, ScalarBytes) {
 		let zero_tree = match self.hasher {
 			HashFunction::PoseidonDefault => {
 				gen_zero_tree(DEFAULT_POSEIDON_HASHER.width, &DEFAULT_POSEIDON_HASHER.sbox)
 			}
 			_ => gen_zero_tree(DEFAULT_POSEIDON_HASHER.width, &DEFAULT_POSEIDON_HASHER.sbox),
 		};
-		let init_edges: Vec<ScalarData> = zero_tree[0..depth].iter().map(|x| ScalarData::from(*x)).collect();
-		(init_edges, ScalarData::from(zero_tree[depth]))
+		(
+			zero_tree[0..depth].iter().map(|x| x.to_vec()).collect(),
+			zero_tree[depth].to_vec(),
+		)
+	}
+
+	pub fn verify_zk(
+		&self,
+		depth: usize,
+		cached_root: ScalarBytes,
+		comms: Vec<ScalarBytes>,
+		nullifier_hash: ScalarBytes,
+		proof_bytes: Vec<u8>,
+		leaf_index_commitments: Vec<ScalarBytes>,
+		proof_commitments: Vec<ScalarBytes>,
+		recipient: ScalarBytes,
+		relayer: ScalarBytes,
+	) -> Result<(), SetupError> {
+		match self.backend {
+			Backend::Bulletproofs => {
+				let cached_root_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&cached_root));
+				let comms_c = comms.iter().map(|x| CompressedRistretto::from_slice(x)).collect();
+				let nullifier_hash_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&nullifier_hash));
+				let leaf_index_commitments_c = leaf_index_commitments
+					.iter()
+					.map(|x| CompressedRistretto::from_slice(x))
+					.collect();
+				let proof_commitments_c = proof_commitments
+					.iter()
+					.map(|x| CompressedRistretto::from_slice(x))
+					.collect();
+				let recipient_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&recipient));
+				let relayer_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&relayer));
+				self.verify_bulletproofs_poseidon(
+					depth,
+					cached_root_s,
+					comms_c,
+					nullifier_hash_s,
+					proof_bytes,
+					leaf_index_commitments_c,
+					proof_commitments_c,
+					recipient_s,
+					relayer_s,
+				)
+			}
+			_ => panic!("Unsupported backend"),
+		}
 	}
 
 	pub fn verify_bulletproofs_poseidon(
 		&self,
 		depth: usize,
-		cached_root: ScalarData,
-		comms: Vec<Commitment>,
-		nullifier_hash: ScalarData,
+		cached_root: Scalar,
+		comms: Vec<CompressedRistretto>,
+		nullifier_hash: Scalar,
 		proof_bytes: Vec<u8>,
-		leaf_index_commitments: Vec<Commitment>,
-		proof_commitments: Vec<Commitment>,
-		recipient: ScalarData,
-		relayer: ScalarData,
+		leaf_index_commitments: Vec<CompressedRistretto>,
+		proof_commitments: Vec<CompressedRistretto>,
+		recipient: Scalar,
+		relayer: Scalar,
 	) -> Result<(), SetupError> {
 		let pc_gens = PedersenGens::default();
 		let label = b"zk_membership_proof";
@@ -120,18 +173,18 @@ impl Setup {
 		if comms.len() != 3 {
 			return Err(SetupError::InvalidPrivateInputs);
 		}
-		let r_val = verifier.commit(comms[0].0);
+		let r_val = verifier.commit(comms[0]);
 		let r_alloc = AllocatedScalar {
 			variable: r_val,
 			assignment: None,
 		};
-		let nullifier_val = verifier.commit(comms[1].0);
+		let nullifier_val = verifier.commit(comms[1]);
 		let nullifier_alloc = AllocatedScalar {
 			variable: nullifier_val,
 			assignment: None,
 		};
 
-		let var_leaf = verifier.commit(comms[2].0);
+		let var_leaf = verifier.commit(comms[2]);
 		let leaf_alloc_scalar = AllocatedScalar {
 			variable: var_leaf,
 			assignment: None,
@@ -139,7 +192,7 @@ impl Setup {
 
 		let mut leaf_index_alloc_scalars = vec![];
 		for l in leaf_index_commitments {
-			let v = verifier.commit(l.0);
+			let v = verifier.commit(l);
 			leaf_index_alloc_scalars.push(AllocatedScalar {
 				variable: v,
 				assignment: None,
@@ -148,7 +201,7 @@ impl Setup {
 
 		let mut proof_alloc_scalars = vec![];
 		for p in proof_commitments {
-			let v = verifier.commit(p.0);
+			let v = verifier.commit(p);
 			proof_alloc_scalars.push(AllocatedScalar {
 				variable: v,
 				assignment: None,
@@ -160,11 +213,11 @@ impl Setup {
 		let hasher = self.get_bulletproofs_poseidon();
 		let gadget_res = mixer_verif_gadget(
 			&mut verifier,
-			&recipient.to_scalar(),
-			&relayer.to_scalar(),
+			&recipient,
+			&relayer,
 			depth as usize,
-			&cached_root.0,
-			&nullifier_hash.0,
+			&cached_root,
+			&nullifier_hash,
 			r_alloc,
 			nullifier_alloc,
 			leaf_alloc_scalar,

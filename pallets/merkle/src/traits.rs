@@ -2,7 +2,7 @@
 
 use crate::utils::{
 	hasher::{Backend, HashFunction},
-	keys::{Commitment, ScalarData},
+	keys::ScalarBytes,
 };
 pub use frame_support::dispatch;
 use sp_std::vec::Vec;
@@ -10,7 +10,7 @@ use sp_std::vec::Vec;
 /// Tree trait definition to be used in other pallets
 pub trait Tree<AccountId, BlockNumber, TreeId> {
 	/// Check if nullifier is already used, in which case return an error
-	fn has_used_nullifier(id: TreeId, nullifier: ScalarData) -> Result<(), dispatch::DispatchError>;
+	fn has_used_nullifier(id: TreeId, nullifier: ScalarBytes) -> Result<(), dispatch::DispatchError>;
 	/// Sets stopped flag in storage. This flag doesn't do much by itself, it is
 	/// up to higher-level pallet to find the use for it
 	/// Can only be called by the manager, regardless if the manager is required
@@ -34,23 +34,23 @@ pub trait Tree<AccountId, BlockNumber, TreeId> {
 		depth: u8,
 	) -> Result<TreeId, dispatch::DispatchError>;
 	/// Adds members/leaves to the tree
-	fn add_members(sender: AccountId, id: TreeId, members: Vec<ScalarData>) -> Result<(), dispatch::DispatchError>;
+	fn add_members(sender: AccountId, id: TreeId, members: Vec<ScalarBytes>) -> Result<(), dispatch::DispatchError>;
 	/// Adds a nullifier to the storage
 	/// Can only be called by the manager if the manager is required
-	fn add_nullifier(sender: AccountId, id: TreeId, nullifier: ScalarData) -> Result<(), dispatch::DispatchError>;
+	fn add_nullifier(sender: AccountId, id: TreeId, nullifier: ScalarBytes) -> Result<(), dispatch::DispatchError>;
 	/// Verify membership proof
-	fn verify(id: TreeId, leaf: ScalarData, path: Vec<(bool, ScalarData)>) -> Result<(), dispatch::DispatchError>;
+	fn verify(id: TreeId, leaf: ScalarBytes, path: Vec<(bool, ScalarBytes)>) -> Result<(), dispatch::DispatchError>;
 	/// Verify zero-knowladge membership proof
 	fn verify_zk_bulletproofs(
 		tree_id: TreeId,
 		cached_block: BlockNumber,
-		cached_root: ScalarData,
-		comms: Vec<Commitment>,
-		nullifier_hash: ScalarData,
+		cached_root: ScalarBytes,
+		comms: Vec<ScalarBytes>,
+		nullifier_hash: ScalarBytes,
 		proof_bytes: Vec<u8>,
-		leaf_index_commitments: Vec<Commitment>,
-		proof_commitments: Vec<Commitment>,
-		recipient: ScalarData,
-		relayer: ScalarData,
+		leaf_index_commitments: Vec<ScalarBytes>,
+		proof_commitments: Vec<ScalarBytes>,
+		recipient: ScalarBytes,
+		relayer: ScalarBytes,
 	) -> Result<(), dispatch::DispatchError>;
 }
