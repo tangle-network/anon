@@ -1,4 +1,4 @@
-on: [push, pull_request]
+on: [push]
 
 name: CI
 
@@ -37,4 +37,3 @@ jobs:
 
       - name: Run Build
         run: ./scripts/build.sh
-
