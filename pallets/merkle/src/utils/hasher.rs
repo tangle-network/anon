@@ -19,6 +19,7 @@ use lazy_static::lazy_static;
 use merlin::Transcript;
 use rand_core::OsRng;
 use sp_std::prelude::*;
+use webb_crypto_primitives::crh::FixedLengthCRH;
 
 lazy_static! {
 	static ref DEFAULT_POSEIDON_HASHER: Poseidon = default_bulletproofs_poseidon_hasher();
@@ -154,6 +155,7 @@ impl Setup {
 		}
 	}
 
+	// TODO: move to bulletproofs-gadgets
 	pub fn verify_bulletproofs_poseidon(
 		&self,
 		depth: usize,
