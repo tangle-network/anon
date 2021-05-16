@@ -3,7 +3,7 @@ use curve25519_dalek::scalar::Scalar;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::OnFinalize;
 use frame_system::{Pallet as System, RawOrigin};
-use utils::hasher::{default_bulletproofs_poseidon_hasher, Backend, HashFunction};
+use utils::hasher::{Backend, HashFunction};
 
 use crate::Pallet as Merkle;
 
@@ -26,11 +26,10 @@ fn setup_tree<T: Config>(caller: T::AccountId, depth: u32) {
 }
 
 fn get_proof<T: Config>(tree_id: T::TreeId, depth: u32) -> Vec<(bool, ScalarBytes)> {
-	let hasher = default_bulletproofs_poseidon_hasher();
 	let tree = Merkle::<T>::get_tree(tree_id).unwrap();
 	let mut d = Scalar::zero().to_bytes().to_vec();
 	let mut path = Vec::new();
-	for i in 0..depth {
+	for _ in 0..depth {
 		path.push((true, d.clone()));
 		d = tree.setup.hash(&d, &d);
 	}
