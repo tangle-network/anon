@@ -18,6 +18,7 @@ use curve25519_dalek::{ristretto::CompressedRistretto, scalar::Scalar};
 use lazy_static::lazy_static;
 use merlin::Transcript;
 use rand_core::OsRng;
+use sp_std::prelude::*;
 
 lazy_static! {
 	static ref DEFAULT_POSEIDON_HASHER: Poseidon = default_bulletproofs_poseidon_hasher();

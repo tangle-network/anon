@@ -1,4 +1,5 @@
 //! Type definitions used in merkle pallet
+use sp_std::prelude::*;
 
 pub type ScalarBytes = Vec<u8>;
 
