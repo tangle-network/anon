@@ -1,4 +1,12 @@
 use crate::utils::keys::{slice_to_bytes_32, ScalarBytes};
+use arkworks_gadgets::{
+	prelude::{
+		to_bytes,
+		webb_crypto_primitives::crh::{poseidon::PoseidonParameters, CRH},
+		Bls381,
+	},
+	setup::mixer::{setup_params_3, PoseidonCRH3},
+};
 use bulletproofs::{
 	r1cs::{R1CSProof, Verifier},
 	BulletproofGens, PedersenGens,
@@ -19,11 +27,10 @@ use lazy_static::lazy_static;
 use merlin::Transcript;
 use rand_core::OsRng;
 use sp_std::prelude::*;
-use webb_crypto_primitives::crh::FixedLengthCRH;
 
 lazy_static! {
 	static ref DEFAULT_POSEIDON_HASHER: Poseidon = default_bulletproofs_poseidon_hasher();
-	// static ref POSEIDON_PARAMETERS: PoseidonParameters =
+	static ref POSEIDON_PARAMETERS: PoseidonParameters<Bls381> = setup_params_3::<Bls381>();
 }
 
 /// Default hasher instance used to construct the tree
@@ -85,7 +92,15 @@ impl Setup {
 				}
 				_ => panic!("Unsupported hash function"),
 			},
-			_ => panic!("Unsupported backend"),
+			Backend::Arkworks => match self.hasher {
+				HashFunction::PoseidonDefault => {
+					let mut bytes = Vec::new();
+					bytes.extend(xl);
+					bytes.extend(xr);
+					let res = PoseidonCRH3::evaluate(&POSEIDON_PARAMETERS, &bytes).unwrap();
+					to_bytes![res]
+				}
+			},
 		}
 	}
 
