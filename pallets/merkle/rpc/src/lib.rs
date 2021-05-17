@@ -8,7 +8,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 
-use merkle::MerkleApi as MerkleRuntimeApi;
+use merkle::{utils::keys::ScalarBytes, MerkleApi as MerkleRuntimeApi};
 
 /// Merkle RPC methods.
 #[rpc]
@@ -22,7 +22,7 @@ pub trait MerkleApi<BlockHash> {
 	///
 	/// Returns the (full) a Vec<[u8; 32]> of the leaves.
 	#[rpc(name = "merkle_treeLeaves")]
-	fn tree_leaves(&self, tree_id: u32, from: usize, to: usize, at: Option<BlockHash>) -> Result<Vec<[u8; 32]>>;
+	fn tree_leaves(&self, tree_id: u32, from: usize, to: usize, at: Option<BlockHash>) -> Result<Vec<ScalarBytes>>;
 }
 
 /// A struct that implements the `MerkleApi`.
@@ -53,7 +53,7 @@ where
 		from: usize,
 		to: usize,
 		at: Option<<Block as BlockT>::Hash>,
-	) -> Result<Vec<[u8; 32]>> {
+	) -> Result<Vec<ScalarBytes>> {
 		let api = self.client.runtime_api();
 		let at = BlockId::hash(at.unwrap_or_else(|| self.client.info().best_hash));
 		if to - from >= 512 {
@@ -65,10 +65,9 @@ where
 		}
 		let leaves = (from..to)
 			.into_iter()
-			.map(|i| api.get_leaf(&at, tree_id, i as u32)) // Result<Option<ScalarData>>
-			.flatten() // Option<ScalarData>
-			.flatten() // ScalarData
-			.map(|v| v.0.to_bytes()) // [u8; 32]
+			.map(|i| api.get_leaf(&at, tree_id, i as u32)) // Result<Option<ScalarBytes>>
+			.flatten() // Option<ScalarBytes>
+			.flatten() // ScalarBytes
 			.collect();
 		Ok(leaves)
 	}

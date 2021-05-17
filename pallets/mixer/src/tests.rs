@@ -17,7 +17,7 @@ use frame_support::{
 };
 use frame_system::RawOrigin;
 use merkle::{
-	utils::keys::{Commitment, ScalarData},
+	utils::keys::{slice_to_bytes_32, ScalarBytes},
 	HighestCachedBlock,
 };
 use merlin::Transcript;
@@ -115,8 +115,8 @@ fn should_stop_and_start_mixer() {
 		let default_admin = 4;
 		assert_ok!(Mixer::initialize());
 		let mut tree = FixedDepositTreeBuilder::new().build();
-		let leaf = tree.generate_secrets();
-		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![ScalarData(leaf)]));
+		let leaf = tree.generate_secrets().to_bytes().to_vec();
+		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![leaf.clone()]));
 
 		// Stopping deposits and withdrawal
 		assert_ok!(Mixer::set_stopped(Origin::signed(default_admin), true));
@@ -130,9 +130,9 @@ fn should_stop_and_start_mixer() {
 				WithdrawProof::new(
 					0,
 					0,
-					ScalarData::zero(),
+					Scalar::zero().to_bytes().to_vec(),
 					Vec::new(),
-					ScalarData::zero(),
+					Scalar::zero().to_bytes().to_vec(),
 					Vec::new(),
 					Vec::new(),
 					Vec::new(),
@@ -145,8 +145,7 @@ fn should_stop_and_start_mixer() {
 
 		// Starting mixer
 		assert_ok!(Mixer::set_stopped(Origin::signed(default_admin), false));
-		let leaf = tree.generate_secrets();
-		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![ScalarData(leaf)]));
+		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![leaf]));
 	})
 }
 
@@ -156,9 +155,9 @@ fn should_fail_to_deposit_with_insufficient_balance() {
 		assert_ok!(Mixer::initialize());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		for i in 0..4 {
-			let leaf = tree.generate_secrets();
+			let leaf = tree.generate_secrets().to_bytes().to_vec();
 			assert_err!(
-				Mixer::deposit(Origin::signed(4), i, vec![ScalarData(leaf)]),
+				Mixer::deposit(Origin::signed(4), i, vec![leaf]),
 				DispatchError::Module {
 					index: 3,
 					error: 4,
@@ -175,9 +174,9 @@ fn should_deposit_into_each_mixer_successfully() {
 		assert_ok!(Mixer::initialize());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		for i in 0..4 {
-			let leaf = tree.generate_secrets();
+			let leaf = tree.generate_secrets().to_bytes().to_vec();
 			let balance_before = Balances::free_balance(1);
-			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![ScalarData(leaf)]));
+			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![leaf]));
 			let balance_after = Balances::free_balance(1);
 
 			// ensure state updates
@@ -206,24 +205,25 @@ fn should_withdraw_from_each_mixer_successfully() {
 				.depth(32)
 				.build();
 
-			let leaf = ftree.generate_secrets();
-			ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
+			let leaf = ftree.generate_secrets().to_bytes();
+			ftree.tree.add_leaves(vec![leaf], None);
 
-			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![ScalarData(leaf)]));
+			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![leaf.to_vec()]));
 
 			let root = MerkleTrees::get_merkle_root(i).unwrap();
 			let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
-				root.0,
-				leaf,
+				Scalar::from_bytes_mod_order(slice_to_bytes_32(&root)),
+				Scalar::from_bytes_mod_order(slice_to_bytes_32(&leaf)),
 				Scalar::from(2u32),
 				Scalar::zero(),
 				&ftree.hash_params.bp_gens,
 				prover,
 			);
 
-			let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-			let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-			let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
+			let comms: Vec<ScalarBytes> = comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+			let leaf_index_comms: Vec<ScalarBytes> =
+				leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+			let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 
 			let m = Mixer::get_mixer(i).unwrap();
 			let balance_before = Balances::free_balance(2);
@@ -238,7 +238,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 					0,
 					root,
 					comms,
-					ScalarData(nullifier_hash),
+					nullifier_hash.to_bytes().to_vec(),
 					proof.to_bytes(),
 					leaf_index_comms,
 					proof_comms,
@@ -261,10 +261,10 @@ fn should_cache_roots_if_no_new_deposits_show() {
 		System::set_block_number(1);
 		assert_ok!(Mixer::initialize());
 		let mut tree = FixedDepositTreeBuilder::new().build();
-		let mut merkle_roots: Vec<ScalarData> = vec![];
+		let mut merkle_roots: Vec<ScalarBytes> = vec![];
 		for i in 0..4 {
-			let leaf = tree.generate_secrets();
-			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![ScalarData(leaf)]));
+			let leaf = tree.generate_secrets().to_bytes().to_vec();
+			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![leaf]));
 			let root = MerkleTrees::get_merkle_root(i).unwrap();
 			merkle_roots.push(root);
 			let cache = MerkleTrees::cached_roots(1, i);
@@ -295,10 +295,10 @@ fn should_not_have_cache_once_cache_length_exceeded() {
 		System::set_block_number(1);
 		assert_ok!(Mixer::initialize());
 		let mut tree = FixedDepositTreeBuilder::new().build();
-		let mut merkle_roots: Vec<ScalarData> = vec![];
+		let mut merkle_roots: Vec<ScalarBytes> = vec![];
 		for i in 0..4 {
-			let leaf = tree.generate_secrets();
-			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![ScalarData(leaf)]));
+			let leaf = tree.generate_secrets().to_bytes().to_vec();
+			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![leaf]));
 			let root = MerkleTrees::get_merkle_root(i).unwrap();
 			merkle_roots.push(root);
 			let cache = MerkleTrees::cached_roots(1, i);
@@ -316,13 +316,13 @@ fn should_not_have_cache_once_cache_length_exceeded() {
 			for j in 0u32..4u32 {
 				if i + 1 == 6 {
 					let old_root = MerkleTrees::cached_roots(1, j);
-					assert_eq!(old_root, vec![]);
+					assert_eq!(old_root, Vec::<ScalarBytes>::new());
 				}
 
 				// get cached root at block i + 1
 				let root = MerkleTrees::cached_roots(i + 1, j);
 				// check cached root is same as first updated root
-				assert_eq!(root, vec![merkle_roots[j as usize]]);
+				assert_eq!(root, vec![merkle_roots[j as usize].clone()]);
 				// check that highest cache block is i + 1
 				assert_eq!(i + 1, HighestCachedBlock::<Test>::get());
 			}
@@ -348,6 +348,8 @@ fn should_make_mixer_with_non_native_token() {
 		assert_ok!(<Mixer as ExtendedMixer<AccountId, CurrencyId, Balance>>::create_new(
 			1,
 			currency_id,
+			HashFunction::PoseidonDefault,
+			Backend::Bulletproofs,
 			1_000
 		));
 
@@ -364,29 +366,29 @@ fn should_make_mixer_with_non_native_token() {
 			.depth(32)
 			.build();
 
-		let leaf = ftree.generate_secrets();
-		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
+		let leaf = ftree.generate_secrets().to_bytes();
+		ftree.tree.add_leaves(vec![leaf], None);
 
 		// Getting native balance before deposit
 		let native_balance_before = Balances::free_balance(&sender);
-		assert_ok!(Mixer::deposit(Origin::signed(sender), tree_id, vec![ScalarData(leaf)]));
+		assert_ok!(Mixer::deposit(Origin::signed(sender), tree_id, vec![leaf.to_vec()]));
 		// Native balance after deposit, to make sure its not touched
 		let native_balance_after = Balances::free_balance(&sender);
 		assert_eq!(native_balance_before, native_balance_after);
 
 		let root = MerkleTrees::get_merkle_root(tree_id).unwrap();
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
-			root.0,
-			leaf,
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&root)),
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&leaf)),
 			Scalar::from(recipient),
 			Scalar::zero(),
 			&ftree.hash_params.bp_gens,
 			prover,
 		);
 
-		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
+		let comms: Vec<ScalarBytes> = comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let leaf_index_comms: Vec<ScalarBytes> = leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 
 		let m = Mixer::get_mixer(tree_id).unwrap();
 		let balance_before = Tokens::free_balance(currency_id, &recipient);
@@ -402,7 +404,7 @@ fn should_make_mixer_with_non_native_token() {
 				0,
 				root,
 				comms,
-				ScalarData(nullifier_hash),
+				nullifier_hash.to_bytes().to_vec(),
 				proof.to_bytes(),
 				leaf_index_comms,
 				proof_comms,
