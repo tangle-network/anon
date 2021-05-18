@@ -289,7 +289,6 @@ parameter_types! {
 	pub RentFraction: Perbill = Perbill::from_rational(1u32, 30 * DAYS);
 	pub const SurchargeReward: Balance = 150 * MILLICENTS;
 	pub const SignedClaimHandicap: u32 = 2;
-	pub const MaxDepth: u32 = 32;
 	pub const MaxValueSize: u32 = 16 * 1024;
 	// The lazy deletion runs inside on_initialize.
 	pub DeletionWeightLimit: Weight = AVERAGE_ON_INITIALIZE_RATIO *
@@ -304,26 +303,26 @@ parameter_types! {
 }
 
 impl pallet_contracts::Config for Runtime {
-	type ChainExtension = ();
+	type Time = Timestamp;
+	type Randomness = RandomnessCollectiveFlip;
 	type Currency = Balances;
-	type DeletionQueueDepth = DeletionQueueDepth;
-	type DeletionWeightLimit = DeletionWeightLimit;
+	type Event = Event;
+	type RentPayment = ();
+	type SignedClaimHandicap = SignedClaimHandicap;
+	type TombstoneDeposit = TombstoneDeposit;
 	type DepositPerContract = DepositPerContract;
 	type DepositPerStorageByte = DepositPerStorageByte;
 	type DepositPerStorageItem = DepositPerStorageItem;
-	type Event = Event;
-	type MaxCodeSize = MaxCodeSize;
-	type MaxDepth = MaxDepth;
-	type MaxValueSize = MaxValueSize;
-	type Randomness = RandomnessCollectiveFlip;
 	type RentFraction = RentFraction;
-	type RentPayment = ();
-	type SignedClaimHandicap = SignedClaimHandicap;
 	type SurchargeReward = SurchargeReward;
-	type Time = Timestamp;
-	type TombstoneDeposit = TombstoneDeposit;
-	type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
+	type CallStack = [pallet_contracts::Frame<Self>; 31];
+	type MaxValueSize = MaxValueSize;
 	type WeightPrice = pallet_transaction_payment::Module<Self>;
+	type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
+	type ChainExtension = ();
+	type DeletionQueueDepth = DeletionQueueDepth;
+	type DeletionWeightLimit = DeletionWeightLimit;
+	type MaxCodeSize = MaxCodeSize;
 }
 
 parameter_types! {
