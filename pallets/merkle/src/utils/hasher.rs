@@ -63,11 +63,14 @@ pub enum Backend {
 	Bulletproofs,
 }
 
+#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq)]
 pub enum SetupError {
 	InvalidPrivateInputs,
 	ConstraintSystemUnsatisfied,
 	VerificationFailed,
 	InvalidProof,
+	Unimplemented,
 }
 
 #[cfg_attr(feature = "std", derive(Debug))]
@@ -82,15 +85,15 @@ impl Setup {
 		Self { hasher, backend }
 	}
 
-	pub fn hash(&self, xl: &ScalarBytes, xr: &ScalarBytes) -> ScalarBytes {
+	pub fn hash(&self, xl: &ScalarBytes, xr: &ScalarBytes) -> Result<ScalarBytes, SetupError> {
 		match self.backend {
 			Backend::Bulletproofs => match self.hasher {
 				HashFunction::PoseidonDefault | HashFunction::Poseidon(6, 3) => {
 					let sl = Scalar::from_bytes_mod_order(slice_to_bytes_32(xl));
 					let sr = Scalar::from_bytes_mod_order(slice_to_bytes_32(xr));
-					Poseidon_hash_2(sl, sr, &DEFAULT_POSEIDON_HASHER).to_bytes().to_vec()
+					Ok(Poseidon_hash_2(sl, sr, &DEFAULT_POSEIDON_HASHER).to_bytes().to_vec())
 				}
-				_ => panic!("Unsupported hash function"),
+				_ => Err(SetupError::Unimplemented),
 			},
 			Backend::Arkworks => match self.hasher {
 				HashFunction::PoseidonDefault => {
@@ -98,33 +101,37 @@ impl Setup {
 					bytes.extend(xl);
 					bytes.extend(xr);
 					let res = PoseidonCRH3::evaluate(&POSEIDON_PARAMETERS, &bytes).unwrap();
-					to_bytes![res]
+					Ok(to_bytes![res])
 				}
+				_ => Err(SetupError::Unimplemented),
 			},
 		}
 	}
 
-	pub fn get_bulletproofs_poseidon(&self) -> &Poseidon {
+	pub fn get_bulletproofs_poseidon(&self) -> Result<&Poseidon, SetupError> {
 		match self.backend {
 			Backend::Bulletproofs => match self.hasher {
-				HashFunction::PoseidonDefault => &DEFAULT_POSEIDON_HASHER,
-				_ => panic!("Hasher is not default poseidon hasher"),
+				HashFunction::PoseidonDefault => Ok(&DEFAULT_POSEIDON_HASHER),
+				_ => Err(SetupError::Unimplemented),
 			},
-			_ => panic!("Backend not bulletproofs"),
+			_ => Err(SetupError::Unimplemented),
 		}
 	}
 
-	pub fn generate_zero_tree(&self, depth: usize) -> (Vec<ScalarBytes>, ScalarBytes) {
-		let zero_tree = match self.hasher {
-			HashFunction::PoseidonDefault => {
-				gen_zero_tree(DEFAULT_POSEIDON_HASHER.width, &DEFAULT_POSEIDON_HASHER.sbox)
-			}
-			_ => gen_zero_tree(DEFAULT_POSEIDON_HASHER.width, &DEFAULT_POSEIDON_HASHER.sbox),
+	pub fn generate_zero_tree(&self, depth: usize) -> Result<(Vec<ScalarBytes>, ScalarBytes), SetupError> {
+		let zero_tree = match self.backend {
+			Backend::Bulletproofs => match self.hasher {
+				HashFunction::PoseidonDefault => {
+					gen_zero_tree(DEFAULT_POSEIDON_HASHER.width, &DEFAULT_POSEIDON_HASHER.sbox)
+				}
+				_ => return Err(SetupError::Unimplemented),
+			},
+			_ => return Err(SetupError::Unimplemented),
 		};
-		(
+		Ok((
 			zero_tree[0..depth].iter().map(|x| x.to_vec()).collect(),
 			zero_tree[depth].to_vec(),
-		)
+		))
 	}
 
 	pub fn verify_zk(
@@ -166,7 +173,7 @@ impl Setup {
 					relayer_s,
 				)
 			}
-			_ => panic!("Unsupported backend"),
+			_ => return Err(SetupError::Unimplemented),
 		}
 	}
 
@@ -228,7 +235,7 @@ impl Setup {
 
 		let num_statics = 4;
 		let statics = allocate_statics_for_verifier(&mut verifier, num_statics, &pc_gens);
-		let hasher = self.get_bulletproofs_poseidon();
+		let hasher = self.get_bulletproofs_poseidon()?;
 		let gadget_res = mixer_verif_gadget(
 			&mut verifier,
 			&recipient,

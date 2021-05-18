@@ -333,8 +333,8 @@ fn should_have_correct_root_hash_after_insertion() {
 		));
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![key0.clone()]));
 
-		let keyh1 = setup.hash(&key0, &zero_h0);
-		let keyh2 = setup.hash(&keyh1, &zero_h1);
+		let keyh1 = setup.hash(&key0, &zero_h0).unwrap();
+		let keyh2 = setup.hash(&keyh1, &zero_h1).unwrap();
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
@@ -342,8 +342,8 @@ fn should_have_correct_root_hash_after_insertion() {
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(2), 0, vec![key1.clone()]));
 
-		let keyh1 = setup.hash(&key0, &key1);
-		let keyh2 = setup.hash(&keyh1, &zero_h1);
+		let keyh1 = setup.hash(&key0, &key1).unwrap();
+		let keyh2 = setup.hash(&keyh1, &zero_h1).unwrap();
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
@@ -351,9 +351,9 @@ fn should_have_correct_root_hash_after_insertion() {
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(3), 0, vec![key2.clone()]));
 
-		let keyh1 = setup.hash(&key0, &key1);
-		let keyh2 = setup.hash(&key2, &zero_h0);
-		let keyh3 = setup.hash(&keyh1, &keyh2);
+		let keyh1 = setup.hash(&key0, &key1).unwrap();
+		let keyh2 = setup.hash(&key2, &zero_h0).unwrap();
+		let keyh3 = setup.hash(&keyh1, &keyh2).unwrap();
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
@@ -384,24 +384,24 @@ fn should_have_correct_root_hash() {
 		));
 		assert_ok!(MerkleTrees::add_members(Origin::signed(0), 0, keys.clone()));
 
-		let key1_1 = setup.hash(&keys[0], &keys[1]);
-		let key1_2 = setup.hash(&keys[2], &keys[3]);
-		let key1_3 = setup.hash(&keys[4], &keys[5]);
-		let key1_4 = setup.hash(&keys[6], &keys[7]);
-		let key1_5 = setup.hash(&keys[8], &keys[9]);
-		let key1_6 = setup.hash(&keys[10], &keys[11]);
-		let key1_7 = setup.hash(&keys[12], &keys[13]);
-		let key1_8 = setup.hash(&keys[14], &zero_h0);
+		let key1_1 = setup.hash(&keys[0], &keys[1]).unwrap();
+		let key1_2 = setup.hash(&keys[2], &keys[3]).unwrap();
+		let key1_3 = setup.hash(&keys[4], &keys[5]).unwrap();
+		let key1_4 = setup.hash(&keys[6], &keys[7]).unwrap();
+		let key1_5 = setup.hash(&keys[8], &keys[9]).unwrap();
+		let key1_6 = setup.hash(&keys[10], &keys[11]).unwrap();
+		let key1_7 = setup.hash(&keys[12], &keys[13]).unwrap();
+		let key1_8 = setup.hash(&keys[14], &zero_h0).unwrap();
 
-		let key2_1 = setup.hash(&key1_1, &key1_2);
-		let key2_2 = setup.hash(&key1_3, &key1_4);
-		let key2_3 = setup.hash(&key1_5, &key1_6);
-		let key2_4 = setup.hash(&key1_7, &key1_8);
+		let key2_1 = setup.hash(&key1_1, &key1_2).unwrap();
+		let key2_2 = setup.hash(&key1_3, &key1_4).unwrap();
+		let key2_3 = setup.hash(&key1_5, &key1_6).unwrap();
+		let key2_4 = setup.hash(&key1_7, &key1_8).unwrap();
 
-		let key3_1 = setup.hash(&key2_1, &key2_2);
-		let key3_2 = setup.hash(&key2_3, &key2_4);
+		let key3_1 = setup.hash(&key2_1, &key2_2).unwrap();
+		let key3_2 = setup.hash(&key2_3, &key2_4).unwrap();
 
-		let root_hash = setup.hash(&key3_1, &key3_2);
+		let root_hash = setup.hash(&key3_1, &key3_2).unwrap();
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
@@ -470,9 +470,9 @@ fn should_not_verify_invalid_proof() {
 			key2.clone()
 		]));
 
-		let keyh1 = setup.hash(&key0, &key1);
-		let keyh2 = setup.hash(&key2, &zero_h0);
-		let _root_hash = setup.hash(&keyh1, &keyh2);
+		let keyh1 = setup.hash(&key0, &key1).unwrap();
+		let keyh2 = setup.hash(&key2, &zero_h0).unwrap();
+		let _root_hash = setup.hash(&keyh1, &keyh2).unwrap();
 
 		let path = vec![(false, key1.clone()), (true, keyh2.clone())];
 
@@ -520,24 +520,24 @@ fn should_verify_proof_of_membership() {
 		));
 		assert_ok!(MerkleTrees::add_members(Origin::signed(0), 0, keys.clone()));
 
-		let key1_1 = setup.hash(&keys[0], &keys[1]);
-		let key1_2 = setup.hash(&keys[2], &keys[3]);
-		let key1_3 = setup.hash(&keys[4], &keys[5]);
-		let key1_4 = setup.hash(&keys[6], &keys[7]);
-		let key1_5 = setup.hash(&keys[8], &keys[9]);
-		let key1_6 = setup.hash(&keys[10], &keys[11]);
-		let key1_7 = setup.hash(&keys[12], &keys[13]);
-		let key1_8 = setup.hash(&keys[14], &zero_h0);
+		let key1_1 = setup.hash(&keys[0], &keys[1]).unwrap();
+		let key1_2 = setup.hash(&keys[2], &keys[3]).unwrap();
+		let key1_3 = setup.hash(&keys[4], &keys[5]).unwrap();
+		let key1_4 = setup.hash(&keys[6], &keys[7]).unwrap();
+		let key1_5 = setup.hash(&keys[8], &keys[9]).unwrap();
+		let key1_6 = setup.hash(&keys[10], &keys[11]).unwrap();
+		let key1_7 = setup.hash(&keys[12], &keys[13]).unwrap();
+		let key1_8 = setup.hash(&keys[14], &zero_h0).unwrap();
 
-		let key2_1 = setup.hash(&key1_1, &key1_2);
-		let key2_2 = setup.hash(&key1_3, &key1_4);
-		let key2_3 = setup.hash(&key1_5, &key1_6);
-		let key2_4 = setup.hash(&key1_7, &key1_8);
+		let key2_1 = setup.hash(&key1_1, &key1_2).unwrap();
+		let key2_2 = setup.hash(&key1_3, &key1_4).unwrap();
+		let key2_3 = setup.hash(&key1_5, &key1_6).unwrap();
+		let key2_4 = setup.hash(&key1_7, &key1_8).unwrap();
 
-		let key3_1 = setup.hash(&key2_1, &key2_2);
-		let key3_2 = setup.hash(&key2_3, &key2_4);
+		let key3_1 = setup.hash(&key2_1, &key2_2).unwrap();
+		let key3_2 = setup.hash(&key2_3, &key2_4).unwrap();
 
-		let _root_hash = setup.hash(&key3_1, &key3_2);
+		let _root_hash = setup.hash(&key3_1, &key3_2).unwrap();
 
 		let path = vec![
 			(true, keys[1].clone()),

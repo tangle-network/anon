@@ -156,6 +156,10 @@ pub mod pallet {
 		ManagerIsRequired,
 		/// Manager not found for specific tree
 		ManagerDoesntExist,
+		/// Error for unimplemented functionality
+		Unimplemented,
+		/// Unexpected/Unknown error
+		Unknown,
 	}
 
 	#[pallet::event]
@@ -448,6 +452,8 @@ pub struct MerkleTree {
 	pub depth: u8,
 	/// Current root hash of the tree
 	pub root_hash: ScalarBytes,
+	/// Zero tree
+	pub zero_tree: Vec<ScalarBytes>,
 	/// Edge nodes needed for the next insert in the tree
 	pub edge_nodes: Vec<ScalarBytes>,
 	/// Hash function for the merkle tree
@@ -458,17 +464,18 @@ pub struct MerkleTree {
 }
 
 impl MerkleTree {
-	pub fn new<T: Config>(setup: Setup, depth: u8) -> Self {
-		let (edge_nodes, root_hash) = setup.generate_zero_tree(depth as usize);
-		Self {
+	pub fn new<T: Config>(setup: Setup, depth: u8) -> Result<Self, SetupError> {
+		let (zero_tree, root_hash) = setup.generate_zero_tree(depth as usize)?;
+		Ok(Self {
 			root_hash,
 			leaf_count: 0,
 			depth,
 			max_leaves: u32::MAX >> (T::MaxTreeDepth::get() - depth),
-			edge_nodes,
+			zero_tree: zero_tree.clone(),
+			edge_nodes: zero_tree,
 			setup,
 			should_store_leaves: true, // the default for now.
-		}
+		})
 	}
 }
 
@@ -491,7 +498,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 
 		// Setting up the tree
 		let setup = Setup::new(hasher, backend);
-		let mtree = MerkleTree::new::<T>(setup, depth);
+		let mtree = MerkleTree::new::<T>(setup, depth).map_err(|_| Error::<T>::Unimplemented)?;
 		Trees::<T>::insert(tree_id, Some(mtree));
 
 		// Setting up the manager
@@ -543,9 +550,8 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 			Error::<T>::ExceedsMaxLeaves
 		);
 
-		let (zero_tree, _) = tree.setup.generate_zero_tree(tree.depth as usize);
 		for data in &members {
-			Self::add_leaf(&mut tree, &data, &zero_tree);
+			Self::add_leaf(&mut tree, &data);
 			if tree.should_store_leaves {
 				Leaves::<T>::insert(id, tree.leaf_count, data);
 			}
@@ -587,8 +593,8 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		let mut hash = leaf;
 		for (is_right, node) in path {
 			hash = match is_right {
-				true => tree.setup.hash(&hash, &node),
-				false => tree.setup.hash(&node, &hash),
+				true => tree.setup.hash(&hash, &node).map_err(|_| Error::<T>::Unimplemented)?,
+				false => tree.setup.hash(&node, &hash).map_err(|_| Error::<T>::Unimplemented)?,
 			}
 		}
 
@@ -669,16 +675,20 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	pub fn add_leaf(tree: &mut MerkleTree, data: &ScalarBytes, zero_tree: &Vec<ScalarBytes>) {
+	pub fn add_leaf(tree: &mut MerkleTree, data: &ScalarBytes) -> Result<(), DispatchError> {
 		let mut edge_index = tree.leaf_count;
 		let mut hash = data.clone();
 		// Update the tree
 		for i in 0..tree.edge_nodes.len() {
 			hash = if edge_index % 2 == 0 {
 				tree.edge_nodes[i] = hash.clone();
-				tree.setup.hash(&hash, &zero_tree[i])
+				tree.setup
+					.hash(&hash, &tree.zero_tree[i])
+					.map_err(|_| Error::<T>::Unimplemented)?
 			} else {
-				tree.setup.hash(&tree.edge_nodes[i], &hash)
+				tree.setup
+					.hash(&tree.edge_nodes[i], &hash)
+					.map_err(|_| Error::<T>::Unimplemented)?
 			};
 
 			edge_index /= 2;
@@ -686,5 +696,6 @@ impl<T: Config> Pallet<T> {
 
 		tree.leaf_count += 1;
 		tree.root_hash = hash;
+		Ok(())
 	}
 }
