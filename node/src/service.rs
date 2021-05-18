@@ -14,8 +14,8 @@ use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
 use sc_service::{error::Error as ServiceError, BasePath, Configuration, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
-use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use sp_consensus::SlotData;
+use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 
 use std::{
 	collections::{BTreeMap, HashMap},
