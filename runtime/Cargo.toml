@@ -60,12 +60,12 @@ sp-std = { default-features = false, git = "https://github.com/paritytech/substr
 sp-transaction-pool = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.1" }
 sp-version = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.1" }
 
-merkle = { package = "pallet-merkle", default-features = false, path = "../pallets/merkle" }
-mixer = { package = "pallet-mixer", default-features = false, path = "../pallets/mixer" }
-merkle-rpc = { package = "pallet-merkle-rpc", path = "../pallets/merkle/rpc", optional = true}
-webb-currencies = { default-features = false, path = "../pallets/currencies" }
-webb-traits = { default-features = false, path = "../pallets/traits" }
-webb-tokens = { default-features = false, path = "../pallets/tokens" }
+merkle = { package = "pallet-merkle", default-features = false, git = "https://github.com/webb-tools/anon", branch = "polkadot-v0.9.1" }
+mixer = { package = "pallet-mixer", default-features = false, git = "https://github.com/webb-tools/anon", branch = "polkadot-v0.9.1" }
+merkle-rpc = { package = "pallet-merkle-rpc", git = "https://github.com/webb-tools/anon", branch = "polkadot-v0.9.1", optional = true }
+webb-currencies = { default-features = false, git = "https://github.com/webb-tools/anon", branch = "polkadot-v0.9.1" }
+webb-tokens = { default-features = false, git = "https://github.com/webb-tools/anon", branch = "polkadot-v0.9.1" }
+webb-traits = { default-features = false, git = "https://github.com/webb-tools/anon", branch = "polkadot-v0.9.1" }
 
 [features]
 default = ["std", "aura"]
