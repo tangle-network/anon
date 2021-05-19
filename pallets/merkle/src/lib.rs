@@ -639,8 +639,8 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		match res {
 			Err(SetupError::InvalidPrivateInputs) => fail!(Error::<T>::InvalidPrivateInputs),
 			Err(SetupError::ConstraintSystemUnsatisfied) => fail!(Error::<T>::InvalidMembershipProof),
-			Err(SetupError::VerificationFailed) => fail!(Error::<T>::ZkVerificationFailed),
 			Err(SetupError::InvalidProof) => fail!(Error::<T>::InvalidMembershipProof),
+			Err(_) => fail!(Error::<T>::ZkVerificationFailed),
 			Ok(_) => Ok(()),
 		}
 	}

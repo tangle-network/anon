@@ -185,7 +185,7 @@ dependencies = [
 [[package]]
 name = "ark-crypto-primitives"
 version = "0.2.0"
-source = "git+https://github.com/webb-tools/crypto-primitives?rev=1b3da03#1b3da03f08519d84a3a100abe059d85cdf20ea57"
+source = "git+https://github.com/webb-tools/crypto-primitives?rev=775d807#775d80794952a7d259cacece55d639d121de7134"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -197,7 +197,6 @@ dependencies = [
  "blake2",
  "derivative",
  "digest 0.9.0",
- "tracing",
 ]
 
 [[package]]
@@ -398,7 +397,6 @@ dependencies = [
  "ark-ff",
  "ark-std",
  "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -446,10 +444,10 @@ dependencies = [
 [[package]]
 name = "arkworks-gadgets"
 version = "0.1.0"
-source = "git+https://github.com/webb-tools/arkworks-gadgets?rev=9d5c19a#9d5c19ac65b316f697ba9537797c7bf56bb3d69e"
+source = "git+https://github.com/webb-tools/arkworks-gadgets?rev=3a68167#3a68167125e3c6d63f30ba95c65a01ba3f87c744"
 dependencies = [
  "ark-bls12-381",
- "ark-crypto-primitives 0.2.0 (git+https://github.com/webb-tools/crypto-primitives?rev=1b3da03)",
+ "ark-crypto-primitives 0.2.0 (git+https://github.com/webb-tools/crypto-primitives?rev=775d807)",
  "ark-ec",
  "ark-ed-on-bls12-381",
  "ark-ed-on-bn254",

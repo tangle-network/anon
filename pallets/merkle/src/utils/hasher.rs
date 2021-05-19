@@ -70,6 +70,7 @@ pub enum SetupError {
 	ConstraintSystemUnsatisfied,
 	VerificationFailed,
 	InvalidProof,
+	HashingFailed,
 	Unimplemented,
 }
 
@@ -101,7 +102,12 @@ impl Setup {
 					bytes.extend(xl);
 					bytes.extend(xr);
 					let res = PoseidonCRH3::evaluate(&POSEIDON_PARAMETERS, &bytes).unwrap();
-					Ok(to_bytes![res])
+					let bytes_res = to_bytes![res];
+					let bytes = match bytes_res {
+						Ok(bytes) => bytes,
+						Err(_) => return Err(SetupError::HashingFailed),
+					};
+					Ok(bytes)
 				}
 				_ => Err(SetupError::Unimplemented),
 			},
