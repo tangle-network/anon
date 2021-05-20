@@ -15,6 +15,7 @@ pub use sc_executor::NativeExecutor;
 use sc_service::{error::Error as ServiceError, BasePath, Configuration, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
+use sp_core::U256;
 
 use sp_consensus::SlotData;
 use std::{
@@ -165,7 +166,7 @@ pub fn new_partial(
 					);
 				let fee = pallet_dynamic_fee::InherentDataProvider(target_gas_price);
 
-				Ok((timestamp, slot))
+				Ok((timestamp, slot, fee))
 			},
 			spawner: &task_manager.spawn_essential_handle(),
 			can_author_with: sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
@@ -367,7 +368,7 @@ pub fn new_full(mut config: Configuration, cli: &Cli) -> Result<TaskManager, Ser
 
 					let fee = pallet_dynamic_fee::InherentDataProvider(target_gas_price);
 
-					Ok((timestamp, slot))
+					Ok((timestamp, slot, fee))
 				},
 				force_authoring,
 				backoff_authoring_blocks,
