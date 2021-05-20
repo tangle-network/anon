@@ -73,6 +73,7 @@ fc-mapping-sync = { default-features = false, git = "https://github.com/webb-too
 
 pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
 pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+pallet-dynamic-fee = { git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
 
 merkle = { package = "pallet-merkle", path = "../pallets/merkle" }
 merkle-rpc = { package = "pallet-merkle-rpc", path = "../pallets/merkle/rpc" }

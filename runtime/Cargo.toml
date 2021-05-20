@@ -37,6 +37,7 @@ pallet-contracts = { default-features = false, git = "https://github.com/webb-to
 pallet-contracts-primitives = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 pallet-contracts-rpc-runtime-api = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
+pallet-dynamic-fee = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
 pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
 pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
 fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
@@ -118,6 +119,7 @@ std = [
     "webb-tokens/std",
 
     "fp-rpc/std",
+    "pallet-dynamic-fee/std",
     "pallet-ethereum/std",
     "pallet-evm/std",
     "pallet-evm-precompile-simple/std",
