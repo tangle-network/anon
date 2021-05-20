@@ -9,9 +9,6 @@ version = "3.0.0"
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
-[build-dependencies]
-wasm-builder-runner = { package = "substrate-wasm-builder-runner", version = "2.0.0" }
-
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
 default-features = false
@@ -37,6 +34,7 @@ pallet-contracts = { default-features = false, git = "https://github.com/webb-to
 pallet-contracts-primitives = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 pallet-contracts-rpc-runtime-api = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
+pallet-dynamic-fee = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
 pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
 pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
 fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
@@ -66,6 +64,9 @@ merkle-rpc = { package = "pallet-merkle-rpc", path = "../pallets/merkle/rpc", op
 webb-currencies = { default-features = false, path = "../pallets/currencies" }
 webb-traits = { default-features = false, path = "../pallets/traits" }
 webb-tokens = { default-features = false, path = "../pallets/tokens" }
+
+[build-dependencies]
+substrate-wasm-builder = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
 [features]
 default = ["std", "aura"]
@@ -118,6 +119,7 @@ std = [
     "webb-tokens/std",
 
     "fp-rpc/std",
+    "pallet-dynamic-fee/std",
     "pallet-ethereum/std",
     "pallet-evm/std",
     "pallet-evm-precompile-simple/std",
