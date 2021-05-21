@@ -444,7 +444,7 @@ dependencies = [
 [[package]]
 name = "arkworks-gadgets"
 version = "0.1.0"
-source = "git+https://github.com/webb-tools/arkworks-gadgets?rev=3a68167#3a68167125e3c6d63f30ba95c65a01ba3f87c744"
+source = "git+https://github.com/webb-tools/arkworks-gadgets?rev=c14affc#c14affc4168b382797fbe8c034968a82f567bb41"
 dependencies = [
  "ark-bls12-381",
  "ark-crypto-primitives 0.2.0 (git+https://github.com/webb-tools/crypto-primitives?rev=775d807)",

@@ -61,7 +61,7 @@ use frame_support::{dispatch, ensure, traits::Get, weights::Weight, PalletId};
 use frame_system::ensure_signed;
 use merkle::{
 	utils::{
-		hasher::{Backend, HashFunction},
+		hasher::{Backend, Curve, HashFunction},
 		keys::ScalarBytes,
 		permissions::ensure_admin,
 	},
@@ -528,7 +528,7 @@ impl<T: Config> Pallet<T> {
 				Self::account_id(),
 				true,
 				HashFunction::PoseidonDefault,
-				Backend::Bulletproofs,
+				Backend::Bulletproofs(Curve::Curve25519),
 				depth,
 			)?;
 			// Creating mixer info data

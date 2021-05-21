@@ -1,11 +1,12 @@
 use crate::utils::keys::{slice_to_bytes_32, ScalarBytes};
 use arkworks_gadgets::{
+	merkle_tree::gen_empty_hashes,
 	prelude::{
 		to_bytes,
 		webb_crypto_primitives::crh::{poseidon::PoseidonParameters, CRH},
 		Bls381,
 	},
-	setup::mixer::{setup_params_3, PoseidonCRH3},
+	setup::mixer::{setup_params_3, MixerTreeConfig, PoseidonCRH3},
 };
 use bulletproofs::{
 	r1cs::{R1CSProof, Verifier},
@@ -56,11 +57,28 @@ pub enum HashFunction {
 	Sha256,
 }
 
+/// Different curve types
+#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq)]
+pub enum Curve {
+	Bls381,
+	Bn254,
+	Curve25519,
+}
+
+/// Different curve types
+#[cfg_attr(feature = "std", derive(Debug))]
+#[derive(Clone, Encode, Decode, PartialEq)]
+pub enum Snark {
+	Groth16,
+	Marlin,
+}
+
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Clone, Encode, Decode, PartialEq)]
 pub enum Backend {
-	Arkworks,
-	Bulletproofs,
+	Arkworks(Curve, Snark),
+	Bulletproofs(Curve),
 }
 
 #[cfg_attr(feature = "std", derive(Debug))]
@@ -71,6 +89,7 @@ pub enum SetupError {
 	VerificationFailed,
 	InvalidProof,
 	HashingFailed,
+	ZeroTreeGenFailed,
 	Unimplemented,
 }
 
@@ -88,7 +107,7 @@ impl Setup {
 
 	pub fn hash(&self, xl: &ScalarBytes, xr: &ScalarBytes) -> Result<ScalarBytes, SetupError> {
 		match self.backend {
-			Backend::Bulletproofs => match self.hasher {
+			Backend::Bulletproofs(Curve::Curve25519) => match self.hasher {
 				HashFunction::PoseidonDefault | HashFunction::Poseidon(6, 3) => {
 					let sl = Scalar::from_bytes_mod_order(slice_to_bytes_32(xl));
 					let sr = Scalar::from_bytes_mod_order(slice_to_bytes_32(xr));
@@ -96,7 +115,7 @@ impl Setup {
 				}
 				_ => Err(SetupError::Unimplemented),
 			},
-			Backend::Arkworks => match self.hasher {
+			Backend::Arkworks(Curve::Bls381, _) => match self.hasher {
 				HashFunction::PoseidonDefault => {
 					let mut bytes = Vec::new();
 					bytes.extend(xl);
@@ -111,33 +130,43 @@ impl Setup {
 				}
 				_ => Err(SetupError::Unimplemented),
 			},
+			_ => Err(SetupError::Unimplemented),
 		}
 	}
 
 	pub fn get_bulletproofs_poseidon(&self) -> Result<&Poseidon, SetupError> {
-		match self.backend {
-			Backend::Bulletproofs => match self.hasher {
-				HashFunction::PoseidonDefault => Ok(&DEFAULT_POSEIDON_HASHER),
-				_ => Err(SetupError::Unimplemented),
-			},
+		match (&self.backend, &self.hasher) {
+			(Backend::Bulletproofs(Curve::Curve25519), HashFunction::PoseidonDefault) => Ok(&DEFAULT_POSEIDON_HASHER),
 			_ => Err(SetupError::Unimplemented),
 		}
 	}
 
 	pub fn generate_zero_tree(&self, depth: usize) -> Result<(Vec<ScalarBytes>, ScalarBytes), SetupError> {
-		let zero_tree = match self.backend {
-			Backend::Bulletproofs => match self.hasher {
+		match self.backend {
+			Backend::Bulletproofs(Curve::Curve25519) => match self.hasher {
 				HashFunction::PoseidonDefault => {
-					gen_zero_tree(DEFAULT_POSEIDON_HASHER.width, &DEFAULT_POSEIDON_HASHER.sbox)
+					let zero_tree = gen_zero_tree(DEFAULT_POSEIDON_HASHER.width, &DEFAULT_POSEIDON_HASHER.sbox);
+					Ok((
+						zero_tree[0..depth].iter().map(|x| x.to_vec()).collect(),
+						zero_tree[depth].to_vec(),
+					))
 				}
-				_ => return Err(SetupError::Unimplemented),
+				_ => Err(SetupError::Unimplemented),
 			},
-			_ => return Err(SetupError::Unimplemented),
-		};
-		Ok((
-			zero_tree[0..depth].iter().map(|x| x.to_vec()).collect(),
-			zero_tree[depth].to_vec(),
-		))
+			Backend::Arkworks(Curve::Bls381, _) => match self.hasher {
+				HashFunction::PoseidonDefault => {
+					let res = gen_empty_hashes::<MixerTreeConfig>(&POSEIDON_PARAMETERS, &POSEIDON_PARAMETERS)
+						.map_err(|_| SetupError::ZeroTreeGenFailed)?;
+					let zero_tree: Vec<ScalarBytes> = res
+						.iter()
+						.map(|val| to_bytes![val].map_err(|_| SetupError::ZeroTreeGenFailed))
+						.collect::<Result<Vec<ScalarBytes>, _>>()?;
+					Ok((zero_tree[0..depth].to_vec(), zero_tree[depth].clone()))
+				}
+				_ => Err(SetupError::Unimplemented),
+			},
+			_ => Err(SetupError::Unimplemented),
+		}
 	}
 
 	pub fn verify_zk(
@@ -153,7 +182,7 @@ impl Setup {
 		relayer: ScalarBytes,
 	) -> Result<(), SetupError> {
 		match self.backend {
-			Backend::Bulletproofs => {
+			Backend::Bulletproofs(Curve::Curve25519) => {
 				let cached_root_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&cached_root));
 				let comms_c = comms.iter().map(|x| CompressedRistretto::from_slice(x)).collect();
 				let nullifier_hash_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&nullifier_hash));

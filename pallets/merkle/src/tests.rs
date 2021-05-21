@@ -34,7 +34,7 @@ fn default_hasher(num_gens: usize) -> Poseidon {
 fn can_create_tree() {
 	new_test_ext().execute_with(|| {
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -49,7 +49,7 @@ fn can_create_tree() {
 fn can_update_manager_when_required() {
 	new_test_ext().execute_with(|| {
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			true,
@@ -69,7 +69,7 @@ fn can_update_manager_when_required() {
 fn can_update_manager_when_not_required() {
 	new_test_ext().execute_with(|| {
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -89,7 +89,7 @@ fn can_update_manager_when_not_required() {
 fn cannot_update_manager_as_not_manager() {
 	new_test_ext().execute_with(|| {
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -106,7 +106,7 @@ fn cannot_update_manager_as_not_manager() {
 fn can_update_manager_required_manager() {
 	new_test_ext().execute_with(|| {
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -126,7 +126,7 @@ fn can_update_manager_required_manager() {
 fn cannot_update_manager_required_as_not_manager() {
 	new_test_ext().execute_with(|| {
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -148,7 +148,7 @@ fn can_add_member() {
 		let key = key_bytes(1).to_vec();
 
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -166,7 +166,7 @@ fn can_add_member_as_manager() {
 		let key = key_bytes(1).to_vec();
 
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			true,
@@ -184,7 +184,7 @@ fn cannot_add_member_as_not_manager() {
 		let key = key_bytes(1).to_vec();
 
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			true,
@@ -203,7 +203,7 @@ fn cannot_add_member_as_not_manager() {
 fn should_be_able_to_set_stopped_merkle() {
 	new_test_ext().execute_with(|| {
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			true,
@@ -229,7 +229,7 @@ fn should_be_able_to_set_stopped_merkle() {
 fn should_be_able_to_change_manager_with_root() {
 	new_test_ext().execute_with(|| {
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			true,
@@ -253,7 +253,7 @@ fn should_be_able_to_change_manager_with_root() {
 fn should_not_have_0_depth() {
 	new_test_ext().execute_with(|| {
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_err!(
 			MerkleTrees::create_tree(Origin::signed(1), false, hasher, backend, Some(0)),
 			Error::<Test>::InvalidTreeDepth,
@@ -266,7 +266,7 @@ fn should_have_min_depth() {
 	new_test_ext().execute_with(|| {
 		let key = key_bytes(1).to_vec();
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -287,7 +287,7 @@ fn should_have_min_depth() {
 fn should_have_max_depth() {
 	new_test_ext().execute_with(|| {
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -302,7 +302,7 @@ fn should_have_max_depth() {
 fn should_not_have_more_than_max_depth() {
 	new_test_ext().execute_with(|| {
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_err!(
 			MerkleTrees::create_tree(Origin::signed(1), false, hasher, backend, Some(33),),
 			Error::<Test>::InvalidTreeDepth,
@@ -322,7 +322,7 @@ fn should_have_correct_root_hash_after_insertion() {
 		let zero_h1 = zero_tree[1].to_vec();
 
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		let setup = Setup::new(hasher.clone(), backend.clone());
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
@@ -373,7 +373,7 @@ fn should_have_correct_root_hash() {
 		let zero_h0 = zero_tree[0].to_vec();
 
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		let setup = Setup::new(hasher.clone(), backend.clone());
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
@@ -416,7 +416,7 @@ fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 		let key1 = key_bytes(1).to_vec();
 		let key2 = key_bytes(2).to_vec();
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -455,7 +455,7 @@ fn should_not_verify_invalid_proof() {
 		let zero_h0 = zero_tree[0].to_vec();
 
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		let setup = Setup::new(hasher.clone(), backend.clone());
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
@@ -509,7 +509,7 @@ fn should_verify_proof_of_membership() {
 		let zero_h0 = zero_tree[0].to_vec();
 
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		let setup = Setup::new(hasher.clone(), backend.clone());
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
@@ -579,7 +579,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 		ftree.tree.add_leaves(vec![leaf], None);
 
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -633,7 +633,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		ftree.tree.add_leaves(vec![leaf], None);
 
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -692,7 +692,7 @@ fn should_not_verify_invalid_private_inputs() {
 		ftree.tree.add_leaves(vec![leaf], None);
 
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -753,7 +753,7 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 		ftree.tree.add_leaves(vec![leaf], None);
 
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -814,7 +814,7 @@ fn should_not_verify_invalid_transcript() {
 		ftree.tree.add_leaves(vec![leaf], None);
 
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -883,7 +883,7 @@ fn should_verify_zk_proof_of_membership() {
 		];
 		ftree.tree.add_leaves(keys.clone(), None);
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
@@ -936,7 +936,7 @@ fn should_verify_large_zk_proof_of_membership() {
 		ftree.tree.add_leaves(vec![leaf], None);
 
 		let hasher = HashFunction::PoseidonDefault;
-		let backend = Backend::Bulletproofs;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		assert_ok!(MerkleTrees::create_tree(
 			Origin::signed(1),
 			false,
