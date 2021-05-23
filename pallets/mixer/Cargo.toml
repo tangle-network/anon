@@ -12,11 +12,11 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 log = "0.4.8"
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
-pallet-balances = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-frame-support = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-frame-system = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-std = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-runtime = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+pallet-balances = { version = "3.0.0", default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+frame-support = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+frame-system = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-std = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-runtime = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
 merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
 webb-tokens = { path = "../tokens", default-features = false }
@@ -24,7 +24,7 @@ webb-tokens = { path = "../tokens", default-features = false }
 
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 merlin = { version = "2.0.0", default-features = false }
-frame-benchmarking = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master", optional = true }
+frame-benchmarking = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4", optional = true }
 webb-traits = { default-features = false, path = "../traits" }
 webb-currencies = { default-features = false, path = "../currencies" }
 
@@ -47,8 +47,8 @@ features = ["u64_backend", "alloc"]
 version = "0.1.5"
 
 [dev-dependencies]
-sp-core = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-io = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-core = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-io = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
 [features]
 default = ["std"]

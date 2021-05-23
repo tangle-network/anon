@@ -9,9 +9,6 @@ version = "3.0.0"
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
-[build-dependencies]
-wasm-builder-runner = { package = "substrate-wasm-builder-runner", version = "2.0.0" }
-
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
 default-features = false
@@ -25,40 +22,41 @@ serde = { features = ["derive"], optional = true, version = "1.0.101" }
 static_assertions = "1.1.0"
 
 # Substrate dependencies
-frame-benchmarking = { default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-frame-executive = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-frame-support = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-frame-system = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-frame-system-benchmarking = { default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-frame-system-rpc-runtime-api = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-pallet-aura = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-pallet-contracts = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-pallet-contracts-primitives = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-pallet-contracts-rpc-runtime-api = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
+frame-benchmarking = { default-features = false, optional = true, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+frame-executive = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+frame-support = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+frame-system = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+frame-system-benchmarking = { default-features = false, optional = true, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+frame-system-rpc-runtime-api = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+pallet-aura = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+pallet-balances = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+pallet-contracts = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+pallet-contracts-primitives = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+pallet-contracts-rpc-runtime-api = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
+pallet-dynamic-fee = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
 pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
 pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
 fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
 pallet-evm-precompile-simple = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
 
-pallet-grandpa = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-pallet-randomness-collective-flip = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-pallet-sudo = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-pallet-timestamp = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-pallet-transaction-payment = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-pallet-transaction-payment-rpc-runtime-api = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-api = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-block-builder = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-consensus-aura = { default-features = false, version = "0.9.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-core = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-inherents = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-offchain = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-session = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-std = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-transaction-pool = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-version = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
+pallet-grandpa = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+pallet-randomness-collective-flip = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+pallet-sudo = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+pallet-timestamp = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+pallet-transaction-payment = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+pallet-transaction-payment-rpc-runtime-api = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-api = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-block-builder = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-consensus-aura = { default-features = false, version = "0.9.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-core = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-inherents = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-offchain = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-runtime = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-session = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-std = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-transaction-pool = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-version = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
 merkle = { package = "pallet-merkle", default-features = false, path = "../pallets/merkle" }
 mixer = { package = "pallet-mixer", default-features = false, path = "../pallets/mixer" }
@@ -66,6 +64,9 @@ merkle-rpc = { package = "pallet-merkle-rpc", path = "../pallets/merkle/rpc", op
 webb-currencies = { default-features = false, path = "../pallets/currencies" }
 webb-traits = { default-features = false, path = "../pallets/traits" }
 webb-tokens = { default-features = false, path = "../pallets/tokens" }
+
+[build-dependencies]
+substrate-wasm-builder = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
 [features]
 default = ["std", "aura"]
@@ -118,6 +119,7 @@ std = [
     "webb-tokens/std",
 
     "fp-rpc/std",
+    "pallet-dynamic-fee/std",
     "pallet-ethereum/std",
     "pallet-evm/std",
     "pallet-evm-precompile-simple/std",
