@@ -185,7 +185,7 @@ dependencies = [
 [[package]]
 name = "ark-crypto-primitives"
 version = "0.2.0"
-source = "git+https://github.com/webb-tools/crypto-primitives?rev=775d807#775d80794952a7d259cacece55d639d121de7134"
+source = "git+https://github.com/webb-tools/crypto-primitives?rev=032dc9e#032dc9e2c70b54905ed5177c9371ddcb4425ae61"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -444,10 +444,10 @@ dependencies = [
 [[package]]
 name = "arkworks-gadgets"
 version = "0.1.0"
-source = "git+https://github.com/webb-tools/arkworks-gadgets?rev=c14affc#c14affc4168b382797fbe8c034968a82f567bb41"
+source = "git+https://github.com/webb-tools/arkworks-gadgets?rev=afc7c2d#afc7c2d123f8bbbb2b89736a948ca414f26f19e8"
 dependencies = [
  "ark-bls12-381",
- "ark-crypto-primitives 0.2.0 (git+https://github.com/webb-tools/crypto-primitives?rev=775d807)",
+ "ark-crypto-primitives 0.2.0 (git+https://github.com/webb-tools/crypto-primitives?rev=032dc9e)",
  "ark-ec",
  "ark-ed-on-bls12-381",
  "ark-ed-on-bn254",
@@ -4888,6 +4888,8 @@ dependencies = [
 name = "pallet-merkle"
 version = "3.0.0"
 dependencies = [
+ "ark-groth16",
+ "ark-serialize",
  "arkworks-gadgets",
  "bulletproofs-gadgets",
  "curve25519-dalek 3.1.0",
