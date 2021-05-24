@@ -5424,9 +5424,9 @@ dependencies = [
 
 [[package]]
 name = "psm"
-version = "0.1.12"
+version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3abf49e5417290756acfd26501536358560c4a5cc4a0934d390939acb3e7083a"
+checksum = "21ff0279b4a85e576b97e4a21d13e437ebcd56612706cde5d3f0d5c9399490c0"
 dependencies = [
  "cc",
 ]
@@ -9010,18 +9010,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.24"
+version = "1.0.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0f4a65597094d4483ddaed134f409b2cb7c1beccf25201a9f73c719254fa98e"
+checksum = "fa6f76457f59514c7eeb4e59d891395fab0b2fd1d40723ae737d64153392e9c6"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.24"
+version = "1.0.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7765189610d8241a44529806d6fd1f2e0a08734313a35d5b3a556f92b381f3c0"
+checksum = "8a36768c0fbf1bb15eca10defa29526bda730a2376c2ab4393ccfa16fb1a318d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -9705,9 +9705,9 @@ dependencies = [
 
 [[package]]
 name = "vcpkg"
-version = "0.2.12"
+version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbdbff6266a24120518560b5dc983096efb98462e51d0d68169895b237be3e5d"
+checksum = "025ce40a007e1907e58d5bc1a594def78e5573bb0b1160bc389634e8f12e4faa"
 
 [[package]]
 name = "vec_map"
@@ -10150,10 +10150,10 @@ dependencies = [
  "pallet-merkle",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=master)",
- "sp-io 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=master)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=master)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=master)",
+ "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
  "webb-currencies",
  "webb-tokens",
  "webb-traits",

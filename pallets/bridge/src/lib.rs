@@ -27,7 +27,6 @@ use sp_runtime::{
 use sp_std::prelude::*;
 use sp_runtime::traits::One;
 use sp_runtime::traits::AtLeast32Bit;
-
 // use weights::WeightInfo;
 pub mod types;
 pub use types::*;
@@ -55,7 +54,7 @@ pub mod pallet {
 		/// The overarching event type.
 		type Event: IsType<<Self as frame_system::Config>::Event> + From<Event<Self>>;
 		/// Currency type for taking deposits
-		type Currency: MultiCurrency<Self::AccountId> + ExtendedTokenSystem<Self::AccountId, CurrencyIdOf<Self>, BalanceOf<Self>>;
+		type Currency: MultiCurrency<<Self as frame_system::Config>::AccountId> + ExtendedTokenSystem<<Self as frame_system::Config>::AccountId, CurrencyIdOf<Self>, BalanceOf<Self>>;
 		/// The overarching merkle tree trait
 		type ChainId: Encode + Decode + Parameter + AtLeast32Bit + Default + Copy;
 		/// Scalar type for elements of trees
@@ -67,9 +66,9 @@ pub mod pallet {
 		type NativeCurrencyId: Get<CurrencyIdOf<Self>>;
 		/// Default admin key
 		#[pallet::constant]
-		type DefaultAdmin: Get<Self::AccountId>;
+		type DefaultAdmin: Get<<Self as frame_system::Config>::AccountId>;
 		/// The overarching merkle tree trait
-		type Tree: TreeTrait<Self::AccountId, Self::BlockNumber, Self::TreeId>;
+		type Tree: TreeTrait<<Self as frame_system::Config>::AccountId, <Self as frame_system::Config>::BlockNumber, Self::TreeId>;
 	}
 
 	/// The map of merkle tree ids to their anchor metadata
@@ -128,18 +127,18 @@ pub mod pallet {
 	/// This account that can stop/start operations of the bridge
 	#[pallet::storage]
 	#[pallet::getter(fn admin)]
-	pub type Admin<T: Config> = StorageValue<_, T::AccountId, ValueQuery>;
+	pub type Admin<T: Config> = StorageValue<_, <T as frame_system::Config>::AccountId, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	#[pallet::metadata(T::AccountId = "AccountId", T::TreeId = "TreeId", BalanceOf<T> = "Balance")]
+	#[pallet::metadata(<T as frame_system::Config>::AccountId = "AccountId", T::TreeId = "TreeId", BalanceOf<T> = "Balance")]
 	pub enum Event<T: Config> {
 		/// New deposit added to the specific bridge anchor
 		Deposit(
 			/// Id of the anchor
 			T::TreeId,
 			/// Account id of the sender
-			T::AccountId,
+			<T as frame_system::Config>::AccountId,
 			/// Deposit size
 			BalanceOf<T>,
 		),
@@ -148,11 +147,11 @@ pub mod pallet {
 			/// Id of the anchor
 			T::TreeId,
 			/// Account id of the sender
-			T::AccountId,
+			<T as frame_system::Config>::AccountId,
 			/// Account id of the recipient
-			T::AccountId,
+			<T as frame_system::Config>::AccountId,
 			/// Account id of the relayer
-			T::AccountId,
+			<T as frame_system::Config>::AccountId,
 			/// Merkle root
 			T::Scalar,
 		),
@@ -310,7 +309,7 @@ pub mod pallet {
 		/// - Base weight: 7_000_000
 		/// - DB weights: 1 read, 1 write
 		#[pallet::weight(5_000_000)]
-		pub fn transfer_admin(origin: OriginFor<T>, to: T::AccountId) -> DispatchResultWithPostInfo {
+		pub fn transfer_admin(origin: OriginFor<T>, to: <T as frame_system::Config>::AccountId) -> DispatchResultWithPostInfo {
 			// Ensures that the caller is the root or the current admin
 			ensure_admin(origin, &Self::admin())?;
 			// Updating the admin
@@ -519,7 +518,7 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-	pub fn account_id() -> T::AccountId {
+	pub fn account_id() -> <T as frame_system::Config>::AccountId {
 		T::PalletId::get().into_account()
 	}
 
@@ -544,7 +543,7 @@ impl<T: Config> Pallet<T> {
 }
 
 impl<T: Config> PrivacyBridgeSystem for Pallet<T> {
-	type AccountId = T::AccountId;
+	type AccountId = <T as frame_system::Config>::AccountId;
 	type CurrencyId = CurrencyIdOf<T>;
 	type Balance = BalanceOf<T>;
 	type TreeId = T::TreeId;
@@ -589,7 +588,7 @@ impl<T: Config> PrivacyBridgeSystem for Pallet<T> {
 }
 
 impl<T: Config> GovernableBridgeSystem for Pallet<T> {
-	type AccountId = T::AccountId;
+	type AccountId = <T as frame_system::Config>::AccountId;
 	type CurrencyId = CurrencyIdOf<T>;
 	type Balance = BalanceOf<T>;
 	type TreeId = T::TreeId;
@@ -609,6 +608,9 @@ impl<T: Config> GovernableBridgeSystem for Pallet<T> {
 		-> Result<(), dispatch::DispatchError> { Ok(()) }
 	fn set_multi_party_key(anchor_id: Self::TreeId, new_key: Self::DistributedPublicKey, sig: Self::Signature)
 		-> Result<(), dispatch::DispatchError> { Ok(()) }
+	fn validate_signature(sig: Self::Signature) -> bool {
+		true
+	}
 	fn register(account_id: Self::AccountId, share: Self::IndividualKeyShare)
 		-> Result<(), dispatch::DispatchError> { Ok(()) }
 }

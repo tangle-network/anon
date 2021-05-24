@@ -24,7 +24,7 @@ pub struct WithdrawProof<T: Config> {
 	/// The mixer id this withdraw proof corresponds to
 	mixer_id: T::TreeId,
 	/// The cached block for the cached root being proven against
-	cached_block: T::BlockNumber,
+	cached_block: <T as frame_system::Config>::BlockNumber,
 	/// The cached root being proven against
 	cached_root: ScalarData,
 	/// The individual scalar commitments (to the randomness and nullifier)
@@ -38,23 +38,23 @@ pub struct WithdrawProof<T: Config> {
 	/// The scalar commitments to merkle proof path elements
 	proof_commitments: Vec<Commitment>,
 	/// The recipient to withdraw amount of currency to
-	recipient: Option<T::AccountId>,
+	recipient: Option<<T as frame_system::Config>::AccountId>,
 	/// The recipient to withdraw amount of currency to
-	relayer: Option<T::AccountId>,
+	relayer: Option<<T as frame_system::Config>::AccountId>,
 }
 
 impl<T: Config> WithdrawProof<T> {
 	pub fn new(
 		mixer_id: T::TreeId,
-		cached_block: T::BlockNumber,
+		cached_block: <T as frame_system::Config>::BlockNumber,
 		cached_root: ScalarData,
 		comms: Vec<Commitment>,
 		nullifier_hash: ScalarData,
 		proof_bytes: Vec<u8>,
 		leaf_index_commitments: Vec<Commitment>,
 		proof_commitments: Vec<Commitment>,
-		recipient: Option<T::AccountId>,
-		relayer: Option<T::AccountId>,
+		recipient: Option<<T as frame_system::Config>::AccountId>,
+		relayer: Option<<T as frame_system::Config>::AccountId>,
 	) -> Self {
 		Self {
 			mixer_id,

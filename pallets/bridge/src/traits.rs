@@ -51,6 +51,33 @@ pub trait GovernableBridgeSystem {
 		-> Result<(), dispatch::DispatchError>;
 	fn set_multi_party_key(anchor_id: Self::TreeId, new_key: Self::DistributedPublicKey, sig: Self::Signature)
 		-> Result<(), dispatch::DispatchError>;
+	fn validate_signature(sig: Self::Signature) -> bool;
+	fn register(account_id: Self::AccountId, share: Self::IndividualKeyShare)
+		-> Result<(), dispatch::DispatchError>;
+}
+
+pub trait TrustlessBridgeSystem {
+	type AccountId;
+	type CurrencyId;
+	type Balance;
+	type TreeId;
+	type ChainId;
+	type Scalar;
+	type IndividualKeyShare;
+	type DistributedPublicKey;
+	type InclusionProof;
+
+	fn create_new(account_id: Self::AccountId, currency_id: Self::CurrencyId, size: Self::Balance, proof: Self::InclusionProof)
+		-> Result<(), dispatch::DispatchError>;
+	fn add_anchor_root(anchor_id: Self::TreeId, chain_id: Self::ChainId, root: Self::Scalar, proof: Self::InclusionProof)
+		-> Result<(), dispatch::DispatchError>;
+	fn remove_anchor_root(anchor_id: Self::TreeId, chain_id: Self::ChainId, proof: Self::InclusionProof)
+		-> Result<(), dispatch::DispatchError>;
+	fn set_fee(anchor_id: Self::TreeId, fee: Self::Balance, proof: Self::InclusionProof)
+		-> Result<(), dispatch::DispatchError>;
+	fn set_multi_party_key(anchor_id: Self::TreeId, new_key: Self::DistributedPublicKey, proof: Self::InclusionProof)
+		-> Result<(), dispatch::DispatchError>;
+	fn validate_proof(proof: Self::InclusionProof) -> bool;
 	fn register(account_id: Self::AccountId, share: Self::IndividualKeyShare)
 		-> Result<(), dispatch::DispatchError>;
 }
