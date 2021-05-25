@@ -764,9 +764,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.67"
+version = "1.0.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3c69b077ad434294d3ce9f1f6143a2a4b89a8a2d54ef813d85003a4fd1137fd"
+checksum = "4a72c244c1ff497a746a7e1fb3d14bd08420ecda70c8f25c7112f2781652d787"
 dependencies = [
  "jobserver",
 ]
@@ -1431,9 +1431,9 @@ checksum = "68b91989ae21441195d7d9b9993a2f9295c7e1a8c96255d8b729accddc124797"
 
 [[package]]
 name = "erased-serde"
-version = "0.3.13"
+version = "0.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0465971a8cc1fa2455c8465aaa377131e1f1cf4983280f474a13e68793aa770c"
+checksum = "cc8c178faa8744cd7a5d7462ce76140a98f71011926184780097ed807817372e"
 dependencies = [
  "serde",
 ]
@@ -1619,7 +1619,7 @@ dependencies = [
 [[package]]
 name = "fc-consensus"
 version = "1.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#a8ccf30ed19cbf862e3885379982002c6db2bdbf"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#8b50b93cff809b153c226166e11072287489302a"
 dependencies = [
  "async-trait",
  "derive_more",
@@ -1644,7 +1644,7 @@ dependencies = [
 [[package]]
 name = "fc-db"
 version = "1.0.0"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#a8ccf30ed19cbf862e3885379982002c6db2bdbf"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#8b50b93cff809b153c226166e11072287489302a"
 dependencies = [
  "kvdb",
  "kvdb-rocksdb",
@@ -1658,7 +1658,7 @@ dependencies = [
 [[package]]
 name = "fc-mapping-sync"
 version = "1.1.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#a8ccf30ed19cbf862e3885379982002c6db2bdbf"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#8b50b93cff809b153c226166e11072287489302a"
 dependencies = [
  "fc-consensus",
  "fc-db",
@@ -1676,7 +1676,7 @@ dependencies = [
 [[package]]
 name = "fc-rpc"
 version = "2.0.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#a8ccf30ed19cbf862e3885379982002c6db2bdbf"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#8b50b93cff809b153c226166e11072287489302a"
 dependencies = [
  "ethereum",
  "ethereum-types",
@@ -1717,7 +1717,7 @@ dependencies = [
 [[package]]
 name = "fc-rpc-core"
 version = "1.1.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#a8ccf30ed19cbf862e3885379982002c6db2bdbf"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#8b50b93cff809b153c226166e11072287489302a"
 dependencies = [
  "ethereum-types",
  "jsonrpc-core 15.1.0",
@@ -1821,7 +1821,7 @@ dependencies = [
 [[package]]
 name = "fp-consensus"
 version = "1.0.0"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#a8ccf30ed19cbf862e3885379982002c6db2bdbf"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#8b50b93cff809b153c226166e11072287489302a"
 dependencies = [
  "ethereum",
  "parity-scale-codec 2.1.1",
@@ -1835,7 +1835,7 @@ dependencies = [
 [[package]]
 name = "fp-evm"
 version = "1.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#a8ccf30ed19cbf862e3885379982002c6db2bdbf"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#8b50b93cff809b153c226166e11072287489302a"
 dependencies = [
  "evm",
  "impl-trait-for-tuples 0.1.3",
@@ -1848,7 +1848,7 @@ dependencies = [
 [[package]]
 name = "fp-rpc"
 version = "1.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#a8ccf30ed19cbf862e3885379982002c6db2bdbf"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#8b50b93cff809b153c226166e11072287489302a"
 dependencies = [
  "ethereum",
  "ethereum-types",
@@ -1864,7 +1864,7 @@ dependencies = [
 [[package]]
 name = "fp-storage"
 version = "1.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#a8ccf30ed19cbf862e3885379982002c6db2bdbf"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#8b50b93cff809b153c226166e11072287489302a"
 dependencies = [
  "ethereum",
  "ethereum-types",
@@ -3962,9 +3962,9 @@ checksum = "b16bd47d9e329435e309c58469fe0791c2d0d1ba96ec0954152a5ae2b04387dc"
 
 [[package]]
 name = "memmap2"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "397d1a6d6d0563c0f5462bbdae662cf6c784edf5e828e40c7257f85d82bf56dd"
+checksum = "723e3ebdcdc5c023db1df315364573789f8857c11b631a2fdfad7c00f5c046b4"
 dependencies = [
  "libc",
 ]
@@ -4525,7 +4525,7 @@ dependencies = [
 [[package]]
 name = "pallet-dynamic-fee"
 version = "1.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#a8ccf30ed19cbf862e3885379982002c6db2bdbf"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#8b50b93cff809b153c226166e11072287489302a"
 dependencies = [
  "async-trait",
  "frame-support",
@@ -4542,7 +4542,7 @@ dependencies = [
 [[package]]
 name = "pallet-ethereum"
 version = "1.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#a8ccf30ed19cbf862e3885379982002c6db2bdbf"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#8b50b93cff809b153c226166e11072287489302a"
 dependencies = [
  "ethereum",
  "ethereum-types",
@@ -4570,7 +4570,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm"
 version = "3.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#a8ccf30ed19cbf862e3885379982002c6db2bdbf"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#8b50b93cff809b153c226166e11072287489302a"
 dependencies = [
  "evm",
  "evm-gasometer",
@@ -4595,7 +4595,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-simple"
 version = "1.0.1-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#a8ccf30ed19cbf862e3885379982002c6db2bdbf"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#8b50b93cff809b153c226166e11072287489302a"
 dependencies = [
  "evm",
  "fp-evm",
