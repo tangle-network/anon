@@ -1,5 +1,19 @@
 use super::*;
 use crate::{mock::*, utils::keys::slice_to_bytes_32};
+use ark_serialize::CanonicalSerialize;
+use arkworks_gadgets::{
+	ark_std::UniformRand,
+	prelude::{
+		ark_bls12_381::{Bls12_381, Fr as Bls381},
+		ark_ff::{to_bytes, BigInteger, PrimeField},
+		ark_groth16::Groth16,
+		webb_crypto_primitives::{
+			crh::{poseidon::PoseidonParameters, CRH},
+			to_field_elements, SNARK,
+		},
+	},
+	setup::mixer::{prove_groth16, setup_arbitrary_data, setup_circuit, setup_leaf, setup_params_5, setup_tree},
+};
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use bulletproofs_gadgets::{
 	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
@@ -602,7 +616,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 		let comms: Vec<ScalarBytes> = comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		let leaf_index_comms: Vec<ScalarBytes> = leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
-		assert_ok!(MerkleTrees::verify_zk_bulletproofs(
+		assert_ok!(MerkleTrees::verify_zk(
 			0,
 			0,
 			root,
@@ -659,7 +673,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		let leaf_index_comms: Vec<ScalarBytes> = leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		assert_err!(
-			MerkleTrees::verify_zk_bulletproofs(
+			MerkleTrees::verify_zk(
 				0,
 				0,
 				root,
@@ -720,7 +734,7 @@ fn should_not_verify_invalid_private_inputs() {
 		comms.push(RistrettoPoint::random(&mut rng).compress().to_bytes().to_vec());
 
 		assert_err!(
-			MerkleTrees::verify_zk_bulletproofs(
+			MerkleTrees::verify_zk(
 				0,
 				0,
 				root,
@@ -781,7 +795,7 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 		leaf_index_comms[0] = RistrettoPoint::random(&mut rng).compress().to_bytes().to_vec();
 		proof_comms[0] = RistrettoPoint::random(&mut rng).compress().to_bytes().to_vec();
 		assert_err!(
-			MerkleTrees::verify_zk_bulletproofs(
+			MerkleTrees::verify_zk(
 				0,
 				0,
 				root,
@@ -838,7 +852,7 @@ fn should_not_verify_invalid_transcript() {
 		let leaf_index_comms: Vec<ScalarBytes> = leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		assert_err!(
-			MerkleTrees::verify_zk_bulletproofs(
+			MerkleTrees::verify_zk(
 				0,
 				0,
 				root,
@@ -907,7 +921,7 @@ fn should_verify_zk_proof_of_membership() {
 		let comms: Vec<ScalarBytes> = comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		let leaf_index_comms: Vec<ScalarBytes> = leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
-		assert_ok!(MerkleTrees::verify_zk_bulletproofs(
+		assert_ok!(MerkleTrees::verify_zk(
 			0,
 			0,
 			root,
@@ -959,7 +973,7 @@ fn should_verify_large_zk_proof_of_membership() {
 		let comms: Vec<ScalarBytes> = comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		let leaf_index_comms: Vec<ScalarBytes> = leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
-		assert_ok!(MerkleTrees::verify_zk_bulletproofs(
+		assert_ok!(MerkleTrees::verify_zk(
 			0,
 			0,
 			root,
@@ -970,6 +984,60 @@ fn should_verify_large_zk_proof_of_membership() {
 			proof_comms,
 			key_bytes(0).to_vec(),
 			key_bytes(0).to_vec(),
+		));
+	});
+}
+
+#[test]
+fn should_verify_simple_arkworks_zk_proof_of_membership() {
+	new_test_ext().execute_with(|| {
+		let mut rng = OsRng::default();
+		let chain_id = Bls381::from(0u8);
+		let recipient = Bls381::from(0u8);
+		let relayer = Bls381::from(0u8);
+		let fee = Bls381::from(0u8);
+		let leaves = Vec::new();
+		let roots = Vec::new();
+		let (circuit, leaf, nullifier, root, _) =
+			setup_circuit(chain_id, &leaves, 0, &roots, recipient, relayer, fee, &mut rng);
+
+		let leaf_bytes = to_bytes![leaf].unwrap();
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Arkworks(Curve::Bls381, Snark::Groth16);
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			hasher,
+			backend,
+			Some(30),
+		));
+
+		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![leaf_bytes]));
+
+		let other_root = to_bytes![root].unwrap();
+		let root_bytes = MerkleTrees::get_merkle_root(0).unwrap();
+		assert_eq!(other_root, root_bytes);
+		let recipient_bytes = to_bytes![recipient].unwrap();
+		let relayer_bytes = to_bytes![relayer].unwrap();
+		let nullifier_bytes = to_bytes![nullifier].unwrap();
+
+		let tree = MerkleTrees::get_tree(0).unwrap();
+		let proving_key = tree.setup.get_default_proving_key().unwrap();
+		let proof = prove_groth16(&proving_key, circuit.clone(), &mut rng);
+		let mut proof_bytes = vec![0u8; proof.serialized_size()];
+		proof.serialize(&mut proof_bytes[..]).unwrap();
+
+		assert_ok!(MerkleTrees::verify_zk(
+			0,
+			0,
+			root_bytes,
+			Vec::new(),
+			nullifier_bytes,
+			proof_bytes,
+			Vec::new(),
+			Vec::new(),
+			recipient_bytes,
+			relayer_bytes,
 		));
 	});
 }

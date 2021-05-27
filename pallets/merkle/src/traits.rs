@@ -41,7 +41,7 @@ pub trait Tree<AccountId, BlockNumber, TreeId> {
 	/// Verify membership proof
 	fn verify(id: TreeId, leaf: ScalarBytes, path: Vec<(bool, ScalarBytes)>) -> Result<(), dispatch::DispatchError>;
 	/// Verify zero-knowladge membership proof
-	fn verify_zk_bulletproofs(
+	fn verify_zk(
 		tree_id: TreeId,
 		cached_block: BlockNumber,
 		cached_root: ScalarBytes,

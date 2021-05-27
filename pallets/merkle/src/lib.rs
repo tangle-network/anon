@@ -551,7 +551,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		);
 
 		for data in &members {
-			Self::add_leaf(&mut tree, &data);
+			Self::add_leaf(&mut tree, &data)?;
 			if tree.should_store_leaves {
 				Leaves::<T>::insert(id, tree.leaf_count, data);
 			}
@@ -602,7 +602,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		Ok(())
 	}
 
-	fn verify_zk_bulletproofs(
+	fn verify_zk(
 		tree_id: T::TreeId,
 		cached_block: T::BlockNumber,
 		cached_root: ScalarBytes,
@@ -615,10 +615,6 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		relayer: ScalarBytes,
 	) -> Result<(), DispatchError> {
 		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
-		ensure!(
-			tree.edge_nodes.len() == proof_commitments.len(),
-			Error::<T>::InvalidPathLength
-		);
 		// Ensure that root being checked against is in the cache
 		let old_roots = Self::cached_roots(cached_block, tree_id);
 		ensure!(

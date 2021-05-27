@@ -1,13 +1,14 @@
 use crate::utils::keys::{slice_to_bytes_32, ScalarBytes};
 
-use arkworks_gadgets::prelude::ark_ff::{to_bytes, ToConstraintField};
+use arkworks_gadgets::prelude::ark_ff::to_bytes;
 
+use ark_serialize::Read;
 use arkworks_gadgets::{ark_std::UniformRand, prelude::webb_crypto_primitives::to_field_elements};
 
-use ark_groth16::{Groth16, Proof, VerifyingKey};
-use ark_serialize::{CanonicalDeserialize, Read};
+use ark_groth16::{Proof, ProvingKey};
+use ark_serialize::CanonicalDeserialize;
 use arkworks_gadgets::{
-	merkle_tree::{gen_empty_hashes, Path},
+	merkle_tree::gen_empty_hashes,
 	prelude::{
 		ark_bls12_381::{Bls12_381, Fr as Bls381},
 		webb_crypto_primitives::crh::{poseidon::PoseidonParameters, CRH},
@@ -38,10 +39,10 @@ use sp_std::prelude::*;
 lazy_static! {
 	static ref DEFAULT_POSEIDON_HASHER: Poseidon = default_bulletproofs_poseidon_hasher();
 	static ref POSEIDON_PARAMETERS: PoseidonParameters<Bls381> = setup_params_3::<Bls381>();
-	static ref VERIFIER_KEY: VerifyingKey<Bls12_381> = {
+	static ref PROVING_KEY: ProvingKey<Bls12_381> = {
 		let mut rng = OsRng::default();
-		let (_, vk) = setup_groth16(&mut rng);
-		vk
+		let (pk, _) = setup_groth16(&mut rng);
+		pk
 	};
 }
 
@@ -146,9 +147,16 @@ impl Setup {
 		}
 	}
 
-	pub fn get_bulletproofs_poseidon(&self) -> Result<&Poseidon, SetupError> {
+	pub fn get_default_bulletproofs_poseidon(&self) -> Result<&Poseidon, SetupError> {
 		match (&self.backend, &self.hasher) {
 			(Backend::Bulletproofs(Curve::Curve25519), HashFunction::PoseidonDefault) => Ok(&DEFAULT_POSEIDON_HASHER),
+			_ => Err(SetupError::Unimplemented),
+		}
+	}
+
+	pub fn get_default_proving_key(&self) -> Result<&ProvingKey<Bls12_381>, SetupError> {
+		match (&self.backend, &self.hasher) {
+			(Backend::Arkworks(Curve::Bls381, Snark::Groth16), _) => Ok(&PROVING_KEY),
 			_ => Err(SetupError::Unimplemented),
 		}
 	}
@@ -167,7 +175,7 @@ impl Setup {
 			},
 			Backend::Arkworks(Curve::Bls381, _) => match self.hasher {
 				HashFunction::PoseidonDefault => {
-					let res = gen_empty_hashes::<MixerTreeConfig>(&POSEIDON_PARAMETERS, &POSEIDON_PARAMETERS)
+					let res = gen_empty_hashes::<MixerTreeConfig>(&(), &POSEIDON_PARAMETERS)
 						.map_err(|_| SetupError::ZeroTreeGenFailed)?;
 					let zero_tree: Vec<ScalarBytes> = res
 						.iter()
@@ -185,18 +193,18 @@ impl Setup {
 		&self,
 		depth: usize,
 		cached_root: ScalarBytes,
-		comms: Vec<ScalarBytes>,
+		commitments: Vec<ScalarBytes>,
 		nullifier_hash: ScalarBytes,
 		proof_bytes: Vec<u8>,
 		leaf_index_commitments: Vec<ScalarBytes>,
 		proof_commitments: Vec<ScalarBytes>,
-		recipient: ScalarBytes,
-		relayer: ScalarBytes,
+		recipient_bytes: ScalarBytes,
+		relayer_bytes: ScalarBytes,
 	) -> Result<(), SetupError> {
 		match self.backend {
 			Backend::Bulletproofs(Curve::Curve25519) => {
 				let cached_root_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&cached_root));
-				let comms_c = comms.iter().map(|x| CompressedRistretto::from_slice(x)).collect();
+				let comms_c = commitments.iter().map(|x| CompressedRistretto::from_slice(x)).collect();
 				let nullifier_hash_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&nullifier_hash));
 				let leaf_index_commitments_c = leaf_index_commitments
 					.iter()
@@ -206,8 +214,8 @@ impl Setup {
 					.iter()
 					.map(|x| CompressedRistretto::from_slice(x))
 					.collect();
-				let recipient_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&recipient));
-				let relayer_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&relayer));
+				let recipient_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&recipient_bytes));
+				let relayer_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&relayer_bytes));
 				self.verify_bulletproofs_poseidon(
 					depth,
 					cached_root_s,
@@ -221,28 +229,31 @@ impl Setup {
 				)
 			}
 			Backend::Arkworks(Curve::Bls381, Snark::Groth16) => {
-				let mut rng = OsRng::default();
 				let nullifier_els =
 					to_field_elements::<Bls381>(&nullifier_hash).map_err(|_| SetupError::InvalidPublicInputs)?;
 				let root_els =
 					to_field_elements::<Bls381>(&cached_root).map_err(|_| SetupError::InvalidPublicInputs)?;
-				let chain_id = Bls381::rand(&mut rng);
-				let recipient = Bls381::rand(&mut rng);
-				let relayer = Bls381::rand(&mut rng);
-				let fee = Bls381::rand(&mut rng);
+				let recipient_els =
+					to_field_elements::<Bls381>(&recipient_bytes).map_err(|_| SetupError::InvalidPublicInputs)?;
+				let relayer_els =
+					to_field_elements::<Bls381>(&relayer_bytes).map_err(|_| SetupError::InvalidPublicInputs)?;
+				let chain_id = Bls381::from(0u8);
+				let fee = Bls381::from(0u8);
 
 				let nullifier = nullifier_els.get(0).ok_or(SetupError::InvalidPublicInputs)?;
 				let root = root_els.get(0).ok_or(SetupError::InvalidPublicInputs)?;
+				let recipient = recipient_els.get(0).ok_or(SetupError::InvalidPublicInputs)?;
+				let relayer = relayer_els.get(0).ok_or(SetupError::InvalidPublicInputs)?;
 				let roots = vec![*root];
 
-				let pinp = get_public_inputs(chain_id, *nullifier, roots, *root, recipient, relayer, fee);
+				let pinp = get_public_inputs(chain_id, *nullifier, roots, *root, *recipient, *relayer, fee);
 				let proof = Proof::<Bls12_381>::deserialize(&proof_bytes[..]).map_err(|_| SetupError::InvalidProof)?;
-				let res = verify_groth16(&VERIFIER_KEY, &pinp, &proof);
+				let res = verify_groth16(&PROVING_KEY.vk, &pinp, &proof);
 				if !res {
 					return Err(SetupError::VerificationFailed);
 				}
 
-				return Err(SetupError::Unimplemented);
+				Ok(())
 			}
 			_ => return Err(SetupError::Unimplemented),
 		}
@@ -306,7 +317,7 @@ impl Setup {
 
 		let num_statics = 4;
 		let statics = allocate_statics_for_verifier(&mut verifier, num_statics, &pc_gens);
-		let hasher = self.get_bulletproofs_poseidon()?;
+		let hasher = self.get_default_bulletproofs_poseidon()?;
 		let gadget_res = mixer_verif_gadget(
 			&mut verifier,
 			&recipient,
