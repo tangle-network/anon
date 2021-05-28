@@ -185,7 +185,7 @@ dependencies = [
 [[package]]
 name = "ark-crypto-primitives"
 version = "0.2.0"
-source = "git+https://github.com/webb-tools/crypto-primitives?rev=032dc9e#032dc9e2c70b54905ed5177c9371ddcb4425ae61"
+source = "git+https://github.com/webb-tools/crypto-primitives?rev=e8cd8bf#e8cd8bfe0ac13d4d308b5ea94833bcdad1ad1a9e"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -444,10 +444,10 @@ dependencies = [
 [[package]]
 name = "arkworks-gadgets"
 version = "0.1.0"
-source = "git+https://github.com/webb-tools/arkworks-gadgets?rev=afc7c2d#afc7c2d123f8bbbb2b89736a948ca414f26f19e8"
+source = "git+https://github.com/webb-tools/arkworks-gadgets?rev=b70ce6c#b70ce6c20923475fa445741dc6461c1ed87d9fae"
 dependencies = [
  "ark-bls12-381",
- "ark-crypto-primitives 0.2.0 (git+https://github.com/webb-tools/crypto-primitives?rev=032dc9e)",
+ "ark-crypto-primitives 0.2.0 (git+https://github.com/webb-tools/crypto-primitives?rev=e8cd8bf)",
  "ark-ec",
  "ark-ed-on-bls12-381",
  "ark-ed-on-bn254",

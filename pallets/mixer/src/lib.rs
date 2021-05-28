@@ -295,7 +295,7 @@ pub mod pallet {
 			// check if the nullifier has been used
 			T::Tree::has_used_nullifier(withdraw_proof.mixer_id.into(), withdraw_proof.nullifier_hash.clone())?;
 			// Verify the zero-knowledge proof of membership provided
-			T::Tree::verify_zk_bulletproofs(
+			T::Tree::verify_zk(
 				withdraw_proof.mixer_id.into(),
 				withdraw_proof.cached_block,
 				withdraw_proof.cached_root.clone(),
