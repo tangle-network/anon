@@ -37,15 +37,10 @@ type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 
 pub type ConsensusResult = (
-	sc_consensus_aura::AuraBlockImport<
+	FrontierBlockImport<
 		Block,
+		sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
 		FullClient,
-		FrontierBlockImport<
-			Block,
-			sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
-			FullClient,
-		>,
-		AuraPair,
 	>,
 	sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
 );
@@ -143,9 +138,6 @@ pub fn new_partial(
 		frontier_backend.clone(),
 	);
 
-	let aura_block_import = sc_consensus_aura::AuraBlockImport::<_, _, _, AuraPair>::new(
-		frontier_block_import, client.clone(),
-	);
 	let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
 	let raw_slot_duration = slot_duration.slot_duration();
 
@@ -153,7 +145,7 @@ pub fn new_partial(
 
 	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(
 		ImportQueueParams {
-			block_import: aura_block_import.clone(),
+			block_import: frontier_block_import.clone(),
 			justification_import: Some(Box::new(grandpa_block_import.clone())),
 			client: client.clone(),
 			create_inherent_data_providers: move |_, ()| async move {
@@ -185,7 +177,7 @@ pub fn new_partial(
 		select_chain,
 		transaction_pool,
 		other: (
-			(aura_block_import, grandpa_link),
+			(frontier_block_import, grandpa_link),
 			pending_transactions,
 			filter_pool,
 			frontier_backend,
@@ -215,7 +207,7 @@ pub fn new_full(mut config: Configuration, cli: &Cli) -> Result<TaskManager, Ser
 		.extra_sets
 		.push(sc_finality_grandpa::grandpa_peers_set_config());
 
-	let (network, network_status_sinks, system_rpc_tx, network_starter) =
+	let (network, system_rpc_tx, network_starter) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &config,
 			client: client.clone(),
@@ -308,7 +300,6 @@ pub fn new_full(mut config: Configuration, cli: &Cli) -> Result<TaskManager, Ser
 		task_manager: &mut task_manager,
 		on_demand: None,
 		remote_blockchain: None,
-		network_status_sinks: network_status_sinks.clone(),
 		system_rpc_tx,
 		telemetry: telemetry.as_mut(),
 	})?;
@@ -396,13 +387,12 @@ pub fn new_full(mut config: Configuration, cli: &Cli) -> Result<TaskManager, Ser
 	};
 
 	let config = sc_finality_grandpa::Config {
-		// FIXME #1578 make this available through chainspec
-		gossip_duration: Duration::from_millis(333),
+		gossip_duration: std::time::Duration::from_millis(333),
 		justification_period: 512,
 		name: Some(name),
 		observer_enabled: false,
 		keystore,
-		is_authority: role.is_authority(),
+		local_role: role.clone(),
 		telemetry: telemetry.as_ref().map(|x| x.handle()),
 	};
 
@@ -473,14 +463,11 @@ pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
 		telemetry.as_ref().map(|x| x.handle()),
 	)?;
 
-	let aura_block_import =
-		sc_consensus_aura::AuraBlockImport::<_, _, _, AuraPair>::new(grandpa_block_import.clone(), client.clone());
-
 	let slot_duration = sc_consensus_aura::slot_duration(&*client)?.slot_duration();
 
 	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(
 		ImportQueueParams {
-			block_import: aura_block_import.clone(),
+			block_import: grandpa_block_import.clone(),
 			justification_import: Some(Box::new(grandpa_block_import.clone())),
 			client: client.clone(),
 			create_inherent_data_providers: move |_, ()| async move {
@@ -502,7 +489,7 @@ pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
 		},
 	)?;
 
-	let (network, network_status_sinks, system_rpc_tx, network_starter) =
+	let (network, system_rpc_tx, network_starter) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &config,
 			client: client.clone(),
@@ -537,7 +524,6 @@ pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
 		keystore: keystore_container.sync_keystore(),
 		backend,
 		network,
-		network_status_sinks,
 		system_rpc_tx,
 		telemetry: telemetry.as_mut(),
 	})?;
