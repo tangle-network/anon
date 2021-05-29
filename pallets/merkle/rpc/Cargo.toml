@@ -11,10 +11,10 @@ jsonrpc-derive = "15"
 sc-rpc = "3.0.0"
 
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
-sp-core = { version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
-sp-api = { version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
-sp-blockchain = { version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
-sp-runtime = { version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-core = { version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up" }
+sp-api = { version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up" }
+sp-blockchain = { version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up" }
+sp-runtime = { version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up" }
 
 merkle = { package = "pallet-merkle", path = "../", default-features = false }
 
