@@ -98,7 +98,7 @@ use sp_runtime::traits::{AtLeast32Bit, One};
 use sp_std::prelude::*;
 pub use traits::Tree;
 use utils::{
-	hasher::{Backend, Curve, HashFunction, Setup, SetupError, Snark},
+	hasher::{Backend, Curve, HashFunction, Setup, SetupError},
 	keys::ScalarBytes,
 	permissions::ensure_admin,
 };

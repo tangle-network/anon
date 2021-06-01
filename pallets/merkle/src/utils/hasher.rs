@@ -1,19 +1,20 @@
 use crate::utils::keys::{slice_to_bytes_32, ScalarBytes};
-
-use arkworks_gadgets::prelude::ark_ff::to_bytes;
-
-use ark_serialize::Read;
-use arkworks_gadgets::{ark_std::UniformRand, prelude::webb_crypto_primitives::to_field_elements};
-
 use ark_groth16::{Proof, ProvingKey};
 use ark_serialize::CanonicalDeserialize;
 use arkworks_gadgets::{
 	merkle_tree::gen_empty_hashes,
 	prelude::{
 		ark_bls12_381::{Bls12_381, Fr as Bls381},
-		webb_crypto_primitives::crh::{poseidon::PoseidonParameters, CRH},
+		ark_ff::to_bytes,
+		webb_crypto_primitives::{
+			crh::{poseidon::PoseidonParameters, CRH},
+			to_field_elements,
+		},
 	},
-	setup::mixer::{get_public_inputs, setup_groth16, setup_params_3, verify_groth16, MixerTreeConfig, PoseidonCRH3},
+	setup::{
+		common::{setup_params_3, verify_groth16, PoseidonCRH3, TreeConfig},
+		mixer::{get_public_inputs, setup_random_groth16},
+	},
 };
 use bulletproofs::{
 	r1cs::{R1CSProof, Verifier},
@@ -41,7 +42,7 @@ lazy_static! {
 	static ref POSEIDON_PARAMETERS: PoseidonParameters<Bls381> = setup_params_3::<Bls381>();
 	static ref PROVING_KEY: ProvingKey<Bls12_381> = {
 		let mut rng = OsRng::default();
-		let (pk, _) = setup_groth16(&mut rng);
+		let (pk, _) = setup_random_groth16(&mut rng);
 		pk
 	};
 }
@@ -175,7 +176,7 @@ impl Setup {
 			},
 			Backend::Arkworks(Curve::Bls381, _) => match self.hasher {
 				HashFunction::PoseidonDefault => {
-					let res = gen_empty_hashes::<MixerTreeConfig>(&(), &POSEIDON_PARAMETERS)
+					let res = gen_empty_hashes::<TreeConfig>(&(), &POSEIDON_PARAMETERS)
 						.map_err(|_| SetupError::ZeroTreeGenFailed)?;
 					let zero_tree: Vec<ScalarBytes> = res
 						.iter()
@@ -237,16 +238,13 @@ impl Setup {
 					to_field_elements::<Bls381>(&recipient_bytes).map_err(|_| SetupError::InvalidPublicInputs)?;
 				let relayer_els =
 					to_field_elements::<Bls381>(&relayer_bytes).map_err(|_| SetupError::InvalidPublicInputs)?;
-				let chain_id = Bls381::from(0u8);
-				let fee = Bls381::from(0u8);
 
 				let nullifier = nullifier_els.get(0).ok_or(SetupError::InvalidPublicInputs)?;
 				let root = root_els.get(0).ok_or(SetupError::InvalidPublicInputs)?;
 				let recipient = recipient_els.get(0).ok_or(SetupError::InvalidPublicInputs)?;
 				let relayer = relayer_els.get(0).ok_or(SetupError::InvalidPublicInputs)?;
-				let roots = vec![*root];
 
-				let pinp = get_public_inputs(chain_id, *nullifier, roots, *root, *recipient, *relayer, fee);
+				let pinp = get_public_inputs(*nullifier, *root, *recipient, *relayer);
 				let proof = Proof::<Bls12_381>::deserialize(&proof_bytes[..]).map_err(|_| SetupError::InvalidProof)?;
 				let res = verify_groth16(&PROVING_KEY.vk, &pinp, &proof);
 				if !res {

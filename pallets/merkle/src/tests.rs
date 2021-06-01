@@ -1,18 +1,12 @@
 use super::*;
-use crate::{mock::*, utils::keys::slice_to_bytes_32};
+use crate::{
+	mock::*,
+	utils::{hasher::Snark, keys::slice_to_bytes_32},
+};
 use ark_serialize::CanonicalSerialize;
 use arkworks_gadgets::{
-	ark_std::UniformRand,
-	prelude::{
-		ark_bls12_381::{Bls12_381, Fr as Bls381},
-		ark_ff::{to_bytes, BigInteger, PrimeField},
-		ark_groth16::Groth16,
-		webb_crypto_primitives::{
-			crh::{poseidon::PoseidonParameters, CRH},
-			to_field_elements, SNARK,
-		},
-	},
-	setup::mixer::{prove_groth16, setup_arbitrary_data, setup_circuit, setup_leaf, setup_params_5, setup_tree},
+	prelude::{ark_bls12_381::Fr as Bls381, ark_ff::to_bytes},
+	setup::mixer::{prove_groth16, setup_circuit},
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use bulletproofs_gadgets::{
@@ -992,14 +986,10 @@ fn should_verify_large_zk_proof_of_membership() {
 fn should_verify_simple_arkworks_zk_proof_of_membership() {
 	new_test_ext().execute_with(|| {
 		let mut rng = OsRng::default();
-		let chain_id = Bls381::from(0u8);
 		let recipient = Bls381::from(0u8);
 		let relayer = Bls381::from(0u8);
-		let fee = Bls381::from(0u8);
 		let leaves = Vec::new();
-		let roots = Vec::new();
-		let (circuit, leaf, nullifier, root, _) =
-			setup_circuit(chain_id, &leaves, 0, &roots, recipient, relayer, fee, &mut rng);
+		let (circuit, leaf, nullifier, root, _) = setup_circuit(&leaves, 0, recipient, relayer, &mut rng);
 
 		let leaf_bytes = to_bytes![leaf].unwrap();
 		let hasher = HashFunction::PoseidonDefault;
