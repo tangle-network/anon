@@ -31,7 +31,7 @@ fn get_proof<T: Config>(tree_id: T::TreeId, depth: u32) -> Vec<(bool, ScalarByte
 	let mut path = Vec::new();
 	for _ in 0..depth {
 		path.push((true, d.clone()));
-		d = tree.setup.hash(&d, &d).unwrap();
+		d = tree.setup.hash::<T>(&d, &d).unwrap();
 	}
 	path
 }

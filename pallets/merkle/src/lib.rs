@@ -92,13 +92,13 @@ mod benchmarking;
 pub mod weights;
 
 use codec::{Decode, Encode};
-use frame_support::{dispatch::DispatchError, ensure, fail, traits::Get, weights::Weight, Parameter};
+use frame_support::{dispatch::DispatchError, ensure, traits::Get, weights::Weight, Parameter};
 use frame_system::ensure_signed;
 use sp_runtime::traits::{AtLeast32Bit, One};
 use sp_std::prelude::*;
 pub use traits::Tree;
 use utils::{
-	hasher::{Backend, Curve, HashFunction, Setup, SetupError},
+	hasher::{Backend, Curve, HashFunction, Setup},
 	keys::ScalarBytes,
 	permissions::ensure_admin,
 };
@@ -142,10 +142,14 @@ pub mod pallet {
 		InvalidPathLength,
 		/// Invalid commitments specified for the zk proof
 		InvalidPrivateInputs,
+		InvalidPublicInputs,
 		/// Nullifier is already used
 		AlreadyUsedNullifier,
+		ZeroTreeGenFailed,
+		HashingFailed,
 		/// Failed to verify zero-knowladge proof
 		ZkVerificationFailed,
+		ConstraintSystemUnsatisfied,
 		/// Invalid zero-knowladge data
 		InvalidZkProof,
 		/// Invalid depth of the tree specified
@@ -464,7 +468,7 @@ pub struct MerkleTree {
 }
 
 impl MerkleTree {
-	pub fn new<T: Config>(setup: Setup, depth: u8) -> Result<Self, SetupError> {
+	pub fn new<T: Config>(setup: Setup, depth: u8) -> Result<Self, Error<T>> {
 		let (zero_tree, root_hash) = setup.generate_zero_tree(depth as usize)?;
 		Ok(Self {
 			root_hash,
@@ -593,8 +597,8 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		let mut hash = leaf;
 		for (is_right, node) in path {
 			hash = match is_right {
-				true => tree.setup.hash(&hash, &node).map_err(|_| Error::<T>::Unimplemented)?,
-				false => tree.setup.hash(&node, &hash).map_err(|_| Error::<T>::Unimplemented)?,
+				true => tree.setup.hash::<T>(&hash, &node)?,
+				false => tree.setup.hash::<T>(&node, &hash)?,
 			}
 		}
 
@@ -621,7 +625,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 			old_roots.iter().any(|r| *r == cached_root),
 			Error::<T>::InvalidMerkleRoot
 		);
-		let res = tree.setup.verify_zk(
+		tree.setup.verify_zk::<T>(
 			tree.depth as usize,
 			cached_root,
 			comms,
@@ -631,14 +635,8 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 			proof_commitments,
 			recipient,
 			relayer,
-		);
-		match res {
-			Err(SetupError::InvalidPrivateInputs) => fail!(Error::<T>::InvalidPrivateInputs),
-			Err(SetupError::ConstraintSystemUnsatisfied) => fail!(Error::<T>::InvalidMembershipProof),
-			Err(SetupError::InvalidProof) => fail!(Error::<T>::InvalidMembershipProof),
-			Err(_) => fail!(Error::<T>::ZkVerificationFailed),
-			Ok(_) => Ok(()),
-		}
+		)?;
+		Ok(())
 	}
 }
 
@@ -678,13 +676,9 @@ impl<T: Config> Pallet<T> {
 		for i in 0..tree.edge_nodes.len() {
 			hash = if edge_index % 2 == 0 {
 				tree.edge_nodes[i] = hash.clone();
-				tree.setup
-					.hash(&hash, &tree.zero_tree[i])
-					.map_err(|_| Error::<T>::Unimplemented)?
+				tree.setup.hash::<T>(&hash, &tree.zero_tree[i])?
 			} else {
-				tree.setup
-					.hash(&tree.edge_nodes[i], &hash)
-					.map_err(|_| Error::<T>::Unimplemented)?
+				tree.setup.hash::<T>(&tree.edge_nodes[i], &hash)?
 			};
 
 			edge_index /= 2;

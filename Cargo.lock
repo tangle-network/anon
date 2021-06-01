@@ -444,7 +444,7 @@ dependencies = [
 [[package]]
 name = "arkworks-gadgets"
 version = "0.1.0"
-source = "git+https://github.com/webb-tools/arkworks-gadgets?rev=b70ce6c#b70ce6c20923475fa445741dc6461c1ed87d9fae"
+source = "git+https://github.com/webb-tools/arkworks-gadgets?rev=954a017#954a017d6d01daa86861f8a15ae968baa0b63d0e"
 dependencies = [
  "ark-bls12-381",
  "ark-crypto-primitives 0.2.0 (git+https://github.com/webb-tools/crypto-primitives?rev=e8cd8bf)",
@@ -458,6 +458,7 @@ dependencies = [
  "ark-poly-commit",
  "ark-r1cs-std",
  "ark-relations",
+ "ark-serialize",
  "ark-std",
  "blake2",
  "digest 0.9.0",

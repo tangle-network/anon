@@ -341,8 +341,8 @@ fn should_have_correct_root_hash_after_insertion() {
 		));
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![key0.clone()]));
 
-		let keyh1 = setup.hash(&key0, &zero_h0).unwrap();
-		let keyh2 = setup.hash(&keyh1, &zero_h1).unwrap();
+		let keyh1 = setup.hash::<Test>(&key0, &zero_h0).unwrap();
+		let keyh2 = setup.hash::<Test>(&keyh1, &zero_h1).unwrap();
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
@@ -350,8 +350,8 @@ fn should_have_correct_root_hash_after_insertion() {
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(2), 0, vec![key1.clone()]));
 
-		let keyh1 = setup.hash(&key0, &key1).unwrap();
-		let keyh2 = setup.hash(&keyh1, &zero_h1).unwrap();
+		let keyh1 = setup.hash::<Test>(&key0, &key1).unwrap();
+		let keyh2 = setup.hash::<Test>(&keyh1, &zero_h1).unwrap();
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
@@ -359,9 +359,9 @@ fn should_have_correct_root_hash_after_insertion() {
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(3), 0, vec![key2.clone()]));
 
-		let keyh1 = setup.hash(&key0, &key1).unwrap();
-		let keyh2 = setup.hash(&key2, &zero_h0).unwrap();
-		let keyh3 = setup.hash(&keyh1, &keyh2).unwrap();
+		let keyh1 = setup.hash::<Test>(&key0, &key1).unwrap();
+		let keyh2 = setup.hash::<Test>(&key2, &zero_h0).unwrap();
+		let keyh3 = setup.hash::<Test>(&keyh1, &keyh2).unwrap();
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
@@ -392,24 +392,24 @@ fn should_have_correct_root_hash() {
 		));
 		assert_ok!(MerkleTrees::add_members(Origin::signed(0), 0, keys.clone()));
 
-		let key1_1 = setup.hash(&keys[0], &keys[1]).unwrap();
-		let key1_2 = setup.hash(&keys[2], &keys[3]).unwrap();
-		let key1_3 = setup.hash(&keys[4], &keys[5]).unwrap();
-		let key1_4 = setup.hash(&keys[6], &keys[7]).unwrap();
-		let key1_5 = setup.hash(&keys[8], &keys[9]).unwrap();
-		let key1_6 = setup.hash(&keys[10], &keys[11]).unwrap();
-		let key1_7 = setup.hash(&keys[12], &keys[13]).unwrap();
-		let key1_8 = setup.hash(&keys[14], &zero_h0).unwrap();
+		let key1_1 = setup.hash::<Test>(&keys[0], &keys[1]).unwrap();
+		let key1_2 = setup.hash::<Test>(&keys[2], &keys[3]).unwrap();
+		let key1_3 = setup.hash::<Test>(&keys[4], &keys[5]).unwrap();
+		let key1_4 = setup.hash::<Test>(&keys[6], &keys[7]).unwrap();
+		let key1_5 = setup.hash::<Test>(&keys[8], &keys[9]).unwrap();
+		let key1_6 = setup.hash::<Test>(&keys[10], &keys[11]).unwrap();
+		let key1_7 = setup.hash::<Test>(&keys[12], &keys[13]).unwrap();
+		let key1_8 = setup.hash::<Test>(&keys[14], &zero_h0).unwrap();
 
-		let key2_1 = setup.hash(&key1_1, &key1_2).unwrap();
-		let key2_2 = setup.hash(&key1_3, &key1_4).unwrap();
-		let key2_3 = setup.hash(&key1_5, &key1_6).unwrap();
-		let key2_4 = setup.hash(&key1_7, &key1_8).unwrap();
+		let key2_1 = setup.hash::<Test>(&key1_1, &key1_2).unwrap();
+		let key2_2 = setup.hash::<Test>(&key1_3, &key1_4).unwrap();
+		let key2_3 = setup.hash::<Test>(&key1_5, &key1_6).unwrap();
+		let key2_4 = setup.hash::<Test>(&key1_7, &key1_8).unwrap();
 
-		let key3_1 = setup.hash(&key2_1, &key2_2).unwrap();
-		let key3_2 = setup.hash(&key2_3, &key2_4).unwrap();
+		let key3_1 = setup.hash::<Test>(&key2_1, &key2_2).unwrap();
+		let key3_2 = setup.hash::<Test>(&key2_3, &key2_4).unwrap();
 
-		let root_hash = setup.hash(&key3_1, &key3_2).unwrap();
+		let root_hash = setup.hash::<Test>(&key3_1, &key3_2).unwrap();
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
@@ -478,9 +478,9 @@ fn should_not_verify_invalid_proof() {
 			key2.clone()
 		]));
 
-		let keyh1 = setup.hash(&key0, &key1).unwrap();
-		let keyh2 = setup.hash(&key2, &zero_h0).unwrap();
-		let _root_hash = setup.hash(&keyh1, &keyh2).unwrap();
+		let keyh1 = setup.hash::<Test>(&key0, &key1).unwrap();
+		let keyh2 = setup.hash::<Test>(&key2, &zero_h0).unwrap();
+		let _root_hash = setup.hash::<Test>(&keyh1, &keyh2).unwrap();
 
 		let path = vec![(false, key1.clone()), (true, keyh2.clone())];
 
@@ -528,24 +528,24 @@ fn should_verify_proof_of_membership() {
 		));
 		assert_ok!(MerkleTrees::add_members(Origin::signed(0), 0, keys.clone()));
 
-		let key1_1 = setup.hash(&keys[0], &keys[1]).unwrap();
-		let key1_2 = setup.hash(&keys[2], &keys[3]).unwrap();
-		let key1_3 = setup.hash(&keys[4], &keys[5]).unwrap();
-		let key1_4 = setup.hash(&keys[6], &keys[7]).unwrap();
-		let key1_5 = setup.hash(&keys[8], &keys[9]).unwrap();
-		let key1_6 = setup.hash(&keys[10], &keys[11]).unwrap();
-		let key1_7 = setup.hash(&keys[12], &keys[13]).unwrap();
-		let key1_8 = setup.hash(&keys[14], &zero_h0).unwrap();
+		let key1_1 = setup.hash::<Test>(&keys[0], &keys[1]).unwrap();
+		let key1_2 = setup.hash::<Test>(&keys[2], &keys[3]).unwrap();
+		let key1_3 = setup.hash::<Test>(&keys[4], &keys[5]).unwrap();
+		let key1_4 = setup.hash::<Test>(&keys[6], &keys[7]).unwrap();
+		let key1_5 = setup.hash::<Test>(&keys[8], &keys[9]).unwrap();
+		let key1_6 = setup.hash::<Test>(&keys[10], &keys[11]).unwrap();
+		let key1_7 = setup.hash::<Test>(&keys[12], &keys[13]).unwrap();
+		let key1_8 = setup.hash::<Test>(&keys[14], &zero_h0).unwrap();
 
-		let key2_1 = setup.hash(&key1_1, &key1_2).unwrap();
-		let key2_2 = setup.hash(&key1_3, &key1_4).unwrap();
-		let key2_3 = setup.hash(&key1_5, &key1_6).unwrap();
-		let key2_4 = setup.hash(&key1_7, &key1_8).unwrap();
+		let key2_1 = setup.hash::<Test>(&key1_1, &key1_2).unwrap();
+		let key2_2 = setup.hash::<Test>(&key1_3, &key1_4).unwrap();
+		let key2_3 = setup.hash::<Test>(&key1_5, &key1_6).unwrap();
+		let key2_4 = setup.hash::<Test>(&key1_7, &key1_8).unwrap();
 
-		let key3_1 = setup.hash(&key2_1, &key2_2).unwrap();
-		let key3_2 = setup.hash(&key2_3, &key2_4).unwrap();
+		let key3_1 = setup.hash::<Test>(&key2_1, &key2_2).unwrap();
+		let key3_2 = setup.hash::<Test>(&key2_3, &key2_4).unwrap();
 
-		let _root_hash = setup.hash(&key3_1, &key3_2).unwrap();
+		let _root_hash = setup.hash::<Test>(&key3_1, &key3_2).unwrap();
 
 		let path = vec![
 			(true, keys[1].clone()),
@@ -1012,7 +1012,7 @@ fn should_verify_simple_arkworks_zk_proof_of_membership() {
 		let nullifier_bytes = to_bytes![nullifier].unwrap();
 
 		let tree = MerkleTrees::get_tree(0).unwrap();
-		let proving_key = tree.setup.get_default_proving_key().unwrap();
+		let proving_key = tree.setup.get_default_proving_key::<Test>().unwrap();
 		let proof = prove_groth16(&proving_key, circuit.clone(), &mut rng);
 		let mut proof_bytes = vec![0u8; proof.serialized_size()];
 		proof.serialize(&mut proof_bytes[..]).unwrap();
