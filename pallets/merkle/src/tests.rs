@@ -6,7 +6,7 @@ use crate::{
 use ark_serialize::CanonicalSerialize;
 use arkworks_gadgets::{
 	prelude::{ark_bls12_381::Fr as Bls381, ark_ff::to_bytes},
-	setup::mixer::{prove_groth16, setup_circuit},
+	setup::mixer::{prove_groth16, setup_circuit, setup_random_groth16},
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use bulletproofs_gadgets::{
@@ -1011,9 +1011,11 @@ fn should_verify_simple_arkworks_zk_proof_of_membership() {
 		let relayer_bytes = to_bytes![relayer].unwrap();
 		let nullifier_bytes = to_bytes![nullifier].unwrap();
 
-		let tree = MerkleTrees::get_tree(0).unwrap();
-		let proving_key = tree.setup.get_default_proving_key::<Test>().unwrap();
-		let proof = prove_groth16(&proving_key, circuit.clone(), &mut rng);
+		let (pk, vk) = setup_random_groth16(&mut rng);
+		let mut vk_bytes = Vec::new();
+		vk.serialize(&mut vk_bytes).unwrap();
+		MerkleTrees::add_verifying_key(0, vk_bytes).unwrap();
+		let proof = prove_groth16(&pk, circuit.clone(), &mut rng);
 		let mut proof_bytes = vec![0u8; proof.serialized_size()];
 		proof.serialize(&mut proof_bytes[..]).unwrap();
 

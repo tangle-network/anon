@@ -149,6 +149,7 @@ pub mod pallet {
 		HashingFailed,
 		/// Failed to verify zero-knowladge proof
 		ZkVerificationFailed,
+		InvalidVerifierKey,
 		ConstraintSystemUnsatisfied,
 		/// Invalid zero-knowladge data
 		InvalidZkProof,
@@ -191,6 +192,11 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn trees)]
 	pub type Trees<T: Config> = StorageMap<_, Blake2_128Concat, T::TreeId, Option<MerkleTree>, ValueQuery>;
+
+	/// The map of verifying keys for each backend
+	#[pallet::storage]
+	#[pallet::getter(fn verifying_keys)]
+	pub type VerifyingKeys<T: Config> = StorageMap<_, Blake2_128Concat, Backend, Option<Vec<u8>>, ValueQuery>;
 
 	/// The map of (tree_id, index) to the leaf commitment
 	#[pallet::storage]
@@ -514,14 +520,14 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 	}
 
 	fn set_stopped(sender: T::AccountId, id: T::TreeId, stopped: bool) -> Result<(), DispatchError> {
-		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		ensure!(sender == manager_data.account_id, Error::<T>::ManagerIsRequired);
 		Stopped::<T>::insert(id, stopped);
 		Ok(())
 	}
 
 	fn set_manager_required(sender: T::AccountId, id: T::TreeId, manager_required: bool) -> Result<(), DispatchError> {
-		let mut manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let mut manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		// Changing manager required should always require an extrinsic from the
 		// manager even if the tree doesn't explicitly require managers for
 		// other calls.
@@ -532,7 +538,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 	}
 
 	fn set_manager(sender: T::AccountId, id: T::TreeId, new_manager: T::AccountId) -> Result<(), DispatchError> {
-		let mut manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let mut manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		ensure!(sender == manager_data.account_id, Error::<T>::ManagerIsRequired);
 		manager_data.account_id = new_manager;
 		Managers::<T>::insert(id, Some(manager_data));
@@ -540,8 +546,8 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 	}
 
 	fn add_members(sender: T::AccountId, id: T::TreeId, members: Vec<ScalarBytes>) -> Result<(), DispatchError> {
-		let mut tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
-		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let mut tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
+		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		// Check if the tree requires extrinsics to be called from a manager
 		ensure!(
 			Self::is_manager_required(sender.clone(), &manager_data),
@@ -570,7 +576,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 	}
 
 	fn add_nullifier(sender: T::AccountId, id: T::TreeId, nullifier_hash: ScalarBytes) -> Result<(), DispatchError> {
-		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		// Check if the tree requires extrinsics to be called from a manager
 		ensure!(
 			Self::is_manager_required(sender.clone(), &manager_data),
@@ -581,7 +587,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 	}
 
 	fn has_used_nullifier(id: T::TreeId, nullifier: ScalarBytes) -> Result<(), DispatchError> {
-		let _ = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
+		let _ = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
 
 		ensure!(
 			!UsedNullifiers::<T>::contains_key((id, nullifier)),
@@ -591,7 +597,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 	}
 
 	fn verify(id: T::TreeId, leaf: ScalarBytes, path: Vec<(bool, ScalarBytes)>) -> Result<(), DispatchError> {
-		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
+		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
 
 		ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
 		let mut hash = leaf;
@@ -603,6 +609,12 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		}
 
 		ensure!(hash == tree.root_hash, Error::<T>::InvalidMembershipProof);
+		Ok(())
+	}
+
+	fn add_verifying_key(id: T::TreeId, key: Vec<u8>) -> Result<(), DispatchError> {
+		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
+		VerifyingKeys::<T>::insert(tree.setup.backend, Some(key));
 		Ok(())
 	}
 
@@ -618,7 +630,8 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		recipient: ScalarBytes,
 		relayer: ScalarBytes,
 	) -> Result<(), DispatchError> {
-		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
+		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist)?;
+		let vk = VerifyingKeys::<T>::get(&tree.setup.backend);
 		// Ensure that root being checked against is in the cache
 		let old_roots = Self::cached_roots(cached_block, tree_id);
 		ensure!(
@@ -631,6 +644,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 			comms,
 			nullifier_hash,
 			proof_bytes,
+			vk,
 			leaf_index_commitments,
 			proof_commitments,
 			recipient,

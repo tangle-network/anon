@@ -2,7 +2,7 @@ use crate::{
 	utils::keys::{slice_to_bytes_32, ScalarBytes},
 	Config, Error,
 };
-use ark_groth16::{Proof, ProvingKey};
+use ark_groth16::{Proof, ProvingKey, VerifyingKey};
 use ark_serialize::CanonicalDeserialize;
 use arkworks_gadgets::{
 	merkle_tree::gen_empty_hashes,
@@ -43,11 +43,6 @@ use sp_std::prelude::*;
 lazy_static! {
 	static ref DEFAULT_POSEIDON_HASHER: Poseidon = default_bulletproofs_poseidon_hasher();
 	static ref POSEIDON_PARAMETERS: PoseidonParameters<Bls381> = setup_params_3::<Bls381>();
-	static ref PROVING_KEY: ProvingKey<Bls12_381> = {
-		let mut rng = OsRng::default();
-		let (pk, _) = setup_random_groth16(&mut rng);
-		pk
-	};
 }
 
 /// Default hasher instance used to construct the tree
@@ -100,8 +95,8 @@ pub enum Backend {
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Clone, Encode, Decode, PartialEq)]
 pub struct Setup {
-	hasher: HashFunction,
-	backend: Backend,
+	pub hasher: HashFunction,
+	pub backend: Backend,
 }
 
 impl Setup {
@@ -145,13 +140,6 @@ impl Setup {
 		}
 	}
 
-	pub fn get_default_proving_key<C: Config>(&self) -> Result<&ProvingKey<Bls12_381>, Error<C>> {
-		match (&self.backend, &self.hasher) {
-			(Backend::Arkworks(Curve::Bls381, Snark::Groth16), _) => Ok(&PROVING_KEY),
-			_ => Err(Error::<C>::Unimplemented),
-		}
-	}
-
 	pub fn generate_zero_tree<C: Config>(&self, depth: usize) -> Result<(Vec<ScalarBytes>, ScalarBytes), Error<C>> {
 		match self.backend {
 			Backend::Bulletproofs(Curve::Curve25519) => match self.hasher {
@@ -183,61 +171,70 @@ impl Setup {
 	pub fn verify_zk<C: Config>(
 		&self,
 		depth: usize,
-		cached_root: ScalarBytes,
-		commitments: Vec<ScalarBytes>,
-		nullifier_hash: ScalarBytes,
+		root_bytes: ScalarBytes,
+		private_inputs_bytes: Vec<ScalarBytes>,
+		nullifier_hash_bytes: ScalarBytes,
 		proof_bytes: Vec<u8>,
-		leaf_index_commitments: Vec<ScalarBytes>,
-		proof_commitments: Vec<ScalarBytes>,
+		verifier_key: Option<Vec<u8>>,
+		path_indices_bytes: Vec<ScalarBytes>,
+		path_nodes_bytes: Vec<ScalarBytes>,
 		recipient_bytes: ScalarBytes,
 		relayer_bytes: ScalarBytes,
 	) -> Result<(), Error<C>> {
 		match self.backend {
 			Backend::Bulletproofs(Curve::Curve25519) => {
-				let cached_root_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&cached_root));
-				let comms_c = commitments.iter().map(|x| CompressedRistretto::from_slice(x)).collect();
-				let nullifier_hash_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&nullifier_hash));
-				let leaf_index_commitments_c = leaf_index_commitments
+				let root = Scalar::from_bytes_mod_order(slice_to_bytes_32(&root_bytes));
+				let private_inputs = private_inputs_bytes
 					.iter()
 					.map(|x| CompressedRistretto::from_slice(x))
 					.collect();
-				let proof_commitments_c = proof_commitments
+				let nullifier_hash = Scalar::from_bytes_mod_order(slice_to_bytes_32(&nullifier_hash_bytes));
+				let path_indices = path_indices_bytes
 					.iter()
 					.map(|x| CompressedRistretto::from_slice(x))
 					.collect();
-				let recipient_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&recipient_bytes));
-				let relayer_s = Scalar::from_bytes_mod_order(slice_to_bytes_32(&relayer_bytes));
+				let path_nodes = path_nodes_bytes
+					.iter()
+					.map(|x| CompressedRistretto::from_slice(x))
+					.collect();
+				let recipient = Scalar::from_bytes_mod_order(slice_to_bytes_32(&recipient_bytes));
+				let relayer = Scalar::from_bytes_mod_order(slice_to_bytes_32(&relayer_bytes));
 				self.verify_bulletproofs_poseidon(
 					depth,
-					cached_root_s,
-					comms_c,
-					nullifier_hash_s,
+					root,
+					private_inputs,
+					nullifier_hash,
 					proof_bytes,
-					leaf_index_commitments_c,
-					proof_commitments_c,
-					recipient_s,
-					relayer_s,
+					path_indices,
+					path_nodes,
+					recipient,
+					relayer,
 				)
 			}
 			Backend::Arkworks(Curve::Bls381, Snark::Groth16) => {
-				let nullifier_els =
-					to_field_elements::<Bls381>(&nullifier_hash).map_err(|_| Error::<C>::InvalidPublicInputs)?;
-				let root_els =
-					to_field_elements::<Bls381>(&cached_root).map_err(|_| Error::<C>::InvalidPublicInputs)?;
-				let recipient_els =
+				let nullifier_elts =
+					to_field_elements::<Bls381>(&nullifier_hash_bytes).map_err(|_| Error::<C>::InvalidPublicInputs)?;
+				let root_elts =
+					to_field_elements::<Bls381>(&root_bytes).map_err(|_| Error::<C>::InvalidPublicInputs)?;
+				let recipient_elts =
 					to_field_elements::<Bls381>(&recipient_bytes).map_err(|_| Error::<C>::InvalidPublicInputs)?;
-				let relayer_els =
+				let relayer_elts =
 					to_field_elements::<Bls381>(&relayer_bytes).map_err(|_| Error::<C>::InvalidPublicInputs)?;
 
-				let nullifier = nullifier_els.get(0).ok_or(Error::<C>::InvalidPublicInputs)?;
-				let root = root_els.get(0).ok_or(Error::<C>::InvalidPublicInputs)?;
-				let recipient = recipient_els.get(0).ok_or(Error::<C>::InvalidPublicInputs)?;
-				let relayer = relayer_els.get(0).ok_or(Error::<C>::InvalidPublicInputs)?;
+				let nullifier = nullifier_elts.get(0).ok_or(Error::<C>::InvalidPublicInputs)?;
+				let root = root_elts.get(0).ok_or(Error::<C>::InvalidPublicInputs)?;
+				let recipient = recipient_elts.get(0).ok_or(Error::<C>::InvalidPublicInputs)?;
+				let relayer = relayer_elts.get(0).ok_or(Error::<C>::InvalidPublicInputs)?;
 
-				let pinp = get_public_inputs(*nullifier, *root, *recipient, *relayer);
+				if verifier_key.is_none() {
+					return Err(Error::<C>::InvalidVerifierKey);
+				}
+				let vk = VerifyingKey::<Bls12_381>::deserialize(&verifier_key.unwrap()[..])
+					.map_err(|_| Error::<C>::InvalidVerifierKey)?;
+				let public_inputs = get_public_inputs(*nullifier, *root, *recipient, *relayer);
 				let proof =
 					Proof::<Bls12_381>::deserialize(&proof_bytes[..]).map_err(|_| Error::<C>::InvalidZkProof)?;
-				let res = verify_groth16(&PROVING_KEY.vk, &pinp, &proof);
+				let res = verify_groth16(&vk, &public_inputs, &proof);
 				if !res {
 					return Err(Error::<C>::ZkVerificationFailed);
 				}

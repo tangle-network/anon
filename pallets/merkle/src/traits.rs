@@ -40,6 +40,7 @@ pub trait Tree<AccountId, BlockNumber, TreeId> {
 	fn add_nullifier(sender: AccountId, id: TreeId, nullifier: ScalarBytes) -> Result<(), dispatch::DispatchError>;
 	/// Verify membership proof
 	fn verify(id: TreeId, leaf: ScalarBytes, path: Vec<(bool, ScalarBytes)>) -> Result<(), dispatch::DispatchError>;
+	fn add_verifying_key(id: TreeId, key: Vec<u8>) -> Result<(), dispatch::DispatchError>;
 	/// Verify zero-knowladge membership proof
 	fn verify_zk(
 		tree_id: TreeId,
