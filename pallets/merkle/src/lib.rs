@@ -636,7 +636,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		relayer: ScalarBytes,
 	) -> Result<(), DispatchError> {
 		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist)?;
-		let vk = VerifyingKeys::<T>::get(&tree.setup.backend);
+		let verifying_key = VerifyingKeys::<T>::get(&tree.setup.backend);
 		// Ensure that root being checked against is in the cache
 		let old_roots = Self::cached_roots(block_number, tree_id);
 		ensure!(old_roots.iter().any(|r| *r == root), Error::<T>::InvalidMerkleRoot);
@@ -646,7 +646,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 			private_inputs,
 			nullifier_hash,
 			proof_bytes,
-			vk,
+			verifying_key,
 			path_indices,
 			path_nodes,
 			recipient,
