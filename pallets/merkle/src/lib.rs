@@ -140,16 +140,21 @@ pub mod pallet {
 		InvalidMembershipProof,
 		/// Invalid merkle path length
 		InvalidPathLength,
-		/// Invalid commitments specified for the zk proof
+		/// Invalid commitments (private inputs) specified for the zk proof
 		InvalidPrivateInputs,
+		/// Invalid public inputs specified for the zk proof
 		InvalidPublicInputs,
 		/// Nullifier is already used
 		AlreadyUsedNullifier,
+		/// Failed to generate zero (empty) tree
 		ZeroTreeGenFailed,
+		/// Failed to hash two values
 		HashingFailed,
 		/// Failed to verify zero-knowladge proof
 		ZkVerificationFailed,
+		/// Invalid verifier key (applies to arkworks backend)
 		InvalidVerifierKey,
+		/// Unsatisfied constraint system
 		ConstraintSystemUnsatisfied,
 		/// Invalid zero-knowladge data
 		InvalidZkProof,
