@@ -1,8 +1,8 @@
 //! All the traits exposed to be used in other custom pallets
 
 use crate::utils::{
-	hasher::{Backend, HashFunction},
 	keys::ScalarBytes,
+	setup::{Backend, HashFunction},
 };
 pub use frame_support::dispatch;
 use sp_std::vec::Vec;

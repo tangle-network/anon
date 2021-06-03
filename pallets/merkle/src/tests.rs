@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
 	mock::*,
-	utils::{hasher::Snark, keys::slice_to_bytes_32},
+	utils::{keys::slice_to_bytes_32, setup::Snark},
 };
 use ark_serialize::CanonicalSerialize;
 use arkworks_gadgets::{

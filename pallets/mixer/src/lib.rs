@@ -61,9 +61,9 @@ use frame_support::{dispatch, ensure, traits::Get, weights::Weight, PalletId};
 use frame_system::ensure_signed;
 use merkle::{
 	utils::{
-		hasher::{Backend, Curve, HashFunction},
 		keys::ScalarBytes,
 		permissions::ensure_admin,
+		setup::{Backend, Curve, HashFunction},
 	},
 	Pallet as MerklePallet, Tree as TreeTrait,
 };

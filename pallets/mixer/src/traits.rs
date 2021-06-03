@@ -1,5 +1,5 @@
 use frame_support::dispatch;
-use merkle::utils::hasher::{Backend, HashFunction};
+use merkle::utils::setup::{Backend, HashFunction};
 
 pub trait ExtendedMixer<AccountId, CurrencyId, Balance> {
 	fn create_new(

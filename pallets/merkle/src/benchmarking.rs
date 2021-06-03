@@ -3,7 +3,7 @@ use curve25519_dalek::scalar::Scalar;
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::OnFinalize;
 use frame_system::{Pallet as System, RawOrigin};
-use utils::hasher::{Backend, HashFunction};
+use utils::setup::{Backend, HashFunction};
 
 use crate::Pallet as Merkle;
 

@@ -98,9 +98,9 @@ use sp_runtime::traits::{AtLeast32Bit, One};
 use sp_std::prelude::*;
 pub use traits::Tree;
 use utils::{
-	hasher::{Backend, Curve, HashFunction, Setup},
 	keys::ScalarBytes,
 	permissions::ensure_admin,
+	setup::{Backend, Curve, HashFunction, Setup},
 };
 use weights::WeightInfo;
 
@@ -625,33 +625,30 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 
 	fn verify_zk(
 		tree_id: T::TreeId,
-		cached_block: T::BlockNumber,
-		cached_root: ScalarBytes,
-		comms: Vec<ScalarBytes>,
+		block_number: T::BlockNumber,
+		root: ScalarBytes,
+		private_inputs: Vec<ScalarBytes>,
 		nullifier_hash: ScalarBytes,
 		proof_bytes: Vec<u8>,
-		leaf_index_commitments: Vec<ScalarBytes>,
-		proof_commitments: Vec<ScalarBytes>,
+		path_indices: Vec<ScalarBytes>,
+		path_nodes: Vec<ScalarBytes>,
 		recipient: ScalarBytes,
 		relayer: ScalarBytes,
 	) -> Result<(), DispatchError> {
 		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist)?;
 		let vk = VerifyingKeys::<T>::get(&tree.setup.backend);
 		// Ensure that root being checked against is in the cache
-		let old_roots = Self::cached_roots(cached_block, tree_id);
-		ensure!(
-			old_roots.iter().any(|r| *r == cached_root),
-			Error::<T>::InvalidMerkleRoot
-		);
+		let old_roots = Self::cached_roots(block_number, tree_id);
+		ensure!(old_roots.iter().any(|r| *r == root), Error::<T>::InvalidMerkleRoot);
 		tree.setup.verify_zk::<T>(
 			tree.depth as usize,
-			cached_root,
-			comms,
+			root,
+			private_inputs,
 			nullifier_hash,
 			proof_bytes,
 			vk,
-			leaf_index_commitments,
-			proof_commitments,
+			path_indices,
+			path_nodes,
 			recipient,
 			relayer,
 		)?;
