@@ -201,7 +201,7 @@ pub mod pallet {
 	/// The map of verifying keys for each backend
 	#[pallet::storage]
 	#[pallet::getter(fn verifying_keys)]
-	pub type VerifyingKeys<T: Config> = StorageMap<_, Blake2_128Concat, Backend, Option<Vec<u8>>, ValueQuery>;
+	pub type VerifyingKeys<T: Config> = StorageMap<_, Blake2_128Concat, T::TreeId, Option<Vec<u8>>, ValueQuery>;
 
 	/// The map of (tree_id, index) to the leaf commitment
 	#[pallet::storage]
@@ -554,6 +554,12 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		let mut tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
 		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		// Check if the tree requires extrinsics to be called from a manager
+
+		let verifying_key = VerifyingKeys::<T>::get(id);
+		ensure!(
+			tree.setup.can_verify_with(&verifying_key),
+			Error::<T>::InvalidVerifierKey
+		);
 		ensure!(
 			Self::is_manager_required(sender.clone(), &manager_data),
 			Error::<T>::ManagerIsRequired
@@ -618,8 +624,10 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 	}
 
 	fn add_verifying_key(id: T::TreeId, key: Vec<u8>) -> Result<(), DispatchError> {
-		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
-		VerifyingKeys::<T>::insert(tree.setup.backend, Some(key));
+		if !Trees::<T>::contains_key(id) {
+			return Err(Error::<T>::TreeDoesntExist.into());
+		}
+		VerifyingKeys::<T>::insert(id, Some(key));
 		Ok(())
 	}
 
@@ -636,7 +644,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		relayer: ScalarBytes,
 	) -> Result<(), DispatchError> {
 		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist)?;
-		let verifying_key = VerifyingKeys::<T>::get(&tree.setup.backend);
+		let verifying_key = VerifyingKeys::<T>::get(&tree_id);
 		// Ensure that root being checked against is in the cache
 		let old_roots = Self::cached_roots(block_number, tree_id);
 		ensure!(old_roots.iter().any(|r| *r == root), Error::<T>::InvalidMerkleRoot);

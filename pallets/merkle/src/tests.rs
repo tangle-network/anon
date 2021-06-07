@@ -1002,6 +1002,11 @@ fn should_verify_simple_zk_proof_of_membership_arkworks() {
 			Some(30),
 		));
 
+		let (pk, vk) = setup_random_groth16(&mut rng);
+		let mut vk_bytes = Vec::new();
+		vk.serialize(&mut vk_bytes).unwrap();
+		MerkleTrees::add_verifying_key(0, vk_bytes).unwrap();
+
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![leaf_bytes]));
 
 		let other_root = to_bytes![root].unwrap();
@@ -1011,10 +1016,6 @@ fn should_verify_simple_zk_proof_of_membership_arkworks() {
 		let relayer_bytes = to_bytes![relayer].unwrap();
 		let nullifier_bytes = to_bytes![nullifier].unwrap();
 
-		let (pk, vk) = setup_random_groth16(&mut rng);
-		let mut vk_bytes = Vec::new();
-		vk.serialize(&mut vk_bytes).unwrap();
-		MerkleTrees::add_verifying_key(0, vk_bytes).unwrap();
 		let proof = prove_groth16(&pk, circuit.clone(), &mut rng);
 		let mut proof_bytes = vec![0u8; proof.serialized_size()];
 		proof.serialize(&mut proof_bytes[..]).unwrap();
@@ -1054,6 +1055,11 @@ fn should_fail_to_verify_empty_public_inputs_arkworks() {
 			Some(30),
 		));
 
+		let (pk, vk) = setup_random_groth16(&mut rng);
+		let mut vk_bytes = Vec::new();
+		vk.serialize(&mut vk_bytes).unwrap();
+		MerkleTrees::add_verifying_key(0, vk_bytes).unwrap();
+
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![leaf_bytes]));
 
 		let other_root = to_bytes![root].unwrap();
@@ -1063,10 +1069,6 @@ fn should_fail_to_verify_empty_public_inputs_arkworks() {
 		let relayer_bytes = to_bytes![relayer].unwrap();
 		let nullifier_bytes = to_bytes![nullifier].unwrap();
 
-		let (pk, vk) = setup_random_groth16(&mut rng);
-		let mut vk_bytes = Vec::new();
-		vk.serialize(&mut vk_bytes).unwrap();
-		MerkleTrees::add_verifying_key(0, vk_bytes).unwrap();
 		let proof = prove_groth16(&pk, circuit.clone(), &mut rng);
 		let mut proof_bytes = vec![0u8; proof.serialized_size()];
 		proof.serialize(&mut proof_bytes[..]).unwrap();
@@ -1143,6 +1145,10 @@ fn should_fail_to_verify_invalid_public_inputs_arkworks() {
 			backend,
 			Some(30),
 		));
+		let (pk, vk) = setup_random_groth16(&mut rng);
+		let mut vk_bytes = Vec::new();
+		vk.serialize(&mut vk_bytes).unwrap();
+		MerkleTrees::add_verifying_key(0, vk_bytes).unwrap();
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![leaf_bytes]));
 
@@ -1153,10 +1159,6 @@ fn should_fail_to_verify_invalid_public_inputs_arkworks() {
 		let relayer_bytes = to_bytes![relayer].unwrap();
 		let nullifier_bytes = to_bytes![nullifier].unwrap();
 
-		let (pk, vk) = setup_random_groth16(&mut rng);
-		let mut vk_bytes = Vec::new();
-		vk.serialize(&mut vk_bytes).unwrap();
-		MerkleTrees::add_verifying_key(0, vk_bytes).unwrap();
 		let proof = prove_groth16(&pk, circuit.clone(), &mut rng);
 		let mut proof_bytes = vec![0u8; proof.serialized_size()];
 		proof.serialize(&mut proof_bytes[..]).unwrap();
@@ -1221,13 +1223,13 @@ fn should_fail_to_verify_invalid_public_inputs_arkworks() {
 }
 
 #[test]
-fn should_fail_to_verify_without_a_key_arkworks() {
+fn should_fail_to_add_leaf_without_a_key_arkworks() {
 	new_test_ext().execute_with(|| {
 		let mut rng = OsRng::default();
 		let recipient = Bls381::from(0u8);
 		let relayer = Bls381::from(0u8);
 		let leaves = Vec::new();
-		let (circuit, leaf, nullifier, root, _) = setup_circuit(&leaves, 0, recipient, relayer, &mut rng);
+		let (_, leaf, ..) = setup_circuit(&leaves, 0, recipient, relayer, &mut rng);
 
 		let leaf_bytes = to_bytes![leaf].unwrap();
 		let hasher = HashFunction::PoseidonDefault;
@@ -1240,34 +1242,8 @@ fn should_fail_to_verify_without_a_key_arkworks() {
 			Some(30),
 		));
 
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![leaf_bytes]));
-
-		let other_root = to_bytes![root].unwrap();
-		let root_bytes = MerkleTrees::get_merkle_root(0).unwrap();
-		assert_eq!(other_root, root_bytes);
-		let recipient_bytes = to_bytes![recipient].unwrap();
-		let relayer_bytes = to_bytes![relayer].unwrap();
-		let nullifier_bytes = to_bytes![nullifier].unwrap();
-
-		// Not adding verifying key to the storage
-		let (pk, _) = setup_random_groth16(&mut rng);
-		let proof = prove_groth16(&pk, circuit.clone(), &mut rng);
-		let mut proof_bytes = vec![0u8; proof.serialized_size()];
-		proof.serialize(&mut proof_bytes[..]).unwrap();
-
 		assert_err!(
-			MerkleTrees::verify_zk(
-				0,
-				0,
-				root_bytes,
-				Vec::new(),
-				nullifier_bytes,
-				proof_bytes,
-				Vec::new(),
-				Vec::new(),
-				recipient_bytes,
-				relayer_bytes,
-			),
+			MerkleTrees::add_members(Origin::signed(1), 0, vec![leaf_bytes]),
 			Error::<Test>::InvalidVerifierKey
 		);
 	});
@@ -1293,6 +1269,13 @@ fn should_fail_to_verify_with_invalid_key_arkworks() {
 			Some(30),
 		));
 
+		let (pk, vk) = setup_random_groth16(&mut rng);
+		let mut vk_bytes = Vec::new();
+		vk.serialize(&mut vk_bytes).unwrap();
+		// pushing invalid byte
+		vk_bytes[0] = 1u8;
+		MerkleTrees::add_verifying_key(0, vk_bytes).unwrap();
+
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![leaf_bytes]));
 
 		let other_root = to_bytes![root].unwrap();
@@ -1302,12 +1285,6 @@ fn should_fail_to_verify_with_invalid_key_arkworks() {
 		let relayer_bytes = to_bytes![relayer].unwrap();
 		let nullifier_bytes = to_bytes![nullifier].unwrap();
 
-		let (pk, vk) = setup_random_groth16(&mut rng);
-		let mut vk_bytes = Vec::new();
-		vk.serialize(&mut vk_bytes).unwrap();
-		// pushing invalid byte
-		vk_bytes[0] = 1u8;
-		MerkleTrees::add_verifying_key(0, vk_bytes).unwrap();
 		let proof = prove_groth16(&pk, circuit.clone(), &mut rng);
 		let mut proof_bytes = vec![0u8; proof.serialized_size()];
 		proof.serialize(&mut proof_bytes[..]).unwrap();
