@@ -92,15 +92,15 @@ mod benchmarking;
 pub mod weights;
 
 use codec::{Decode, Encode};
-use frame_support::{dispatch::DispatchError, ensure, fail, traits::Get, weights::Weight, Parameter};
+use frame_support::{dispatch::DispatchError, ensure, traits::Get, weights::Weight, Parameter};
 use frame_system::ensure_signed;
 use sp_runtime::traits::{AtLeast32Bit, One};
 use sp_std::prelude::*;
 pub use traits::Tree;
 use utils::{
-	hasher::{Backend, HashFunction, Setup, SetupError},
 	keys::ScalarBytes,
 	permissions::ensure_admin,
+	setup::{Backend, Curve, HashFunction, Setup},
 };
 use weights::WeightInfo;
 
@@ -140,12 +140,22 @@ pub mod pallet {
 		InvalidMembershipProof,
 		/// Invalid merkle path length
 		InvalidPathLength,
-		/// Invalid commitments specified for the zk proof
+		/// Invalid commitments (private inputs) specified for the zk proof
 		InvalidPrivateInputs,
+		/// Invalid public inputs specified for the zk proof
+		InvalidPublicInputs,
 		/// Nullifier is already used
 		AlreadyUsedNullifier,
+		/// Failed to generate zero (empty) tree
+		ZeroTreeGenFailed,
+		/// Failed to hash two values
+		HashingFailed,
 		/// Failed to verify zero-knowladge proof
 		ZkVerificationFailed,
+		/// Invalid verifier key (applies to arkworks backend)
+		InvalidVerifierKey,
+		/// Unsatisfied constraint system
+		ConstraintSystemUnsatisfied,
 		/// Invalid zero-knowladge data
 		InvalidZkProof,
 		/// Invalid depth of the tree specified
@@ -156,6 +166,10 @@ pub mod pallet {
 		ManagerIsRequired,
 		/// Manager not found for specific tree
 		ManagerDoesntExist,
+		/// Error for unimplemented functionality
+		Unimplemented,
+		/// Unexpected/Unknown error
+		Unknown,
 	}
 
 	#[pallet::event]
@@ -183,6 +197,11 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn trees)]
 	pub type Trees<T: Config> = StorageMap<_, Blake2_128Concat, T::TreeId, Option<MerkleTree>, ValueQuery>;
+
+	/// The map of verifying keys for each backend
+	#[pallet::storage]
+	#[pallet::getter(fn verifying_keys)]
+	pub type VerifyingKeys<T: Config> = StorageMap<_, Blake2_128Concat, Backend, Option<Vec<u8>>, ValueQuery>;
 
 	/// The map of (tree_id, index) to the leaf commitment
 	#[pallet::storage]
@@ -448,6 +467,8 @@ pub struct MerkleTree {
 	pub depth: u8,
 	/// Current root hash of the tree
 	pub root_hash: ScalarBytes,
+	/// Zero tree
+	pub zero_tree: Vec<ScalarBytes>,
 	/// Edge nodes needed for the next insert in the tree
 	pub edge_nodes: Vec<ScalarBytes>,
 	/// Hash function for the merkle tree
@@ -458,17 +479,18 @@ pub struct MerkleTree {
 }
 
 impl MerkleTree {
-	pub fn new<T: Config>(setup: Setup, depth: u8) -> Self {
-		let (edge_nodes, root_hash) = setup.generate_zero_tree(depth as usize);
-		Self {
+	pub fn new<T: Config>(setup: Setup, depth: u8) -> Result<Self, Error<T>> {
+		let (zero_tree, root_hash) = setup.generate_zero_tree(depth as usize)?;
+		Ok(Self {
 			root_hash,
 			leaf_count: 0,
 			depth,
 			max_leaves: u32::MAX >> (T::MaxTreeDepth::get() - depth),
-			edge_nodes,
+			zero_tree: zero_tree.clone(),
+			edge_nodes: zero_tree,
 			setup,
 			should_store_leaves: true, // the default for now.
-		}
+		})
 	}
 }
 
@@ -491,7 +513,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 
 		// Setting up the tree
 		let setup = Setup::new(hasher, backend);
-		let mtree = MerkleTree::new::<T>(setup, depth);
+		let mtree = MerkleTree::new::<T>(setup, depth).map_err(|_| Error::<T>::Unimplemented)?;
 		Trees::<T>::insert(tree_id, Some(mtree));
 
 		// Setting up the manager
@@ -503,14 +525,14 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 	}
 
 	fn set_stopped(sender: T::AccountId, id: T::TreeId, stopped: bool) -> Result<(), DispatchError> {
-		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		ensure!(sender == manager_data.account_id, Error::<T>::ManagerIsRequired);
 		Stopped::<T>::insert(id, stopped);
 		Ok(())
 	}
 
 	fn set_manager_required(sender: T::AccountId, id: T::TreeId, manager_required: bool) -> Result<(), DispatchError> {
-		let mut manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let mut manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		// Changing manager required should always require an extrinsic from the
 		// manager even if the tree doesn't explicitly require managers for
 		// other calls.
@@ -521,7 +543,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 	}
 
 	fn set_manager(sender: T::AccountId, id: T::TreeId, new_manager: T::AccountId) -> Result<(), DispatchError> {
-		let mut manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let mut manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		ensure!(sender == manager_data.account_id, Error::<T>::ManagerIsRequired);
 		manager_data.account_id = new_manager;
 		Managers::<T>::insert(id, Some(manager_data));
@@ -529,8 +551,8 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 	}
 
 	fn add_members(sender: T::AccountId, id: T::TreeId, members: Vec<ScalarBytes>) -> Result<(), DispatchError> {
-		let mut tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
-		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let mut tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
+		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		// Check if the tree requires extrinsics to be called from a manager
 		ensure!(
 			Self::is_manager_required(sender.clone(), &manager_data),
@@ -543,9 +565,8 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 			Error::<T>::ExceedsMaxLeaves
 		);
 
-		let (zero_tree, _) = tree.setup.generate_zero_tree(tree.depth as usize);
 		for data in &members {
-			Self::add_leaf(&mut tree, &data, &zero_tree);
+			Self::add_leaf(&mut tree, &data)?;
 			if tree.should_store_leaves {
 				Leaves::<T>::insert(id, tree.leaf_count, data);
 			}
@@ -560,7 +581,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 	}
 
 	fn add_nullifier(sender: T::AccountId, id: T::TreeId, nullifier_hash: ScalarBytes) -> Result<(), DispatchError> {
-		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		// Check if the tree requires extrinsics to be called from a manager
 		ensure!(
 			Self::is_manager_required(sender.clone(), &manager_data),
@@ -571,7 +592,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 	}
 
 	fn has_used_nullifier(id: T::TreeId, nullifier: ScalarBytes) -> Result<(), DispatchError> {
-		let _ = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
+		let _ = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
 
 		ensure!(
 			!UsedNullifiers::<T>::contains_key((id, nullifier)),
@@ -581,14 +602,14 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 	}
 
 	fn verify(id: T::TreeId, leaf: ScalarBytes, path: Vec<(bool, ScalarBytes)>) -> Result<(), DispatchError> {
-		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
+		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
 
 		ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
 		let mut hash = leaf;
 		for (is_right, node) in path {
 			hash = match is_right {
-				true => tree.setup.hash(&hash, &node),
-				false => tree.setup.hash(&node, &hash),
+				true => tree.setup.hash::<T>(&hash, &node)?,
+				false => tree.setup.hash::<T>(&node, &hash)?,
 			}
 		}
 
@@ -596,47 +617,42 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		Ok(())
 	}
 
-	fn verify_zk_bulletproofs(
+	fn add_verifying_key(id: T::TreeId, key: Vec<u8>) -> Result<(), DispatchError> {
+		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
+		VerifyingKeys::<T>::insert(tree.setup.backend, Some(key));
+		Ok(())
+	}
+
+	fn verify_zk(
 		tree_id: T::TreeId,
-		cached_block: T::BlockNumber,
-		cached_root: ScalarBytes,
-		comms: Vec<ScalarBytes>,
+		block_number: T::BlockNumber,
+		root: ScalarBytes,
+		private_inputs: Vec<ScalarBytes>,
 		nullifier_hash: ScalarBytes,
 		proof_bytes: Vec<u8>,
-		leaf_index_commitments: Vec<ScalarBytes>,
-		proof_commitments: Vec<ScalarBytes>,
+		path_indices: Vec<ScalarBytes>,
+		path_nodes: Vec<ScalarBytes>,
 		recipient: ScalarBytes,
 		relayer: ScalarBytes,
 	) -> Result<(), DispatchError> {
-		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
-		ensure!(
-			tree.edge_nodes.len() == proof_commitments.len(),
-			Error::<T>::InvalidPathLength
-		);
+		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist)?;
+		let verifying_key = VerifyingKeys::<T>::get(&tree.setup.backend);
 		// Ensure that root being checked against is in the cache
-		let old_roots = Self::cached_roots(cached_block, tree_id);
-		ensure!(
-			old_roots.iter().any(|r| *r == cached_root),
-			Error::<T>::InvalidMerkleRoot
-		);
-		let res = tree.setup.verify_zk(
+		let old_roots = Self::cached_roots(block_number, tree_id);
+		ensure!(old_roots.iter().any(|r| *r == root), Error::<T>::InvalidMerkleRoot);
+		tree.setup.verify_zk::<T>(
 			tree.depth as usize,
-			cached_root,
-			comms,
+			root,
+			private_inputs,
 			nullifier_hash,
 			proof_bytes,
-			leaf_index_commitments,
-			proof_commitments,
+			verifying_key,
+			path_indices,
+			path_nodes,
 			recipient,
 			relayer,
-		);
-		match res {
-			Err(SetupError::InvalidPrivateInputs) => fail!(Error::<T>::InvalidPrivateInputs),
-			Err(SetupError::ConstraintSystemUnsatisfied) => fail!(Error::<T>::InvalidMembershipProof),
-			Err(SetupError::VerificationFailed) => fail!(Error::<T>::ZkVerificationFailed),
-			Err(SetupError::InvalidProof) => fail!(Error::<T>::InvalidMembershipProof),
-			Ok(_) => Ok(()),
-		}
+		)?;
+		Ok(())
 	}
 }
 
@@ -669,16 +685,16 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	pub fn add_leaf(tree: &mut MerkleTree, data: &ScalarBytes, zero_tree: &Vec<ScalarBytes>) {
+	pub fn add_leaf(tree: &mut MerkleTree, data: &ScalarBytes) -> Result<(), DispatchError> {
 		let mut edge_index = tree.leaf_count;
 		let mut hash = data.clone();
 		// Update the tree
 		for i in 0..tree.edge_nodes.len() {
 			hash = if edge_index % 2 == 0 {
 				tree.edge_nodes[i] = hash.clone();
-				tree.setup.hash(&hash, &zero_tree[i])
+				tree.setup.hash::<T>(&hash, &tree.zero_tree[i])?
 			} else {
-				tree.setup.hash(&tree.edge_nodes[i], &hash)
+				tree.setup.hash::<T>(&tree.edge_nodes[i], &hash)?
 			};
 
 			edge_index /= 2;
@@ -686,5 +702,6 @@ impl<T: Config> Pallet<T> {
 
 		tree.leaf_count += 1;
 		tree.root_hash = hash;
+		Ok(())
 	}
 }

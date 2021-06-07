@@ -61,9 +61,9 @@ use frame_support::{dispatch, ensure, traits::Get, weights::Weight, PalletId};
 use frame_system::ensure_signed;
 use merkle::{
 	utils::{
-		hasher::{Backend, HashFunction},
 		keys::ScalarBytes,
 		permissions::ensure_admin,
+		setup::{Backend, Curve, HashFunction},
 	},
 	Pallet as MerklePallet, Tree as TreeTrait,
 };
@@ -295,7 +295,7 @@ pub mod pallet {
 			// check if the nullifier has been used
 			T::Tree::has_used_nullifier(withdraw_proof.mixer_id.into(), withdraw_proof.nullifier_hash.clone())?;
 			// Verify the zero-knowledge proof of membership provided
-			T::Tree::verify_zk_bulletproofs(
+			T::Tree::verify_zk(
 				withdraw_proof.mixer_id.into(),
 				withdraw_proof.cached_block,
 				withdraw_proof.cached_root.clone(),
@@ -528,7 +528,7 @@ impl<T: Config> Pallet<T> {
 				Self::account_id(),
 				true,
 				HashFunction::PoseidonDefault,
-				Backend::Bulletproofs,
+				Backend::Bulletproofs(Curve::Curve25519),
 				depth,
 			)?;
 			// Creating mixer info data

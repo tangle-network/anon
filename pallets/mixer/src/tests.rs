@@ -349,7 +349,7 @@ fn should_make_mixer_with_non_native_token() {
 			1,
 			currency_id,
 			HashFunction::PoseidonDefault,
-			Backend::Bulletproofs,
+			Backend::Bulletproofs(Curve::Curve25519),
 			1_000
 		));
 
