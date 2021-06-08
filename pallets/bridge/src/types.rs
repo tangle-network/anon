@@ -26,17 +26,17 @@ pub struct WithdrawProof<T: Config> {
 	/// The cached block for the cached root being proven against
 	cached_block: <T as frame_system::Config>::BlockNumber,
 	/// The cached root being proven against
-	cached_root: ScalarData,
+	cached_root: ScalarBytes,
 	/// The individual scalar commitments (to the randomness and nullifier)
-	comms: Vec<Commitment>,
+	comms: Vec<ScalarBytes>,
 	/// The nullifier hash with itself
-	nullifier_hash: ScalarData,
+	nullifier_hash: ScalarBytes,
 	/// The proof in bytes representation
 	proof_bytes: Vec<u8>,
 	/// The leaf index scalar commitments to decide on which side to hash
-	leaf_index_commitments: Vec<Commitment>,
+	leaf_index_commitments: Vec<ScalarBytes>,
 	/// The scalar commitments to merkle proof path elements
-	proof_commitments: Vec<Commitment>,
+	proof_commitments: Vec<ScalarBytes>,
 	/// The recipient to withdraw amount of currency to
 	recipient: Option<<T as frame_system::Config>::AccountId>,
 	/// The recipient to withdraw amount of currency to
@@ -47,12 +47,12 @@ impl<T: Config> WithdrawProof<T> {
 	pub fn new(
 		mixer_id: T::TreeId,
 		cached_block: <T as frame_system::Config>::BlockNumber,
-		cached_root: ScalarData,
-		comms: Vec<Commitment>,
-		nullifier_hash: ScalarData,
+		cached_root: ScalarBytes,
+		comms: Vec<ScalarBytes>,
+		nullifier_hash: ScalarBytes,
 		proof_bytes: Vec<u8>,
-		leaf_index_commitments: Vec<Commitment>,
-		proof_commitments: Vec<Commitment>,
+		leaf_index_commitments: Vec<ScalarBytes>,
+		proof_commitments: Vec<ScalarBytes>,
 		recipient: Option<<T as frame_system::Config>::AccountId>,
 		relayer: Option<<T as frame_system::Config>::AccountId>,
 	) -> Self {

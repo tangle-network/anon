@@ -15,7 +15,7 @@ use frame_support::{dispatch, ensure, traits::Get, PalletId};
 use frame_system::ensure_signed;
 use pallet_merkle::{
 	utils::{
-		keys::{Commitment, ScalarData},
+		keys::{ScalarBytes},
 		permissions::ensure_admin,
 	},
 	Tree as TreeTrait,
@@ -37,7 +37,6 @@ pub type BalanceOf<T> = <<T as Config>::Currency as MultiCurrency<<T as frame_sy
 /// Type alias for the webb_traits::MultiCurrency::CurrencyId type
 pub type CurrencyIdOf<T> =
 	<<T as pallet::Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::CurrencyId;
-
 
 /// Implementation of Bridge pallet
 #[frame_support::pallet]
@@ -567,7 +566,7 @@ impl<T: Config> PrivacyBridgeSystem for Pallet<T> {
 			// transfer the anchor size to the module
 			T::Currency::transfer(anchor.currency_id, &account_id, &Self::account_id(), anchor.size)?;
 			// add elements to the anchor's merkle tree and save the leaves
-			T::Tree::add_members(Self::account_id(), tree_id.into(), vec![pallet_merkle::utils::keys::ScalarData::zero()])?;
+			T::Tree::add_members(Self::account_id(), tree_id.into(), vec![])?;
 			Self::deposit_event(Event::Deposit(tree_id, account_id, anchor.size));
 			Ok(())
 		}

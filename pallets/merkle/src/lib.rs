@@ -531,6 +531,10 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		Ok(())
 	}
 
+	fn is_stopped(tree_id: T::TreeId) -> bool {
+		Stopped::<T>::get(tree_id)
+	}
+
 	fn set_manager_required(sender: T::AccountId, id: T::TreeId, manager_required: bool) -> Result<(), DispatchError> {
 		let mut manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		// Changing manager required should always require an extrinsic from the

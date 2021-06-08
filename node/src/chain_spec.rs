@@ -163,6 +163,7 @@ fn testnet_genesis(
 			// Assign network admin rights.
 			key: root_key,
 		},
+		pallet_dynamic_fee: Default::default(),
 		pallet_ethereum: Default::default(),
 		pallet_evm: EVMConfig { accounts: evm_accounts },
 	}

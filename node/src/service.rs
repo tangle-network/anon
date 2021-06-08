@@ -16,6 +16,7 @@ use sc_service::{error::Error as ServiceError, BasePath, Configuration, TaskMana
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sp_consensus::SlotData;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
+use sp_core::U256;
 
 use std::{
 	collections::{BTreeMap, HashMap},
