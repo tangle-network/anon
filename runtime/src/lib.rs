@@ -49,7 +49,7 @@ pub use pallet_timestamp::Call as TimestampCall;
 use sp_consensus_aura::SlotDuration;
 
 use frame_support::traits::FindAuthor;
-use merkle::utils::keys::ScalarData;
+use merkle::utils::keys::ScalarBytes;
 use webb_currencies::BasicCurrencyAdapter;
 
 use pallet_ethereum::TransactionStatus;
@@ -848,9 +848,9 @@ impl_runtime_apis! {
 	}
 
 	impl merkle::MerkleApi<Block> for Runtime {
-		fn get_leaf(tree_id: u32, index: u32) -> Option<ScalarData> {
+		fn get_leaf(tree_id: u32, index: u32) -> Option<ScalarBytes> {
 			let v = Merkle::leaves(tree_id, index);
-			if v == ScalarData::default() {
+			if v == ScalarBytes::default() {
 				None
 			} else {
 				Some(v)

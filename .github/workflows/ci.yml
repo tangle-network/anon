@@ -37,4 +37,3 @@ jobs:
 
       - name: Run Build
         run: ./scripts/build.sh
-
