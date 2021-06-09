@@ -269,13 +269,14 @@ pub mod pallet {
 		#[pallet::weight(5_000_000)]
 		pub fn wrap_and_deposit(
 			origin: OriginFor<T>,
+			currency_id: CurrencyIdOf<T>,
 			tree_id: T::TreeId,
 			leaf: ScalarBytes,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 
-			<Self as PrivacyBridgeSystem>::wrap_and_deposit(sender, tree_id, leaf)?;
+			<Self as PrivacyBridgeSystem>::wrap_and_deposit(sender, currency_id, tree_id, leaf)?;
 
 			Ok(().into())
 		}
@@ -578,7 +579,7 @@ impl<T: Config> PrivacyBridgeSystem for Pallet<T> {
 	}
 	fn wrap_and_deposit(account_id: Self::AccountId, currency_id: Self::CurrencyId, tree_id: Self::TreeId, leaf: Self::Scalar) -> Result<(), dispatch::DispatchError> {
 		let anchor = Self::get_anchor_info(tree_id)?;
-		<Self as PrivacyBridgeSystem>::wrap(account_id, currency_id, anchor.size)?;
+		<Self as PrivacyBridgeSystem>::wrap(account_id.clone(), currency_id, anchor.size)?;
 		<Self as PrivacyBridgeSystem>::deposit(account_id, tree_id.into(), leaf)?;
 		Ok(())
 	}
