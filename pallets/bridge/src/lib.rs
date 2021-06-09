@@ -56,8 +56,6 @@ pub mod pallet {
 		type Currency: MultiCurrency<<Self as frame_system::Config>::AccountId> + ExtendedTokenSystem<<Self as frame_system::Config>::AccountId, CurrencyIdOf<Self>, BalanceOf<Self>>;
 		/// The overarching merkle tree trait
 		type ChainId: Encode + Decode + Parameter + AtLeast32Bit + Default + Copy;
-		/// Scalar type for elements of trees
-		type Scalar: Parameter + Member + Default + Copy + MaybeSerializeDeserialize;
 		/// Signature type for threshold signatures
 		type ThresholdSignature: Parameter + Member + Default + Copy + MaybeSerializeDeserialize;
 		/// Native currency id
@@ -84,7 +82,7 @@ pub mod pallet {
 		T::TreeId,
 		Blake2_128Concat,
 		T::ChainId,
-		T::Scalar,
+		ScalarBytes,
 		ValueQuery>;
 
 	/// The vector of tree ids on the bridge ids
@@ -152,7 +150,7 @@ pub mod pallet {
 			/// Account id of the relayer
 			<T as frame_system::Config>::AccountId,
 			/// Merkle root
-			T::Scalar,
+			ScalarBytes,
 		),
 	}
 
@@ -191,43 +189,8 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			ensure!(T::Currency::exists(currency_id) || currency_id == T::NativeCurrencyId::get(), Error::<T>::NoneValue);
-			match WrappedTokenRegistry::<T>::get(currency_id) {
-				Some(wrapped_currency_id) => {
-					// transfer original token to bridge
-					<T::Currency as MultiCurrency<_>>::transfer(
-						currency_id,
-						&sender,
-						&Self::account_id(),
-						amount
-					)?;
-					// mint webb wrapped token
-					<T::Currency as ExtendedTokenSystem<_,_,_>>::mint(
-						wrapped_currency_id,
-						sender,
-						amount
-					)?;
-				},
-				None => {
-					let last_token_id_option = Self::last_token_id();
-					if let Some(last_token_id) = last_token_id_option {
-						let mut temp_id = <T::Currency as ExtendedTokenSystem<_,_,_>>::increment(last_token_id);
-						while <T::Currency as ExtendedTokenSystem<_,_,_>>::exists(temp_id) {
-							temp_id = <T::Currency as ExtendedTokenSystem<_,_,_>>::increment(temp_id);
-						}
-						<T::Currency as ExtendedTokenSystem<_, _, _>>::create(
-							temp_id,
-							Self::account_id(),
-							Self::account_id(),
-							One::one(), // min_balance for the token, use smallest value
-						)?;
 
-						let mut unwrapping_targets: Vec<CurrencyIdOf<T>> = ReverseWrappedTokenRegistry::<T>::get(temp_id)
-							.unwrap_or_else(|| vec![]);
-						unwrapping_targets.push(currency_id);
-						ReverseWrappedTokenRegistry::<T>::insert(temp_id, unwrapping_targets);
-					}
-				}
-			}
+			<Self as PrivacyBridgeSystem>::wrap(sender, currency_id, amount)?;
 
 			Ok(().into())
 		}
@@ -244,22 +207,9 @@ pub mod pallet {
 			ensure!(T::Currency::exists(currency_id) || currency_id == T::NativeCurrencyId::get(), Error::<T>::NoneValue);
 			// ensure token is a wrapped token
 			ensure!(ReverseWrappedTokenRegistry::<T>::contains_key(currency_id), Error::<T>::NoneValue);
-			if let Some(unwrapped_currency_ids) = ReverseWrappedTokenRegistry::<T>::get(currency_id) {
-				ensure!(unwrapped_currency_ids.iter().any(|elt| *elt == into_currency_id), Error::<T>::NoneValue);
-				// transfer original token from bridge to sender
-				<T::Currency as MultiCurrency<_>>::transfer(
-					into_currency_id,
-					&Self::account_id(),
-					&sender,
-					amount
-				)?;
-				// burn webb wrapped token
-				<T::Currency as ExtendedTokenSystem<_,_,_>>::burn(
-					currency_id,
-					sender,
-					amount
-				)?;
-			}
+
+			<Self as PrivacyBridgeSystem>::unwrap(sender, currency_id, into_currency_id, amount)?;
+
 			Ok(().into())
 		}
 
@@ -267,7 +217,7 @@ pub mod pallet {
 		pub fn deposit(
 			origin: OriginFor<T>,
 			tree_id: T::TreeId,
-			leaf: T::Scalar,
+			leaf: ScalarBytes,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 
@@ -320,7 +270,7 @@ pub mod pallet {
 		pub fn wrap_and_deposit(
 			origin: OriginFor<T>,
 			tree_id: T::TreeId,
-			leaf: T::Scalar,
+			leaf: ScalarBytes,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
@@ -386,7 +336,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			tree_id: T::TreeId,
 			proof: Vec<u8>,
-			leaf: T::Scalar,
+			leaf: ScalarBytes,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
@@ -405,7 +355,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			tree_id: T::TreeId,
 			proof: Vec<u8>,
-			leaf: T::Scalar,
+			leaf: ScalarBytes,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
@@ -443,7 +393,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			tree_id: T::TreeId,
 			chain_id: T::ChainId,
-			root: T::Scalar,
+			root: ScalarBytes,
 			sig: T::ThresholdSignature,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
@@ -494,7 +444,7 @@ pub mod pallet {
 		pub fn set_multi_party_key(
 			origin: OriginFor<T>,
 			tree_id: T::TreeId,
-			new_key: T::Scalar,
+			new_key: ScalarBytes,
 			sig: T::ThresholdSignature
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
@@ -505,7 +455,7 @@ pub mod pallet {
 			Ok(().into())
 		}
 		#[pallet::weight(5_000_000)]
-		pub fn register(origin: OriginFor<T>, threshold_key_share: T::Scalar) -> DispatchResultWithPostInfo {
+		pub fn register(origin: OriginFor<T>, threshold_key_share: ScalarBytes) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 
@@ -546,32 +496,92 @@ impl<T: Config> PrivacyBridgeSystem for Pallet<T> {
 	type CurrencyId = CurrencyIdOf<T>;
 	type Balance = BalanceOf<T>;
 	type TreeId = T::TreeId;
-	type Scalar = T::Scalar;
+	type Scalar = ScalarBytes;
 
-	fn wrap(account_id: Self::AccountId, currency_id: Self::CurrencyId, amount: Self::Balance)
-		-> Result<(), dispatch::DispatchError> { Ok(()) }
-	fn unwrap(account_id: Self::AccountId, currency_id: Self::CurrencyId, amount: Self::Balance)
-		-> Result<(), dispatch::DispatchError> { Ok(()) }
-	fn deposit(account_id: Self::AccountId, tree_id: Self::TreeId, leaf: Self::Scalar)
-		-> Result<(), dispatch::DispatchError> {
-			let anchor = Self::get_anchor_info(tree_id)?;
-			let currency_id = anchor.currency_id;
-			// ensure token exists
-			ensure!(T::Currency::exists(currency_id), Error::<T>::NoneValue);
-			// ensure token has a webb-wrapped token (it is not a webb-wrapped token)
-			ensure!(WrappedTokenRegistry::<T>::contains_key(currency_id), Error::<T>::NoneValue);
-			// ensure the account_id has enough balance to cover anchor size
-			let balance = T::Currency::free_balance(anchor.currency_id, &account_id);
-			ensure!(balance >= anchor.size, Error::<T>::InsufficientBalance);
-			// transfer the anchor size to the module
-			T::Currency::transfer(anchor.currency_id, &account_id, &Self::account_id(), anchor.size)?;
-			// add elements to the anchor's merkle tree and save the leaves
-			T::Tree::add_members(Self::account_id(), tree_id.into(), vec![])?;
-			Self::deposit_event(Event::Deposit(tree_id, account_id, anchor.size));
-			Ok(())
+	fn wrap(account_id: Self::AccountId, currency_id: Self::CurrencyId, amount: Self::Balance) -> Result<(), dispatch::DispatchError> {
+		match WrappedTokenRegistry::<T>::get(currency_id) {
+			Some(wrapped_currency_id) => {
+				// transfer original token to bridge
+				<T::Currency as MultiCurrency<_>>::transfer(
+					currency_id,
+					&account_id,
+					&Self::account_id(),
+					amount
+				)?;
+				// mint webb wrapped token
+				<T::Currency as ExtendedTokenSystem<_,_,_>>::mint(
+					wrapped_currency_id,
+					account_id,
+					amount
+				)?;
+			},
+			None => {
+				let last_token_id_option = Self::last_token_id();
+				if let Some(last_token_id) = last_token_id_option {
+					let mut temp_id = <T::Currency as ExtendedTokenSystem<_,_,_>>::increment(last_token_id);
+					while <T::Currency as ExtendedTokenSystem<_,_,_>>::exists(temp_id) {
+						temp_id = <T::Currency as ExtendedTokenSystem<_,_,_>>::increment(temp_id);
+					}
+					<T::Currency as ExtendedTokenSystem<_, _, _>>::create(
+						temp_id,
+						Self::account_id(),
+						Self::account_id(),
+						One::one(), // min_balance for the token, use smallest value
+					)?;
+
+					let mut unwrapping_targets: Vec<CurrencyIdOf<T>> = ReverseWrappedTokenRegistry::<T>::get(temp_id)
+						.unwrap_or_else(|| vec![]);
+					unwrapping_targets.push(currency_id);
+					ReverseWrappedTokenRegistry::<T>::insert(temp_id, unwrapping_targets);
+				}
+			}
 		}
-	fn wrap_and_deposit(account_id: Self::AccountId, tree_id: Self::TreeId, leaf: Self::Scalar)
-		-> Result<(), dispatch::DispatchError> { Ok(()) }
+
+		Ok(())
+	}
+	fn unwrap(account_id: Self::AccountId, currency_id: Self::CurrencyId, into_currency_id: Self::CurrencyId, amount: Self::Balance) -> Result<(), dispatch::DispatchError> {
+		if let Some(unwrapped_currency_ids) = ReverseWrappedTokenRegistry::<T>::get(currency_id) {
+			ensure!(unwrapped_currency_ids.iter().any(|elt| *elt == into_currency_id), Error::<T>::NoneValue);
+			// transfer original token from bridge to sender
+			<T::Currency as MultiCurrency<_>>::transfer(
+				into_currency_id,
+				&Self::account_id(),
+				&account_id,
+				amount
+			)?;
+			// burn webb wrapped token
+			<T::Currency as ExtendedTokenSystem<_,_,_>>::burn(
+				currency_id,
+				account_id,
+				amount
+			)?;
+		}
+
+		Ok(())
+	}
+	fn deposit(account_id: Self::AccountId, tree_id: Self::TreeId, leaf: Self::Scalar) -> Result<(), dispatch::DispatchError> {
+		let anchor = Self::get_anchor_info(tree_id)?;
+		let currency_id = anchor.currency_id;
+		// ensure token exists
+		ensure!(T::Currency::exists(currency_id), Error::<T>::NoneValue);
+		// ensure token has a webb-wrapped token (it is not a webb-wrapped token)
+		ensure!(WrappedTokenRegistry::<T>::contains_key(currency_id), Error::<T>::NoneValue);
+		// ensure the account_id has enough balance to cover anchor size
+		let balance = T::Currency::free_balance(anchor.currency_id, &account_id);
+		ensure!(balance >= anchor.size, Error::<T>::InsufficientBalance);
+		// transfer the anchor size to the module
+		T::Currency::transfer(anchor.currency_id, &account_id, &Self::account_id(), anchor.size)?;
+		// add elements to the anchor's merkle tree and save the leaves
+		T::Tree::add_members(Self::account_id(), tree_id.into(), vec![leaf])?;
+		Self::deposit_event(Event::Deposit(tree_id, account_id, anchor.size));
+		Ok(())
+	}
+	fn wrap_and_deposit(account_id: Self::AccountId, currency_id: Self::CurrencyId, tree_id: Self::TreeId, leaf: Self::Scalar) -> Result<(), dispatch::DispatchError> {
+		let anchor = Self::get_anchor_info(tree_id)?;
+		<Self as PrivacyBridgeSystem>::wrap(account_id, currency_id, anchor.size)?;
+		<Self as PrivacyBridgeSystem>::deposit(account_id, tree_id.into(), leaf)?;
+		Ok(())
+	}
 	fn withdraw_zk(account_id: Self::AccountId, tree_id: Self::TreeId, proof: Vec<u8>)
 		-> Result<(), dispatch::DispatchError> { Ok(()) }
 	fn withdraw_public(account_id: Self::AccountId, tree_id: Self::TreeId, proof: Vec<u8>)
@@ -592,9 +602,9 @@ impl<T: Config> GovernableBridgeSystem for Pallet<T> {
 	type Balance = BalanceOf<T>;
 	type TreeId = T::TreeId;
 	type ChainId = T::ChainId;
-	type Scalar = T::Scalar;
-	type IndividualKeyShare = T::Scalar;
-	type DistributedPublicKey = T::Scalar;
+	type Scalar = ScalarBytes;
+	type IndividualKeyShare = ScalarBytes;
+	type DistributedPublicKey = ScalarBytes;
 	type Signature = T::ThresholdSignature;
 
 	fn create_new(account_id: Self::AccountId, currency_id: Self::CurrencyId, size: Self::Balance, sig: Self::Signature)

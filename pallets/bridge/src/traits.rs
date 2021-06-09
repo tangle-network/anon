@@ -10,9 +10,9 @@ pub trait PrivacyBridgeSystem {
 
 	fn wrap(account_id: Self::AccountId, currency_id: Self::CurrencyId, amount: Self::Balance)
 		-> Result<(), dispatch::DispatchError>;
-	fn unwrap(account_id: Self::AccountId, currency_id: Self::CurrencyId, amount: Self::Balance)
+	fn unwrap(account_id: Self::AccountId, currency_id: Self::CurrencyId, into_currency_id: Self::CurrencyId, amount: Self::Balance)
 		-> Result<(), dispatch::DispatchError>;
-	fn wrap_and_deposit(account_id: Self::AccountId, tree_id: Self::TreeId, leaf: Self::Scalar)
+	fn wrap_and_deposit(account_id: Self::AccountId, currency_id: Self::CurrencyId, tree_id: Self::TreeId, leaf: Self::Scalar)
 		-> Result<(), dispatch::DispatchError>;
 	fn deposit(account_id: Self::AccountId, tree_id: Self::TreeId, leaf: Self::Scalar)
 		-> Result<(), dispatch::DispatchError>;

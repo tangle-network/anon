@@ -5,7 +5,7 @@ use super::*;
 pub struct AnchorInfo<T: Config> {
 	/// Deposit size for the mixer
 	pub size: BalanceOf<T>,
-	/// Id of the currency in the mixer
+	/// Id of the wrapped currency in the mixer
 	pub currency_id: CurrencyIdOf<T>,
 }
 
