@@ -1,9 +1,6 @@
 //! All the traits exposed to be used in other custom pallets
 
-use crate::utils::{
-	keys::ScalarBytes,
-	setup::{Backend, HashFunction},
-};
+use crate::utils::{keys::ScalarBytes, setup::Setup};
 pub use frame_support::dispatch;
 use sp_std::vec::Vec;
 
@@ -29,8 +26,7 @@ pub trait Tree<AccountId, BlockNumber, TreeId> {
 	fn create_tree(
 		sender: AccountId,
 		is_manager_required: bool,
-		hasher: HashFunction,
-		backend: Backend,
+		setup: Setup,
 		depth: u8,
 	) -> Result<TreeId, dispatch::DispatchError>;
 	/// Adds members/leaves to the tree
@@ -40,7 +36,8 @@ pub trait Tree<AccountId, BlockNumber, TreeId> {
 	fn add_nullifier(sender: AccountId, id: TreeId, nullifier: ScalarBytes) -> Result<(), dispatch::DispatchError>;
 	/// Verify membership proof
 	fn verify(id: TreeId, leaf: ScalarBytes, path: Vec<(bool, ScalarBytes)>) -> Result<(), dispatch::DispatchError>;
-	fn add_verifying_key(id: TreeId, key: Vec<u8>) -> Result<(), dispatch::DispatchError>;
+	/// Add verifying key for specific setup
+	fn add_verifying_key(setup: Setup, depth: u8, key: Vec<u8>) -> Result<(), dispatch::DispatchError>;
 	/// Verify zero-knowladge membership proof
 	fn verify_zk(
 		tree_id: TreeId,

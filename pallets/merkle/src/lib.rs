@@ -100,7 +100,7 @@ pub use traits::Tree;
 use utils::{
 	keys::ScalarBytes,
 	permissions::ensure_admin,
-	setup::{Backend, Curve, HashFunction, Setup},
+	setup::{Curve, Setup},
 };
 use weights::WeightInfo;
 
@@ -201,7 +201,7 @@ pub mod pallet {
 	/// The map of verifying keys for each backend
 	#[pallet::storage]
 	#[pallet::getter(fn verifying_keys)]
-	pub type VerifyingKeys<T: Config> = StorageMap<_, Blake2_128Concat, T::TreeId, Option<Vec<u8>>, ValueQuery>;
+	pub type VerifyingKeys<T: Config> = StorageMap<_, Blake2_128Concat, (Setup, u8), Option<Vec<u8>>, ValueQuery>;
 
 	/// The map of (tree_id, index) to the leaf commitment
 	#[pallet::storage]
@@ -299,8 +299,7 @@ pub mod pallet {
 		pub fn create_tree(
 			origin: OriginFor<T>,
 			r_is_mgr: bool,
-			hasher: HashFunction,
-			backend: Backend,
+			setup: Setup,
 			_depth: Option<u8>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
@@ -308,7 +307,7 @@ pub mod pallet {
 				Some(d) => d,
 				None => T::MaxTreeDepth::get(),
 			};
-			let _ = <Self as Tree<_, _, _>>::create_tree(sender, r_is_mgr, hasher, backend, depth)?;
+			let _ = <Self as Tree<_, _, _>>::create_tree(sender, r_is_mgr, setup, depth)?;
 			Ok(().into())
 		}
 
@@ -498,8 +497,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 	fn create_tree(
 		sender: T::AccountId,
 		is_manager_required: bool,
-		hasher: HashFunction,
-		backend: Backend,
+		setup: Setup,
 		depth: u8,
 	) -> Result<T::TreeId, DispatchError> {
 		ensure!(
@@ -512,7 +510,6 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		NextTreeId::<T>::mutate(|id| *id += One::one());
 
 		// Setting up the tree
-		let setup = Setup::new(hasher, backend);
 		let mtree = MerkleTree::new::<T>(setup, depth).map_err(|_| Error::<T>::Unimplemented)?;
 		Trees::<T>::insert(tree_id, Some(mtree));
 
@@ -555,7 +552,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		// Check if the tree requires extrinsics to be called from a manager
 
-		let verifying_key = VerifyingKeys::<T>::get(id);
+		let verifying_key = VerifyingKeys::<T>::get((tree.setup.clone(), tree.depth));
 		ensure!(
 			tree.setup.can_verify_with(&verifying_key),
 			Error::<T>::InvalidVerifierKey
@@ -623,11 +620,8 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		Ok(())
 	}
 
-	fn add_verifying_key(id: T::TreeId, key: Vec<u8>) -> Result<(), DispatchError> {
-		if !Trees::<T>::contains_key(id) {
-			return Err(Error::<T>::TreeDoesntExist.into());
-		}
-		VerifyingKeys::<T>::insert(id, Some(key));
+	fn add_verifying_key(setup: Setup, depth: u8, key: Vec<u8>) -> Result<(), DispatchError> {
+		VerifyingKeys::<T>::insert((setup, depth), Some(key));
 		Ok(())
 	}
 
@@ -644,7 +638,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		relayer: ScalarBytes,
 	) -> Result<(), DispatchError> {
 		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist)?;
-		let verifying_key = VerifyingKeys::<T>::get(&tree_id);
+		let verifying_key = VerifyingKeys::<T>::get(&(tree.setup.clone(), tree.depth));
 		// Ensure that root being checked against is in the cache
 		let old_roots = Self::cached_roots(block_number, tree_id);
 		ensure!(old_roots.iter().any(|r| *r == root), Error::<T>::InvalidMerkleRoot);

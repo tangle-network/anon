@@ -63,7 +63,7 @@ use merkle::{
 	utils::{
 		keys::ScalarBytes,
 		permissions::ensure_admin,
-		setup::{Backend, Curve, HashFunction},
+		setup::{Backend, Curve, HashFunction, Setup},
 	},
 	Pallet as MerklePallet, Tree as TreeTrait,
 };
@@ -338,14 +338,13 @@ pub mod pallet {
 		pub fn create_new(
 			origin: OriginFor<T>,
 			currency_id: CurrencyIdOf<T>,
-			hasher: HashFunction,
-			backend: Backend,
+			setup: Setup,
 			size: BalanceOf<T>,
 		) -> DispatchResultWithPostInfo {
 			ensure_admin(origin, &Self::admin())?;
 
 			let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
-			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, hasher, backend, depth)?;
+			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, setup, depth)?;
 			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 			MixerTrees::<T>::insert(mixer_id, mixer_info);
 			let mut ids = MixerTreeIds::<T>::get();
@@ -520,17 +519,14 @@ impl<T: Config> Pallet<T> {
 		// Getting the sizes from the config
 		let sizes = T::MixerSizes::get();
 		let mut mixer_ids = Vec::new();
+		let default_hasher = HashFunction::PoseidonDefault;
+		let default_backend = Backend::Bulletproofs(Curve::Curve25519);
+		let default_setup = Setup::new(default_hasher, default_backend);
 
 		// Iterating over configured sizes and initializing the mixers
 		for size in sizes.into_iter() {
 			// Creating a new merkle group and getting the id back
-			let mixer_id: T::TreeId = T::Tree::create_tree(
-				Self::account_id(),
-				true,
-				HashFunction::PoseidonDefault,
-				Backend::Bulletproofs(Curve::Curve25519),
-				depth,
-			)?;
+			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, default_setup.clone(), depth)?;
 			// Creating mixer info data
 			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, T::NativeCurrencyId::get());
 			// Saving the mixer group to storage
@@ -550,12 +546,11 @@ impl<T: Config> ExtendedMixer<T::AccountId, CurrencyIdOf<T>, BalanceOf<T>> for P
 	fn create_new(
 		_account_id: T::AccountId,
 		currency_id: CurrencyIdOf<T>,
-		hasher: HashFunction,
-		backend: Backend,
+		setup: Setup,
 		size: BalanceOf<T>,
 	) -> Result<(), dispatch::DispatchError> {
 		let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
-		let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, hasher, backend, depth)?;
+		let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, setup, depth)?;
 		let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 		MixerTrees::<T>::insert(mixer_id, mixer_info);
 		Ok(())
