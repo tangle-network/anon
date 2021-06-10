@@ -150,7 +150,6 @@ impl Config for Test {
 	type Event = Event;
 	type Currency = Tokens;
 	type ChainId = u32;
-	type Scalar = [u8; 32];
 	type ThresholdSignature = [u8; 32];
 	type NativeCurrencyId = NativeCurrencyId;
 	type DefaultAdmin = DefaultAdmin;
