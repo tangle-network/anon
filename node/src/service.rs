@@ -16,6 +16,7 @@ use sc_service::{error::Error as ServiceError, BasePath, Configuration, TaskMana
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sp_consensus::SlotData;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
+use sp_core::U256;
 
 use std::{
 	collections::{BTreeMap, HashMap},
@@ -182,6 +183,7 @@ pub fn new_partial(
 /// Builds a new service for a full client.
 pub fn new_full(mut config: Configuration, cli: &Cli) -> Result<TaskManager, ServiceError> {
 	let enable_dev_signer = cli.run.enable_dev_signer;
+	let target_gas_price = U256::from(cli.run.target_gas_price);
 
 	let sc_service::PartialComponents {
 		client,

@@ -15,6 +15,7 @@ pub trait Tree<AccountId, BlockNumber, TreeId> {
 	/// up to higher-level pallet to find the use for it
 	/// Can only be called by the manager, regardless if the manager is required
 	fn set_stopped(sender: AccountId, tree_id: TreeId, stopped: bool) -> Result<(), dispatch::DispatchError>;
+	fn is_stopped(tree_id: TreeId) -> bool;
 	/// Sets whether the manager is required for guarded calls.
 	/// Can only be called by the current manager
 	fn set_manager_required(

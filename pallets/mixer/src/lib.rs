@@ -548,7 +548,7 @@ impl<T: Config> Pallet<T> {
 
 impl<T: Config> ExtendedMixer<T::AccountId, CurrencyIdOf<T>, BalanceOf<T>> for Pallet<T> {
 	fn create_new(
-		_account_id: T::AccountId,
+		account_id: T::AccountId,
 		currency_id: CurrencyIdOf<T>,
 		hasher: HashFunction,
 		backend: Backend,
@@ -558,6 +558,10 @@ impl<T: Config> ExtendedMixer<T::AccountId, CurrencyIdOf<T>, BalanceOf<T>> for P
 		let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, hasher, backend, depth)?;
 		let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 		MixerTrees::<T>::insert(mixer_id, mixer_info);
+		// Add new id to list
+		let mut ids = MixerTreeIds::<T>::get();
+		ids.push(mixer_id);
+		MixerTreeIds::<T>::set(ids);
 		Ok(())
 	}
 }

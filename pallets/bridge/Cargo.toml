@@ -1,13 +1,10 @@
 [package]
-authors = ["Drew Stone <drew@commonwealth.im>, Filip Lazovic"]
-description = "Pallet for mixing native assets in a zero-knowledge mixer"
+name = "webb-bridge"
+version = "0.1.0"
+authors = ["Drew Stone <drew@webb.tools>"]
 edition = "2018"
-license = "Unlicense"
-name = "pallet-mixer"
-version = "3.0.0"
 
-[package.metadata.docs.rs]
-targets = ["x86_64-unknown-linux-gnu"]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 log = "0.4.8"
@@ -18,25 +15,13 @@ frame-system = { default-features = false, version = "3.0.0", git = "https://git
 sp-std = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 sp-runtime = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
-merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
+pallet-merkle = { path = "../merkle", default-features = false }
 webb-tokens = { path = "../tokens", default-features = false }
-
-
-serde = { version = "1.0.101", optional = true, features = ["derive"] }
-merlin = { version = "2.0.0", default-features = false }
-frame-benchmarking = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4", optional = true }
 webb-traits = { default-features = false, path = "../traits" }
 webb-currencies = { default-features = false, path = "../currencies" }
 
-[dependencies.bulletproofs]
-version = "2.0.0"
-package = "webb-bulletproofs"
-default-features = false
-features = ["yoloproofs"]
-
-[dependencies.bulletproofs-gadgets]
-version = "2.0.0"
-default-features = false
+serde = { version = "1.0.101", optional = true, features = ["derive"] }
+frame-benchmarking = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4", optional = true }
 
 [dependencies.curve25519-dalek]
 version = "3.0.0"
@@ -60,7 +45,7 @@ std = [
     "frame-system/std",
     "webb-tokens/std",
     "frame-benchmarking/std",
-    "merkle/std",
+    "pallet-merkle/std",
 ]
 runtime-benchmarks = [
     "frame-benchmarking",
