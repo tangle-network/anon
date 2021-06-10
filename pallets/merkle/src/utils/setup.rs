@@ -104,6 +104,13 @@ impl Setup {
 		Self { hasher, backend }
 	}
 
+	pub fn can_verify_with(&self, vk: &Option<Vec<u8>>) -> bool {
+		match self.backend {
+			Backend::Arkworks(..) => vk.is_some(),
+			_ => true,
+		}
+	}
+
 	pub fn hash<C: Config>(&self, xl: &ScalarBytes, xr: &ScalarBytes) -> Result<ScalarBytes, Error<C>> {
 		match self.backend {
 			Backend::Bulletproofs(Curve::Curve25519) => match self.hasher {

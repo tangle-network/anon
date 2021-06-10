@@ -15,11 +15,11 @@ fn setup_tree<T: Config>(caller: T::AccountId, depth: u32) {
 	let manager_required = true;
 	let hasher = HashFunction::PoseidonDefault;
 	let backend = Backend::Bulletproofs(Curve::Curve25519);
+	let setup = Setup::new(hasher, backend);
 	<Merkle<T> as Tree<T::AccountId, T::BlockNumber, T::TreeId>>::create_tree(
 		caller,
 		manager_required,
-		hasher,
-		backend,
+		setup,
 		depth as u8,
 	)
 	.unwrap();
@@ -46,8 +46,10 @@ benchmarks! {
 	}: _(
 		RawOrigin::Signed(caller),
 		false,
-		HashFunction::PoseidonDefault,
-		Backend::Bulletproofs(Curve::Curve25519),
+		Setup::new(
+			HashFunction::PoseidonDefault,
+			Backend::Bulletproofs(Curve::Curve25519)
+		),
 		Some(d as u8)
 	)
 	verify {

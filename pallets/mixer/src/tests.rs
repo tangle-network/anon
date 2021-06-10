@@ -345,11 +345,11 @@ fn should_make_mixer_with_non_native_token() {
 			1, 0, 10000000
 		));
 		assert_ok!(Mixer::initialize());
+		let setup = Setup::new(HashFunction::PoseidonDefault, Backend::Bulletproofs(Curve::Curve25519));
 		assert_ok!(<Mixer as ExtendedMixer<AccountId, CurrencyId, Balance>>::create_new(
 			1,
 			currency_id,
-			HashFunction::PoseidonDefault,
-			Backend::Bulletproofs(Curve::Curve25519),
+			setup,
 			1_000
 		));
 
