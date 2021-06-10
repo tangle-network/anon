@@ -62,7 +62,7 @@ sp-version = { default-features = false, git = "https://github.com/paritytech/su
 
 merkle = { package = "pallet-merkle", path = "../pallets/merkle", default-features = false }
 mixer = { package = "pallet-mixer", path = "../pallets/mixer", default-features = false }
-merkle-rpc = { package = "pallet-merkle-rpc", path = "../pallets/merkle/rpc", optional = true }
+merkle-rpc = { package = "pallet-merkle-rpc", path = "../pallets/merkle/rpc", default-features = false, optional = true }
 webb-currencies = { path = "../pallets/currencies", default-features = false }
 webb-tokens = { path = "../pallets/tokens", default-features = false }
 webb-traits = { path = "../pallets/traits", default-features = false }

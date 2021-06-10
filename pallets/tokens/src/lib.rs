@@ -33,12 +33,13 @@ use sp_std::{
 };
 
 use codec::{Decode, Encode};
+use frame_support::pallet_prelude::*;
 use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
 	ensure, log,
 	traits::{
 		Currency as PalletCurrency, ExistenceRequirement, Get, Imbalance, LockableCurrency as PalletLockableCurrency,
-		ReservableCurrency as PalletReservableCurrency, SignedImbalance, WithdrawReasons,
+		ReservableCurrency as PalletReservableCurrency, SignedImbalance, WithdrawReasons, 
 	},
 	transactional, PalletId,
 };
@@ -151,7 +152,7 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		/// The balance type
-		type Balance: Parameter + Member + AtLeast32BitUnsigned + Default + Copy + MaybeSerializeDeserialize;
+		type Balance: Parameter + Member + AtLeast32BitUnsigned + Default + Copy + MaybeSerializeDeserialize + MaxEncodedLen;
 
 		/// The amount type, should be signed version of `Balance`
 		type Amount: Signed
