@@ -440,40 +440,24 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		/// Adds an array of leaf data into the tree and adds calculated root to
-		/// the cache.
+		/// Adds a verifying key to the storage.
 		///
-		/// Can only be called by the manager if a manager is set.
-		///
-		/// Weights:
-		/// - Dependent on argument: `members`
-		///
-		/// - Base weight: 384_629_956_000
-		/// - DB weights: 3 reads, 2 writes
-		/// - Additional weights: 20_135_984_000 * members.len()
+		/// Can only be called by the root.
 		#[pallet::weight(0)]
 		pub fn set_verifying_key(
 			origin: OriginFor<T>,
 			key_id: T::KeyId,
 			key: Vec<u8>,
 		) -> DispatchResultWithPostInfo {
-			ensure_admin(origin, &T::AccountId::default())?;
+			ensure_root(origin)?;
 
 			<Self as Tree<_>>::set_verifying_key(key_id, key)?;
 			Ok(().into())
 		}
 
-		/// Adds an array of leaf data into the tree and adds calculated root to
-		/// the cache.
+		/// Sets the verifying key for a tree.
 		///
 		/// Can only be called by the manager if a manager is set.
-		///
-		/// Weights:
-		/// - Dependent on argument: `members`
-		///
-		/// - Base weight: 384_629_956_000
-		/// - DB weights: 3 reads, 2 writes
-		/// - Additional weights: 20_135_984_000 * members.len()
 		#[pallet::weight(0)]
 		pub fn set_verifying_key_for_tree(
 			origin: OriginFor<T>,
@@ -481,8 +465,7 @@ pub mod pallet {
 			tree_id: T::TreeId,
 		) -> DispatchResultWithPostInfo {
 			let manager_data = Managers::<T>::get(tree_id)
-				.ok_or(Error::<T>::ManagerDoesntExist)
-				.unwrap();
+				.ok_or(Error::<T>::ManagerDoesntExist)?;
 			ensure_admin(origin, &manager_data.account_id)?;
 			<Self as Tree<_>>::set_verifying_key_for_tree(key_id, tree_id)?;
 			Ok(().into())
