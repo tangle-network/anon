@@ -1042,8 +1042,8 @@ fn should_verify_simple_zk_proof_of_membership_arkworks() {
 		let mut vk_bytes = Vec::new();
 		vk.serialize(&mut vk_bytes).unwrap();
 
-		MerkleTrees::set_verifying_key(vkey_id, vk_bytes).unwrap();
-		MerkleTrees::set_verifying_key_for_tree(vkey_id, tree_id).unwrap();
+		<MerkleTrees as Tree<_>>::set_verifying_key(vkey_id, vk_bytes).unwrap();
+		<MerkleTrees as Tree<_>>::set_verifying_key_for_tree(vkey_id, tree_id).unwrap();
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf_bytes]));
 
@@ -1098,8 +1098,8 @@ fn should_fail_to_verify_empty_public_inputs_arkworks() {
 		let mut vk_bytes = Vec::new();
 		vk.serialize(&mut vk_bytes).unwrap();
 		let vkey_id = 1;
-		MerkleTrees::set_verifying_key(vkey_id, vk_bytes).unwrap();
-		MerkleTrees::set_verifying_key_for_tree(vkey_id, tree_id).unwrap();
+		<MerkleTrees as Tree<_>>::set_verifying_key(vkey_id, vk_bytes).unwrap();
+		<MerkleTrees as Tree<_>>::set_verifying_key_for_tree(vkey_id, tree_id).unwrap();
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![leaf_bytes]));
 
@@ -1192,8 +1192,8 @@ fn should_fail_to_verify_invalid_public_inputs_arkworks() {
 		vk.serialize(&mut vk_bytes).unwrap();
 		let tree_id = 0;
 		let vkey_id = 1;
-		MerkleTrees::set_verifying_key(vkey_id, vk_bytes).unwrap();
-		MerkleTrees::set_verifying_key_for_tree(vkey_id, tree_id).unwrap();
+		<MerkleTrees as Tree<_>>::set_verifying_key(vkey_id, vk_bytes).unwrap();
+		<MerkleTrees as Tree<_>>::set_verifying_key_for_tree(vkey_id, tree_id).unwrap();
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![leaf_bytes]));
 
@@ -1323,8 +1323,8 @@ fn should_fail_to_verify_with_invalid_key_arkworks() {
 		vk_bytes[0] = 1u8;
 		let tree_id = 0;
 		let vkey_id = 1;
-		MerkleTrees::set_verifying_key(vkey_id, vk_bytes).unwrap();
-		MerkleTrees::set_verifying_key_for_tree(vkey_id, tree_id).unwrap();
+		<MerkleTrees as Tree<_>>::set_verifying_key(vkey_id, vk_bytes).unwrap();
+		<MerkleTrees as Tree<_>>::set_verifying_key_for_tree(vkey_id, tree_id).unwrap();
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![leaf_bytes]));
 
