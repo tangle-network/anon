@@ -354,6 +354,7 @@ impl merkle::Config for Runtime {
 	type MaxTreeDepth = MaxTreeDepth;
 	type TreeId = u32;
 	type WeightInfo = MerkleWeights<Self>;
+	type KeyId = u32;
 }
 
 parameter_types! {
