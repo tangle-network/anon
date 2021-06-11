@@ -10,7 +10,7 @@ version = "3.0.0"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [build-dependencies]
-wasm-builder-runner = { package = "substrate-wasm-builder-runner", version = "2.0.0" }
+substrate-wasm-builder = { package = "substrate-wasm-builder", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.4" }
 
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
@@ -67,7 +67,6 @@ pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "po
 fp-rpc = { git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.4", default-features = false }
 pallet-evm-precompile-simple = { git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.4", default-features = false }
 
-
 [features]
 default = ["std", "aura"]
 aura = []
@@ -116,8 +115,8 @@ std = [
     "merkle/std",
     "merkle-rpc",
     "mixer/std",
-    "webb-tokens/std",
     "webb-currencies/std",
+    "webb-tokens/std",
 
     "fp-rpc/std",
     "pallet-ethereum/std",
