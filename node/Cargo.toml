@@ -71,6 +71,7 @@ fc-rpc-core = { default-features = false, git = "https://github.com/webb-tools/f
 fc-db = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.4" }
 fc-mapping-sync = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.4" }
 
+pallet-dynamic-fee = { git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.4" }
 pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.4" }
 pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.4" }
 

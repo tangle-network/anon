@@ -4351,6 +4351,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-dynamic-fee"
+version = "2.0.0-dev"
+source = "git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4#6df0d53ff45dd8dc3a2f8b7e53ef101dc9a54a08"
+dependencies = [
+ "async-trait",
+ "frame-support",
+ "frame-system",
+ "pallet-evm",
+ "parity-scale-codec 2.1.1",
+ "serde",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std 3.0.0",
+]
+
+[[package]]
 name = "pallet-ethereum"
 version = "2.0.0-dev"
 source = "git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4#6df0d53ff45dd8dc3a2f8b7e53ef101dc9a54a08"
@@ -8540,7 +8557,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04f8ab788026715fa63b31960869617cba39117e520eb415b0139543e325ab59"
 dependencies = [
  "cfg-if 0.1.10",
- "rand 0.7.3",
+ "rand 0.3.23",
  "static_assertions",
 ]
 
@@ -9181,6 +9198,7 @@ dependencies = [
  "jsonrpc-pubsub 15.1.0",
  "log",
  "pallet-contracts-rpc",
+ "pallet-dynamic-fee",
  "pallet-ethereum",
  "pallet-evm",
  "pallet-merkle",
