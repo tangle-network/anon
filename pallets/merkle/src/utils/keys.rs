@@ -160,20 +160,32 @@ impl Encode for PoseidonVerifyingKey {
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		let g_vec_bytes = self.bp_gens.G_vec.iter().map(|vec| {
 			vec.iter().map(|pt| pt.compress().as_bytes()).fold(vec![], |acc, curr| {
+				// inside inner len (except this should always be 32 bytes so we can drop the length)
+				// NOT_NEEDED - acc.append(&mut curr.to_vec().len().to_be_bytes().to_vec());
+				// inside inner data
 				acc.append(&mut curr.to_vec());
 				acc
 			})
 		}).fold(vec![], |acc, curr| {
+			// inner len
+			acc.append(&mut curr.to_vec().len().to_be_bytes().to_vec());
+			// inner data
 			acc.append(&mut curr);
 			acc
 		});
 
 		let h_vec_bytes = self.bp_gens.H_vec.iter().map(|vec| {
 			vec.iter().map(|pt| pt.compress().as_bytes()).fold(vec![], |acc, curr| {
+				// inside inner len (except this should always be 32 bytes so we can drop the length)
+				// NOT_NEEDED - acc.append(&mut curr.to_vec().len().to_be_bytes().to_vec());
+				// inside inner data
 				acc.append(&mut curr.to_vec());
 				acc
 			})
 		}).fold(vec![], |acc, curr| {
+			// inner len
+			acc.append(&mut curr.to_vec().len().to_be_bytes().to_vec());
+			// inner data
 			acc.append(&mut curr);
 			acc
 		});
@@ -204,16 +216,58 @@ impl Decode for PoseidonVerifyingKey {
 		input.read(&mut g_vec_len_bytes);
 		let g_vec_len: usize = u32::from_be_bytes(g_vec_len_bytes) as usize;
 
-		let g_vec_bytes = Vec::with_capacity(g_vec_len);
-		input.read(&mut g_vec_bytes);
-		let g_vec = g_vec_bytes.to_vec();
+		let g_vec = Vec::with_capacity(g_vec_len);
+		input.read(&mut g_vec);
+		let mut g_slice = g_vec.as_slice();
+		let vec_of_vecs_g = vec![];
+		while g_slice.len() > 0 {
+			let inner_vec_len = [0u8; 4];
+			g_slice.read(&mut inner_vec_len);
+			let inner_vec_len_u32 = u32::from_be_bytes(inner_vec_len);
+			let inner_vec = Vec::with_capacity(g_vec_len);
+			g_slice.read(&mut inner_vec);
+			let mut inner_g_slice = inner_vec.as_slice();
+			let vec_of_points = vec![];
+			while inner_g_slice.len() > 0 {
+				let mut inside_inner_g_slice = [0u8; 32];
+				inner_g_slice.read(&mut inside_inner_g_slice);
+				vec_of_points.push(CompressedRistretto(inside_inner_g_slice).decompress().unwrap());
+			}
+			vec_of_vecs_g.push(vec_of_points);
+		}
+
 
 		let mut h_vec_len_bytes = [0u8; 4];
 		input.read(&mut g_vec_len_bytes);
 		let h_vec_len: usize = u32::from_be_bytes(g_vec_len_bytes) as usize;
 
-		let h_vec_bytes = Vec::with_capacity(h_vec_len);
-		input.read(&mut h_vec_bytes);
-		let h_vec = h_vec_bytes.to_vec();
+		let h_vec = Vec::with_capacity(h_vec_len);
+		input.read(&mut h_vec);
+		let mut h_slice = h_vec.as_slice();
+		let vec_of_vecs_h = vec![];
+		while h_slice.len() > 0 {
+			let inner_vec_len = [0u8; 4];
+			h_slice.read(&mut inner_vec_len);
+			let inner_vec_len_u32 = u32::from_be_bytes(inner_vec_len);
+			let inner_vec = Vec::with_capacity(h_vec_len);
+			h_slice.read(&mut inner_vec);
+			let mut inner_h_slice = inner_vec.as_slice();
+			let vec_of_points = vec![];
+			while inner_h_slice.len() > 0 {
+				let mut inside_inner_h_slice = [0u8; 32];
+				inner_h_slice.read(&mut inside_inner_h_slice);
+				vec_of_points.push(CompressedRistretto(inside_inner_h_slice).decompress().unwrap());
+			}
+			vec_of_vecs_h.push(vec_of_points);
+		}
+		
+		Ok(PoseidonVerifyingKey {
+			bp_gens: BulletproofGens {
+				gens_capacity,
+				party_capacity, 
+				G_vec: vec_of_vecs_g,
+				H_vec: vec_of_vecs_h,
+			}
+		})
 	}
 }
