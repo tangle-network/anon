@@ -640,7 +640,7 @@ dependencies = [
  "parity-scale-codec 1.3.7",
  "rand_core 0.5.1",
  "sp-std 2.0.1",
- "webb-bulletproofs",
+ "webb-bulletproofs 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -4475,7 +4475,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std 3.0.0",
- "webb-bulletproofs",
+ "webb-bulletproofs 2.0.2 (git+https://github.com/webb-tools/bulletproofs?branch=pub-bp-gens)",
 ]
 
 [[package]]
@@ -4514,7 +4514,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std 3.0.0",
- "webb-bulletproofs",
+ "webb-bulletproofs 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "webb-currencies",
  "webb-tokens",
  "webb-traits",
@@ -9142,8 +9142,7 @@ dependencies = [
 [[package]]
 name = "webb-bulletproofs"
 version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b8db2fdcf907c6353e0575df8c6ab919eed5647ad974fa28a78150f3884419a"
+source = "git+https://github.com/webb-tools/bulletproofs?branch=pub-bp-gens#b52d42ce66b1e65f8e62ed101307b7c543eb5773"
 dependencies = [
  "byteorder",
  "clear_on_drop",
@@ -9158,6 +9157,23 @@ dependencies = [
  "sp-std 2.0.1",
  "subtle 2.4.0",
  "thiserror",
+]
+
+[[package]]
+name = "webb-bulletproofs"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b8db2fdcf907c6353e0575df8c6ab919eed5647ad974fa28a78150f3884419a"
+dependencies = [
+ "byteorder",
+ "clear_on_drop",
+ "curve25519-dalek 3.1.0",
+ "digest 0.9.0",
+ "merlin",
+ "rand_core 0.5.1",
+ "sha3 0.9.1",
+ "sp-std 2.0.1",
+ "subtle 2.4.0",
 ]
 
 [[package]]

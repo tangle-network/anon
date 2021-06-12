@@ -109,7 +109,7 @@ use codec::{Decode, Encode};
 use curve25519_dalek::scalar::Scalar;
 use frame_support::{dispatch, ensure, traits::Get, weights::Weight, Parameter};
 use frame_system::ensure_signed;
-use lazy_static::lazy_static;
+
 use merlin::Transcript;
 use rand_core::OsRng;
 use sp_runtime::traits::{AtLeast32Bit, One};
@@ -121,15 +121,9 @@ use utils::{
 };
 use weights::WeightInfo;
 
-lazy_static! {
-	static ref POSEIDON_HASHER: Poseidon = default_hasher();
-}
-
 /// Default hasher instance used to construct the tree
-pub fn default_hasher() -> Poseidon {
+pub fn default_hasher(bp_gens: BulletproofGens) -> Poseidon {
 	let width = 6;
-	// TODO: should be able to pass the number of generators
-	let bp_gens = BulletproofGens::new(16400, 1);
 	PoseidonBuilder::new(width)
 		.bulletproof_gens(bp_gens)
 		.sbox(PoseidonSbox::Exponentiation3)
@@ -152,6 +146,8 @@ pub mod pallet {
 		type Event: IsType<<Self as frame_system::Config>::Event> + From<Event<Self>>;
 		/// The overarching tree ID type
 		type TreeId: Encode + Decode + Parameter + AtLeast32Bit + Default + Copy;
+		/// The overarching key ID type
+		type KeyId: Encode + Decode + Parameter + AtLeast32Bit + Default + Copy;
 		/// The max depth of trees
 		type MaxTreeDepth: Get<u8>;
 		/// The amount of blocks to cache roots over
@@ -168,6 +164,10 @@ pub mod pallet {
 		ExceedsMaxLeaves,
 		/// Tree doesnt exist
 		TreeDoesntExist,
+		/// Key doesnt exist
+		KeyDoesntExist,
+		/// Invalid verification key / parameters
+		InvalidVerifierKey,
 		/// Invalid membership proof
 		InvalidMembershipProof,
 		/// Invalid merkle path length
@@ -210,6 +210,21 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn next_tree_id)]
 	pub type NextTreeId<T: Config> = StorageValue<_, T::TreeId, ValueQuery>;
+
+	/// The next tree identifier up for grabs
+	#[pallet::storage]
+	#[pallet::getter(fn next_key_id)]
+	pub type NextKeyId<T: Config> = StorageValue<_, T::KeyId, ValueQuery>;
+
+	/// The map of trees to their metadata
+	#[pallet::storage]
+	#[pallet::getter(fn verifying_key_for_tree)]
+	pub type VerifyingKeyForTree<T: Config> = StorageMap<_, Blake2_128Concat, T::TreeId, T::KeyId, ValueQuery>;
+
+	/// The map of verifying keys for each backend
+	#[pallet::storage]
+	#[pallet::getter(fn verifying_keys)]
+	pub type VerifyingKeys<T: Config> = StorageMap<_, Blake2_128Concat, T::KeyId, Option<VerifyingKeyData>, ValueQuery>;
 
 	/// The map of trees to their metadata
 	#[pallet::storage]
@@ -302,13 +317,18 @@ pub mod pallet {
 		/// - DB weights: 1 read, 3 writes
 		/// - Additional weights: 151_000 * _depth
 		#[pallet::weight(<T as Config>::WeightInfo::create_tree(_depth.map_or(T::MaxTreeDepth::get() as u32, |x| x as u32)))]
-		pub fn create_tree(origin: OriginFor<T>, r_is_mgr: bool, _depth: Option<u8>) -> DispatchResultWithPostInfo {
+		pub fn create_tree(
+			origin: OriginFor<T>,
+			mgr_required: bool,
+			_depth: Option<u8>,
+			vkey_required: bool,
+		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			let depth = match _depth {
 				Some(d) => d,
 				None => T::MaxTreeDepth::get(),
 			};
-			let _ = <Self as Tree<_, _, _>>::create_tree(sender, r_is_mgr, depth)?;
+			let _ = <Self as Tree<_>>::create_tree(sender, mgr_required, depth, vkey_required)?;
 			Ok(().into())
 		}
 
@@ -330,7 +350,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 
-			<Self as Tree<_, _, _>>::set_manager_required(sender, tree_id, manager_required)?;
+			<Self as Tree<_>>::set_manager_required(sender, tree_id, manager_required)?;
 			Ok(().into())
 		}
 
@@ -357,7 +377,7 @@ pub mod pallet {
 			ensure_admin(origin, &manager_data.account_id)?;
 			// We are passing manager always since we won't have account id when calling
 			// from root origin
-			<Self as Tree<_, _, _>>::set_manager(manager_data.account_id, tree_id, new_manager)?;
+			<Self as Tree<_>>::set_manager(manager_data.account_id, tree_id, new_manager)?;
 			Ok(().into())
 		}
 
@@ -376,7 +396,7 @@ pub mod pallet {
 				.ok_or(Error::<T>::ManagerDoesntExist)
 				.unwrap();
 			ensure_admin(origin, &manager_data.account_id)?;
-			<Self as Tree<_, _, _>>::set_stopped(manager_data.account_id, tree_id, stopped)?;
+			<Self as Tree<_>>::set_stopped(manager_data.account_id, tree_id, stopped)?;
 			Ok(().into())
 		}
 
@@ -398,7 +418,7 @@ pub mod pallet {
 			members: Vec<ScalarData>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
-			<Self as Tree<_, _, _>>::add_members(sender, tree_id, members)?;
+			<Self as Tree<_>>::add_members(sender, tree_id, members)?;
 			Ok(().into())
 		}
 
@@ -422,7 +442,54 @@ pub mod pallet {
 			path: Vec<(bool, ScalarData)>,
 		) -> DispatchResultWithPostInfo {
 			let _sender = ensure_signed(origin)?;
-			<Self as Tree<_, _, _>>::verify(tree_id, leaf, path)?;
+			<Self as Tree<_>>::verify(tree_id, leaf, path)?;
+			Ok(().into())
+		}
+
+		/// Adds a verifying key to the storage.
+		///
+		/// Can only be called by the root.
+		#[pallet::weight(5_000_000)]
+		pub fn add_verifying_key(
+			origin: OriginFor<T>,
+			key: Vec<u8>,
+		) -> DispatchResultWithPostInfo {
+			ensure_signed(origin)?;
+			let key_id = Self::next_key_id();
+			// Setting the next key id
+			NextKeyId::<T>::mutate(|id| *id += One::one());
+			<Self as Tree<_>>::set_verifying_key(key_id, key)?;
+			Ok(().into())
+		}
+
+		/// Adds a verifying key to the storage.
+		///
+		/// Can only be called by the root.
+		#[pallet::weight(5_000_000)]
+		pub fn set_verifying_key(
+			origin: OriginFor<T>,
+			key_id: T::KeyId,
+			key: Vec<u8>,
+		) -> DispatchResultWithPostInfo {
+			ensure_root(origin)?;
+
+			<Self as Tree<_>>::set_verifying_key(key_id, key)?;
+			Ok(().into())
+		}
+
+		/// Sets the verifying key for a tree.
+		///
+		/// Can only be called by the manager if a manager is set.
+		#[pallet::weight(5_000_000)]
+		pub fn set_verifying_key_for_tree(
+			origin: OriginFor<T>,
+			key_id: T::KeyId,
+			tree_id: T::TreeId,
+		) -> DispatchResultWithPostInfo {
+			let manager_data = Managers::<T>::get(tree_id)
+				.ok_or(Error::<T>::ManagerDoesntExist)?;
+			ensure_admin(origin, &manager_data.account_id)?;
+			<Self as Tree<_>>::set_verifying_key_for_tree(key_id, tree_id)?;
 			Ok(().into())
 		}
 	}
@@ -486,10 +553,12 @@ pub struct MerkleTree {
 	pub hasher: HashFunction,
 	/// Decide to store leaves or not
 	pub should_store_leaves: bool,
+	/// Whether verifying keys are required to modify the tree
+	pub should_require_vkey: bool,
 }
 
 impl MerkleTree {
-	pub fn new<T: Config>(depth: u8) -> Self {
+	pub fn new<T: Config>(depth: u8, should_require_vkey: bool) -> Self {
 		let zero_tree = gen_zero_tree(6, &PoseidonSbox::Exponentiation3);
 		let init_edges: Vec<ScalarData> = zero_tree[0..depth as usize]
 			.iter()
@@ -504,15 +573,17 @@ impl MerkleTree {
 			edge_nodes: init_edges,
 			hasher: HashFunction::PoseidonDefault,
 			should_store_leaves: true, // the default for now.
+			should_require_vkey: should_require_vkey,
 		}
 	}
 }
 
-impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
+impl<T: Config> Tree<T> for Pallet<T> {
 	fn create_tree(
 		sender: T::AccountId,
 		is_manager_required: bool,
 		depth: u8,
+		is_vkey_required: bool,
 	) -> Result<T::TreeId, dispatch::DispatchError> {
 		ensure!(
 			depth <= T::MaxTreeDepth::get() && depth > 0,
@@ -524,7 +595,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		NextTreeId::<T>::mutate(|id| *id += One::one());
 
 		// Setting up the tree
-		let mtree = MerkleTree::new::<T>(depth);
+		let mtree = MerkleTree::new::<T>(depth, is_vkey_required);
 		Trees::<T>::insert(tree_id, Some(mtree));
 
 		// Setting up the manager
@@ -533,6 +604,17 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 
 		Self::deposit_event(Event::NewTree(tree_id, sender, is_manager_required));
 		Ok(tree_id)
+	}
+
+	fn set_verifying_key(key_id: T::KeyId, key: Vec<u8>) -> Result<(), dispatch::DispatchError> {
+		ensure!(key.len() > 0, Error::<T>::InvalidVerifierKey);
+		VerifyingKeys::<T>::insert(key_id, Some(key));
+		Ok(())
+	}
+
+	fn set_verifying_key_for_tree(key_id: T::KeyId, tree_id: T::TreeId) -> Result<(), dispatch::DispatchError> {
+		VerifyingKeyForTree::<T>::insert(tree_id, key_id);
+		Ok(())
 	}
 
 	fn set_stopped(sender: T::AccountId, id: T::TreeId, stopped: bool) -> Result<(), dispatch::DispatchError> {
@@ -575,8 +657,17 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		members: Vec<ScalarData>,
 	) -> Result<(), dispatch::DispatchError> {
 		let mut tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
-		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let key_id = VerifyingKeyForTree::<T>::get(id);
+		let verifying_key = VerifyingKeys::<T>::get(key_id).unwrap_or(vec![]);
+		if tree.should_require_vkey {
+			ensure!(
+				verifying_key.len() > 0,
+				Error::<T>::InvalidVerifierKey
+			);
+		}
+
 		// Check if the tree requires extrinsics to be called from a manager
+		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		ensure!(
 			Self::is_manager_required(sender.clone(), &manager_data),
 			Error::<T>::ManagerIsRequired
@@ -633,6 +724,10 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
 
 		ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
+		let key_id = VerifyingKeyForTree::<T>::get(id);
+		let verifying_key = VerifyingKeys::<T>::get(key_id).unwrap_or(vec![]);
+		ensure!(verifying_key.len() > 0, Error::<T>::InvalidVerifierKey);
+		let hasher = default_hasher(verifying_key.serialize());
 		let mut hash = leaf.0;
 		for (is_right, node) in path {
 			hash = match is_right {
@@ -670,7 +765,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		);
 		// TODO: Initialise these generators with the pallet
 		let pc_gens = PedersenGens::default();
-		<Self as Tree<_, _, _>>::verify_zk(
+		<Self as Tree<_>>::verify_zk(
 			pc_gens,
 			cached_root,
 			tree.depth,

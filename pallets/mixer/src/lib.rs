@@ -94,7 +94,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type NativeCurrencyId: Get<CurrencyIdOf<Self>>;
 		/// The overarching merkle tree trait
-		type Tree: TreeTrait<Self::AccountId, Self::BlockNumber, Self::TreeId>;
+		type Tree: TreeTrait<Self>;
 		/// The small deposit length
 		#[pallet::constant]
 		type DepositLength: Get<Self::BlockNumber>;
@@ -342,7 +342,7 @@ pub mod pallet {
 			ensure_admin(origin, &Self::admin())?;
 
 			let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
-			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth)?;
+			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth, true)?;
 			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 			MixerTrees::<T>::insert(mixer_id, mixer_info);
 
@@ -522,7 +522,7 @@ impl<T: Config> Pallet<T> {
 		// Iterating over configured sizes and initializing the mixers
 		for size in sizes.into_iter() {
 			// Creating a new merkle group and getting the id back
-			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth)?;
+			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth, true)?;
 			// Creating mixer info data
 			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, T::NativeCurrencyId::get());
 			// Saving the mixer group to storage
@@ -545,7 +545,7 @@ impl<T: Config> ExtendedMixer<T::AccountId, CurrencyIdOf<T>, BalanceOf<T>> for P
 		size: BalanceOf<T>,
 	) -> Result<(), dispatch::DispatchError> {
 		let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
-		let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth)?;
+		let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth, true)?;
 		let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 		MixerTrees::<T>::insert(mixer_id, mixer_info);
 		Ok(())

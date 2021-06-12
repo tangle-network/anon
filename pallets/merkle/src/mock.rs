@@ -86,6 +86,7 @@ impl Config for Test {
 	type MaxTreeDepth = MaxTreeDepth;
 	type TreeId = u32;
 	type WeightInfo = Weights<Self>;
+	type KeyId = u32;
 }
 
 pub type MerkleCall = pallet_merkle::Call<Test>;

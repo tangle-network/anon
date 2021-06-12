@@ -8,6 +8,10 @@ use curve25519_dalek::{
 	ristretto::{CompressedRistretto, RistrettoPoint},
 	scalar::Scalar,
 };
+use bulletproofs::{
+	BulletproofGens
+};
+use sp_std::vec::Vec;
 
 #[derive(Eq, PartialEq, Clone, Default, Debug, Copy)]
 pub struct Commitment(pub CompressedRistretto);
@@ -130,5 +134,86 @@ impl ScalarData {
 
 	pub fn to_scalar(&self) -> Scalar {
 		self.0
+	}
+}
+
+pub enum VerifyingKeyData {
+	Poseidon(PoseidonVerifyingKey),
+}
+
+pub struct PoseidonVerifyingKey {
+	bp_gens: BulletproofGens,
+}
+
+// pub struct BulletproofGens {
+// 	/// The maximum number of usable generators for each party.
+// 	pub gens_capacity: usize,
+// 	/// Number of values or parties
+// 	pub party_capacity: usize,
+// 	/// Precomputed \\(\mathbf G\\) generators for each party.
+// 	G_vec: Vec<Vec<RistrettoPoint>>,
+// 	/// Precomputed \\(\mathbf H\\) generators for each party.
+// 	H_vec: Vec<Vec<RistrettoPoint>>,
+// }
+
+impl Encode for PoseidonVerifyingKey {
+	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
+		let g_vec_bytes = self.bp_gens.G_vec.iter().map(|vec| {
+			vec.iter().map(|pt| pt.compress().as_bytes()).fold(vec![], |acc, curr| {
+				acc.append(&mut curr.to_vec());
+				acc
+			})
+		}).fold(vec![], |acc, curr| {
+			acc.append(&mut curr);
+			acc
+		});
+
+		let h_vec_bytes = self.bp_gens.H_vec.iter().map(|vec| {
+			vec.iter().map(|pt| pt.compress().as_bytes()).fold(vec![], |acc, curr| {
+				acc.append(&mut curr.to_vec());
+				acc
+			})
+		}).fold(vec![], |acc, curr| {
+			acc.append(&mut curr);
+			acc
+		});
+
+		let bytes = vec![];
+		// bytes.extend_from_slice(&transform_u32_to_array_of_u8(self.bp_gens.gens_capacity as u32));
+		bytes.extend_from_slice(&self.bp_gens.gens_capacity.to_be_bytes());
+		bytes.extend_from_slice(&self.bp_gens.party_capacity.to_be_bytes());
+		bytes.extend_from_slice(&(g_vec_bytes.len() as u32).to_be_bytes());
+		bytes.extend_from_slice(&g_vec_bytes);
+		bytes.extend_from_slice(&(h_vec_bytes.len() as u32).to_be_bytes());
+		bytes.extend_from_slice(&h_vec_bytes);
+		bytes.using_encoded(f)
+	}
+}
+
+impl Decode for PoseidonVerifyingKey {
+	fn decode<I: Input>(input: &mut I) -> Result<Self, codec::Error> {
+		let mut gens_capacity_bytes = [0u8; 4];
+		input.read(&mut gens_capacity_bytes);
+		let gens_capacity: usize = u32::from_be_bytes(gens_capacity_bytes) as usize;
+
+		let mut party_capacity_bytes = [0u8; 4];
+		input.read(&mut party_capacity_bytes);
+		let party_capacity: usize = u32::from_be_bytes(party_capacity_bytes) as usize;
+
+		let mut g_vec_len_bytes = [0u8; 4];
+		input.read(&mut g_vec_len_bytes);
+		let g_vec_len: usize = u32::from_be_bytes(g_vec_len_bytes) as usize;
+
+		let g_vec_bytes = Vec::with_capacity(g_vec_len);
+		input.read(&mut g_vec_bytes);
+		let g_vec = g_vec_bytes.to_vec();
+
+		let mut h_vec_len_bytes = [0u8; 4];
+		input.read(&mut g_vec_len_bytes);
+		let h_vec_len: usize = u32::from_be_bytes(g_vec_len_bytes) as usize;
+
+		let h_vec_bytes = Vec::with_capacity(h_vec_len);
+		input.read(&mut h_vec_bytes);
+		let h_vec = h_vec_bytes.to_vec();
 	}
 }
