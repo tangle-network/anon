@@ -461,6 +461,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
+		let hasher = MerkleTrees::get_poseidon_hasher(0).unwrap();
 		assert_ok!(MerkleTrees::verify_zk_membership_proof(
 			0,
 			0,
@@ -472,6 +473,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 			proof_comms,
 			ScalarData::zero(),
 			ScalarData::zero(),
+			hasher,
 		));
 	});
 }
@@ -509,6 +511,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
+		let hasher = MerkleTrees::get_poseidon_hasher(0).unwrap();
 		assert_err!(
 			MerkleTrees::verify_zk_membership_proof(
 				0,
@@ -521,6 +524,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 				proof_comms,
 				ScalarData::zero(),
 				ScalarData::zero(),
+				hasher,
 			),
 			Error::<Test>::ZkVericationFailed
 		);
@@ -562,6 +566,7 @@ fn should_not_verify_invalid_private_inputs() {
 		let mut rng = OsRng::default();
 		comms.push(Commitment(RistrettoPoint::random(&mut rng).compress()));
 
+		let hasher = MerkleTrees::get_poseidon_hasher(0).unwrap();
 		assert_err!(
 			MerkleTrees::verify_zk_membership_proof(
 				0,
@@ -574,6 +579,7 @@ fn should_not_verify_invalid_private_inputs() {
 				proof_comms,
 				ScalarData::zero(),
 				ScalarData::zero(),
+				hasher,
 			),
 			Error::<Test>::InvalidPrivateInputs
 		);
@@ -614,6 +620,7 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 		let mut rng = OsRng::default();
 		leaf_index_comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
 		proof_comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
+		let hasher = MerkleTrees::get_poseidon_hasher(0).unwrap();
 		assert_err!(
 			MerkleTrees::verify_zk_membership_proof(
 				0,
@@ -626,6 +633,7 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 				proof_comms,
 				ScalarData::zero(),
 				ScalarData::zero(),
+				hasher,
 			),
 			Error::<Test>::ZkVericationFailed
 		);
@@ -663,6 +671,7 @@ fn should_not_verify_invalid_transcript() {
 		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
+		let hasher = MerkleTrees::get_poseidon_hasher(0).unwrap();
 		assert_err!(
 			MerkleTrees::verify_zk_membership_proof(
 				0,
@@ -675,6 +684,7 @@ fn should_not_verify_invalid_transcript() {
 				proof_comms,
 				ScalarData::zero(),
 				ScalarData::zero(),
+				hasher,
 			),
 			Error::<Test>::ZkVericationFailed
 		);
@@ -729,6 +739,7 @@ fn should_verify_zk_proof_of_membership() {
 		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
+		let hasher = MerkleTrees::get_poseidon_hasher(0).unwrap();
 		assert_ok!(MerkleTrees::verify_zk_membership_proof(
 			0,
 			0,
@@ -740,6 +751,7 @@ fn should_verify_zk_proof_of_membership() {
 			proof_comms,
 			ScalarData::zero(),
 			ScalarData::zero(),
+			hasher,
 		));
 	});
 }
@@ -773,6 +785,7 @@ fn should_verify_large_zk_proof_of_membership() {
 		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
+		let hasher = MerkleTrees::get_poseidon_hasher(0).unwrap();
 		assert_ok!(MerkleTrees::verify_zk_membership_proof(
 			0,
 			0,
@@ -784,6 +797,7 @@ fn should_verify_large_zk_proof_of_membership() {
 			proof_comms,
 			ScalarData::zero(),
 			ScalarData::zero(),
+			hasher,
 		));
 	});
 }

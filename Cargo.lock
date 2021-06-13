@@ -406,7 +406,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "libc",
  "miniz_oxide",
- "object 0.25.2",
+ "object 0.25.3",
  "rustc-demangle",
 ]
 
@@ -630,9 +630,8 @@ dependencies = [
 
 [[package]]
 name = "bulletproofs-gadgets"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f730544daa13f48320a9be1bf804dd3544193f20a4194901317fd3ec354861fb"
+version = "2.1.0"
+source = "git+https://github.com/webb-tools/bulletproof-gadgets?branch=bulletproofs-codec#4b4b2b50ea47fb1596f1b03bf39891868d11ebeb"
 dependencies = [
  "bencher",
  "curve25519-dalek 3.1.0",
@@ -640,7 +639,7 @@ dependencies = [
  "parity-scale-codec 1.3.7",
  "rand_core 0.5.1",
  "sp-std 2.0.1",
- "webb-bulletproofs 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "webb-bulletproofs",
 ]
 
 [[package]]
@@ -2314,9 +2313,9 @@ checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 
 [[package]]
 name = "globset"
-version = "0.4.6"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c152169ef1e421390738366d2f796655fec62621dabbd0fd476f905934061e4a"
+checksum = "f0fc1b9fa0e64ffb1aa5b95daa0f0f167734fd528b7c02eabc581d9d843649b1"
 dependencies = [
  "aho-corasick",
  "bstr",
@@ -3123,9 +3122,9 @@ checksum = "3576a87f2ba00f6f106fdfcd16db1d698d648a26ad8e0573cad8537c3c362d2a"
 
 [[package]]
 name = "libc"
-version = "0.2.96"
+version = "0.2.97"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5600b4e6efc5421841a2138a6b082e07fe12f9aaa12783d50e5d13325b26b4fc"
+checksum = "12b8adadd720df158f4d70dfe7ccc6adb0472d7c55ca83445f6a5ab3e36f8fb6"
 
 [[package]]
 name = "libloading"
@@ -4186,9 +4185,9 @@ dependencies = [
 
 [[package]]
 name = "object"
-version = "0.25.2"
+version = "0.25.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8bc1d42047cf336f0f939c99e97183cf31551bf0f2865a2ec9c8d91fd4ffb5e"
+checksum = "a38f2be3697a57b4060074ff41b44c16870d916ad7877c17696e063257482bc7"
 dependencies = [
  "memchr",
 ]
@@ -4475,7 +4474,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std 3.0.0",
- "webb-bulletproofs 2.0.2 (git+https://github.com/webb-tools/bulletproofs?branch=pub-bp-gens)",
+ "webb-bulletproofs",
 ]
 
 [[package]]
@@ -4514,7 +4513,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std 3.0.0",
- "webb-bulletproofs 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "webb-bulletproofs",
  "webb-currencies",
  "webb-tokens",
  "webb-traits",
@@ -8557,7 +8556,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04f8ab788026715fa63b31960869617cba39117e520eb415b0139543e325ab59"
 dependencies = [
  "cfg-if 0.1.10",
- "rand 0.3.23",
+ "rand 0.7.3",
  "static_assertions",
 ]
 
@@ -9157,23 +9156,6 @@ dependencies = [
  "sp-std 2.0.1",
  "subtle 2.4.0",
  "thiserror",
-]
-
-[[package]]
-name = "webb-bulletproofs"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b8db2fdcf907c6353e0575df8c6ab919eed5647ad974fa28a78150f3884419a"
-dependencies = [
- "byteorder",
- "clear_on_drop",
- "curve25519-dalek 3.1.0",
- "digest 0.9.0",
- "merlin",
- "rand_core 0.5.1",
- "sha3 0.9.1",
- "sp-std 2.0.1",
- "subtle 2.4.0",
 ]
 
 [[package]]

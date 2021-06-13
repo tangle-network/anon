@@ -41,6 +41,8 @@ features = ["yoloproofs"]
 [dependencies.bulletproofs-gadgets]
 version = "2.0.0"
 default-features = false
+git = "https://github.com/webb-tools/bulletproof-gadgets"
+branch = "bulletproofs-codec"
 
 [dev-dependencies]
 sp-core = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.4" }

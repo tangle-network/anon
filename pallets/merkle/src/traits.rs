@@ -1,5 +1,7 @@
 //! All the traits exposed to be used in other custom pallets
+use crate::VerifyingKeyData;
 use crate::Config;
+use bulletproofs_gadgets::poseidon::builder::Poseidon;
 use crate::utils::keys::{Commitment, ScalarData};
 use bulletproofs::PedersenGens;
 pub use frame_support::dispatch;
@@ -31,7 +33,7 @@ pub trait Tree<T: Config> {
 	/// Can only be called by the manager if the manager is required
 	fn add_nullifier(sender: T::AccountId, id: T::TreeId, nullifier: ScalarData) -> Result<(), dispatch::DispatchError>;
 	/// Set verifying key in storage
-	fn set_verifying_key(key_id: T::KeyId, key: Vec<u8>) -> Result<(), dispatch::DispatchError>;
+	fn set_verifying_key(key_id: T::KeyId, key: VerifyingKeyData) -> Result<(), dispatch::DispatchError>;
 	/// Set verifying key for tree
 	fn set_verifying_key_for_tree(key_id: T::KeyId, tree_id: T::TreeId) -> Result<(), dispatch::DispatchError>;
 	/// Verify membership proof
@@ -48,6 +50,7 @@ pub trait Tree<T: Config> {
 		proof_commitments: Vec<Commitment>,
 		recipient: ScalarData,
 		relayer: ScalarData,
+		hash_params: Poseidon,
 	) -> Result<(), dispatch::DispatchError>;
 	fn verify_zk(
 		pc_gens: PedersenGens,
@@ -60,5 +63,6 @@ pub trait Tree<T: Config> {
 		proof_commitments: Vec<Commitment>,
 		recipient: ScalarData,
 		relayer: ScalarData,
+		hash_params: Poseidon,
 	) -> Result<(), dispatch::DispatchError>;
 }

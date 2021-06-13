@@ -137,12 +137,41 @@ impl ScalarData {
 	}
 }
 
+#[derive(Encode, Decode, Clone)]
 pub enum VerifyingKeyData {
 	Poseidon(PoseidonVerifyingKey),
 }
 
+impl PartialEq for VerifyingKeyData {
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+        	Self::Poseidon(data) => {
+        		match other {
+        			Self::Poseidon(other_data) => {
+        				let self_gens = data.bp_gens;
+        				let other_gens = other_data.bp_gens;
+
+        				if self_gens.gens_capacity != other_gens.gens_capacity {
+        					return false;
+        				} else if self_gens.party_capacity != other_gens.party_capacity {
+        					return false;
+        				} else if self_gens.G_vec.len() != other_gens.G_vec.len() {
+        					return false;
+        				} else if self_gens.H_vec.len() != other_gens.H_vec.len() {
+        					return false;
+        				}
+
+        				true
+        			}
+        		}
+        	},
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct PoseidonVerifyingKey {
-	bp_gens: BulletproofGens,
+	pub bp_gens: BulletproofGens,
 }
 
 // pub struct BulletproofGens {
@@ -201,6 +230,8 @@ impl Encode for PoseidonVerifyingKey {
 		bytes.using_encoded(f)
 	}
 }
+
+impl EncodeLike for PoseidonVerifyingKey {}
 
 impl Decode for PoseidonVerifyingKey {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, codec::Error> {
