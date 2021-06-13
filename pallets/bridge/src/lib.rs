@@ -65,7 +65,7 @@ pub mod pallet {
 		#[pallet::constant]
 		type DefaultAdmin: Get<<Self as frame_system::Config>::AccountId>;
 		/// The overarching merkle tree trait
-		type Tree: TreeTrait<<Self as frame_system::Config>::AccountId, <Self as frame_system::Config>::BlockNumber, Self::TreeId>;
+		type Tree: TreeTrait<Self>;
 	}
 
 	/// The map of merkle tree ids to their anchor metadata
