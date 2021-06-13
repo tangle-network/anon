@@ -1,5 +1,4 @@
 //! All the traits exposed to be used in other custom pallets
-use crate::VerifyingKeyData;
 use crate::Config;
 use bulletproofs_gadgets::poseidon::builder::Poseidon;
 use crate::utils::keys::{Commitment, ScalarData};
@@ -27,13 +26,15 @@ pub trait Tree<T: Config> {
 	fn set_manager(sender: T::AccountId, id: T::TreeId, new_manager: T::AccountId) -> Result<(), dispatch::DispatchError>;
 	/// Creates a new Tree tree, including a manager for that tree
 	fn create_tree(sender: T::AccountId, is_manager_required: bool, depth: u8, is_vkey_required: bool) -> Result<T::TreeId, dispatch::DispatchError>;
+	/// Initializes the tree with the root hash and edge nodes, must happen after keys are set
+	fn initialize_tree(tree_id: T::TreeId, key_id: T::KeyId) -> Result<(), dispatch::DispatchError>;
 	/// Adds members/leaves to the tree
 	fn add_members(sender: T::AccountId, id: T::TreeId, members: Vec<ScalarData>) -> Result<(), dispatch::DispatchError>;
 	/// Adds a nullifier to the storage
 	/// Can only be called by the manager if the manager is required
 	fn add_nullifier(sender: T::AccountId, id: T::TreeId, nullifier: ScalarData) -> Result<(), dispatch::DispatchError>;
 	/// Set verifying key in storage
-	fn set_verifying_key(key_id: T::KeyId, key: VerifyingKeyData) -> Result<(), dispatch::DispatchError>;
+	fn set_verifying_key(key_id: T::KeyId, key: Vec<u8>) -> Result<(), dispatch::DispatchError>;
 	/// Set verifying key for tree
 	fn set_verifying_key_for_tree(key_id: T::KeyId, tree_id: T::TreeId) -> Result<(), dispatch::DispatchError>;
 	/// Verify membership proof
@@ -50,7 +51,6 @@ pub trait Tree<T: Config> {
 		proof_commitments: Vec<Commitment>,
 		recipient: ScalarData,
 		relayer: ScalarData,
-		hash_params: Poseidon,
 	) -> Result<(), dispatch::DispatchError>;
 	fn verify_zk(
 		pc_gens: PedersenGens,
@@ -63,6 +63,6 @@ pub trait Tree<T: Config> {
 		proof_commitments: Vec<Commitment>,
 		recipient: ScalarData,
 		relayer: ScalarData,
-		hash_params: Poseidon,
+		hash_params: &Poseidon,
 	) -> Result<(), dispatch::DispatchError>;
 }
