@@ -1,25 +1,31 @@
-//! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
-use std::{sync::{Arc, Mutex}, cell::RefCell, time::Duration, collections::{HashMap, BTreeMap}};
-use fc_rpc::EthTask;
-use fc_rpc_core::types::{FilterPool, PendingTransactions};
-use sc_client_api::{ExecutorProvider, RemoteBackend, BlockchainEvents};
+//! Service and ServiceFactory implementation. Specialized wrapper over
+//! substrate service.
 use fc_consensus::FrontierBlockImport;
 use fc_mapping_sync::MappingSyncWorker;
-use webb_runtime::{self, opaque::Block, RuntimeApi};
-use sc_service::{error::Error as ServiceError, Configuration, TaskManager, BasePath};
+use fc_rpc::EthTask;
+use fc_rpc_core::types::{FilterPool, PendingTransactions};
+use sc_client_api::{BlockchainEvents, ExecutorProvider, RemoteBackend};
+use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
-use sc_consensus_aura::{ImportQueueParams, StartAuraParams, SlotProportion};
-use sp_consensus_aura::sr25519::{AuthorityPair as AuraPair};
 use sc_finality_grandpa::SharedVoterState;
+use sc_service::{error::Error as ServiceError, BasePath, Configuration, TaskManager};
+use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
+use std::{
+	cell::RefCell,
+	collections::{BTreeMap, HashMap},
+	sync::{Arc, Mutex},
+	time::Duration,
+};
+use webb_runtime::{self, opaque::Block, RuntimeApi};
 
-use sc_telemetry::{Telemetry, TelemetryWorker};
-use sc_cli::SubstrateCli;
 use futures::StreamExt;
+use sc_cli::SubstrateCli;
+use sc_telemetry::{Telemetry, TelemetryWorker};
 
-use sp_core::U256;
-use sp_consensus::SlotData;
 use sc_consensus_aura::slot_duration;
+use sp_consensus::SlotData;
+use sp_core::U256;
 
 use crate::cli::Cli;
 
@@ -38,17 +44,18 @@ pub type ConsensusResult = (
 	FrontierBlockImport<
 		Block,
 		sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
-		FullClient
+		FullClient,
 	>,
-	sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>
+	sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
 );
 
 pub fn open_frontier_backend(config: &Configuration) -> Result<Arc<fc_db::Backend<Block>>, String> {
-	let config_dir = config.base_path.as_ref()
+	let config_dir = config
+		.base_path
+		.as_ref()
 		.map(|base_path| base_path.config_dir(config.chain_spec.id()))
 		.unwrap_or_else(|| {
-			BasePath::from_project("", "", &crate::cli::Cli::executable_name())
-				.config_dir(config.chain_spec.id())
+			BasePath::from_project("", "", &crate::cli::Cli::executable_name()).config_dir(config.chain_spec.id())
 		});
 	let database_dir = config_dir.join("frontier").join("db");
 
@@ -56,18 +63,33 @@ pub fn open_frontier_backend(config: &Configuration) -> Result<Arc<fc_db::Backen
 		source: fc_db::DatabaseSettingsSrc::RocksDb {
 			path: database_dir,
 			cache_size: 0,
-		}
+		},
 	})?))
 }
 
-pub fn new_partial(config: &Configuration, #[allow(unused_variables)] cli: &Cli) -> Result<
+pub fn new_partial(
+	config: &Configuration,
+	#[allow(unused_variables)] cli: &Cli,
+) -> Result<
 	sc_service::PartialComponents<
-		FullClient, FullBackend, FullSelectChain,
+		FullClient,
+		FullBackend,
+		FullSelectChain,
 		sp_consensus::import_queue::BasicQueue<Block, sp_api::TransactionFor<FullClient, Block>>,
 		sc_transaction_pool::FullPool<Block, FullClient>,
-		(ConsensusResult, PendingTransactions, Option<FilterPool>, Arc<fc_db::Backend<Block>>, Option<Telemetry>),
->, ServiceError> {
-	let telemetry = config.telemetry_endpoints.clone()
+		(
+			ConsensusResult,
+			PendingTransactions,
+			Option<FilterPool>,
+			Arc<fc_db::Backend<Block>>,
+			Option<Telemetry>,
+		),
+	>,
+	ServiceError,
+> {
+	let telemetry = config
+		.telemetry_endpoints
+		.clone()
 		.filter(|x| !x.is_empty())
 		.map(|endpoints| -> Result<_, sc_telemetry::Error> {
 			let worker = TelemetryWorker::new(16)?;
@@ -76,18 +98,16 @@ pub fn new_partial(config: &Configuration, #[allow(unused_variables)] cli: &Cli)
 		})
 		.transpose()?;
 
-	let (client, backend, keystore_container, task_manager) =
-		sc_service::new_full_parts::<Block, RuntimeApi, Executor>(
-			&config,
-			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
-		)?;
+	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, Executor>(
+		&config,
+		telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
+	)?;
 	let client = Arc::new(client);
 
-	let telemetry = telemetry
-		.map(|(worker, telemetry)| {
-			task_manager.spawn_handle().spawn("telemetry", worker.run());
-			telemetry
-		});
+	let telemetry = telemetry.map(|(worker, telemetry)| {
+		task_manager.spawn_handle().spawn("telemetry", worker.run());
+		telemetry
+	});
 
 	let select_chain = sc_consensus::LongestChain::new(backend.clone());
 
@@ -99,11 +119,9 @@ pub fn new_partial(config: &Configuration, #[allow(unused_variables)] cli: &Cli)
 		client.clone(),
 	);
 
-	let pending_transactions: PendingTransactions
-		= Some(Arc::new(Mutex::new(HashMap::new())));
+	let pending_transactions: PendingTransactions = Some(Arc::new(Mutex::new(HashMap::new())));
 
-	let filter_pool: Option<FilterPool>
-		= Some(Arc::new(Mutex::new(BTreeMap::new())));
+	let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
 
 	let frontier_backend = open_frontier_backend(config)?;
 
@@ -116,83 +134,81 @@ pub fn new_partial(config: &Configuration, #[allow(unused_variables)] cli: &Cli)
 		telemetry.as_ref().map(|x| x.handle()),
 	)?;
 
-	let frontier_block_import = FrontierBlockImport::new(
-		grandpa_block_import.clone(),
-		client.clone(),
-		frontier_backend.clone(),
-	);
+	let frontier_block_import =
+		FrontierBlockImport::new(grandpa_block_import.clone(), client.clone(), frontier_backend.clone());
 
 	let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
 	let raw_slot_duration = slot_duration.slot_duration();
 
-	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(
-		ImportQueueParams {
-			block_import: frontier_block_import.clone(),
-			justification_import: Some(Box::new(grandpa_block_import.clone())),
-			client: client.clone(),
-			create_inherent_data_providers: move |_, ()| async move {
-				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(ImportQueueParams {
+		block_import: frontier_block_import.clone(),
+		justification_import: Some(Box::new(grandpa_block_import.clone())),
+		client: client.clone(),
+		create_inherent_data_providers: move |_, ()| async move {
+			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
-				let slot =
-					sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
-						*timestamp,
-						raw_slot_duration,
-					);
+			let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
+				*timestamp,
+				raw_slot_duration,
+			);
 
-				let fee = pallet_dynamic_fee::InherentDataProvider(target_gas_price);
+			let fee = pallet_dynamic_fee::InherentDataProvider(target_gas_price);
 
-				Ok((timestamp, slot, fee))
-			},
-			spawner: &task_manager.spawn_essential_handle(),
-			can_author_with: sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
-			registry: config.prometheus_registry(),
-			check_for_equivocation: Default::default(),
-			telemetry: telemetry.as_ref().map(|x| x.handle()),
+			Ok((timestamp, slot, fee))
 		},
-	)?;
+		spawner: &task_manager.spawn_essential_handle(),
+		can_author_with: sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
+		registry: config.prometheus_registry(),
+		check_for_equivocation: Default::default(),
+		telemetry: telemetry.as_ref().map(|x| x.handle()),
+	})?;
 
 	Ok(sc_service::PartialComponents {
-		client, backend, task_manager, import_queue, keystore_container,
-		select_chain, transaction_pool,
+		client,
+		backend,
+		task_manager,
+		import_queue,
+		keystore_container,
+		select_chain,
+		transaction_pool,
 		other: (
 			(frontier_block_import, grandpa_link),
 			pending_transactions,
 			filter_pool,
 			frontier_backend,
 			telemetry,
-		)
+		),
 	})
 }
 
 /// Builds a new service for a full client.
-pub fn new_full(
-	config: Configuration,
-	cli: &Cli,
-) -> Result<TaskManager, ServiceError> {
+pub fn new_full(config: Configuration, cli: &Cli) -> Result<TaskManager, ServiceError> {
 	let enable_dev_signer = cli.run.enable_dev_signer;
 	let target_gas_price = U256::from(cli.run.target_gas_price);
 
 	let sc_service::PartialComponents {
-		client, backend, mut task_manager, import_queue, keystore_container,
-		select_chain, transaction_pool,
+		client,
+		backend,
+		mut task_manager,
+		import_queue,
+		keystore_container,
+		select_chain,
+		transaction_pool,
 		other: (consensus_result, pending_transactions, filter_pool, frontier_backend, mut telemetry),
 	} = new_partial(&config, cli)?;
 
-	let (network, system_rpc_tx, network_starter) =
-		sc_service::build_network(sc_service::BuildNetworkParams {
-			config: &config,
-			client: client.clone(),
-			transaction_pool: transaction_pool.clone(),
-			spawn_handle: task_manager.spawn_handle(),
-			import_queue,
-			on_demand: None,
-			block_announce_validator_builder: None,
-		})?;
+	let (network, system_rpc_tx, network_starter) = sc_service::build_network(sc_service::BuildNetworkParams {
+		config: &config,
+		client: client.clone(),
+		transaction_pool: transaction_pool.clone(),
+		spawn_handle: task_manager.spawn_handle(),
+		import_queue,
+		on_demand: None,
+		block_announce_validator_builder: None,
+	})?;
 
 	if config.offchain_worker.enabled {
-		sc_service::build_offchain_workers(
-			&config, task_manager.spawn_handle(), client.clone(), network.clone(),
-		);
+		sc_service::build_offchain_workers(&config, task_manager.spawn_handle(), client.clone(), network.clone());
 	}
 
 	let role = config.role.clone();
@@ -246,10 +262,7 @@ pub fn new_full(
 				},
 				select_chain: select_chain.clone(),
 			};
-			crate::rpc::create_full(
-				deps,
-				subscription_task_executor.clone()
-			)
+			crate::rpc::create_full(deps, subscription_task_executor.clone())
 		};
 
 		(rpc_extensions_builder, rpc_setup)
@@ -263,25 +276,24 @@ pub fn new_full(
 			client.clone(),
 			backend.clone(),
 			frontier_backend.clone(),
-		).for_each(|()| futures::future::ready(()))
+		)
+		.for_each(|()| futures::future::ready(())),
 	);
 
-	let _rpc_handlers = sc_service::spawn_tasks(
-		sc_service::SpawnTasksParams {
-			network: network.clone(),
-			client: client.clone(),
-			keystore: keystore_container.sync_keystore(),
-			task_manager: &mut task_manager,
-			transaction_pool: transaction_pool.clone(),
-			rpc_extensions_builder: Box::new(rpc_extensions_builder),
-			on_demand: None,
-			remote_blockchain: None,
-			backend,
-			system_rpc_tx,
-			config,
-			telemetry: telemetry.as_mut(),
-		},
-	)?;
+	let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
+		network: network.clone(),
+		client: client.clone(),
+		keystore: keystore_container.sync_keystore(),
+		task_manager: &mut task_manager,
+		transaction_pool: transaction_pool.clone(),
+		rpc_extensions_builder: Box::new(rpc_extensions_builder),
+		on_demand: None,
+		remote_blockchain: None,
+		backend,
+		system_rpc_tx,
+		config,
+		telemetry: telemetry.as_mut(),
+	})?;
 
 	let (shared_voter_state, _finality_proof_provider) = rpc_setup;
 
@@ -291,24 +303,17 @@ pub fn new_full(
 		const FILTER_RETAIN_THRESHOLD: u64 = 100;
 		task_manager.spawn_essential_handle().spawn(
 			"frontier-filter-pool",
-			EthTask::filter_pool_task(
-					Arc::clone(&client),
-					filter_pool,
-					FILTER_RETAIN_THRESHOLD,
-			)
+			EthTask::filter_pool_task(Arc::clone(&client), filter_pool, FILTER_RETAIN_THRESHOLD),
 		);
 	}
 
-	// Spawn Frontier pending transactions maintenance task (as essential, otherwise we leak).
+	// Spawn Frontier pending transactions maintenance task (as essential, otherwise
+	// we leak).
 	if let Some(pending_transactions) = pending_transactions {
 		const TRANSACTION_RETAIN_THRESHOLD: u64 = 5;
 		task_manager.spawn_essential_handle().spawn(
 			"frontier-pending-transactions",
-			EthTask::pending_transaction_task(
-				Arc::clone(&client),
-					pending_transactions,
-					TRANSACTION_RETAIN_THRESHOLD,
-				)
+			EthTask::pending_transaction_task(Arc::clone(&client), pending_transactions, TRANSACTION_RETAIN_THRESHOLD),
 		);
 	}
 
@@ -321,41 +326,37 @@ pub fn new_full(
 			telemetry.as_ref().map(|x| x.handle()),
 		);
 
-		let can_author_with =
-			sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone());
+		let can_author_with = sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone());
 
 		let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
 		let raw_slot_duration = slot_duration.slot_duration();
 
-		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _>(
-			StartAuraParams {
-				slot_duration,
-				client: client.clone(),
-				select_chain: select_chain.clone(),
-				block_import: frontier_block_import,
-				proposer_factory,
-				create_inherent_data_providers: move |_, ()| async move {
-					let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _>(StartAuraParams {
+			slot_duration,
+			client: client.clone(),
+			select_chain: select_chain.clone(),
+			block_import: frontier_block_import,
+			proposer_factory,
+			create_inherent_data_providers: move |_, ()| async move {
+				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
-					let slot =
-						sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
-							*timestamp,
-							raw_slot_duration,
-						);
+				let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
+					*timestamp,
+					raw_slot_duration,
+				);
 
-					let fee = pallet_dynamic_fee::InherentDataProvider(target_gas_price);
+				let fee = pallet_dynamic_fee::InherentDataProvider(target_gas_price);
 
-					Ok((timestamp, slot, fee))
-				},
-				force_authoring,
-				backoff_authoring_blocks,
-				keystore: keystore_container.sync_keystore(),
-				can_author_with,
-				sync_oracle: network.clone(),
-				block_proposal_slot_portion: SlotProportion::new(2f32 / 3f32),
-				telemetry: telemetry.as_ref().map(|x| x.handle()),
+				Ok((timestamp, slot, fee))
 			},
-		)?;
+			force_authoring,
+			backoff_authoring_blocks,
+			keystore: keystore_container.sync_keystore(),
+			can_author_with,
+			sync_oracle: network.clone(),
+			block_proposal_slot_portion: SlotProportion::new(2f32 / 3f32),
+			telemetry: telemetry.as_ref().map(|x| x.handle()),
+		})?;
 
 		// the AURA authoring task is considered essential, i.e. if it
 		// fails we take down the service with it.
@@ -394,15 +395,14 @@ pub fn new_full(
 				telemetry: telemetry.as_ref().map(|x| x.handle()),
 				voting_rule: sc_finality_grandpa::VotingRulesBuilder::default().build(),
 				prometheus_registry,
-				shared_voter_state: shared_voter_state,
+				shared_voter_state,
 			};
 
 			// the GRANDPA voter task is considered infallible, i.e.
 			// if it fails we take down the service with it.
-			task_manager.spawn_essential_handle().spawn_blocking(
-				"grandpa-voter",
-				sc_finality_grandpa::run_grandpa_voter(grandpa_config)?
-			);
+			task_manager
+				.spawn_essential_handle()
+				.spawn_blocking("grandpa-voter", sc_finality_grandpa::run_grandpa_voter(grandpa_config)?);
 		}
 	}
 
@@ -411,7 +411,9 @@ pub fn new_full(
 }
 
 pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
-	let telemetry = config.telemetry_endpoints.clone()
+	let telemetry = config
+		.telemetry_endpoints
+		.clone()
 		.filter(|x| !x.is_empty())
 		.map(|endpoints| -> Result<_, sc_telemetry::Error> {
 			let worker = TelemetryWorker::new(16)?;
@@ -426,11 +428,10 @@ pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
 			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
 		)?;
 
-	let mut telemetry = telemetry
-		.map(|(worker, telemetry)| {
-			task_manager.spawn_handle().spawn("telemetry", worker.run());
-			telemetry
-		});
+	let mut telemetry = telemetry.map(|(worker, telemetry)| {
+		task_manager.spawn_handle().spawn("telemetry", worker.run());
+		telemetry
+	});
 
 	let select_chain = sc_consensus::LongestChain::new(backend.clone());
 
@@ -451,29 +452,26 @@ pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
 
 	let slot_duration = sc_consensus_aura::slot_duration(&*client)?.slot_duration();
 
-	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(
-		ImportQueueParams {
-			block_import: grandpa_block_import.clone(),
-			justification_import: Some(Box::new(grandpa_block_import.clone())),
-			client: client.clone(),
-			create_inherent_data_providers: move |_, ()| async move {
-				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(ImportQueueParams {
+		block_import: grandpa_block_import.clone(),
+		justification_import: Some(Box::new(grandpa_block_import.clone())),
+		client: client.clone(),
+		create_inherent_data_providers: move |_, ()| async move {
+			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
-				let slot =
-					sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
-						*timestamp,
-						slot_duration,
-					);
+			let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
+				*timestamp,
+				slot_duration,
+			);
 
-				Ok((timestamp, slot))
-			},
-			spawner: &task_manager.spawn_essential_handle(),
-			can_author_with: sp_consensus::NeverCanAuthor,
-			registry: config.prometheus_registry(),
-			check_for_equivocation: Default::default(),
-			telemetry: telemetry.as_ref().map(|x| x.handle()),
+			Ok((timestamp, slot))
 		},
-	)?;
+		spawner: &task_manager.spawn_essential_handle(),
+		can_author_with: sp_consensus::NeverCanAuthor,
+		registry: config.prometheus_registry(),
+		check_for_equivocation: Default::default(),
+		telemetry: telemetry.as_ref().map(|x| x.handle()),
+	})?;
 
 	let light_deps = crate::rpc::LightDeps {
 		remote_blockchain: backend.remote_blockchain(),
@@ -484,21 +482,18 @@ pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
 
 	let rpc_extensions = crate::rpc::create_light(light_deps);
 
-	let (network, system_rpc_tx, network_starter) =
-		sc_service::build_network(sc_service::BuildNetworkParams {
-			config: &config,
-			client: client.clone(),
-			transaction_pool: transaction_pool.clone(),
-			spawn_handle: task_manager.spawn_handle(),
-			import_queue,
-			on_demand: Some(on_demand.clone()),
-			block_announce_validator_builder: None,
-		})?;
+	let (network, system_rpc_tx, network_starter) = sc_service::build_network(sc_service::BuildNetworkParams {
+		config: &config,
+		client: client.clone(),
+		transaction_pool: transaction_pool.clone(),
+		spawn_handle: task_manager.spawn_handle(),
+		import_queue,
+		on_demand: Some(on_demand.clone()),
+		block_announce_validator_builder: None,
+	})?;
 
 	if config.offchain_worker.enabled {
-		sc_service::build_offchain_workers(
-			&config, task_manager.spawn_handle(), client.clone(), network.clone(),
-		);
+		sc_service::build_offchain_workers(&config, task_manager.spawn_handle(), client.clone(), network.clone());
 	}
 
 	sc_service::spawn_tasks(sc_service::SpawnTasksParams {

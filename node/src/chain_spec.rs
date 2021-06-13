@@ -164,8 +164,6 @@ fn testnet_genesis(
 			key: root_key,
 		},
 		pallet_ethereum: Default::default(),
-		pallet_evm: EVMConfig {
-			accounts: evm_accounts,
-		},
+		pallet_evm: EVMConfig { accounts: evm_accounts },
 	}
 }

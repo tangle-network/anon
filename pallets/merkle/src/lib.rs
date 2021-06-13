@@ -474,10 +474,7 @@ pub mod pallet {
 		///
 		/// Can only be called by the root.
 		#[pallet::weight(5_000_000)]
-		pub fn add_verifying_key(
-			origin: OriginFor<T>,
-			key: Vec<u8>,
-		) -> DispatchResultWithPostInfo {
+		pub fn add_verifying_key(origin: OriginFor<T>, key: Vec<u8>) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 			<Self as Tree<_>>::add_verifying_key(key)?;
 			Ok(().into())
@@ -487,11 +484,7 @@ pub mod pallet {
 		///
 		/// Can only be called by the root.
 		#[pallet::weight(5_000_000)]
-		pub fn set_verifying_key(
-			origin: OriginFor<T>,
-			key_id: T::KeyId,
-			key: Vec<u8>,
-		) -> DispatchResultWithPostInfo {
+		pub fn set_verifying_key(origin: OriginFor<T>, key_id: T::KeyId, key: Vec<u8>) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
 			<Self as Tree<_>>::set_verifying_key(key_id, key)?;
@@ -507,8 +500,7 @@ pub mod pallet {
 			key_id: T::KeyId,
 			tree_id: T::TreeId,
 		) -> DispatchResultWithPostInfo {
-			let manager_data = Managers::<T>::get(tree_id)
-				.ok_or(Error::<T>::ManagerDoesntExist)?;
+			let manager_data = Managers::<T>::get(tree_id).ok_or(Error::<T>::ManagerDoesntExist)?;
 			ensure_admin(origin, &manager_data.account_id)?;
 			<Self as Tree<_>>::set_verifying_key_for_tree(key_id, tree_id)?;
 			Ok(().into())
@@ -590,7 +582,7 @@ impl MerkleTree {
 			edge_nodes: None,
 			hasher: HashFunction::PoseidonDefault,
 			should_store_leaves: true, // the default for now.
-			should_require_vkey: should_require_vkey,
+			should_require_vkey,
 		}
 	}
 }
@@ -623,10 +615,7 @@ impl<T: Config> Tree<T> for Pallet<T> {
 		Ok(tree_id)
 	}
 
-	fn initialize_tree(
-		tree_id: T::TreeId,
-		key_id: T::KeyId,
-	) -> Result<(), dispatch::DispatchError> {
+	fn initialize_tree(tree_id: T::TreeId, key_id: T::KeyId) -> Result<(), dispatch::DispatchError> {
 		let mut tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist)?;
 		ensure!(!tree.initialized, Error::<T>::AlreadyInitialized);
 		let hash_params = Self::get_poseidon_hasher(key_id)?;
@@ -768,7 +757,10 @@ impl<T: Config> Tree<T> for Pallet<T> {
 	fn verify(id: T::TreeId, leaf: ScalarData, path: Vec<(bool, ScalarData)>) -> Result<(), dispatch::DispatchError> {
 		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
 		ensure!(tree.initialized, Error::<T>::NotInitialized);
-		ensure!(tree.edge_nodes.unwrap().len() == path.len(), Error::<T>::InvalidPathLength);
+		ensure!(
+			tree.edge_nodes.unwrap().len() == path.len(),
+			Error::<T>::InvalidPathLength
+		);
 		let hash_params = Self::get_poseidon_hasher_for_tree(id)?;
 		let mut hash = leaf.0;
 		for (is_right, node) in path {
@@ -820,7 +812,7 @@ impl<T: Config> Tree<T> for Pallet<T> {
 			proof_commitments,
 			recipient,
 			relayer,
-			&hash_params
+			&hash_params,
 		)
 	}
 
@@ -966,7 +958,7 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	pub fn generate_zero_tree(hasher: HashFunction, hash_params:  &Poseidon) -> Vec<[u8; 32]> {
+	pub fn generate_zero_tree(hasher: HashFunction, hash_params: &Poseidon) -> Vec<[u8; 32]> {
 		match hasher {
 			HashFunction::PoseidonDefault => gen_zero_tree(hash_params.width, &hash_params.sbox),
 			_ => gen_zero_tree(hash_params.width, &hash_params.sbox),

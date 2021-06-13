@@ -57,13 +57,12 @@ pub mod weights;
 pub mod traits;
 
 use bulletproofs::BulletproofGens;
-use merkle::utils::keys::get_bp_gen_bytes;
 use codec::{Decode, Encode};
 use frame_support::{dispatch, ensure, traits::Get, weights::Weight, PalletId};
 use frame_system::ensure_signed;
 use merkle::{
 	utils::{
-		keys::{Commitment, ScalarData},
+		keys::{get_bp_gen_bytes, Commitment, ScalarData},
 		permissions::ensure_admin,
 	},
 	Pallet as MerklePallet, Tree as TreeTrait,
@@ -212,7 +211,7 @@ pub mod pallet {
 					if let Ok(initialized) = T::Tree::is_initialized(mixer_ids[i]) {
 						if !initialized {
 							match Self::initialize_mixer_trees() {
-								Ok(_) => {},
+								Ok(_) => {}
 								Err(e) => {
 									log::error!("Error initialising trees: {:?}", e);
 								}
@@ -530,7 +529,8 @@ impl<T: Config> Pallet<T> {
 
 	pub fn get_mixer(mixer_id: T::TreeId) -> Result<MixerInfo<T>, dispatch::DispatchError> {
 		let mixer_info = MixerTrees::<T>::get(mixer_id);
-		// ensure mixer_info has a non-zero deposit, otherwise, the mixer doesn't exist for this id
+		// ensure mixer_info has a non-zero deposit, otherwise, the mixer doesn't exist
+		// for this id
 		ensure!(mixer_info.fixed_deposit_size > Zero::zero(), Error::<T>::NoMixerForId);
 		// ensure the mixer's tree is intialized
 		let initialized = T::Tree::is_initialized(mixer_id)?;

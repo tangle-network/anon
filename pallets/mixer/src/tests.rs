@@ -1,4 +1,3 @@
-use merkle::utils::keys::get_bp_gen_bytes;
 use super::*;
 use crate::mock::{
 	new_test_ext, AccountId, Balance, Balances, CurrencyId, MerkleTrees, Mixer, MixerCall, Origin, System, Test, Tokens,
@@ -18,7 +17,7 @@ use frame_support::{
 };
 use frame_system::RawOrigin;
 use merkle::{
-	utils::keys::{Commitment, ScalarData},
+	utils::keys::{get_bp_gen_bytes, Commitment, ScalarData},
 	HighestCachedBlock,
 };
 use merlin::Transcript;
@@ -375,7 +374,11 @@ fn should_make_mixer_with_non_native_token() {
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
-		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(Mixer::account_id()), tree_id, key_id));
+		assert_ok!(MerkleTrees::initialize_tree(
+			Origin::signed(Mixer::account_id()),
+			tree_id,
+			key_id
+		));
 
 		let poseidon = MerkleTrees::get_poseidon_hasher_for_tree(tree_id).unwrap();
 

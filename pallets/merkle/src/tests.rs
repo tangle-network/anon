@@ -1,9 +1,7 @@
-use crate::utils::keys::get_bp_gen_bytes;
-use crate::utils::keys::from_bytes_to_bp_gens;
 use super::*;
 use crate::{
 	mock::*,
-	utils::keys::{Commitment, ScalarData},
+	utils::keys::{from_bytes_to_bp_gens, get_bp_gen_bytes, Commitment, ScalarData},
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use bulletproofs_gadgets::{
@@ -630,7 +628,6 @@ fn should_not_verify_invalid_private_inputs() {
 
 		let mut rng = OsRng::default();
 		comms.push(Commitment(RistrettoPoint::random(&mut rng).compress()));
-
 
 		assert_err!(
 			MerkleTrees::verify_zk_membership_proof(
