@@ -55,6 +55,7 @@ fn should_initialize_successfully() {
 fn should_initialize_successfully_on_finalize() {
 	new_test_ext().execute_with(|| {
 		<Mixer as OnFinalize<u64>>::on_finalize(1);
+		<Mixer as OnFinalize<u64>>::on_finalize(2);
 		// the mixer creates 4 groups, they should all initialise to 0
 		let val = 1_000;
 		for i in 0..4 {
