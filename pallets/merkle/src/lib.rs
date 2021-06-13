@@ -479,10 +479,7 @@ pub mod pallet {
 			key: Vec<u8>,
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
-			let key_id = Self::next_key_id();
-			// Setting the next key id
-			NextKeyId::<T>::mutate(|id| *id += One::one());
-			<Self as Tree<_>>::set_verifying_key(key_id, key)?;
+			<Self as Tree<_>>::add_verifying_key(key)?;
 			Ok(().into())
 		}
 
@@ -647,7 +644,22 @@ impl<T: Config> Tree<T> for Pallet<T> {
 		Ok(())
 	}
 
+	fn is_initialized(tree_id: T::TreeId) -> Result<bool, dispatch::DispatchError> {
+		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist)?;
+		Ok(tree.initialized)
+	}
+
+	fn add_verifying_key(key: Vec<u8>) -> Result<T::KeyId, dispatch::DispatchError> {
+		let key_id = Self::next_key_id();
+		// Setting the next key id
+		NextKeyId::<T>::mutate(|id| *id += One::one());
+		VerifyingKeys::<T>::insert(key_id, Some(key));
+		Ok(key_id)
+	}
+
 	fn set_verifying_key(key_id: T::KeyId, key: Vec<u8>) -> Result<(), dispatch::DispatchError> {
+		let next_id = Self::next_key_id();
+		ensure!(key_id < next_id, Error::<T>::InvalidVerifierKey);
 		VerifyingKeys::<T>::insert(key_id, Some(key));
 		Ok(())
 	}

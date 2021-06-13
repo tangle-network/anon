@@ -28,11 +28,15 @@ pub trait Tree<T: Config> {
 	fn create_tree(sender: T::AccountId, is_manager_required: bool, depth: u8, is_vkey_required: bool) -> Result<T::TreeId, dispatch::DispatchError>;
 	/// Initializes the tree with the root hash and edge nodes, must happen after keys are set
 	fn initialize_tree(tree_id: T::TreeId, key_id: T::KeyId) -> Result<(), dispatch::DispatchError>;
+	/// Checks if a tree is initialized
+	fn is_initialized(tree_id: T::TreeId) -> Result<bool, dispatch::DispatchError>;
 	/// Adds members/leaves to the tree
 	fn add_members(sender: T::AccountId, id: T::TreeId, members: Vec<ScalarData>) -> Result<(), dispatch::DispatchError>;
 	/// Adds a nullifier to the storage
 	/// Can only be called by the manager if the manager is required
 	fn add_nullifier(sender: T::AccountId, id: T::TreeId, nullifier: ScalarData) -> Result<(), dispatch::DispatchError>;
+	/// Add verifying key to storage and increment the next available key id
+	fn add_verifying_key(key: Vec<u8>) -> Result<T::KeyId, dispatch::DispatchError>;
 	/// Set verifying key in storage
 	fn set_verifying_key(key_id: T::KeyId, key: Vec<u8>) -> Result<(), dispatch::DispatchError>;
 	/// Set verifying key for tree
