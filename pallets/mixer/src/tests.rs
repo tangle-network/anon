@@ -36,6 +36,7 @@ fn default_hasher(bp_gens: BulletproofGens) -> Poseidon {
 fn should_initialize_successfully() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize_first_stage());
+		assert_ok!(Mixer::initialize_second_stage());
 		// the mixer creates 4 groups, they should all initialise to 0
 		let val = 1_000;
 		for i in 0..4 {
@@ -53,6 +54,7 @@ fn should_initialize_successfully() {
 fn should_initialize_successfully_on_finalize() {
 	new_test_ext().execute_with(|| {
 		<Mixer as OnFinalize<u64>>::on_finalize(1);
+		<Mixer as OnFinalize<u64>>::on_finalize(2);
 		// the mixer creates 4 groups, they should all initialise to 0
 		let val = 1_000;
 		for i in 0..4 {
@@ -114,6 +116,7 @@ fn should_stop_and_start_mixer() {
 	new_test_ext().execute_with(|| {
 		let default_admin = 4;
 		assert_ok!(Mixer::initialize_first_stage());
+		assert_ok!(Mixer::initialize_second_stage());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		let leaf = tree.generate_secrets().to_bytes().to_vec();
 		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![leaf.clone()]));
@@ -153,6 +156,7 @@ fn should_stop_and_start_mixer() {
 fn should_fail_to_deposit_with_insufficient_balance() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize_first_stage());
+		assert_ok!(Mixer::initialize_second_stage());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		for i in 0..4 {
 			let leaf = tree.generate_secrets().to_bytes().to_vec();
@@ -172,6 +176,7 @@ fn should_fail_to_deposit_with_insufficient_balance() {
 fn should_deposit_into_each_mixer_successfully() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize_first_stage());
+		assert_ok!(Mixer::initialize_second_stage());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		for i in 0..4 {
 			let leaf = tree.generate_secrets().to_bytes().to_vec();
@@ -194,13 +199,11 @@ fn should_deposit_into_each_mixer_successfully() {
 fn should_withdraw_from_each_mixer_successfully() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize_first_stage());
+		assert_ok!(Mixer::initialize_second_stage());
 		let pc_gens = PedersenGens::default();
 
 		let tree_id = 0;
-		let key_data = merkle::utils::keys::get_bp_gen_bytes(&BulletproofGens::new(4096, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
-		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
 		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
 		let bp_gens = merkle::utils::keys::from_bytes_to_bp_gens(&params);
 		let h = default_hasher(bp_gens);
@@ -268,6 +271,7 @@ fn should_cache_roots_if_no_new_deposits_show() {
 	new_test_ext().execute_with(|| {
 		System::set_block_number(1);
 		assert_ok!(Mixer::initialize_first_stage());
+		assert_ok!(Mixer::initialize_second_stage());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		let mut merkle_roots: Vec<ScalarBytes> = vec![];
 		for i in 0..4 {
@@ -302,6 +306,7 @@ fn should_not_have_cache_once_cache_length_exceeded() {
 	new_test_ext().execute_with(|| {
 		System::set_block_number(1);
 		assert_ok!(Mixer::initialize_first_stage());
+		assert_ok!(Mixer::initialize_second_stage());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		let mut merkle_roots: Vec<ScalarBytes> = vec![];
 		for i in 0..4 {
@@ -353,26 +358,25 @@ fn should_make_mixer_with_non_native_token() {
 			1, 0, 10000000
 		));
 		assert_ok!(Mixer::initialize_first_stage());
+		assert_ok!(Mixer::initialize_second_stage());
 		let setup = Setup::new(HashFunction::PoseidonDefault, Backend::Bulletproofs(Curve::Curve25519));
-		assert_ok!(<Mixer as ExtendedMixer<AccountId, CurrencyId, Balance>>::create_new(
-			1,
+		assert_ok!(<Mixer as ExtendedMixer<Test>>::create_new(
+			Mixer::account_id(),
 			currency_id,
 			setup,
 			1_000
 		));
 
-		let tree_id = 0;
-		let key_data = merkle::utils::keys::get_bp_gen_bytes(&BulletproofGens::new(4096, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
+		let tree_id = 4u32;
 		let key_id = 0;
-		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(Mixer::account_id()), tree_id, key_id));
+
 		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
 		let bp_gens = merkle::utils::keys::from_bytes_to_bp_gens(&params);
 		let h = default_hasher(bp_gens);
 
 		let pc_gens = PedersenGens::default();
 
-		let tree_id = 4u32;
 		let sender: AccountId = 0;
 		let recipient: AccountId = 1;
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");

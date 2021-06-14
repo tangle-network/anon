@@ -527,9 +527,12 @@ impl<T: Config> Pallet<T> {
 
 	pub fn get_mixer(mixer_id: T::TreeId) -> Result<MixerInfo<T>, dispatch::DispatchError> {
 		let mixer_info = MixerTrees::<T>::get(mixer_id);
-		// ensure mixer_info has a non-zero deposit, otherwise, the mixer doesn't
-		//exist for this id
-		ensure!(mixer_info.fixed_deposit_size > Zero::zero(), Error::<T>::NoMixerForId); // return the mixer info
+		// ensure mixer_info has a non-zero deposit, otherwise, the mixer doesn't exist for this id
+		ensure!(mixer_info.fixed_deposit_size > Zero::zero(), Error::<T>::NoMixerForId);
+		// ensure the mixer's tree is intialized
+		let initialized = T::Tree::is_initialized(mixer_id)?;
+		ensure!(initialized, Error::<T>::NotInitialized);
+		// return the mixer info
 		Ok(mixer_info)
 	}
 
@@ -550,7 +553,7 @@ impl<T: Config> Pallet<T> {
 
 		// Iterating over configured sizes and initializing the mixers
 		for size in sizes.into_iter() {
-			<Self as ExtendedMixer<_,_,_>>::create_new(
+			<Self as ExtendedMixer<_>>::create_new(
 				Self::account_id(),
 				T::NativeCurrencyId::get(),
 				setup.clone(),
@@ -576,10 +579,9 @@ impl<T: Config> Pallet<T> {
 		SecondStageInitialized::<T>::set(true);
 		Ok(())
 	}
-
 }
 
-impl<T: Config> ExtendedMixer<T::AccountId, CurrencyIdOf<T>, BalanceOf<T>> for Pallet<T> {
+impl<T: Config> ExtendedMixer<T> for Pallet<T> {
 	fn create_new(
 		account_id: T::AccountId,
 		currency_id: CurrencyIdOf<T>,
@@ -587,7 +589,7 @@ impl<T: Config> ExtendedMixer<T::AccountId, CurrencyIdOf<T>, BalanceOf<T>> for P
 		size: BalanceOf<T>,
 	) -> Result<(), dispatch::DispatchError> {
 		let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
-		let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, setup, depth, true)?;
+		let mixer_id: T::TreeId = T::Tree::create_tree(account_id, true, setup, depth, true)?;
 		let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 		MixerTrees::<T>::insert(mixer_id, mixer_info);
 		// Add new id to list
