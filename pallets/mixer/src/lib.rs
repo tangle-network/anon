@@ -370,14 +370,21 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_admin(origin, &Self::admin())?;
 
-			let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
-			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth, true)?;
-			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
-			MixerTrees::<T>::insert(mixer_id, mixer_info);
+			<Self as ExtendedMixer<_>>::create_new(Self::account_id(), currency_id, size)?;
+			Ok(().into())
+		}
 
-			let mut ids = MixerTreeIds::<T>::get();
-			ids.push(mixer_id);
-			MixerTreeIds::<T>::set(ids);
+		#[pallet::weight(5_000_000)]
+		pub fn create_new_and_initialize(
+			origin: OriginFor<T>,
+			currency_id: CurrencyIdOf<T>,
+			size: BalanceOf<T>,
+			key_id: T::KeyId,
+		) -> DispatchResultWithPostInfo {
+			ensure_admin(origin, &Self::admin())?;
+
+			let tree_id = <Self as ExtendedMixer<_>>::create_new(Self::account_id(), currency_id, size)?;
+			T::Tree::initialize_tree(tree_id, key_id)?;
 			Ok(().into())
 		}
 
@@ -555,7 +562,7 @@ impl<T: Config> Pallet<T> {
 		// Iterating over configured sizes and initializing the mixers
 		for size in sizes.into_iter() {
 			// Creating a new merkle group and getting the id back
-			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth, true)?;
+			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth)?;
 			// Creating mixer info data
 			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, T::NativeCurrencyId::get());
 			// Saving the mixer group to storage
@@ -586,16 +593,16 @@ impl<T: Config> Pallet<T> {
 	}
 }
 
-impl<T: Config> ExtendedMixer<T::AccountId, CurrencyIdOf<T>, BalanceOf<T>> for Pallet<T> {
+impl<T: Config> ExtendedMixer<T> for Pallet<T> {
 	fn create_new(
-		_account_id: T::AccountId,
+		account_id: T::AccountId,
 		currency_id: CurrencyIdOf<T>,
 		size: BalanceOf<T>,
-	) -> Result<(), dispatch::DispatchError> {
+	) -> Result<T::TreeId, dispatch::DispatchError> {
 		let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
-		let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth, true)?;
+		let mixer_id: T::TreeId = T::Tree::create_tree(account_id, true, depth)?;
 		let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 		MixerTrees::<T>::insert(mixer_id, mixer_info);
-		Ok(())
+		Ok(mixer_id)
 	}
 }

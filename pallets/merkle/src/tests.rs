@@ -36,14 +36,14 @@ fn default_hasher(num_gens: usize) -> Poseidon {
 #[test]
 fn can_create_tree() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3)));
 	});
 }
 
 #[test]
 fn can_update_manager_when_required() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(3), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(3)));
 
 		assert_ok!(MerkleTrees::set_manager(Origin::signed(1), 0, 2,));
 
@@ -55,7 +55,7 @@ fn can_update_manager_when_required() {
 #[test]
 fn can_update_manager_when_not_required() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3)));
 
 		assert_ok!(MerkleTrees::set_manager(Origin::signed(1), 0, 2,));
 
@@ -67,7 +67,7 @@ fn can_update_manager_when_not_required() {
 #[test]
 fn cannot_update_manager_as_not_manager() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3)));
 
 		assert_err!(MerkleTrees::set_manager(Origin::signed(2), 0, 2,), BadOrigin);
 	});
@@ -76,7 +76,7 @@ fn cannot_update_manager_as_not_manager() {
 #[test]
 fn can_update_manager_required_manager() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3)));
 
 		assert_ok!(MerkleTrees::set_manager_required(Origin::signed(1), 0, true,));
 
@@ -88,7 +88,7 @@ fn can_update_manager_required_manager() {
 #[test]
 fn cannot_update_manager_required_as_not_manager() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3)));
 
 		assert_err!(
 			MerkleTrees::set_manager_required(Origin::signed(2), 0, true,),
@@ -101,7 +101,7 @@ fn cannot_update_manager_required_as_not_manager() {
 fn can_add_member() {
 	new_test_ext().execute_with(|| {
 		let key = ScalarData::from(key_bytes(1));
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -116,7 +116,7 @@ fn can_add_member_as_manager() {
 	new_test_ext().execute_with(|| {
 		let key = ScalarData::from(key_bytes(1));
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(3), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(3)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -131,7 +131,7 @@ fn cannot_add_member_as_not_manager() {
 	new_test_ext().execute_with(|| {
 		let key = ScalarData::from(key_bytes(1));
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(3), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(3)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -147,7 +147,7 @@ fn cannot_add_member_as_not_manager() {
 #[test]
 fn should_be_able_to_set_stopped_merkle() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(1), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(1)));
 		assert_ok!(MerkleTrees::set_stopped(Origin::signed(1), 0, true));
 
 		// stopping merkle, stopped == true
@@ -165,7 +165,7 @@ fn should_be_able_to_set_stopped_merkle() {
 #[test]
 fn should_be_able_to_change_manager_with_root() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(3), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(3)));
 		let call = Box::new(MerkleCall::set_manager(0, 2));
 		let res = call.dispatch_bypass_filter(RawOrigin::Root.into());
 		assert_ok!(res);
@@ -182,7 +182,7 @@ fn should_be_able_to_change_manager_with_root() {
 fn should_not_have_0_depth() {
 	new_test_ext().execute_with(|| {
 		assert_err!(
-			MerkleTrees::create_tree(Origin::signed(1), false, Some(0), true),
+			MerkleTrees::create_tree(Origin::signed(1), false, Some(0)),
 			Error::<Test>::InvalidTreeDepth,
 		);
 	});
@@ -192,7 +192,7 @@ fn should_not_have_0_depth() {
 fn should_have_min_depth() {
 	new_test_ext().execute_with(|| {
 		let key = ScalarData::from(key_bytes(1));
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -209,7 +209,7 @@ fn should_have_min_depth() {
 #[test]
 fn should_have_max_depth() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(32), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(32)));
 	});
 }
 
@@ -217,7 +217,7 @@ fn should_have_max_depth() {
 fn should_not_have_more_than_max_depth() {
 	new_test_ext().execute_with(|| {
 		assert_err!(
-			MerkleTrees::create_tree(Origin::signed(1), false, Some(33), true),
+			MerkleTrees::create_tree(Origin::signed(1), false, Some(33)),
 			Error::<Test>::InvalidTreeDepth,
 		);
 	});
@@ -234,7 +234,7 @@ fn should_have_correct_root_hash_after_insertion() {
 		let zero_h0 = ScalarData::from(zero_tree[0]);
 		let zero_h1 = ScalarData::from(zero_tree[1]);
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(2), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(2)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -281,7 +281,7 @@ fn should_have_correct_root_hash() {
 		}
 		let zero_h0 = ScalarData::from(zero_tree[0]);
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(4), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(4)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -322,7 +322,7 @@ fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 		let key0 = ScalarData::from(key_bytes(0));
 		let key1 = ScalarData::from(key_bytes(1));
 		let key2 = ScalarData::from(key_bytes(2));
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(2), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(2)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -359,7 +359,7 @@ fn should_not_verify_invalid_proof() {
 		let key2 = ScalarData::from(key_bytes(5));
 		let zero_h0 = ScalarData::from(zero_tree[0]);
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(2), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(2)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -410,7 +410,7 @@ fn should_verify_proof_of_membership() {
 		}
 		let zero_h0 = ScalarData::from(zero_tree[0]);
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(4), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(4)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -492,7 +492,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 		let leaf = ftree.generate_secrets();
 		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -545,7 +545,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		let leaf = ftree.generate_secrets();
 		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -603,7 +603,7 @@ fn should_not_verify_invalid_private_inputs() {
 		let leaf = ftree.generate_secrets();
 		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -662,7 +662,7 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 		let leaf = ftree.generate_secrets();
 		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -721,7 +721,7 @@ fn should_not_verify_invalid_transcript() {
 		let leaf = ftree.generate_secrets();
 		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -794,7 +794,7 @@ fn should_verify_zk_proof_of_membership() {
 			.iter()
 			.map(|x| ScalarData(Scalar::from_bytes_mod_order(*x)))
 			.collect();
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
@@ -845,7 +845,7 @@ fn should_verify_large_zk_proof_of_membership() {
 		let leaf = ftree.generate_secrets();
 		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(32), true));
+		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(32)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));

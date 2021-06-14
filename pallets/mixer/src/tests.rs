@@ -5,10 +5,6 @@ use crate::mock::{
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use bulletproofs_gadgets::{
 	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
-	poseidon::{
-		builder::{Poseidon, PoseidonBuilder},
-		PoseidonSbox,
-	},
 };
 use curve25519_dalek::scalar::Scalar;
 use frame_support::{
@@ -23,14 +19,6 @@ use merkle::{
 use merlin::Transcript;
 use sp_runtime::{traits::BadOrigin, DispatchError};
 use webb_tokens::ExtendedTokenSystem;
-
-fn default_hasher(num_gens: usize) -> Poseidon {
-	let width = 6;
-	PoseidonBuilder::new(width)
-		.bulletproof_gens(BulletproofGens::new(num_gens, 1))
-		.sbox(PoseidonSbox::Exponentiation3)
-		.build()
-}
 
 #[test]
 fn should_initialize_successfully() {
@@ -362,8 +350,8 @@ fn should_make_mixer_with_non_native_token() {
 		));
 		assert_ok!(Mixer::initialize());
 		assert_ok!(Mixer::initialize_mixer_trees());
-		assert_ok!(<Mixer as ExtendedMixer<AccountId, CurrencyId, Balance>>::create_new(
-			1,
+		assert_ok!(<Mixer as ExtendedMixer<Test>>::create_new(
+			Mixer::account_id(),
 			currency_id,
 			1_000
 		));
