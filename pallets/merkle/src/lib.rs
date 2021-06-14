@@ -470,7 +470,7 @@ pub mod pallet {
 		/// Can only be called by the root.
 		#[pallet::weight(5_000_000)]
 		pub fn add_verifying_key(origin: OriginFor<T>, key: Vec<u8>) -> DispatchResultWithPostInfo {
-			ensure_signed(origin)?;
+			ensure_root(origin)?;
 			<Self as Tree<_>>::add_verifying_key(key)?;
 			Ok(().into())
 		}
