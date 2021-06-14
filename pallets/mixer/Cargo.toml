@@ -32,11 +32,15 @@ webb-currencies = { default-features = false, path = "../currencies" }
 version = "2.0.0"
 package = "webb-bulletproofs"
 default-features = false
+git = "https://github.com/webb-tools/bulletproofs"
+branch = "pub-bp-gens"
 features = ["yoloproofs"]
 
 [dependencies.bulletproofs-gadgets]
 version = "2.0.0"
 default-features = false
+git = "https://github.com/webb-tools/bulletproof-gadgets"
+branch = "bulletproofs-codec"
 
 [dependencies.curve25519-dalek]
 version = "3.0.0"

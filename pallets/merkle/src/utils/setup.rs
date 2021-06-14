@@ -1,7 +1,9 @@
+
 use crate::{
 	utils::keys::{slice_to_bytes_32, ScalarBytes},
 	Config, Error,
 };
+use crate::utils::keys::from_bytes_to_bp_gens;
 use ark_groth16::{Proof, VerifyingKey};
 use ark_serialize::CanonicalDeserialize;
 use arkworks_gadgets::{
@@ -41,15 +43,12 @@ use rand_core::OsRng;
 use sp_std::prelude::*;
 
 lazy_static! {
-	static ref DEFAULT_BULLETPROOFS_POSEIDON_HASHER: Poseidon = default_bulletproofs_poseidon_hasher();
 	static ref DEFAULT_ARKWORKS_POSEIDON_PARAMETERS: PoseidonParameters<Bls381> = setup_params_3::<Bls381>();
 }
 
 /// Default hasher instance used to construct the tree
-pub fn default_bulletproofs_poseidon_hasher() -> Poseidon {
+pub fn default_bulletproofs_poseidon_hasher(bp_gens: BulletproofGens) -> Poseidon {
 	let width = 6;
-	// TODO: should be able to pass the number of generators
-	let bp_gens = BulletproofGens::new(16400, 1);
 	PoseidonBuilder::new(width)
 		.bulletproof_gens(bp_gens)
 		.sbox(PoseidonSbox::Exponentiation3)
@@ -111,13 +110,15 @@ impl Setup {
 		}
 	}
 
-	pub fn hash<C: Config>(&self, xl: &ScalarBytes, xr: &ScalarBytes) -> Result<ScalarBytes, Error<C>> {
+	pub fn hash<C: Config>(&self, xl: &ScalarBytes, xr: &ScalarBytes, params: &[u8]) -> Result<ScalarBytes, Error<C>> {
 		match self.backend {
 			Backend::Bulletproofs(Curve::Curve25519) => match self.hasher {
 				HashFunction::PoseidonDefault | HashFunction::Poseidon(6, 3) => {
+					let bp_gens = from_bytes_to_bp_gens(params);
+					let hasher = default_bulletproofs_poseidon_hasher(bp_gens);
 					let sl = Scalar::from_bytes_mod_order(slice_to_bytes_32(xl));
 					let sr = Scalar::from_bytes_mod_order(slice_to_bytes_32(xr));
-					Ok(Poseidon_hash_2(sl, sr, &DEFAULT_BULLETPROOFS_POSEIDON_HASHER)
+					Ok(Poseidon_hash_2(sl, sr, &hasher)
 						.to_bytes()
 						.to_vec())
 				}
@@ -142,13 +143,15 @@ impl Setup {
 		}
 	}
 
-	pub fn generate_zero_tree<C: Config>(&self, depth: usize) -> Result<(Vec<ScalarBytes>, ScalarBytes), Error<C>> {
+	pub fn generate_zero_tree<C: Config>(&self, depth: usize, params: &[u8]) -> Result<(Vec<ScalarBytes>, ScalarBytes), Error<C>> {
 		match self.backend {
 			Backend::Bulletproofs(Curve::Curve25519) => match self.hasher {
 				HashFunction::PoseidonDefault => {
+					let bp_gens = from_bytes_to_bp_gens(params);
+					let hasher = default_bulletproofs_poseidon_hasher(bp_gens);
 					let zero_tree = gen_zero_tree(
-						DEFAULT_BULLETPROOFS_POSEIDON_HASHER.width,
-						&DEFAULT_BULLETPROOFS_POSEIDON_HASHER.sbox,
+						hasher.width,
+						&hasher.sbox,
 					);
 					Ok((
 						zero_tree[0..depth].iter().map(|x| x.to_vec()).collect(),
@@ -188,6 +191,12 @@ impl Setup {
 	) -> Result<(), Error<C>> {
 		match self.backend {
 			Backend::Bulletproofs(Curve::Curve25519) => {
+				if verifier_key.is_none() {
+					return Err(Error::<C>::InvalidVerifierKey);
+				}
+
+				let bp_gens = from_bytes_to_bp_gens(&verifier_key.unwrap());
+				let hasher = default_bulletproofs_poseidon_hasher(bp_gens);
 				let root = Scalar::from_bytes_mod_order(slice_to_bytes_32(&root_bytes));
 				let private_inputs = private_inputs_bytes
 					.iter()
@@ -214,7 +223,7 @@ impl Setup {
 					path_nodes,
 					recipient,
 					relayer,
-					&DEFAULT_BULLETPROOFS_POSEIDON_HASHER,
+					&hasher,
 				)
 			}
 			Backend::Arkworks(Curve::Bls381, Snark::Groth16) => {
@@ -235,6 +244,7 @@ impl Setup {
 				if verifier_key.is_none() {
 					return Err(Error::<C>::InvalidVerifierKey);
 				}
+
 				let vk = VerifyingKey::<Bls12_381>::deserialize(&verifier_key.unwrap()[..])
 					.map_err(|_| Error::<C>::InvalidVerifierKey)?;
 				let public_inputs = get_public_inputs(*nullifier, *root, *recipient, *relayer);
