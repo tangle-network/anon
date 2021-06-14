@@ -322,11 +322,7 @@ pub mod pallet {
 		/// - DB weights: 1 read, 3 writes
 		/// - Additional weights: 151_000 * _depth
 		#[pallet::weight(<T as Config>::WeightInfo::create_tree(_depth.map_or(T::MaxTreeDepth::get() as u32, |x| x as u32)))]
-		pub fn create_tree(
-			origin: OriginFor<T>,
-			mgr_required: bool,
-			_depth: Option<u8>,
-		) -> DispatchResultWithPostInfo {
+		pub fn create_tree(origin: OriginFor<T>, mgr_required: bool, _depth: Option<u8>) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			let depth = match _depth {
 				Some(d) => d,

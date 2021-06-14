@@ -3,9 +3,7 @@ use crate::mock::{
 	new_test_ext, AccountId, Balance, Balances, CurrencyId, MerkleTrees, Mixer, MixerCall, Origin, System, Test, Tokens,
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
-use bulletproofs_gadgets::{
-	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
-};
+use bulletproofs_gadgets::fixed_deposit_tree::builder::FixedDepositTreeBuilder;
 use curve25519_dalek::scalar::Scalar;
 use frame_support::{
 	assert_err, assert_ok,
