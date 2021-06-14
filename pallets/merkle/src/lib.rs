@@ -840,6 +840,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	pub fn get_verifying_key(id: T::KeyId) -> Result<Vec<u8>, DispatchError> {
+		ensure!(id < Self::next_key_id(), Error::<T>::InvalidVerifierKey);
 		let maybe_verifying_key = VerifyingKeys::<T>::get(id);
 		ensure!(maybe_verifying_key.is_some(), Error::<T>::InvalidVerifierKey);
 		Ok(maybe_verifying_key.unwrap())

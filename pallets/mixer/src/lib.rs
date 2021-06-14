@@ -369,13 +369,22 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_admin(origin, &Self::admin())?;
 
-			let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
-			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, setup, depth, true)?;
-			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
-			MixerTrees::<T>::insert(mixer_id, mixer_info);
-			let mut ids = MixerTreeIds::<T>::get();
-			ids.push(mixer_id);
-			MixerTreeIds::<T>::set(ids);
+			<Self as ExtendedMixer<_>>::create_new(Self::account_id(), currency_id, setup, size)?;
+			Ok(().into())
+		}
+
+		#[pallet::weight(5_000_000)]
+		pub fn create_new_and_initialize(
+			origin: OriginFor<T>,
+			currency_id: CurrencyIdOf<T>,
+			setup: Setup,
+			size: BalanceOf<T>,
+			key_id: T::KeyId,
+		) -> DispatchResultWithPostInfo {
+			ensure_admin(origin, &Self::admin())?;
+
+			let tree_id = <Self as ExtendedMixer<_>>::create_new(Self::account_id(), currency_id, setup, size)?;
+			T::Tree::initialize_tree(tree_id, key_id)?;
 			Ok(().into())
 		}
 
@@ -587,7 +596,7 @@ impl<T: Config> ExtendedMixer<T> for Pallet<T> {
 		currency_id: CurrencyIdOf<T>,
 		setup: Setup,
 		size: BalanceOf<T>,
-	) -> Result<(), dispatch::DispatchError> {
+	) -> Result<T::TreeId, dispatch::DispatchError> {
 		let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
 		let mixer_id: T::TreeId = T::Tree::create_tree(account_id, true, setup, depth, true)?;
 		let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
@@ -596,6 +605,6 @@ impl<T: Config> ExtendedMixer<T> for Pallet<T> {
 		let mut ids = MixerTreeIds::<T>::get();
 		ids.push(mixer_id);
 		MixerTreeIds::<T>::set(ids);
-		Ok(())
+		Ok(mixer_id)
 	}
 }

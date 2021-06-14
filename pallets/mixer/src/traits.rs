@@ -8,5 +8,5 @@ pub trait ExtendedMixer<T: Config> {
 		currency_id: CurrencyIdOf<T>,
 		setup: Setup,
 		size: BalanceOf<T>,
-	) -> Result<(), dispatch::DispatchError>;
+	) -> Result<T::TreeId, dispatch::DispatchError>;
 }
