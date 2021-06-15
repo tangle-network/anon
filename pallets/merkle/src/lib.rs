@@ -722,7 +722,7 @@ impl<T: Config> Tree<T> for Pallet<T> {
 			}
 			// then we add it to the tree itself.
 			// note that, this method internally increments the leaves count.
-			Self::add_leaf(&mut tree, *data, &zero_tree);
+			Self::add_leaf(&mut tree, *data, &zero_tree, &hasher);
 		}
 		let block_number: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
 		CachedRoots::<T>::append(block_number, id, tree.root_hash.unwrap());
