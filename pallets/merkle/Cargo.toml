@@ -46,7 +46,6 @@ default-features = false
 sp-core = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 pallet-randomness-collective-flip = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
-
 [features]
 default = ["std"]
 std = [

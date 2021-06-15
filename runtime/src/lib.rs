@@ -53,7 +53,7 @@ use merkle::utils::keys::ScalarData;
 use webb_currencies::BasicCurrencyAdapter;
 
 use pallet_ethereum::TransactionStatus;
-use pallet_evm::{Account as EVMAccount, EnsureAddressTruncated, FeeCalculator, HashedAddressMapping, Runner};
+use pallet_evm::{Account as EVMAccount, EnsureAddressTruncated, HashedAddressMapping, Runner};
 
 use sp_core::crypto::Public;
 #[cfg(any(feature = "std", test))]
@@ -303,25 +303,25 @@ parameter_types! {
 }
 
 impl pallet_contracts::Config for Runtime {
-	type CallStack = [pallet_contracts::Frame<Self>; 31];
-	type ChainExtension = ();
+	type Time = Timestamp;
+	type Randomness = RandomnessCollectiveFlip;
 	type Currency = Balances;
-	type DeletionQueueDepth = DeletionQueueDepth;
-	type DeletionWeightLimit = DeletionWeightLimit;
+	type Event = Event;
+	type RentPayment = ();
+	type SignedClaimHandicap = SignedClaimHandicap;
+	type TombstoneDeposit = TombstoneDeposit;
 	type DepositPerContract = DepositPerContract;
 	type DepositPerStorageByte = DepositPerStorageByte;
 	type DepositPerStorageItem = DepositPerStorageItem;
-	type Event = Event;
-	type Randomness = RandomnessCollectiveFlip;
 	type RentFraction = RentFraction;
-	type RentPayment = ();
-	type Schedule = Schedule;
-	type SignedClaimHandicap = SignedClaimHandicap;
 	type SurchargeReward = SurchargeReward;
-	type Time = Timestamp;
-	type TombstoneDeposit = TombstoneDeposit;
-	type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
+	type CallStack = [pallet_contracts::Frame<Self>; 31];
 	type WeightPrice = pallet_transaction_payment::Module<Self>;
+	type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
+	type ChainExtension = ();
+	type DeletionQueueDepth = DeletionQueueDepth;
+	type DeletionWeightLimit = DeletionWeightLimit;
+	type Schedule = Schedule;
 }
 
 parameter_types! {
@@ -439,18 +439,12 @@ impl pallet_evm::GasWeightMapping for AnonGasWeightMapping {
 		u64::try_from(weight.wrapping_div(WEIGHT_PER_GAS)).unwrap_or(u32::MAX as u64)
 	}
 }
-/// Fixed gas price of `1`.
-pub struct FixedGasPrice;
-impl FeeCalculator for FixedGasPrice {
-	fn min_gas_price() -> U256 {
-		// Gas price is always one token per gas.
-		1.into()
-	}
-}
+
 parameter_types! {
 	pub const ChainId: u64 = 42;
 	pub BlockGasLimit: U256 = U256::from(u32::max_value());
 }
+
 impl pallet_evm::Config for Runtime {
 	type AddressMapping = HashedAddressMapping<BlakeTwo256>;
 	type BlockGasLimit = BlockGasLimit;
@@ -458,7 +452,7 @@ impl pallet_evm::Config for Runtime {
 	type ChainId = ChainId;
 	type Currency = Balances;
 	type Event = Event;
-	type FeeCalculator = FixedGasPrice;
+	type FeeCalculator = pallet_dynamic_fee::Pallet<Self>;
 	type GasWeightMapping = AnonGasWeightMapping;
 	type OnChargeTransaction = ();
 	type Precompiles = (
@@ -473,6 +467,7 @@ impl pallet_evm::Config for Runtime {
 	type Runner = pallet_evm::runner::stack::Runner<Self>;
 	type WithdrawOrigin = EnsureAddressTruncated;
 }
+
 pub struct EthereumFindAuthor<F>(PhantomData<F>);
 impl<F: FindAuthor<u32>> FindAuthor<H160> for EthereumFindAuthor<F> {
 	fn find_author<'a, I>(digests: I) -> Option<H160>
@@ -490,6 +485,15 @@ impl pallet_ethereum::Config for Runtime {
 	type Event = Event;
 	type FindAuthor = EthereumFindAuthor<Aura>;
 	type StateRoot = pallet_ethereum::IntermediateStateRoot;
+}
+
+frame_support::parameter_types! {
+	pub BoundDivision: U256 = U256::from(1024);
+}
+
+impl pallet_dynamic_fee::Config for Runtime {
+	type Event = Event;
+	type MinGasPriceBoundDivisor = BoundDivision;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously
@@ -510,6 +514,7 @@ construct_runtime!(
 
 		Ethereum: pallet_ethereum::{Pallet, Call, Storage, Event, Config, ValidateUnsigned},
 		EVM: pallet_evm::{Pallet, Config, Call, Storage, Event<T>},
+		DynamicFee: pallet_dynamic_fee::{Pallet, Call, Storage, Config, Event<T>, Inherent},
 
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},

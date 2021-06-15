@@ -9,9 +9,6 @@ version = "3.0.0"
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
-[build-dependencies]
-substrate-wasm-builder = { package = "substrate-wasm-builder", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
-
 # alias "parity-scale-code" to "codec"
 [dependencies.codec]
 default-features = false
@@ -36,7 +33,6 @@ pallet-balances = { default-features = false, git = "https://github.com/webb-too
 pallet-contracts = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 pallet-contracts-primitives = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 pallet-contracts-rpc-runtime-api = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
-
 pallet-grandpa = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 pallet-randomness-collective-flip = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 pallet-sudo = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
@@ -62,10 +58,14 @@ webb-currencies = { path = "../pallets/currencies", default-features = false }
 webb-tokens = { path = "../pallets/tokens", default-features = false }
 webb-traits = { path = "../pallets/traits", default-features = false }
 
-pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.4", default-features = false }
-pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.4", default-features = false }
-fp-rpc = { git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.4", default-features = false }
-pallet-evm-precompile-simple = { git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.4", default-features = false }
+pallet-dynamic-fee = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
+pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
+pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
+fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+pallet-evm-precompile-simple = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
+
+[build-dependencies]
+substrate-wasm-builder = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
 [features]
 default = ["std", "aura"]
@@ -119,6 +119,7 @@ std = [
     "webb-tokens/std",
 
     "fp-rpc/std",
+    "pallet-dynamic-fee/std",
     "pallet-ethereum/std",
     "pallet-evm/std",
     "pallet-evm-precompile-simple/std",

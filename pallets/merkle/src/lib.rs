@@ -714,10 +714,15 @@ impl<T: Config> Tree<T> for Pallet<T> {
 
 		let zero_tree = Self::generate_zero_tree(tree.hasher.clone(), &hasher);
 		for data in &members {
-			Self::add_leaf(&mut tree, *data, &zero_tree, &hasher);
 			if tree.should_store_leaves {
+				// if so, we save it.
+				// the index where the leaf should be saved is the count
+				// of leaves we have in the tree.
 				Leaves::<T>::insert(id, tree.leaf_count, *data);
 			}
+			// then we add it to the tree itself.
+			// note that, this method internally increments the leaves count.
+			Self::add_leaf(&mut tree, *data, &zero_tree);
 		}
 		let block_number: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
 		CachedRoots::<T>::append(block_number, id, tree.root_hash.unwrap());
