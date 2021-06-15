@@ -90,7 +90,6 @@ pub mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 pub mod weights;
-
 use crate::utils::keys::from_bytes_to_bp_gens;
 use bulletproofs::{
 	r1cs::{R1CSProof, Verifier},
@@ -106,13 +105,16 @@ use bulletproofs_gadgets::{
 	smt::gen_zero_tree,
 	utils::AllocatedScalar,
 };
-use codec::{Decode, Encode};
+use codec::{Decode, Encode, Input};
 use curve25519_dalek::scalar::Scalar;
 use frame_support::{dispatch, ensure, traits::Get, weights::Weight, Parameter};
 use frame_system::ensure_signed;
+use frame_support::traits::Randomness;
 
 use merlin::Transcript;
-use rand_core::OsRng;
+
+use rand_chacha::rand_core::SeedableRng;
+use rand_chacha::ChaChaRng;
 use sp_runtime::traits::{AtLeast32Bit, One};
 use sp_std::prelude::*;
 pub use traits::Tree;
@@ -153,6 +155,8 @@ pub mod pallet {
 		type MaxTreeDepth: Get<u8>;
 		/// The amount of blocks to cache roots over
 		type CacheBlockLength: Get<Self::BlockNumber>;
+		/// The generator used to supply randomness to contracts through `seal_random`.
+		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -883,7 +887,11 @@ impl<T: Config> Tree<T> for Pallet<T> {
 		ensure!(proof.is_ok(), Error::<T>::InvalidZkProof);
 		let proof = proof.unwrap();
 
-		let mut rng = OsRng::default();
+		let random_seed = T::Randomness::random_seed();
+		let random_bytes = random_seed.clone().0.encode();
+		let mut buf = [0u8; 32];
+		buf.copy_from_slice(&random_bytes);
+		let mut rng = ChaChaRng::from_seed(buf);
 		let verify_res = verifier.verify_with_rng(&proof, &hash_params.pc_gens, &hash_params.bp_gens, &mut rng);
 		ensure!(verify_res.is_ok(), Error::<T>::ZkVericationFailed);
 		Ok(())

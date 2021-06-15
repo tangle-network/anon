@@ -36,6 +36,7 @@ construct_runtime!(
 		Mixer: pallet_mixer::{Pallet, Call, Storage, Event<T>},
 		Currencies: webb_currencies::{Pallet, Storage, Event<T>},
 		Tokens: webb_tokens::{Pallet, Storage, Event<T>},
+		Randomness: pallet_randomness_collective_flip::{Pallet, Call, Storage},
 	}
 );
 
@@ -141,6 +142,7 @@ impl merkle::Config for Test {
 	type KeyId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
 	type TreeId = u32;
+	type Randomness = Randomness;
 	type WeightInfo = MerkleWeights<Self>;
 }
 

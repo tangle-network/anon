@@ -16,7 +16,7 @@ use curve25519_dalek::{ristretto::RistrettoPoint, scalar::Scalar};
 use frame_support::{assert_err, assert_ok, traits::UnfilteredDispatchable};
 use frame_system::RawOrigin;
 use merlin::Transcript;
-use rand_core::OsRng;
+use rand_chacha::ChaChaRng;
 use sp_runtime::traits::BadOrigin;
 
 fn key_bytes(x: u8) -> [u8; 32] {
@@ -565,7 +565,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		);
 
 		let mut comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let mut rng = OsRng::default();
+		let mut rng = ChaChaRng::from_seed([1u8; 32]);
 		comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
@@ -626,7 +626,7 @@ fn should_not_verify_invalid_private_inputs() {
 		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
 
-		let mut rng = OsRng::default();
+		let mut rng = ChaChaRng::from_seed([1u8; 32]);
 		comms.push(Commitment(RistrettoPoint::random(&mut rng).compress()));
 
 		assert_err!(
@@ -684,7 +684,7 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let mut leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
 		let mut proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let mut rng = OsRng::default();
+		let mut rng = ChaChaRng::from_seed([1u8; 32]);
 		leaf_index_comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
 		proof_comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
 
