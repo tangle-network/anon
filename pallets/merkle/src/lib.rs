@@ -107,14 +107,17 @@ use bulletproofs_gadgets::{
 };
 use codec::{Decode, Encode, Input};
 use curve25519_dalek::scalar::Scalar;
-use frame_support::{dispatch, ensure, traits::Get, weights::Weight, Parameter};
+use frame_support::{
+	dispatch, ensure,
+	traits::{Get, Randomness},
+	weights::Weight,
+	Parameter,
+};
 use frame_system::ensure_signed;
-use frame_support::traits::Randomness;
 
 use merlin::Transcript;
 
-use rand_chacha::rand_core::SeedableRng;
-use rand_chacha::ChaChaRng;
+use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
 use sp_runtime::traits::{AtLeast32Bit, One};
 use sp_std::prelude::*;
 pub use traits::Tree;
@@ -155,7 +158,8 @@ pub mod pallet {
 		type MaxTreeDepth: Get<u8>;
 		/// The amount of blocks to cache roots over
 		type CacheBlockLength: Get<Self::BlockNumber>;
-		/// The generator used to supply randomness to contracts through `seal_random`.
+		/// The generator used to supply randomness to contracts through
+		/// `seal_random`.
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;

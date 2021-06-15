@@ -86,8 +86,8 @@ impl Config for Test {
 	type Event = Event;
 	type KeyId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
-	type TreeId = u32;
 	type Randomness = Randomness;
+	type TreeId = u32;
 	type WeightInfo = Weights<Self>;
 }
 
