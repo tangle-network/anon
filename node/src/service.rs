@@ -10,9 +10,9 @@ use sc_executor::native_executor_instance;
 pub use sc_executor::NativeExecutor;
 use sc_finality_grandpa::SharedVoterState;
 use sc_service::{error::Error as ServiceError, BasePath, Configuration, TaskManager};
+use sp_consensus::SlotData;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use sp_core::U256;
-use sp_consensus::SlotData;
 
 use std::{
 	cell::RefCell,
@@ -145,29 +145,26 @@ pub fn new_partial(
 
 	let target_gas_price = U256::from(cli.run.target_gas_price);
 
-	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(
-		ImportQueueParams {
-			block_import: aura_block_import.clone(),
-			justification_import: Some(Box::new(grandpa_block_import.clone())),
-			client: client.clone(),
-			create_inherent_data_providers: move |_, ()| async move {
-				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(ImportQueueParams {
+		block_import: aura_block_import.clone(),
+		justification_import: Some(Box::new(grandpa_block_import.clone())),
+		client: client.clone(),
+		create_inherent_data_providers: move |_, ()| async move {
+			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
-				let slot =
-					sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
-						*timestamp,
-						raw_slot_duration,
-					);
-				let fee = pallet_dynamic_fee::InherentDataProvider(target_gas_price);
+			let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
+				*timestamp,
+				raw_slot_duration,
+			);
+			let fee = pallet_dynamic_fee::InherentDataProvider(target_gas_price);
 
-				Ok((timestamp, slot, fee))
-			},
-			spawner: &task_manager.spawn_essential_handle(),
-			can_author_with: sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
-			registry: config.prometheus_registry(),
-			check_for_equivocation: Default::default(),
-			telemetry: telemetry.as_ref().map(|x| x.handle()),
+			Ok((timestamp, slot, fee))
 		},
+		spawner: &task_manager.spawn_essential_handle(),
+		can_author_with: sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
+		registry: config.prometheus_registry(),
+		check_for_equivocation: Default::default(),
+		telemetry: telemetry.as_ref().map(|x| x.handle()),
 		spawner: &task_manager.spawn_essential_handle(),
 		can_author_with: sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
 		registry: config.prometheus_registry(),
@@ -343,34 +340,31 @@ pub fn new_full(config: Configuration, cli: &Cli) -> Result<TaskManager, Service
 		let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
 		let raw_slot_duration = slot_duration.slot_duration();
 
-		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _>(
-			StartAuraParams {
-				slot_duration,
-				client: client.clone(),
-				select_chain,
-				block_import: aura_block_import,
-				proposer_factory,
-				create_inherent_data_providers: move |_, ()| async move {
-					let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _>(StartAuraParams {
+			slot_duration,
+			client: client.clone(),
+			select_chain,
+			block_import: aura_block_import,
+			proposer_factory,
+			create_inherent_data_providers: move |_, ()| async move {
+				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
-					let slot =
-						sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
-							*timestamp,
-							raw_slot_duration,
-						);
+				let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
+					*timestamp,
+					raw_slot_duration,
+				);
 
-					let fee = pallet_dynamic_fee::InherentDataProvider(target_gas_price);
+				let fee = pallet_dynamic_fee::InherentDataProvider(target_gas_price);
 
-					Ok((timestamp, slot, fee))
-				},
-				force_authoring,
-				backoff_authoring_blocks,
-				keystore: keystore_container.sync_keystore(),
-				can_author_with,
-				sync_oracle: network.clone(),
-				block_proposal_slot_portion: SlotProportion::new(2f32 / 3f32),
-				telemetry: telemetry.as_ref().map(|x| x.handle()),
+				Ok((timestamp, slot, fee))
 			},
+			force_authoring,
+			backoff_authoring_blocks,
+			keystore: keystore_container.sync_keystore(),
+			can_author_with,
+			sync_oracle: network.clone(),
+			block_proposal_slot_portion: SlotProportion::new(2f32 / 3f32),
+			telemetry: telemetry.as_ref().map(|x| x.handle()),
 			force_authoring,
 			backoff_authoring_blocks,
 			keystore: keystore_container.sync_keystore(),
@@ -426,114 +420,114 @@ pub fn new_full(config: Configuration, cli: &Cli) -> Result<TaskManager, Service
 				.spawn_essential_handle()
 				.spawn_blocking("grandpa-voter", sc_finality_grandpa::run_grandpa_voter(grandpa_config)?);
 		}
+
+		network_starter.start_network();
+		Ok(task_manager)
 	}
 
-	network_starter.start_network();
-	Ok(task_manager)
-}
+	pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
+		let telemetry = config
+			.telemetry_endpoints
+			.clone()
+			.filter(|x| !x.is_empty())
+			.map(|endpoints| -> Result<_, sc_telemetry::Error> {
+				let worker = TelemetryWorker::new(16)?;
+				let telemetry = worker.handle().new_telemetry(endpoints);
+				Ok((worker, telemetry))
+			})
+			.transpose()?;
 
-pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
-	let telemetry = config
-		.telemetry_endpoints
-		.clone()
-		.filter(|x| !x.is_empty())
-		.map(|endpoints| -> Result<_, sc_telemetry::Error> {
-			let worker = TelemetryWorker::new(16)?;
-			let telemetry = worker.handle().new_telemetry(endpoints);
-			Ok((worker, telemetry))
-		})
-		.transpose()?;
+		let (client, backend, keystore_container, mut task_manager, on_demand) =
+			sc_service::new_light_parts::<Block, RuntimeApi, Executor>(
+				&config,
+				telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
+			)?;
 
-	let (client, backend, keystore_container, mut task_manager, on_demand) =
-		sc_service::new_light_parts::<Block, RuntimeApi, Executor>(
-			&config,
-			telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
+		let mut telemetry = telemetry.map(|(worker, telemetry)| {
+			task_manager.spawn_handle().spawn("telemetry", worker.run());
+			telemetry
+		});
+
+		let select_chain = sc_consensus::LongestChain::new(backend.clone());
+
+		let transaction_pool = Arc::new(sc_transaction_pool::BasicPool::new_light(
+			config.transaction_pool.clone(),
+			config.prometheus_registry(),
+			task_manager.spawn_handle(),
+			client.clone(),
+			on_demand.clone(),
+		));
+
+		let (grandpa_block_import, _) = sc_finality_grandpa::block_import(
+			client.clone(),
+			&(client.clone() as Arc<_>),
+			select_chain.clone(),
+			telemetry.as_ref().map(|x| x.handle()),
 		)?;
 
-	let mut telemetry = telemetry.map(|(worker, telemetry)| {
-		task_manager.spawn_handle().spawn("telemetry", worker.run());
-		telemetry
-	});
+		let slot_duration = sc_consensus_aura::slot_duration(&*client)?.slot_duration();
 
-	let select_chain = sc_consensus::LongestChain::new(backend.clone());
+		let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(ImportQueueParams {
+			block_import: grandpa_block_import.clone(),
+			justification_import: Some(Box::new(grandpa_block_import.clone())),
+			client: client.clone(),
+			create_inherent_data_providers: move |_, ()| async move {
+				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
-	let transaction_pool = Arc::new(sc_transaction_pool::BasicPool::new_light(
-		config.transaction_pool.clone(),
-		config.prometheus_registry(),
-		task_manager.spawn_handle(),
-		client.clone(),
-		on_demand.clone(),
-	));
+				let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
+					*timestamp,
+					slot_duration,
+				);
 
-	let (grandpa_block_import, _) = sc_finality_grandpa::block_import(
-		client.clone(),
-		&(client.clone() as Arc<_>),
-		select_chain.clone(),
-		telemetry.as_ref().map(|x| x.handle()),
-	)?;
+				Ok((timestamp, slot))
+			},
+			spawner: &task_manager.spawn_essential_handle(),
+			can_author_with: sp_consensus::NeverCanAuthor,
+			registry: config.prometheus_registry(),
+			check_for_equivocation: Default::default(),
+			telemetry: telemetry.as_ref().map(|x| x.handle()),
+		})?;
 
-	let slot_duration = sc_consensus_aura::slot_duration(&*client)?.slot_duration();
+		let light_deps = crate::rpc::LightDeps {
+			remote_blockchain: backend.remote_blockchain(),
+			fetcher: on_demand.clone(),
+			client: client.clone(),
+			pool: transaction_pool.clone(),
+		};
 
-	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(ImportQueueParams {
-		block_import: grandpa_block_import.clone(),
-		justification_import: Some(Box::new(grandpa_block_import.clone())),
-		client: client.clone(),
-		create_inherent_data_providers: move |_, ()| async move {
-			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+		let rpc_extensions = crate::rpc::create_light(light_deps);
 
-			let slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_duration(
-				*timestamp,
-				slot_duration,
-			);
+		let (network, system_rpc_tx, network_starter) = sc_service::build_network(sc_service::BuildNetworkParams {
+			config: &config,
+			client: client.clone(),
+			transaction_pool: transaction_pool.clone(),
+			spawn_handle: task_manager.spawn_handle(),
+			import_queue,
+			on_demand: Some(on_demand.clone()),
+			block_announce_validator_builder: None,
+		})?;
 
-			Ok((timestamp, slot))
-		},
-		spawner: &task_manager.spawn_essential_handle(),
-		can_author_with: sp_consensus::NeverCanAuthor,
-		registry: config.prometheus_registry(),
-		check_for_equivocation: Default::default(),
-		telemetry: telemetry.as_ref().map(|x| x.handle()),
-	})?;
+		if config.offchain_worker.enabled {
+			sc_service::build_offchain_workers(&config, task_manager.spawn_handle(), client.clone(), network.clone());
+		}
 
-	let light_deps = crate::rpc::LightDeps {
-		remote_blockchain: backend.remote_blockchain(),
-		fetcher: on_demand.clone(),
-		client: client.clone(),
-		pool: transaction_pool.clone(),
-	};
+		sc_service::spawn_tasks(sc_service::SpawnTasksParams {
+			remote_blockchain: Some(backend.remote_blockchain()),
+			transaction_pool,
+			task_manager: &mut task_manager,
+			on_demand: Some(on_demand),
+			rpc_extensions_builder: Box::new(sc_service::NoopRpcExtensionBuilder(rpc_extensions)),
+			config,
+			client,
+			keystore: keystore_container.sync_keystore(),
+			backend,
+			network,
+			system_rpc_tx,
+			telemetry: telemetry.as_mut(),
+		})?;
 
-	let rpc_extensions = crate::rpc::create_light(light_deps);
+		network_starter.start_network();
 
-	let (network, system_rpc_tx, network_starter) = sc_service::build_network(sc_service::BuildNetworkParams {
-		config: &config,
-		client: client.clone(),
-		transaction_pool: transaction_pool.clone(),
-		spawn_handle: task_manager.spawn_handle(),
-		import_queue,
-		on_demand: Some(on_demand.clone()),
-		block_announce_validator_builder: None,
-	})?;
-
-	if config.offchain_worker.enabled {
-		sc_service::build_offchain_workers(&config, task_manager.spawn_handle(), client.clone(), network.clone());
+		Ok(task_manager)
 	}
-
-	sc_service::spawn_tasks(sc_service::SpawnTasksParams {
-		remote_blockchain: Some(backend.remote_blockchain()),
-		transaction_pool,
-		task_manager: &mut task_manager,
-		on_demand: Some(on_demand),
-		rpc_extensions_builder: Box::new(sc_service::NoopRpcExtensionBuilder(rpc_extensions)),
-		config,
-		client,
-		keystore: keystore_container.sync_keystore(),
-		backend,
-		network,
-		system_rpc_tx,
-		telemetry: telemetry.as_mut(),
-	})?;
-
-	network_starter.start_network();
-
-	Ok(task_manager)
 }
