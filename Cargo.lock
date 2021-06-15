@@ -641,7 +641,8 @@ dependencies = [
 [[package]]
 name = "bulletproofs-gadgets"
 version = "2.1.1"
-source = "git+https://github.com/webb-tools/bulletproof-gadgets?branch=bulletproofs-codec#72fada0df29027f91be7d4f867f9ee5bd402889d"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94aea73d25b120dc50af0196f944e5df2e1e6aab93d8793e810b6b42c4d52b3e"
 dependencies = [
  "bencher",
  "curve25519-dalek 3.1.0",
@@ -9175,7 +9176,8 @@ dependencies = [
 [[package]]
 name = "webb-bulletproofs"
 version = "2.0.3"
-source = "git+https://github.com/webb-tools/bulletproofs#4897dfcf14c28fa11b91d6fc32912e21fae7f649"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fab7788f5651d9df9225919e5a487ac1f522cc57e5c58ff03911eeec597259f6"
 dependencies = [
  "byteorder",
  "clear_on_drop",

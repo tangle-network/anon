@@ -36,14 +36,11 @@ features = ["u64_backend", "alloc"]
 version = "2.0.3"
 package = "webb-bulletproofs"
 default-features = false
-git = "https://github.com/webb-tools/bulletproofs"
 features = ["yoloproofs"]
 
 [dependencies.bulletproofs-gadgets]
 version = "2.1.1"
 default-features = false
-git = "https://github.com/webb-tools/bulletproof-gadgets"
-branch = "bulletproofs-codec"
 
 [dev-dependencies]
 sp-core = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.4" }
