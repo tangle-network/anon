@@ -549,29 +549,32 @@ impl<T: Config> Pallet<T> {
 	pub fn initialize() -> dispatch::DispatchResult {
 		ensure!(!Self::first_stage_initialized(), Error::<T>::AlreadyInitialized);
 
-		// Get default admin from trait params
-		let default_admin = T::DefaultAdmin::get();
-		// Initialize the admin in storage with default one
-		Admin::<T>::set(default_admin);
-		let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
+		let mixer_ids = MixerTreeIds::<T>::get();
+		if mixer_ids.len() == 0 {
+			// Get default admin from trait params
+			let default_admin = T::DefaultAdmin::get();
+			// Initialize the admin in storage with default one
+			Admin::<T>::set(default_admin);
+			let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
 
-		// Getting the sizes from the config
-		let sizes = T::MixerSizes::get();
-		let mut mixer_ids = Vec::new();
+			// Getting the sizes from the config
+			let sizes = T::MixerSizes::get();
+			let mut mixer_ids = Vec::new();
 
-		// Iterating over configured sizes and initializing the mixers
-		for size in sizes.into_iter() {
-			// Creating a new merkle group and getting the id back
-			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth)?;
-			// Creating mixer info data
-			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, T::NativeCurrencyId::get());
-			// Saving the mixer group to storage
-			MixerTrees::<T>::insert(mixer_id, mixer_info);
-			mixer_ids.push(mixer_id);
+			// Iterating over configured sizes and initializing the mixers
+			for size in sizes.into_iter() {
+				// Creating a new merkle group and getting the id back
+				let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, depth)?;
+				// Creating mixer info data
+				let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, T::NativeCurrencyId::get());
+				// Saving the mixer group to storage
+				MixerTrees::<T>::insert(mixer_id, mixer_info);
+				mixer_ids.push(mixer_id);
+			}
+
+			// Setting the mixer ids
+			MixerTreeIds::<T>::set(mixer_ids);
 		}
-
-		// Setting the mixer ids
-		MixerTreeIds::<T>::set(mixer_ids);
 
 		FirstStageInitialized::<T>::set(true);
 		Ok(())
