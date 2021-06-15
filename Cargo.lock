@@ -1336,12 +1336,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "downcast-rs"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
-
-[[package]]
 name = "dyn-clonable"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1621,64 +1615,64 @@ dependencies = [
 [[package]]
 name = "fc-consensus"
 version = "2.0.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4#6df0d53ff45dd8dc3a2f8b7e53ef101dc9a54a08"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4-minimal-changes#90b70ac076e0181102603a098ad32e7a12d179a8"
 dependencies = [
  "async-trait",
  "derive_more",
  "fc-db",
- "fp-consensus 1.0.0 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "fp-rpc 2.0.0 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
+ "fp-consensus",
+ "fp-rpc",
  "futures 0.3.15",
  "log",
  "parity-scale-codec 2.1.1",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-block-builder 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-timestamp 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-client-api",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-timestamp",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
 name = "fc-db"
 version = "1.0.0"
-source = "git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4#6df0d53ff45dd8dc3a2f8b7e53ef101dc9a54a08"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4-minimal-changes#90b70ac076e0181102603a098ad32e7a12d179a8"
 dependencies = [
  "kvdb",
  "kvdb-rocksdb",
  "parity-scale-codec 2.1.1",
  "parking_lot 0.11.1",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-database 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-database",
+ "sp-runtime",
 ]
 
 [[package]]
 name = "fc-mapping-sync"
 version = "2.0.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4#6df0d53ff45dd8dc3a2f8b7e53ef101dc9a54a08"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4-minimal-changes#90b70ac076e0181102603a098ad32e7a12d179a8"
 dependencies = [
  "fc-consensus",
  "fc-db",
- "fp-consensus 1.0.0 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "fp-rpc 2.0.0 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
+ "fp-consensus",
+ "fp-rpc",
  "futures 0.3.15",
  "futures-timer 3.0.2",
  "log",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-client-api",
+ "sp-api",
+ "sp-blockchain",
+ "sp-runtime",
 ]
 
 [[package]]
 name = "fc-rpc"
 version = "2.0.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4#6df0d53ff45dd8dc3a2f8b7e53ef101dc9a54a08"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4-minimal-changes#90b70ac076e0181102603a098ad32e7a12d179a8"
 dependencies = [
  "ethereum",
  "ethereum-types",
@@ -1686,10 +1680,10 @@ dependencies = [
  "fc-consensus",
  "fc-db",
  "fc-rpc-core",
- "fp-consensus 1.0.0 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "fp-evm 2.0.0 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "fp-rpc 2.0.0 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "fp-storage 1.0.1 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
+ "fp-consensus",
+ "fp-evm",
+ "fp-rpc",
+ "fp-storage",
  "futures 0.3.15",
  "jsonrpc-core 15.1.0",
  "jsonrpc-core-client 14.2.0",
@@ -1697,29 +1691,29 @@ dependencies = [
  "jsonrpc-pubsub 15.1.0",
  "libsecp256k1",
  "log",
- "pallet-ethereum 2.0.0-dev (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "pallet-evm 4.0.0-dev (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
+ "pallet-ethereum",
+ "pallet-evm",
  "parity-scale-codec 2.1.1",
  "rand 0.7.3",
  "rlp",
  "rustc-hex",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-network 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-rpc 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-service 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-client-api",
+ "sc-network",
+ "sc-rpc",
+ "sc-service",
  "sha3 0.8.2",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-io 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-storage 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-blockchain",
+ "sp-io",
+ "sp-runtime",
+ "sp-storage",
+ "sp-transaction-pool",
 ]
 
 [[package]]
 name = "fc-rpc-core"
 version = "1.1.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4#6df0d53ff45dd8dc3a2f8b7e53ef101dc9a54a08"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4-minimal-changes#90b70ac076e0181102603a098ad32e7a12d179a8"
 dependencies = [
  "ethereum-types",
  "jsonrpc-core 15.1.0",
@@ -1811,14 +1805,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fork-tree"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "parity-scale-codec 2.1.1",
-]
-
-[[package]]
 name = "form_urlencoded"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1831,135 +1817,68 @@ dependencies = [
 [[package]]
 name = "fp-consensus"
 version = "1.0.0"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#6264318becebb3ada4a9daaad3ead210b0b7cf60"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4-minimal-changes#90b70ac076e0181102603a098ad32e7a12d179a8"
 dependencies = [
  "ethereum",
  "parity-scale-codec 2.1.1",
  "rlp",
  "sha3 0.8.2",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "fp-consensus"
-version = "1.0.0"
-source = "git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4#6df0d53ff45dd8dc3a2f8b7e53ef101dc9a54a08"
-dependencies = [
- "ethereum",
- "parity-scale-codec 2.1.1",
- "rlp",
- "sha3 0.8.2",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
 name = "fp-evm"
 version = "2.0.0"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#6264318becebb3ada4a9daaad3ead210b0b7cf60"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4-minimal-changes#90b70ac076e0181102603a098ad32e7a12d179a8"
 dependencies = [
  "evm",
  "impl-trait-for-tuples 0.1.3",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "fp-evm"
-version = "2.0.0"
-source = "git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4#6df0d53ff45dd8dc3a2f8b7e53ef101dc9a54a08"
-dependencies = [
- "evm",
- "impl-trait-for-tuples 0.1.3",
- "parity-scale-codec 2.1.1",
- "serde",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
 name = "fp-rpc"
 version = "2.0.0"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#6264318becebb3ada4a9daaad3ead210b0b7cf60"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4-minimal-changes#90b70ac076e0181102603a098ad32e7a12d179a8"
 dependencies = [
  "ethereum",
  "ethereum-types",
- "fp-evm 2.0.0 (git+https://github.com/webb-tools/frontier?branch=erup-4)",
+ "fp-evm",
  "parity-scale-codec 2.1.1",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "fp-rpc"
-version = "2.0.0"
-source = "git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4#6df0d53ff45dd8dc3a2f8b7e53ef101dc9a54a08"
-dependencies = [
- "ethereum",
- "ethereum-types",
- "fp-evm 2.0.0 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "parity-scale-codec 2.1.1",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-io 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
 name = "fp-storage"
 version = "1.0.1"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#6264318becebb3ada4a9daaad3ead210b0b7cf60"
-
-[[package]]
-name = "fp-storage"
-version = "1.0.1"
-source = "git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4#6df0d53ff45dd8dc3a2f8b7e53ef101dc9a54a08"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4-minimal-changes#90b70ac076e0181102603a098ad32e7a12d179a8"
 
 [[package]]
 name = "frame-benchmarking"
 version = "3.1.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "linregress",
  "log",
  "parity-scale-codec 2.1.1",
  "paste",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-storage 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "frame-benchmarking"
-version = "3.1.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "frame-support 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "frame-system 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "linregress",
- "log",
- "parity-scale-codec 2.1.1",
- "paste",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-io 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-storage 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-io",
+ "sp-runtime",
+ "sp-runtime-interface",
+ "sp-std 3.0.0",
+ "sp-storage",
 ]
 
 [[package]]
@@ -1969,19 +1888,19 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "Inflector",
  "chrono",
- "frame-benchmarking 3.1.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-benchmarking",
  "handlebars",
  "parity-scale-codec 2.1.1",
  "sc-cli",
- "sc-client-db 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-executor 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-service 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-db",
+ "sc-executor",
+ "sc-service",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-externalities",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-state-machine",
  "structopt",
 ]
 
@@ -1990,14 +1909,14 @@ name = "frame-executive"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "parity-scale-codec 2.1.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
+ "sp-tracing",
 ]
 
 [[package]]
@@ -2007,19 +1926,8 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "frame-metadata"
-version = "13.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "parity-scale-codec 2.1.1",
- "serde",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -2028,8 +1936,8 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "bitflags",
- "frame-metadata 13.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-support-procedural 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-metadata",
+ "frame-support-procedural",
  "impl-trait-for-tuples 0.2.1",
  "log",
  "once_cell",
@@ -2037,42 +1945,15 @@ dependencies = [
  "paste",
  "serde",
  "smallvec 1.6.1",
- "sp-arithmetic 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-staking 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "frame-support"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "bitflags",
- "frame-metadata 13.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "frame-support-procedural 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "impl-trait-for-tuples 0.2.1",
- "log",
- "max-encoded-len",
- "once_cell",
- "parity-scale-codec 2.1.1",
- "paste",
- "serde",
- "smallvec 1.6.1",
- "sp-arithmetic 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-io 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-staking 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-state-machine 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-tracing 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-state-machine",
+ "sp-std 3.0.0",
+ "sp-tracing",
 ]
 
 [[package]]
@@ -2081,19 +1962,7 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "Inflector",
- "frame-support-procedural-tools 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "frame-support-procedural"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "Inflector",
- "frame-support-procedural-tools 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "frame-support-procedural-tools",
  "proc-macro2",
  "quote",
  "syn",
@@ -2104,19 +1973,7 @@ name = "frame-support-procedural-tools"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support-procedural-tools-derive 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "proc-macro-crate 1.0.0",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "frame-support-procedural-tools"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "frame-support-procedural-tools-derive 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "frame-support-procedural-tools-derive",
  "proc-macro-crate 1.0.0",
  "proc-macro2",
  "quote",
@@ -2134,47 +1991,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "frame-support-procedural-tools-derive"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "frame-system"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
  "impl-trait-for-tuples 0.2.1",
  "log",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "frame-system"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "frame-support 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "impl-trait-for-tuples 0.2.1",
- "log",
- "parity-scale-codec 2.1.1",
- "serde",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-io 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-version 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
+ "sp-version",
 ]
 
 [[package]]
@@ -2182,13 +2012,13 @@ name = "frame-system-benchmarking"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-benchmarking 3.1.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
  "parity-scale-codec 2.1.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -2197,7 +2027,7 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.1",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
 ]
 
 [[package]]
@@ -3945,28 +3775,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "max-encoded-len"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "impl-trait-for-tuples 0.2.1",
- "max-encoded-len-derive",
- "parity-scale-codec 2.1.1",
- "primitive-types",
-]
-
-[[package]]
-name = "max-encoded-len-derive"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "proc-macro-crate 1.0.0",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "maybe-uninit"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4438,15 +4246,15 @@ name = "pallet-aura"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "pallet-session",
- "pallet-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-timestamp",
  "parity-scale-codec 2.1.1",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-application-crypto",
  "sp-consensus-aura",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -4454,13 +4262,13 @@ name = "pallet-authorship"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.1.1",
- "sp-authorship 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-authorship",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -4468,28 +4276,13 @@ name = "pallet-balances"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-benchmarking 3.1.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
  "log",
  "parity-scale-codec 2.1.1",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "pallet-balances"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "frame-benchmarking 3.1.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "frame-support 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "frame-system 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "log",
- "max-encoded-len",
- "parity-scale-codec 2.1.1",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -4497,8 +4290,8 @@ name = "pallet-contracts"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "log",
  "pallet-contracts-primitives",
  "pallet-contracts-proc-macro",
@@ -4507,11 +4300,11 @@ dependencies = [
  "pwasm-utils 0.17.1",
  "serde",
  "smallvec 1.6.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
  "sp-sandbox",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-std 3.0.0",
  "wasmi-validation 0.4.0",
 ]
 
@@ -4523,9 +4316,9 @@ dependencies = [
  "bitflags",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -4550,11 +4343,11 @@ dependencies = [
  "pallet-contracts-rpc-runtime-api",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-rpc",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -4564,144 +4357,91 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "pallet-contracts-primitives",
  "parity-scale-codec 2.1.1",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
 name = "pallet-dynamic-fee"
 version = "2.0.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#6264318becebb3ada4a9daaad3ead210b0b7cf60"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4-minimal-changes#90b70ac076e0181102603a098ad32e7a12d179a8"
 dependencies = [
  "async-trait",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "pallet-evm 4.0.0-dev (git+https://github.com/webb-tools/frontier?branch=erup-4)",
+ "frame-support",
+ "frame-system",
+ "pallet-evm",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
 name = "pallet-ethereum"
 version = "2.0.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#6264318becebb3ada4a9daaad3ead210b0b7cf60"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4-minimal-changes#90b70ac076e0181102603a098ad32e7a12d179a8"
 dependencies = [
  "ethereum",
  "ethereum-types",
  "evm",
- "fp-consensus 1.0.0 (git+https://github.com/webb-tools/frontier?branch=erup-4)",
- "fp-evm 2.0.0 (git+https://github.com/webb-tools/frontier?branch=erup-4)",
- "fp-rpc 2.0.0 (git+https://github.com/webb-tools/frontier?branch=erup-4)",
- "fp-storage 1.0.1 (git+https://github.com/webb-tools/frontier?branch=erup-4)",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "fp-consensus",
+ "fp-evm",
+ "fp-rpc",
+ "fp-storage",
+ "frame-support",
+ "frame-system",
  "libsecp256k1",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "pallet-evm 4.0.0-dev (git+https://github.com/webb-tools/frontier?branch=erup-4)",
- "pallet-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-timestamp",
  "parity-scale-codec 2.1.1",
  "rlp",
  "rustc-hex",
  "serde",
  "sha3 0.8.2",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "pallet-ethereum"
-version = "2.0.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4#6df0d53ff45dd8dc3a2f8b7e53ef101dc9a54a08"
-dependencies = [
- "ethereum",
- "ethereum-types",
- "evm",
- "fp-consensus 1.0.0 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "fp-evm 2.0.0 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "fp-rpc 2.0.0 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "fp-storage 1.0.1 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "frame-support 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "frame-system 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "libsecp256k1",
- "pallet-balances 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "pallet-evm 4.0.0-dev (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "pallet-timestamp 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "parity-scale-codec 2.1.1",
- "rlp",
- "rustc-hex",
- "serde",
- "sha3 0.8.2",
- "sp-io 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
 name = "pallet-evm"
 version = "4.0.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#6264318becebb3ada4a9daaad3ead210b0b7cf60"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4-minimal-changes#90b70ac076e0181102603a098ad32e7a12d179a8"
 dependencies = [
  "evm",
  "evm-gasometer",
  "evm-runtime",
- "fp-evm 2.0.0 (git+https://github.com/webb-tools/frontier?branch=erup-4)",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "fp-evm",
+ "frame-support",
+ "frame-system",
  "log",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "pallet-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-balances",
+ "pallet-timestamp",
  "parity-scale-codec 2.1.1",
  "primitive-types",
  "rlp",
  "serde",
  "sha3 0.8.2",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "pallet-evm"
-version = "4.0.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4#6df0d53ff45dd8dc3a2f8b7e53ef101dc9a54a08"
-dependencies = [
- "evm",
- "evm-gasometer",
- "evm-runtime",
- "fp-evm 2.0.0 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "frame-support 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "frame-system 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "log",
- "pallet-balances 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "pallet-timestamp 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "parity-scale-codec 2.1.1",
- "primitive-types",
- "rlp",
- "serde",
- "sha3 0.8.2",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-io 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
 name = "pallet-evm-precompile-simple"
 version = "2.0.0-dev"
-source = "git+https://github.com/webb-tools/frontier?branch=erup-4#6264318becebb3ada4a9daaad3ead210b0b7cf60"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4-minimal-changes#90b70ac076e0181102603a098ad32e7a12d179a8"
 dependencies = [
  "evm",
- "fp-evm 2.0.0 (git+https://github.com/webb-tools/frontier?branch=erup-4)",
+ "fp-evm",
  "ripemd160",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
 ]
 
 [[package]]
@@ -4709,20 +4449,20 @@ name = "pallet-grandpa"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-benchmarking 3.1.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
  "log",
  "pallet-authorship",
  "pallet-session",
  "parity-scale-codec 2.1.1",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-finality-grandpa 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-session 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-staking 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-finality-grandpa",
+ "sp-runtime",
+ "sp-session",
+ "sp-staking",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -4731,22 +4471,22 @@ version = "3.0.0"
 dependencies = [
  "bulletproofs-gadgets",
  "curve25519-dalek 3.1.0",
- "frame-benchmarking 3.1.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
  "lazy_static",
  "merlin",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-balances",
  "pallet-randomness-collective-flip",
  "parity-scale-codec 2.1.1",
  "rand_chacha 0.2.2",
  "serde",
  "sha2 0.9.5",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "webb-bulletproofs",
 ]
 
@@ -4759,11 +4499,11 @@ dependencies = [
  "jsonrpc-derive 15.1.0",
  "pallet-merkle",
  "parity-scale-codec 2.1.1",
- "sc-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-rpc",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -4773,20 +4513,20 @@ dependencies = [
  "bencher",
  "bulletproofs-gadgets",
  "curve25519-dalek 3.1.0",
- "frame-benchmarking 3.1.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
  "log",
  "merlin",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-balances",
  "pallet-merkle",
  "pallet-randomness-collective-flip",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "webb-bulletproofs",
  "webb-currencies",
  "webb-tokens",
@@ -4798,12 +4538,12 @@ name = "pallet-randomness-collective-flip"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "parity-scale-codec 2.1.1",
  "safe-mix",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -4811,18 +4551,18 @@ name = "pallet-session"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "impl-trait-for-tuples 0.2.1",
- "pallet-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-timestamp",
  "parity-scale-codec 2.1.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-session 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-staking 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-session",
+ "sp-staking",
+ "sp-std 3.0.0",
+ "sp-trie",
 ]
 
 [[package]]
@@ -4830,12 +4570,12 @@ name = "pallet-sudo"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "parity-scale-codec 2.1.1",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -4843,34 +4583,17 @@ name = "pallet-timestamp"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-benchmarking 3.1.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
  "impl-trait-for-tuples 0.2.1",
  "log",
  "parity-scale-codec 2.1.1",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "pallet-timestamp"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "frame-benchmarking 3.1.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "frame-support 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "frame-system 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "impl-trait-for-tuples 0.2.1",
- "log",
- "parity-scale-codec 2.1.1",
- "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-timestamp 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-inherents",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
+ "sp-timestamp",
 ]
 
 [[package]]
@@ -4878,15 +4601,15 @@ name = "pallet-transaction-payment"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "parity-scale-codec 2.1.1",
  "serde",
  "smallvec 1.6.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -4899,11 +4622,11 @@ dependencies = [
  "jsonrpc-derive 15.1.0",
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec 2.1.1",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-rpc",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -4913,8 +4636,8 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "pallet-transaction-payment",
  "parity-scale-codec 2.1.1",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -4922,14 +4645,14 @@ name = "pallet-treasury"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "impl-trait-for-tuples 0.2.1",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-balances",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -5575,17 +5298,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pwasm-utils"
-version = "0.18.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0c1a2f10b47d446372a4f397c58b329aaea72b2daf9395a623a411cb8ccb54f"
-dependencies = [
- "byteorder",
- "log",
- "parity-wasm 0.42.2",
-]
-
-[[package]]
 name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6122,18 +5834,18 @@ dependencies = [
  "futures-timer 3.0.2",
  "log",
  "parity-scale-codec 2.1.1",
- "sc-block-builder 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-block-builder",
+ "sc-client-api",
  "sc-proposer-metrics",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-telemetry",
+ "sp-api",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-transaction-pool",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -6142,30 +5854,14 @@ version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-block-builder"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "parity-scale-codec 2.1.1",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-block-builder 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-state-machine 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-client-api",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-state-machine",
 ]
 
 [[package]]
@@ -6175,56 +5871,24 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.1.1",
- "sc-chain-spec-derive 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-consensus-babe 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-consensus-epochs 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-finality-grandpa 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-network 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-chain-spec-derive",
+ "sc-consensus-babe",
+ "sc-consensus-epochs",
+ "sc-finality-grandpa",
+ "sc-network",
+ "sc-telemetry",
  "serde",
  "serde_json",
- "sp-chain-spec 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus-babe 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-chain-spec"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "impl-trait-for-tuples 0.2.1",
- "parity-scale-codec 2.1.1",
- "sc-chain-spec-derive 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-consensus-babe 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-consensus-epochs 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-finality-grandpa 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-network 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-telemetry 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "serde",
- "serde_json",
- "sp-chain-spec 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus-babe 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-chain-spec",
+ "sp-consensus-babe",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
 name = "sc-chain-spec-derive"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
-dependencies = [
- "proc-macro-crate 1.0.0",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "sc-chain-spec-derive"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
 dependencies = [
  "proc-macro-crate 1.0.0",
  "proc-macro2",
@@ -6248,22 +5912,22 @@ dependencies = [
  "rand 0.7.3",
  "regex",
  "rpassword",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-keystore 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-network 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-service 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sc-keystore",
+ "sc-network",
+ "sc-service",
+ "sc-telemetry",
+ "sc-tracing",
  "serde",
  "serde_json",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-blockchain",
+ "sp-core",
  "sp-keyring",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-panic-handler 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-keystore",
+ "sp-panic-handler",
+ "sp-runtime",
+ "sp-utils",
+ "sp-version",
  "structopt",
  "thiserror",
  "tiny-bip39",
@@ -6284,58 +5948,24 @@ dependencies = [
  "log",
  "parity-scale-codec 2.1.1",
  "parking_lot 0.11.1",
- "sc-executor 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-database 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-storage 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-client-api"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "derive_more",
- "fnv",
- "futures 0.3.15",
- "hash-db",
- "kvdb",
- "lazy_static",
- "log",
- "parity-scale-codec 2.1.1",
- "parking_lot 0.11.1",
- "sc-executor 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-database 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-externalities 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-keystore 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-state-machine 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-storage 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-trie 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-utils 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-version 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-executor",
+ "sp-api",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-database",
+ "sp-externalities",
+ "sp-inherents",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std 3.0.0",
+ "sp-storage",
+ "sp-transaction-pool",
+ "sp-trie",
+ "sp-utils",
+ "sp-version",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -6354,48 +5984,18 @@ dependencies = [
  "parity-scale-codec 2.1.1",
  "parity-util-mem",
  "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-executor 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-state-db 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-arithmetic 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-database 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-client-db"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "blake2-rfc",
- "hash-db",
- "kvdb",
- "kvdb-memorydb",
- "kvdb-rocksdb",
- "linked-hash-map",
- "log",
- "parity-db",
- "parity-scale-codec 2.1.1",
- "parity-util-mem",
- "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-executor 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-state-db 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-arithmetic 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-database 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-state-machine 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-trie 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-client-api",
+ "sc-executor",
+ "sc-state-db",
+ "sp-arithmetic",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-database",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-trie",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -6404,22 +6004,10 @@ version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-consensus"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-client-api",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -6433,24 +6021,24 @@ dependencies = [
  "futures-timer 3.0.2",
  "log",
  "parity-scale-codec 2.1.1",
- "sc-block-builder 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-consensus-slots 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-block-builder",
+ "sc-client-api",
+ "sc-consensus-slots",
+ "sc-telemetry",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
  "sp-consensus-aura",
- "sp-consensus-slots 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-consensus-slots",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-version",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -6460,7 +6048,7 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "async-trait",
  "derive_more",
- "fork-tree 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "fork-tree",
  "futures 0.3.15",
  "futures-timer 3.0.2",
  "log",
@@ -6473,76 +6061,30 @@ dependencies = [
  "pdqselect",
  "rand 0.7.3",
  "retain_mut",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-consensus-epochs 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-consensus-slots 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-consensus-uncles 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-keystore 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sc-consensus-epochs",
+ "sc-consensus-slots",
+ "sc-consensus-uncles",
+ "sc-keystore",
+ "sc-telemetry",
  "schnorrkel",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus-babe 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus-slots 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus-vrf 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-consensus-babe"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "async-trait",
- "derive_more",
- "fork-tree 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "futures 0.3.15",
- "futures-timer 3.0.2",
- "log",
- "merlin",
- "num-bigint 0.2.6",
- "num-rational 0.2.4",
- "num-traits",
- "parity-scale-codec 2.1.1",
- "parking_lot 0.11.1",
- "pdqselect",
- "rand 0.7.3",
- "retain_mut",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-consensus-epochs 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-consensus-slots 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-consensus-uncles 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-keystore 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-telemetry 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "schnorrkel",
- "serde",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-block-builder 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus-babe 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus-slots 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus-vrf 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-io 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-keystore 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-utils 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-version 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-consensus-babe",
+ "sp-consensus-slots",
+ "sp-consensus-vrf",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-utils",
+ "sp-version",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -6550,25 +6092,12 @@ name = "sc-consensus-epochs"
 version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "fork-tree 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "fork-tree",
  "parity-scale-codec 2.1.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-consensus-epochs"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "fork-tree 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "parity-scale-codec 2.1.1",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-consensus 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-client-api",
+ "sc-consensus",
+ "sp-blockchain",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -6582,48 +6111,20 @@ dependencies = [
  "impl-trait-for-tuples 0.2.1",
  "log",
  "parity-scale-codec 2.1.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-arithmetic 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus-slots 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
-]
-
-[[package]]
-name = "sc-consensus-slots"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "async-trait",
- "futures 0.3.15",
- "futures-timer 3.0.2",
- "impl-trait-for-tuples 0.2.1",
- "log",
- "parity-scale-codec 2.1.1",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-telemetry 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-arithmetic 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus-slots 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-state-machine 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-timestamp 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-trie 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-client-api",
+ "sc-telemetry",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-arithmetic",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-consensus-slots",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-timestamp",
+ "sp-trie",
  "thiserror",
 ]
 
@@ -6632,20 +6133,9 @@ name = "sc-consensus-uncles"
 version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-authorship 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
-]
-
-[[package]]
-name = "sc-consensus-uncles"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-authorship 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-client-api",
+ "sp-authorship",
+ "sp-runtime",
  "thiserror",
 ]
 
@@ -6661,49 +6151,21 @@ dependencies = [
  "parity-scale-codec 2.1.1",
  "parity-wasm 0.41.0",
  "parking_lot 0.11.1",
- "sc-executor-common 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-executor-wasmi 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-executor-common",
+ "sc-executor-wasmi",
  "sc-executor-wasmtime",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-panic-handler 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-serializer 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tasks 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "wasmi 0.6.2",
-]
-
-[[package]]
-name = "sc-executor"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "derive_more",
- "lazy_static",
- "libsecp256k1",
- "log",
- "parity-scale-codec 2.1.1",
- "parity-wasm 0.42.2",
- "parking_lot 0.11.1",
- "sc-executor-common 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-executor-wasmi 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-externalities 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-io 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-panic-handler 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-serializer 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-tasks 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-trie 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-version 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "wasmi 0.9.0",
+ "sp-api",
+ "sp-core",
+ "sp-externalities",
+ "sp-io",
+ "sp-panic-handler",
+ "sp-runtime-interface",
+ "sp-serializer",
+ "sp-tasks",
+ "sp-trie",
+ "sp-version",
+ "sp-wasm-interface",
+ "wasmi",
 ]
 
 [[package]]
@@ -6715,30 +6177,13 @@ dependencies = [
  "parity-scale-codec 2.1.1",
  "parity-wasm 0.41.0",
  "pwasm-utils 0.14.0",
- "sp-allocator 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-maybe-compressed-blob 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-serializer 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-allocator",
+ "sp-core",
+ "sp-maybe-compressed-blob",
+ "sp-serializer",
+ "sp-wasm-interface",
  "thiserror",
- "wasmi 0.6.2",
-]
-
-[[package]]
-name = "sc-executor-common"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "derive_more",
- "parity-scale-codec 2.1.1",
- "pwasm-utils 0.18.1",
- "sp-allocator 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-maybe-compressed-blob 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-serializer 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "thiserror",
- "wasmi 0.9.0",
+ "wasmi",
 ]
 
 [[package]]
@@ -6748,27 +6193,12 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "log",
  "parity-scale-codec 2.1.1",
- "sc-executor-common 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-allocator 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "wasmi 0.6.2",
-]
-
-[[package]]
-name = "sc-executor-wasmi"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "log",
- "parity-scale-codec 2.1.1",
- "sc-executor-common 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-allocator 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "wasmi 0.9.0",
+ "sc-executor-common",
+ "sp-allocator",
+ "sp-core",
+ "sp-runtime-interface",
+ "sp-wasm-interface",
+ "wasmi",
 ]
 
 [[package]]
@@ -6780,12 +6210,12 @@ dependencies = [
  "parity-scale-codec 2.1.1",
  "parity-wasm 0.41.0",
  "pwasm-utils 0.14.0",
- "sc-executor-common 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-executor-common",
  "scoped-tls",
- "sp-allocator 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-allocator",
+ "sp-core",
+ "sp-runtime-interface",
+ "sp-wasm-interface",
  "wasmtime",
 ]
 
@@ -6798,7 +6228,7 @@ dependencies = [
  "derive_more",
  "dyn-clone",
  "finality-grandpa",
- "fork-tree 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "fork-tree",
  "futures 0.3.15",
  "futures-timer 3.0.2",
  "linked-hash-map",
@@ -6807,67 +6237,26 @@ dependencies = [
  "parking_lot 0.11.1",
  "pin-project 1.0.7",
  "rand 0.7.3",
- "sc-block-builder 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-keystore 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-network 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-network-gossip 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-block-builder",
+ "sc-client-api",
+ "sc-consensus",
+ "sc-keystore",
+ "sc-network",
+ "sc-network-gossip",
+ "sc-telemetry",
  "serde_json",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-arithmetic 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-finality-grandpa 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-finality-grandpa"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "async-trait",
- "derive_more",
- "dyn-clone",
- "finality-grandpa",
- "fork-tree 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "futures 0.3.15",
- "futures-timer 3.0.2",
- "linked-hash-map",
- "log",
- "parity-scale-codec 2.1.1",
- "parking_lot 0.11.1",
- "pin-project 1.0.7",
- "rand 0.7.3",
- "sc-block-builder 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-consensus 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-keystore 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-network 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-network-gossip 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-telemetry 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "serde_json",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-arithmetic 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-finality-grandpa 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-keystore 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-utils 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "wasm-timer",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-arithmetic",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-finality-grandpa",
+ "sp-inherents",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-utils",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -6884,14 +6273,14 @@ dependencies = [
  "jsonrpc-pubsub 15.1.0",
  "log",
  "parity-scale-codec 2.1.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-finality-grandpa 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sc-finality-grandpa",
+ "sc-rpc",
  "serde",
  "serde_json",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -6903,30 +6292,12 @@ dependencies = [
  "futures 0.3.15",
  "log",
  "parity-util-mem",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-network 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "wasm-timer",
-]
-
-[[package]]
-name = "sc-informant"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "ansi_term 0.12.1",
- "futures 0.3.15",
- "futures-timer 3.0.2",
- "log",
- "parity-util-mem",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-network 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-client-api",
+ "sc-network",
+ "sp-blockchain",
+ "sp-runtime",
+ "sp-transaction-pool",
+ "sp-utils",
  "wasm-timer",
 ]
 
@@ -6944,29 +6315,9 @@ dependencies = [
  "parking_lot 0.11.1",
  "rand 0.7.3",
  "serde_json",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "subtle 2.4.0",
-]
-
-[[package]]
-name = "sc-keystore"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "async-trait",
- "derive_more",
- "futures 0.3.15",
- "futures-util",
- "hex",
- "merlin",
- "parking_lot 0.11.1",
- "rand 0.7.3",
- "serde_json",
- "sp-application-crypto 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-keystore 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-keystore",
  "subtle 2.4.0",
 ]
 
@@ -6979,33 +6330,14 @@ dependencies = [
  "lazy_static",
  "parity-scale-codec 2.1.1",
  "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-executor 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-light"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "hash-db",
- "lazy_static",
- "parity-scale-codec 2.1.1",
- "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-executor 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-externalities 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-state-machine 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-client-api",
+ "sc-executor",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-externalities",
+ "sp-runtime",
+ "sp-state-machine",
 ]
 
 [[package]]
@@ -7024,7 +6356,7 @@ dependencies = [
  "either",
  "erased-serde",
  "fnv",
- "fork-tree 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "fork-tree",
  "futures 0.3.15",
  "futures-timer 3.0.2",
  "hex",
@@ -7041,72 +6373,19 @@ dependencies = [
  "prost",
  "prost-build",
  "rand 0.7.3",
- "sc-block-builder 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-peerset 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-block-builder",
+ "sc-client-api",
+ "sc-peerset",
  "serde",
  "serde_json",
  "smallvec 1.6.1",
- "sp-arithmetic 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
- "unsigned-varint 0.6.0",
- "void",
- "wasm-timer",
- "zeroize",
-]
-
-[[package]]
-name = "sc-network"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "async-std",
- "async-trait",
- "asynchronous-codec 0.5.0",
- "bitflags",
- "bs58",
- "bytes 1.0.1",
- "cid",
- "derive_more",
- "either",
- "erased-serde",
- "fnv",
- "fork-tree 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "futures 0.3.15",
- "futures-timer 3.0.2",
- "hex",
- "ip_network",
- "libp2p",
- "linked-hash-map",
- "linked_hash_set",
- "log",
- "lru",
- "nohash-hasher",
- "parity-scale-codec 2.1.1",
- "parking_lot 0.11.1",
- "pin-project 1.0.7",
- "prost",
- "prost-build",
- "rand 0.7.3",
- "sc-block-builder 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-peerset 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "serde",
- "serde_json",
- "smallvec 1.6.1",
- "sp-arithmetic 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-utils 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-arithmetic",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-runtime",
+ "sp-utils",
+ "substrate-prometheus-endpoint",
  "thiserror",
  "unsigned-varint 0.6.0",
  "void",
@@ -7124,26 +6403,9 @@ dependencies = [
  "libp2p",
  "log",
  "lru",
- "sc-network 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "tracing",
- "wasm-timer",
-]
-
-[[package]]
-name = "sc-network-gossip"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "futures 0.3.15",
- "futures-timer 3.0.2",
- "libp2p",
- "log",
- "lru",
- "sc-network 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-network",
+ "sp-runtime",
+ "substrate-prometheus-endpoint",
  "tracing",
  "wasm-timer",
 ]
@@ -7165,42 +6427,14 @@ dependencies = [
  "parity-scale-codec 2.1.1",
  "parking_lot 0.11.1",
  "rand 0.7.3",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-keystore 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-network 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-offchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "threadpool",
-]
-
-[[package]]
-name = "sc-offchain"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "bytes 0.5.6",
- "fnv",
- "futures 0.3.15",
- "futures-timer 3.0.2",
- "hex",
- "hyper 0.13.10",
- "hyper-rustls",
- "log",
- "num_cpus",
- "parity-scale-codec 2.1.1",
- "parking_lot 0.11.1",
- "rand 0.7.3",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-keystore 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-network 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-offchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-utils 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-client-api",
+ "sc-keystore",
+ "sc-network",
+ "sp-api",
+ "sp-core",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-utils",
  "threadpool",
 ]
 
@@ -7213,20 +6447,7 @@ dependencies = [
  "libp2p",
  "log",
  "serde_json",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "wasm-timer",
-]
-
-[[package]]
-name = "sc-peerset"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "futures 0.3.15",
- "libp2p",
- "log",
- "serde_json",
- "sp-utils 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-utils",
  "wasm-timer",
 ]
 
@@ -7236,7 +6457,7 @@ version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "log",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -7251,62 +6472,27 @@ dependencies = [
  "log",
  "parity-scale-codec 2.1.1",
  "parking_lot 0.11.1",
- "sc-block-builder 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-executor 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-keystore 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-rpc-api 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-block-builder",
+ "sc-client-api",
+ "sc-executor",
+ "sc-keystore",
+ "sc-rpc-api",
+ "sc-tracing",
  "serde_json",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-chain-spec 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-offchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-session 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-rpc"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "futures 0.3.15",
- "hash-db",
- "jsonrpc-core 15.1.0",
- "jsonrpc-pubsub 15.1.0",
- "log",
- "parity-scale-codec 2.1.1",
- "parking_lot 0.11.1",
- "sc-block-builder 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-executor 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-keystore 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-rpc-api 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-tracing 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "serde_json",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-chain-spec 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-keystore 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-offchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-rpc 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-session 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-state-machine 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-tracing 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-utils 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-version 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-blockchain",
+ "sp-chain-spec",
+ "sp-core",
+ "sp-keystore",
+ "sp-offchain",
+ "sp-rpc",
+ "sp-runtime",
+ "sp-session",
+ "sp-state-machine",
+ "sp-tracing",
+ "sp-transaction-pool",
+ "sp-utils",
+ "sp-version",
 ]
 
 [[package]]
@@ -7325,38 +6511,13 @@ dependencies = [
  "parking_lot 0.11.1",
  "serde",
  "serde_json",
- "sp-chain-spec 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-rpc-api"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "derive_more",
- "futures 0.3.15",
- "jsonrpc-core 15.1.0",
- "jsonrpc-core-client 15.1.0",
- "jsonrpc-derive 15.1.0",
- "jsonrpc-pubsub 15.1.0",
- "log",
- "parity-scale-codec 2.1.1",
- "parking_lot 0.11.1",
- "serde",
- "serde_json",
- "sp-chain-spec 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-rpc 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-tracing 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-version 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-chain-spec",
+ "sp-core",
+ "sp-rpc",
+ "sp-runtime",
+ "sp-tracing",
+ "sp-transaction-pool",
+ "sp-version",
 ]
 
 [[package]]
@@ -7373,26 +6534,8 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-rpc-server"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "futures 0.1.31",
- "jsonrpc-core 15.1.0",
- "jsonrpc-http-server",
- "jsonrpc-ipc-server",
- "jsonrpc-pubsub 15.1.0",
- "jsonrpc-ws-server",
- "log",
- "serde",
- "serde_json",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-runtime",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -7416,106 +6559,42 @@ dependencies = [
  "parking_lot 0.11.1",
  "pin-project 1.0.7",
  "rand 0.7.3",
- "sc-block-builder 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-chain-spec 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-client-db 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-executor 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-informant 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-keystore 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-light 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-network 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-offchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-rpc-server 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-block-builder",
+ "sc-chain-spec",
+ "sc-client-api",
+ "sc-client-db",
+ "sc-executor",
+ "sc-informant",
+ "sc-keystore",
+ "sc-light",
+ "sc-network",
+ "sc-offchain",
+ "sc-rpc",
+ "sc-rpc-server",
+ "sc-telemetry",
+ "sc-tracing",
+ "sc-transaction-pool",
  "serde",
  "serde_json",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-session 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "tempfile",
- "thiserror",
- "tracing",
- "tracing-futures",
- "wasm-timer",
-]
-
-[[package]]
-name = "sc-service"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "async-trait",
- "directories",
- "exit-future",
- "futures 0.1.31",
- "futures 0.3.15",
- "futures-timer 3.0.2",
- "hash-db",
- "jsonrpc-core 15.1.0",
- "jsonrpc-pubsub 15.1.0",
- "lazy_static",
- "log",
- "parity-scale-codec 2.1.1",
- "parity-util-mem",
- "parking_lot 0.11.1",
- "pin-project 1.0.7",
- "rand 0.7.3",
- "sc-block-builder 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-chain-spec 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-client-db 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-executor 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-informant 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-keystore 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-light 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-network 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-offchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-rpc 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-rpc-server 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-telemetry 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-tracing 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-transaction-pool 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "serde",
- "serde_json",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-block-builder 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-externalities 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-io 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-keystore 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-session 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-state-machine 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-tracing 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-trie 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-utils 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-version 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-externalities",
+ "sp-inherents",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-session",
+ "sp-state-machine",
+ "sp-tracing",
+ "sp-transaction-pool",
+ "sp-trie",
+ "sp-utils",
+ "sp-version",
+ "substrate-prometheus-endpoint",
  "tempfile",
  "thiserror",
  "tracing",
@@ -7533,23 +6612,8 @@ dependencies = [
  "parity-util-mem",
  "parity-util-mem-derive",
  "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
-]
-
-[[package]]
-name = "sc-state-db"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "log",
- "parity-scale-codec 2.1.1",
- "parity-util-mem",
- "parity-util-mem-derive",
- "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-client-api",
+ "sp-core",
  "thiserror",
 ]
 
@@ -7557,26 +6621,6 @@ dependencies = [
 name = "sc-telemetry"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
-dependencies = [
- "chrono",
- "futures 0.3.15",
- "libp2p",
- "log",
- "parking_lot 0.11.1",
- "pin-project 1.0.7",
- "rand 0.7.3",
- "serde",
- "serde_json",
- "take_mut",
- "thiserror",
- "void",
- "wasm-timer",
-]
-
-[[package]]
-name = "sc-telemetry"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
 dependencies = [
  "chrono",
  "futures 0.3.15",
@@ -7607,57 +6651,20 @@ dependencies = [
  "parking_lot 0.11.1",
  "regex",
  "rustc-hash",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-rpc-server 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-tracing-proc-macro 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sc-rpc-server",
+ "sc-telemetry",
+ "sc-tracing-proc-macro",
  "serde",
  "serde_json",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-storage 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
- "tracing",
- "tracing-log",
- "tracing-subscriber",
- "wasm-bindgen",
- "wasm-timer",
- "web-sys",
-]
-
-[[package]]
-name = "sc-tracing"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "ansi_term 0.12.1",
- "atty",
- "erased-serde",
- "lazy_static",
- "log",
- "once_cell",
- "parking_lot 0.11.1",
- "regex",
- "rustc-hash",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-rpc-server 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-telemetry 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-tracing-proc-macro 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "serde",
- "serde_json",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-block-builder 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-rpc 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-storage 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-tracing 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-core",
+ "sp-rpc",
+ "sp-runtime",
+ "sp-storage",
+ "sp-tracing",
  "thiserror",
  "tracing",
  "tracing-log",
@@ -7679,17 +6686,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sc-tracing-proc-macro"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "proc-macro-crate 1.0.0",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "sc-transaction-graph"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
@@ -7702,33 +6698,11 @@ dependencies = [
  "parking_lot 0.11.1",
  "retain_mut",
  "serde",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
- "wasm-timer",
-]
-
-[[package]]
-name = "sc-transaction-graph"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "derive_more",
- "futures 0.3.15",
- "linked-hash-map",
- "log",
- "parity-util-mem",
- "parking_lot 0.11.1",
- "retain_mut",
- "serde",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-utils 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
+ "sp-transaction-pool",
+ "sp-utils",
  "thiserror",
  "wasm-timer",
 ]
@@ -7745,42 +6719,16 @@ dependencies = [
  "parity-scale-codec 2.1.1",
  "parity-util-mem",
  "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-transaction-graph 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
- "wasm-timer",
-]
-
-[[package]]
-name = "sc-transaction-pool"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "futures 0.3.15",
- "futures-diagnose",
- "intervalier",
- "log",
- "parity-scale-codec 2.1.1",
- "parity-util-mem",
- "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sc-transaction-graph 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-tracing 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-utils 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sc-client-api",
+ "sc-transaction-graph",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
+ "sp-tracing",
+ "sp-transaction-pool",
+ "sp-utils",
+ "substrate-prometheus-endpoint",
  "thiserror",
  "wasm-timer",
 ]
@@ -8180,21 +7128,9 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "log",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
-]
-
-[[package]]
-name = "sp-allocator"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "log",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-std 3.0.0",
+ "sp-wasm-interface",
  "thiserror",
 ]
 
@@ -8206,29 +7142,12 @@ dependencies = [
  "hash-db",
  "log",
  "parity-scale-codec 2.1.1",
- "sp-api-proc-macro 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
-]
-
-[[package]]
-name = "sp-api"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "hash-db",
- "log",
- "parity-scale-codec 2.1.1",
- "sp-api-proc-macro 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-state-machine 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-version 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api-proc-macro",
+ "sp-core",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std 3.0.0",
+ "sp-version",
  "thiserror",
 ]
 
@@ -8245,40 +7164,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "sp-api-proc-macro"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "blake2-rfc",
- "proc-macro-crate 1.0.0",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "sp-application-crypto"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-application-crypto"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "max-encoded-len",
- "parity-scale-codec 2.1.1",
- "serde",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-io 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-io",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -8290,22 +7184,8 @@ dependencies = [
  "num-traits",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-debug-derive 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "static_assertions",
-]
-
-[[package]]
-name = "sp-arithmetic"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "integer-sqrt",
- "num-traits",
- "parity-scale-codec 2.1.1",
- "serde",
- "sp-debug-derive 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-debug-derive",
+ "sp-std 3.0.0",
  "static_assertions",
 ]
 
@@ -8316,21 +7196,9 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "async-trait",
  "parity-scale-codec 2.1.1",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-authorship"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "async-trait",
- "parity-scale-codec 2.1.1",
- "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -8339,22 +7207,10 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.1",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-block-builder"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "parity-scale-codec 2.1.1",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -8367,29 +7223,11 @@ dependencies = [
  "lru",
  "parity-scale-codec 2.1.1",
  "parking_lot 0.11.1",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-database 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
-]
-
-[[package]]
-name = "sp-blockchain"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "futures 0.3.15",
- "log",
- "lru",
- "parity-scale-codec 2.1.1",
- "parking_lot 0.11.1",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-database 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-state-machine 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-consensus",
+ "sp-database",
+ "sp-runtime",
+ "sp-state-machine",
  "thiserror",
 ]
 
@@ -8397,15 +7235,6 @@ dependencies = [
 name = "sp-chain-spec"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "sp-chain-spec"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
 dependencies = [
  "serde",
  "serde_json",
@@ -8424,43 +7253,16 @@ dependencies = [
  "parity-scale-codec 2.1.1",
  "parking_lot 0.11.1",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
- "wasm-timer",
-]
-
-[[package]]
-name = "sp-consensus"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "async-trait",
- "futures 0.3.15",
- "futures-timer 3.0.2",
- "libp2p",
- "log",
- "parity-scale-codec 2.1.1",
- "parking_lot 0.11.1",
- "serde",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-state-machine 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-trie 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-utils 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-version 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std 3.0.0",
+ "sp-trie",
+ "sp-utils",
+ "sp-version",
+ "substrate-prometheus-endpoint",
  "thiserror",
  "wasm-timer",
 ]
@@ -8472,14 +7274,14 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "async-trait",
  "parity-scale-codec 2.1.1",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus-slots 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-consensus",
+ "sp-consensus-slots",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std 3.0.0",
+ "sp-timestamp",
 ]
 
 [[package]]
@@ -8491,39 +7293,17 @@ dependencies = [
  "merlin",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus-slots 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus-vrf 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-consensus-babe"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "async-trait",
- "merlin",
- "parity-scale-codec 2.1.1",
- "serde",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus-slots 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-consensus-vrf 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-keystore 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-timestamp 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-consensus",
+ "sp-consensus-slots",
+ "sp-consensus-vrf",
+ "sp-core",
+ "sp-inherents",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std 3.0.0",
+ "sp-timestamp",
 ]
 
 [[package]]
@@ -8532,18 +7312,8 @@ version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.1",
- "sp-arithmetic 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-consensus-slots"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "parity-scale-codec 2.1.1",
- "sp-arithmetic 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-arithmetic",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -8553,21 +7323,9 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "parity-scale-codec 2.1.1",
  "schnorrkel",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-consensus-vrf"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "parity-scale-codec 2.1.1",
- "schnorrkel",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -8600,62 +7358,17 @@ dependencies = [
  "secrecy",
  "serde",
  "sha2 0.9.5",
- "sp-debug-derive 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-storage 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-debug-derive",
+ "sp-externalities",
+ "sp-runtime-interface",
+ "sp-std 3.0.0",
+ "sp-storage",
  "substrate-bip39",
  "thiserror",
  "tiny-bip39",
  "tiny-keccak",
  "twox-hash",
- "wasmi 0.6.2",
- "zeroize",
-]
-
-[[package]]
-name = "sp-core"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "base58",
- "blake2-rfc",
- "byteorder",
- "dyn-clonable",
- "ed25519-dalek",
- "futures 0.3.15",
- "hash-db",
- "hash256-std-hasher",
- "hex",
- "impl-serde",
- "lazy_static",
- "libsecp256k1",
- "log",
- "max-encoded-len",
- "merlin",
- "num-traits",
- "parity-scale-codec 2.1.1",
- "parity-util-mem",
- "parking_lot 0.11.1",
- "primitive-types",
- "rand 0.7.3",
- "regex",
- "schnorrkel",
- "secrecy",
- "serde",
- "sha2 0.9.5",
- "sp-debug-derive 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-externalities 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-storage 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "substrate-bip39",
- "thiserror",
- "tiny-bip39",
- "tiny-keccak",
- "twox-hash",
- "wasmi 0.9.0",
+ "wasmi",
  "zeroize",
 ]
 
@@ -8663,15 +7376,6 @@ dependencies = [
 name = "sp-database"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
-dependencies = [
- "kvdb",
- "parking_lot 0.11.1",
-]
-
-[[package]]
-name = "sp-database"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
 dependencies = [
  "kvdb",
  "parking_lot 0.11.1",
@@ -8688,35 +7392,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "sp-debug-derive"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "sp-externalities"
 version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "environmental",
  "parity-scale-codec 2.1.1",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-storage 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-externalities"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "environmental",
- "parity-scale-codec 2.1.1",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-storage 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-std 3.0.0",
+ "sp-storage",
 ]
 
 [[package]]
@@ -8728,29 +7411,12 @@ dependencies = [
  "log",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-finality-grandpa"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "finality-grandpa",
- "log",
- "parity-scale-codec 2.1.1",
- "serde",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-keystore 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -8761,23 +7427,9 @@ dependencies = [
  "async-trait",
  "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.1.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
-]
-
-[[package]]
-name = "sp-inherents"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "async-trait",
- "impl-trait-for-tuples 0.2.1",
- "parity-scale-codec 2.1.1",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "thiserror",
 ]
 
@@ -8792,41 +7444,16 @@ dependencies = [
  "log",
  "parity-scale-codec 2.1.1",
  "parking_lot 0.11.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-maybe-compressed-blob 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "tracing",
- "tracing-core",
-]
-
-[[package]]
-name = "sp-io"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "futures 0.3.15",
- "hash-db",
- "libsecp256k1",
- "log",
- "parity-scale-codec 2.1.1",
- "parking_lot 0.11.1",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-externalities 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-keystore 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-maybe-compressed-blob 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-state-machine 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-tracing 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-trie 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-externalities",
+ "sp-keystore",
+ "sp-maybe-compressed-blob",
+ "sp-runtime-interface",
+ "sp-state-machine",
+ "sp-std 3.0.0",
+ "sp-tracing",
+ "sp-trie",
+ "sp-wasm-interface",
  "tracing",
  "tracing-core",
 ]
@@ -8837,8 +7464,8 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "lazy_static",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-runtime",
  "strum",
 ]
 
@@ -8855,25 +7482,8 @@ dependencies = [
  "parking_lot 0.11.1",
  "schnorrkel",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-keystore"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "async-trait",
- "derive_more",
- "futures 0.3.15",
- "merlin",
- "parity-scale-codec 2.1.1",
- "parking_lot 0.11.1",
- "schnorrkel",
- "serde",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-externalities 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-externalities",
 ]
 
 [[package]]
@@ -8886,32 +7496,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "sp-maybe-compressed-blob"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "ruzstd",
- "zstd",
-]
-
-[[package]]
 name = "sp-offchain"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-offchain"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -8923,32 +7514,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "sp-panic-handler"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "backtrace",
-]
-
-[[package]]
 name = "sp-rpc"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "rustc-hash",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "tracing-core",
-]
-
-[[package]]
-name = "sp-rpc"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "rustc-hash",
- "serde",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
  "tracing-core",
 ]
 
@@ -8966,33 +7538,11 @@ dependencies = [
  "paste",
  "rand 0.7.3",
  "serde",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-arithmetic 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-runtime"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "either",
- "hash256-std-hasher",
- "impl-trait-for-tuples 0.2.1",
- "log",
- "max-encoded-len",
- "parity-scale-codec 2.1.1",
- "parity-util-mem",
- "paste",
- "rand 0.7.3",
- "serde",
- "sp-application-crypto 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-arithmetic 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-io 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-application-crypto",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -9003,29 +7553,12 @@ dependencies = [
  "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.1.1",
  "primitive-types",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface-proc-macro 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-storage 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "static_assertions",
-]
-
-[[package]]
-name = "sp-runtime-interface"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "impl-trait-for-tuples 0.2.1",
- "parity-scale-codec 2.1.1",
- "primitive-types",
- "sp-externalities 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime-interface-proc-macro 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-storage 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-tracing 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-externalities",
+ "sp-runtime-interface-proc-macro",
+ "sp-std 3.0.0",
+ "sp-storage",
+ "sp-tracing",
+ "sp-wasm-interface",
  "static_assertions",
 ]
 
@@ -9033,18 +7566,6 @@ dependencies = [
 name = "sp-runtime-interface-proc-macro"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
-dependencies = [
- "Inflector",
- "proc-macro-crate 1.0.0",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "sp-runtime-interface-proc-macro"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
 dependencies = [
  "Inflector",
  "proc-macro-crate 1.0.0",
@@ -9059,11 +7580,11 @@ version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "wasmi 0.6.2",
+ "sp-core",
+ "sp-io",
+ "sp-std 3.0.0",
+ "sp-wasm-interface",
+ "wasmi",
 ]
 
 [[package]]
@@ -9076,38 +7597,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "sp-serializer"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "sp-session"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.1",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-staking 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-session"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "parity-scale-codec 2.1.1",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-staking 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-core",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -9116,18 +7615,8 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.1",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-staking"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "parity-scale-codec 2.1.1",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -9142,34 +7631,11 @@ dependencies = [
  "parking_lot 0.11.1",
  "rand 0.7.3",
  "smallvec 1.6.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-panic-handler 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
- "tracing",
- "trie-db",
- "trie-root",
-]
-
-[[package]]
-name = "sp-state-machine"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "hash-db",
- "log",
- "num-traits",
- "parity-scale-codec 2.1.1",
- "parking_lot 0.11.1",
- "rand 0.7.3",
- "smallvec 1.6.1",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-externalities 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-panic-handler 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-trie 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-externalities",
+ "sp-panic-handler",
+ "sp-std 3.0.0",
+ "sp-trie",
  "thiserror",
  "tracing",
  "trie-db",
@@ -9188,11 +7654,6 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 
 [[package]]
-name = "sp-std"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-
-[[package]]
 name = "sp-storage"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
@@ -9201,21 +7662,8 @@ dependencies = [
  "parity-scale-codec 2.1.1",
  "ref-cast",
  "serde",
- "sp-debug-derive 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-storage"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "impl-serde",
- "parity-scale-codec 2.1.1",
- "ref-cast",
- "serde",
- "sp-debug-derive 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-debug-derive",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -9224,24 +7672,11 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "log",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-tasks"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "log",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-externalities 0.9.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-io 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-externalities",
+ "sp-io",
+ "sp-runtime-interface",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -9253,27 +7688,10 @@ dependencies = [
  "futures-timer 3.0.2",
  "log",
  "parity-scale-codec 2.1.1",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
- "wasm-timer",
-]
-
-[[package]]
-name = "sp-timestamp"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "async-trait",
- "futures-timer 3.0.2",
- "log",
- "parity-scale-codec 2.1.1",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-inherents 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "thiserror",
  "wasm-timer",
 ]
@@ -9290,25 +7708,7 @@ dependencies = [
  "serde",
  "serde_json",
  "slog",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "tracing",
- "tracing-core",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "sp-tracing"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "erased-serde",
- "log",
- "parity-scale-codec 2.1.1",
- "parking_lot 0.10.2",
- "serde",
- "serde_json",
- "slog",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-std 3.0.0",
  "tracing",
  "tracing-core",
  "tracing-subscriber",
@@ -9324,25 +7724,9 @@ dependencies = [
  "log",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
-]
-
-[[package]]
-name = "sp-transaction-pool"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "derive_more",
- "futures 0.3.15",
- "log",
- "parity-scale-codec 2.1.1",
- "serde",
- "sp-api 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-blockchain 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-api",
+ "sp-blockchain",
+ "sp-runtime",
  "thiserror",
 ]
 
@@ -9354,22 +7738,8 @@ dependencies = [
  "hash-db",
  "memory-db",
  "parity-scale-codec 2.1.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "trie-db",
- "trie-root",
-]
-
-[[package]]
-name = "sp-trie"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "hash-db",
- "memory-db",
- "parity-scale-codec 2.1.1",
- "sp-core 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-core",
+ "sp-std 3.0.0",
  "trie-db",
  "trie-root",
 ]
@@ -9387,18 +7757,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sp-utils"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "futures 0.3.15",
- "futures-core",
- "futures-timer 3.0.2",
- "lazy_static",
- "prometheus",
-]
-
-[[package]]
 name = "sp-version"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
@@ -9406,22 +7764,9 @@ dependencies = [
  "impl-serde",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version-proc-macro 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-version"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "impl-serde",
- "parity-scale-codec 2.1.1",
- "serde",
- "sp-runtime 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "sp-version-proc-macro 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
+ "sp-runtime",
+ "sp-std 3.0.0",
+ "sp-version-proc-macro",
 ]
 
 [[package]]
@@ -9437,37 +7782,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "sp-version-proc-macro"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "parity-scale-codec 2.1.1",
- "proc-macro-crate 1.0.0",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "sp-wasm-interface"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.1.1",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "wasmi 0.6.2",
-]
-
-[[package]]
-name = "sp-wasm-interface"
-version = "3.0.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
-dependencies = [
- "impl-trait-for-tuples 0.2.1",
- "parity-scale-codec 2.1.1",
- "sp-std 3.0.0 (git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4)",
- "wasmi 0.9.0",
+ "sp-std 3.0.0",
+ "wasmi",
 ]
 
 [[package]]
@@ -9602,35 +7924,21 @@ dependencies = [
  "jsonrpc-derive 15.1.0",
  "log",
  "parity-scale-codec 2.1.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-rpc-api 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sc-rpc-api",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
+ "sp-transaction-pool",
 ]
 
 [[package]]
 name = "substrate-prometheus-endpoint"
 version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
-dependencies = [
- "async-std",
- "derive_more",
- "futures-util",
- "hyper 0.13.10",
- "log",
- "prometheus",
- "tokio 0.2.25",
-]
-
-[[package]]
-name = "substrate-prometheus-endpoint"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.4#1d04678e20555e623c974ee1127bc8a45abcf3d6"
 dependencies = [
  "async-std",
  "derive_more",
@@ -9650,7 +7958,7 @@ dependencies = [
  "atty",
  "build-helper",
  "cargo_metadata",
- "sp-maybe-compressed-blob 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-maybe-compressed-blob",
  "tempfile",
  "toml",
  "walkdir",
@@ -10618,21 +8926,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasmi"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2ee05bba3d1d994652079893941a2ef9324d2b58a63c31b40678fb7eddd7a5a"
-dependencies = [
- "downcast-rs",
- "libc",
- "memory_units",
- "num-rational 0.2.4",
- "num-traits",
- "parity-wasm 0.42.2",
- "wasmi-validation 0.4.0",
-]
-
-[[package]]
 name = "wasmi-validation"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10910,17 +9203,17 @@ dependencies = [
 name = "webb-currencies"
 version = "3.0.0"
 dependencies = [
- "frame-benchmarking 3.1.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
  "funty",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-balances",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "webb-tokens",
  "webb-traits",
  "webb-utilities",
@@ -10935,9 +9228,9 @@ dependencies = [
  "fc-mapping-sync",
  "fc-rpc",
  "fc-rpc-core",
- "fp-consensus 1.0.0 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "fp-rpc 2.0.0 (git+https://github.com/webb-tools/frontier?branch=polkadot-v0.9.4)",
- "frame-benchmarking 3.1.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "fp-consensus",
+ "fp-rpc",
+ "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.15",
  "jsonrpc-core 15.1.0",
@@ -10945,38 +9238,38 @@ dependencies = [
  "log",
  "pallet-contracts-rpc",
  "pallet-dynamic-fee",
- "pallet-ethereum 2.0.0-dev (git+https://github.com/webb-tools/frontier?branch=erup-4)",
- "pallet-evm 4.0.0-dev (git+https://github.com/webb-tools/frontier?branch=erup-4)",
+ "pallet-ethereum",
+ "pallet-evm",
  "pallet-merkle",
  "pallet-merkle-rpc",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
- "sc-chain-spec 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-chain-spec",
  "sc-cli",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sc-consensus",
  "sc-consensus-aura",
- "sc-executor 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-finality-grandpa 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-executor",
+ "sc-finality-grandpa",
  "sc-finality-grandpa-rpc",
- "sc-keystore 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-network 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-rpc-api 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-service 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-keystore",
+ "sc-network",
+ "sc-rpc",
+ "sc-rpc-api",
+ "sc-service",
+ "sc-telemetry",
+ "sc-transaction-pool",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
  "sp-consensus-aura",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-finality-grandpa 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-finality-grandpa",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-timestamp",
+ "sp-transaction-pool",
  "structopt",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
@@ -10987,22 +9280,22 @@ dependencies = [
 name = "webb-runtime"
 version = "3.0.0"
 dependencies = [
- "fp-rpc 2.0.0 (git+https://github.com/webb-tools/frontier?branch=erup-4)",
- "frame-benchmarking 3.1.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "fp-rpc",
+ "frame-benchmarking",
  "frame-executive",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "hex-literal",
  "pallet-aura",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-balances",
  "pallet-contracts",
  "pallet-contracts-primitives",
  "pallet-contracts-rpc-runtime-api",
  "pallet-dynamic-fee",
- "pallet-ethereum 2.0.0-dev (git+https://github.com/webb-tools/frontier?branch=erup-4)",
- "pallet-evm 4.0.0-dev (git+https://github.com/webb-tools/frontier?branch=erup-4)",
+ "pallet-ethereum",
+ "pallet-evm",
  "pallet-evm-precompile-simple",
  "pallet-grandpa",
  "pallet-merkle",
@@ -11010,22 +9303,22 @@ dependencies = [
  "pallet-mixer",
  "pallet-randomness-collective-flip",
  "pallet-sudo",
- "pallet-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-block-builder",
  "sp-consensus-aura",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-offchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-session 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-inherents",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-std 3.0.0",
+ "sp-transaction-pool",
+ "sp-version",
  "static_assertions",
  "substrate-wasm-builder",
  "webb-currencies",
@@ -11038,17 +9331,17 @@ name = "webb-tokens"
 version = "3.0.0"
 dependencies = [
  "bencher",
- "frame-benchmarking 3.1.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
  "pallet-treasury",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "webb-currencies",
  "webb-traits",
 ]
@@ -11057,15 +9350,15 @@ dependencies = [
 name = "webb-traits"
 version = "3.0.0"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
  "funty",
  "impl-trait-for-tuples 0.2.1",
  "num-traits",
  "parity-scale-codec 2.1.1",
  "serde",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "webb-utilities",
 ]
 
@@ -11073,15 +9366,15 @@ dependencies = [
 name = "webb-utilities"
 version = "3.0.0"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "funty",
  "parity-scale-codec 2.1.1",
  "serde",
  "serde_json",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]

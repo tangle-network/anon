@@ -58,11 +58,11 @@ webb-currencies = { path = "../pallets/currencies", default-features = false }
 webb-tokens = { path = "../pallets/tokens", default-features = false }
 webb-traits = { path = "../pallets/traits", default-features = false }
 
-pallet-dynamic-fee = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
-pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
-pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
-fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
-pallet-evm-precompile-simple = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
+pallet-dynamic-fee = { git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes", default-features = false }
+pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes", default-features = false }
+pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes", default-features = false }
+fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes" }
+pallet-evm-precompile-simple = { git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes", default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
