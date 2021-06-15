@@ -3,13 +3,7 @@ use crate::mock::{
 	new_test_ext, AccountId, Balance, Balances, CurrencyId, MerkleTrees, Mixer, MixerCall, Origin, System, Test, Tokens,
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
-use bulletproofs_gadgets::{
-	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
-	poseidon::{
-		builder::{Poseidon, PoseidonBuilder},
-		PoseidonSbox,
-	},
-};
+use bulletproofs_gadgets::fixed_deposit_tree::builder::FixedDepositTreeBuilder;
 use curve25519_dalek::scalar::Scalar;
 use frame_support::{
 	assert_err, assert_ok,
@@ -17,25 +11,18 @@ use frame_support::{
 };
 use frame_system::RawOrigin;
 use merkle::{
-	utils::keys::{Commitment, ScalarData},
+	utils::keys::{get_bp_gen_bytes, Commitment, ScalarData},
 	HighestCachedBlock,
 };
 use merlin::Transcript;
 use sp_runtime::{traits::BadOrigin, DispatchError};
 use webb_tokens::ExtendedTokenSystem;
 
-fn default_hasher(num_gens: usize) -> Poseidon {
-	let width = 6;
-	PoseidonBuilder::new(width)
-		.bulletproof_gens(BulletproofGens::new(num_gens, 1))
-		.sbox(PoseidonSbox::Exponentiation3)
-		.build()
-}
-
 #[test]
 fn should_initialize_successfully() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize());
+		assert_ok!(Mixer::initialize_mixer_trees());
 		// the mixer creates 4 groups, they should all initialise to 0
 		let val = 1_000;
 		for i in 0..4 {
@@ -53,6 +40,7 @@ fn should_initialize_successfully() {
 fn should_initialize_successfully_on_finalize() {
 	new_test_ext().execute_with(|| {
 		<Mixer as OnFinalize<u64>>::on_finalize(1);
+		<Mixer as OnFinalize<u64>>::on_finalize(2);
 		// the mixer creates 4 groups, they should all initialise to 0
 		let val = 1_000;
 		for i in 0..4 {
@@ -85,6 +73,7 @@ fn should_be_able_to_change_admin_with_root() {
 fn should_be_able_to_stop_mixers_with_root() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize());
+		assert_ok!(Mixer::initialize_mixer_trees());
 		let call = Box::new(MixerCall::set_stopped(true));
 		let res = call.dispatch_bypass_filter(RawOrigin::Root.into());
 		assert_ok!(res);
@@ -101,6 +90,7 @@ fn should_be_able_to_change_admin() {
 	new_test_ext().execute_with(|| {
 		let default_admin = 4;
 		assert_ok!(Mixer::initialize());
+		assert_ok!(Mixer::initialize_mixer_trees());
 		assert_err!(Mixer::transfer_admin(Origin::signed(1), 2), BadOrigin);
 		assert_ok!(Mixer::transfer_admin(Origin::signed(default_admin), 2));
 		let admin = Mixer::admin();
@@ -114,7 +104,9 @@ fn should_stop_and_start_mixer() {
 	new_test_ext().execute_with(|| {
 		let default_admin = 4;
 		assert_ok!(Mixer::initialize());
+		assert_ok!(Mixer::initialize_mixer_trees());
 		let mut tree = FixedDepositTreeBuilder::new().build();
+
 		let leaf = tree.generate_secrets();
 		assert_ok!(Mixer::deposit(Origin::signed(0), 0, vec![ScalarData(leaf)]));
 
@@ -154,7 +146,9 @@ fn should_stop_and_start_mixer() {
 fn should_fail_to_deposit_with_insufficient_balance() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize());
+		assert_ok!(Mixer::initialize_mixer_trees());
 		let mut tree = FixedDepositTreeBuilder::new().build();
+
 		for i in 0..4 {
 			let leaf = tree.generate_secrets();
 			assert_err!(
@@ -173,7 +167,9 @@ fn should_fail_to_deposit_with_insufficient_balance() {
 fn should_deposit_into_each_mixer_successfully() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize());
+		assert_ok!(Mixer::initialize_mixer_trees());
 		let mut tree = FixedDepositTreeBuilder::new().build();
+
 		for i in 0..4 {
 			let leaf = tree.generate_secrets();
 			let balance_before = Balances::free_balance(1);
@@ -195,10 +191,12 @@ fn should_deposit_into_each_mixer_successfully() {
 fn should_withdraw_from_each_mixer_successfully() {
 	new_test_ext().execute_with(|| {
 		assert_ok!(Mixer::initialize());
+		assert_ok!(Mixer::initialize_mixer_trees());
 		let pc_gens = PedersenGens::default();
-		let poseidon = default_hasher(16400);
 
 		for i in 0..4 {
+			let tree_id = i;
+			let poseidon = MerkleTrees::get_poseidon_hasher_for_tree(tree_id).unwrap();
 			let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 			let prover = Prover::new(&pc_gens, &mut prover_transcript);
 			let mut ftree = FixedDepositTreeBuilder::new()
@@ -260,8 +258,10 @@ fn should_cache_roots_if_no_new_deposits_show() {
 	new_test_ext().execute_with(|| {
 		System::set_block_number(1);
 		assert_ok!(Mixer::initialize());
+		assert_ok!(Mixer::initialize_mixer_trees());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		let mut merkle_roots: Vec<ScalarData> = vec![];
+
 		for i in 0..4 {
 			let leaf = tree.generate_secrets();
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![ScalarData(leaf)]));
@@ -294,8 +294,10 @@ fn should_not_have_cache_once_cache_length_exceeded() {
 	new_test_ext().execute_with(|| {
 		System::set_block_number(1);
 		assert_ok!(Mixer::initialize());
+		assert_ok!(Mixer::initialize_mixer_trees());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 		let mut merkle_roots: Vec<ScalarData> = vec![];
+
 		for i in 0..4 {
 			let leaf = tree.generate_secrets();
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![ScalarData(leaf)]));
@@ -345,16 +347,27 @@ fn should_make_mixer_with_non_native_token() {
 			1, 0, 10000000
 		));
 		assert_ok!(Mixer::initialize());
-		assert_ok!(<Mixer as ExtendedMixer<AccountId, CurrencyId, Balance>>::create_new(
-			1,
+		assert_ok!(Mixer::initialize_mixer_trees());
+		assert_ok!(<Mixer as ExtendedMixer<Test>>::create_new(
+			Mixer::account_id(),
 			currency_id,
 			1_000
 		));
 
 		let pc_gens = PedersenGens::default();
-		let poseidon = default_hasher(16400);
 
 		let tree_id = 4u32;
+		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
+		let key_id = 0;
+		assert_ok!(MerkleTrees::initialize_tree(
+			Origin::signed(Mixer::account_id()),
+			tree_id,
+			key_id
+		));
+
+		let poseidon = MerkleTrees::get_poseidon_hasher_for_tree(tree_id).unwrap();
+
 		let sender: AccountId = 0;
 		let recipient: AccountId = 1;
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
@@ -419,4 +432,29 @@ fn should_make_mixer_with_non_native_token() {
 		let tvl = Mixer::total_value_locked(tree_id);
 		assert_eq!(tvl, 0);
 	});
+}
+
+#[test]
+fn should_initialize_in_two_steps_on_finalize() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+		<Mixer as OnFinalize<u64>>::on_finalize(1);
+		assert!(Mixer::first_stage_initialized());
+
+		for i in 0..4 {
+			let tree_id = i;
+			let tree = MerkleTrees::get_tree(tree_id).unwrap();
+			assert!(!tree.initialized);
+		}
+
+		System::set_block_number(2);
+		<Mixer as OnFinalize<u64>>::on_finalize(2);
+		assert!(Mixer::second_stage_initialized());
+
+		for i in 0..4 {
+			let tree_id = i;
+			let tree = MerkleTrees::get_tree(tree_id).unwrap();
+			assert!(tree.initialized);
+		}
+	})
 }
