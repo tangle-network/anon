@@ -60,7 +60,6 @@ use webb_traits::{
 	MultiCurrency, MultiCurrencyExtended, MultiLockableCurrency, MultiReservableCurrency,
 };
 pub use weights::WeightInfo;
-use frame_support::traits::MaxEncodedLen;
 
 #[frame_support::pallet]
 pub mod pallet {
