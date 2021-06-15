@@ -36,7 +36,6 @@ use codec::{Decode, Encode};
 use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
 	ensure, log,
-	pallet_prelude::*,
 	traits::{
 		Currency as PalletCurrency, ExistenceRequirement, Get, Imbalance, LockableCurrency as PalletLockableCurrency,
 		MaxEncodedLen, ReservableCurrency as PalletReservableCurrency, SignedImbalance, WithdrawReasons,
