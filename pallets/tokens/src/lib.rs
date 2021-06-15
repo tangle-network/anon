@@ -39,7 +39,7 @@ use frame_support::{
 	pallet_prelude::*,
 	traits::{
 		Currency as PalletCurrency, ExistenceRequirement, Get, Imbalance, LockableCurrency as PalletLockableCurrency,
-		ReservableCurrency as PalletReservableCurrency, SignedImbalance, WithdrawReasons,
+		MaxEncodedLen, ReservableCurrency as PalletReservableCurrency, SignedImbalance, WithdrawReasons,
 	},
 	transactional, PalletId,
 };
