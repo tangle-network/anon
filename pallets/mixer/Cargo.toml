@@ -21,7 +21,6 @@ sp-runtime = { default-features = false, version = "3.0.0", git = "https://githu
 merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
 webb-tokens = { path = "../tokens", default-features = false }
 
-
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 merlin = { version = "2.0.0", default-features = false }
 frame-benchmarking = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.4", optional = true }
@@ -29,15 +28,14 @@ webb-traits = { default-features = false, path = "../traits" }
 webb-currencies = { default-features = false, path = "../currencies" }
 
 [dependencies.bulletproofs]
-version = "2.0.0"
+version = "2.0.3"
 package = "webb-bulletproofs"
 git = "https://github.com/webb-tools/bulletproofs"
-branch = "pub-bp-gens"
 default-features = false
 features = ["yoloproofs"]
 
 [dependencies.bulletproofs-gadgets]
-version = "2.0.0"
+version = "2.1.1"
 default-features = false
 git = "https://github.com/webb-tools/bulletproof-gadgets"
 branch = "bulletproofs-codec"
@@ -64,6 +62,8 @@ std = [
     "frame-support/std",
     "frame-system/std",
     "webb-tokens/std",
+    "bulletproofs/std",
+    "bulletproofs-gadgets/std",
     "frame-benchmarking/std",
     "merkle/std",
 ]

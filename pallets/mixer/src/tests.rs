@@ -358,7 +358,7 @@ fn should_make_mixer_with_non_native_token() {
 
 		let tree_id = 4u32;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(
 			Origin::signed(Mixer::account_id()),

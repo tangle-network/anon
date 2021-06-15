@@ -105,7 +105,7 @@ use bulletproofs_gadgets::{
 	smt::gen_zero_tree,
 	utils::AllocatedScalar,
 };
-use codec::{Decode, Encode, Input};
+use codec::{Decode, Encode};
 use curve25519_dalek::scalar::Scalar;
 use frame_support::{
 	dispatch, ensure,
