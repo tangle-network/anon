@@ -72,7 +72,7 @@
 //! ```
 //! use pallet_merkle::traits::Tree;
 //! pub trait Config: frame_system::Config + pallet_merkle::Config {
-//! 	type Tree: Tree<Self::AccountId, Self::BlockNumber, Self::TreeId>;
+//! 	type Tree: Tree<Self>;
 //! }
 //! ```
 
@@ -90,7 +90,7 @@ pub mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 pub mod weights;
-
+use crate::utils::keys::from_bytes_to_bp_gens;
 use bulletproofs::{
 	r1cs::{R1CSProof, Verifier},
 	BulletproofGens, PedersenGens,
@@ -107,11 +107,17 @@ use bulletproofs_gadgets::{
 };
 use codec::{Decode, Encode};
 use curve25519_dalek::scalar::Scalar;
-use frame_support::{dispatch, ensure, traits::Get, weights::Weight, Parameter};
+use frame_support::{
+	dispatch, ensure,
+	traits::{Get, Randomness},
+	weights::Weight,
+	Parameter,
+};
 use frame_system::ensure_signed;
-use lazy_static::lazy_static;
+
 use merlin::Transcript;
-use rand_core::OsRng;
+
+use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
 use sp_runtime::traits::{AtLeast32Bit, One};
 use sp_std::prelude::*;
 pub use traits::Tree;
@@ -121,18 +127,12 @@ use utils::{
 };
 use weights::WeightInfo;
 
-lazy_static! {
-	static ref POSEIDON_HASHER: Poseidon = default_hasher();
-}
-
 /// Default hasher instance used to construct the tree
-pub fn default_hasher() -> Poseidon {
+pub fn default_hasher(bp_gens: BulletproofGens) -> Poseidon {
 	let width = 6;
-	// TODO: should be able to pass the number of generators
-	let bp_gens = BulletproofGens::new(16400, 1);
 	PoseidonBuilder::new(width)
 		.bulletproof_gens(bp_gens)
-		.sbox(PoseidonSbox::Exponentiation3)
+		.sbox(PoseidonSbox::Exponentiation17)
 		.build()
 }
 
@@ -152,10 +152,15 @@ pub mod pallet {
 		type Event: IsType<<Self as frame_system::Config>::Event> + From<Event<Self>>;
 		/// The overarching tree ID type
 		type TreeId: Encode + Decode + Parameter + AtLeast32Bit + Default + Copy;
+		/// The overarching key ID type
+		type KeyId: Encode + Decode + Parameter + AtLeast32Bit + Default + Copy;
 		/// The max depth of trees
 		type MaxTreeDepth: Get<u8>;
 		/// The amount of blocks to cache roots over
 		type CacheBlockLength: Get<Self::BlockNumber>;
+		/// The generator used to supply randomness to contracts through
+		/// `seal_random`.
+		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -168,6 +173,14 @@ pub mod pallet {
 		ExceedsMaxLeaves,
 		/// Tree doesnt exist
 		TreeDoesntExist,
+		/// Tree is already initialized when it shouldn't be
+		AlreadyInitialized,
+		/// Tree isn't initialized
+		NotInitialized,
+		/// Key doesnt exist
+		KeyDoesntExist,
+		/// Invalid verification key / parameters
+		InvalidVerifierKey,
 		/// Invalid membership proof
 		InvalidMembershipProof,
 		/// Invalid merkle path length
@@ -210,6 +223,21 @@ pub mod pallet {
 	#[pallet::storage]
 	#[pallet::getter(fn next_tree_id)]
 	pub type NextTreeId<T: Config> = StorageValue<_, T::TreeId, ValueQuery>;
+
+	/// The next tree identifier up for grabs
+	#[pallet::storage]
+	#[pallet::getter(fn next_key_id)]
+	pub type NextKeyId<T: Config> = StorageValue<_, T::KeyId, ValueQuery>;
+
+	/// The map of trees to their metadata
+	#[pallet::storage]
+	#[pallet::getter(fn verifying_key_for_tree)]
+	pub type VerifyingKeyForTree<T: Config> = StorageMap<_, Blake2_128Concat, T::TreeId, T::KeyId, ValueQuery>;
+
+	/// The map of verifying keys for each backend
+	#[pallet::storage]
+	#[pallet::getter(fn verifying_keys)]
+	pub type VerifyingKeys<T: Config> = StorageMap<_, Blake2_128Concat, T::KeyId, Option<Vec<u8>>, ValueQuery>;
 
 	/// The map of trees to their metadata
 	#[pallet::storage]
@@ -302,13 +330,13 @@ pub mod pallet {
 		/// - DB weights: 1 read, 3 writes
 		/// - Additional weights: 151_000 * _depth
 		#[pallet::weight(<T as Config>::WeightInfo::create_tree(_depth.map_or(T::MaxTreeDepth::get() as u32, |x| x as u32)))]
-		pub fn create_tree(origin: OriginFor<T>, r_is_mgr: bool, _depth: Option<u8>) -> DispatchResultWithPostInfo {
+		pub fn create_tree(origin: OriginFor<T>, mgr_required: bool, _depth: Option<u8>) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			let depth = match _depth {
 				Some(d) => d,
 				None => T::MaxTreeDepth::get(),
 			};
-			let _ = <Self as Tree<_, _, _>>::create_tree(sender, r_is_mgr, depth)?;
+			let _ = <Self as Tree<_>>::create_tree(sender, mgr_required, depth)?;
 			Ok(().into())
 		}
 
@@ -330,7 +358,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 
-			<Self as Tree<_, _, _>>::set_manager_required(sender, tree_id, manager_required)?;
+			<Self as Tree<_>>::set_manager_required(sender, tree_id, manager_required)?;
 			Ok(().into())
 		}
 
@@ -357,7 +385,7 @@ pub mod pallet {
 			ensure_admin(origin, &manager_data.account_id)?;
 			// We are passing manager always since we won't have account id when calling
 			// from root origin
-			<Self as Tree<_, _, _>>::set_manager(manager_data.account_id, tree_id, new_manager)?;
+			<Self as Tree<_>>::set_manager(manager_data.account_id, tree_id, new_manager)?;
 			Ok(().into())
 		}
 
@@ -376,7 +404,7 @@ pub mod pallet {
 				.ok_or(Error::<T>::ManagerDoesntExist)
 				.unwrap();
 			ensure_admin(origin, &manager_data.account_id)?;
-			<Self as Tree<_, _, _>>::set_stopped(manager_data.account_id, tree_id, stopped)?;
+			<Self as Tree<_>>::set_stopped(manager_data.account_id, tree_id, stopped)?;
 			Ok(().into())
 		}
 
@@ -398,7 +426,7 @@ pub mod pallet {
 			members: Vec<ScalarData>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
-			<Self as Tree<_, _, _>>::add_members(sender, tree_id, members)?;
+			<Self as Tree<_>>::add_members(sender, tree_id, members)?;
 			Ok(().into())
 		}
 
@@ -422,7 +450,62 @@ pub mod pallet {
 			path: Vec<(bool, ScalarData)>,
 		) -> DispatchResultWithPostInfo {
 			let _sender = ensure_signed(origin)?;
-			<Self as Tree<_, _, _>>::verify(tree_id, leaf, path)?;
+			<Self as Tree<_>>::verify(tree_id, leaf, path)?;
+			Ok(().into())
+		}
+
+		/// Initializes the merkle tree
+		///
+		/// Can only be called by the manager or root.
+		#[pallet::weight(5_000_000)]
+		pub fn initialize_tree(
+			origin: OriginFor<T>,
+			tree_id: T::TreeId,
+			key_id: T::KeyId,
+		) -> DispatchResultWithPostInfo {
+			let manager_data = Managers::<T>::get(tree_id)
+				.ok_or(Error::<T>::ManagerDoesntExist)
+				.unwrap();
+			// Changing manager should always require an extrinsic from the manager or root
+			// even if the tree doesn't explicitly require managers for other calls.
+			ensure_admin(origin, &manager_data.account_id)?;
+			<Self as Tree<_>>::initialize_tree(tree_id, key_id)?;
+			Ok(().into())
+		}
+
+		/// Adds a verifying key to the storage.
+		///
+		/// Can only be called by the root.
+		#[pallet::weight(5_000_000)]
+		pub fn add_verifying_key(origin: OriginFor<T>, key: Vec<u8>) -> DispatchResultWithPostInfo {
+			ensure_root(origin)?;
+			<Self as Tree<_>>::add_verifying_key(key)?;
+			Ok(().into())
+		}
+
+		/// Adds a verifying key to the storage.
+		///
+		/// Can only be called by the root.
+		#[pallet::weight(5_000_000)]
+		pub fn set_verifying_key(origin: OriginFor<T>, key_id: T::KeyId, key: Vec<u8>) -> DispatchResultWithPostInfo {
+			ensure_root(origin)?;
+
+			<Self as Tree<_>>::set_verifying_key(key_id, key)?;
+			Ok(().into())
+		}
+
+		/// Sets the verifying key for a tree.
+		///
+		/// Can only be called by the manager if a manager is set.
+		#[pallet::weight(5_000_000)]
+		pub fn set_verifying_key_for_tree(
+			origin: OriginFor<T>,
+			key_id: T::KeyId,
+			tree_id: T::TreeId,
+		) -> DispatchResultWithPostInfo {
+			let manager_data = Managers::<T>::get(tree_id).ok_or(Error::<T>::ManagerDoesntExist)?;
+			ensure_admin(origin, &manager_data.account_id)?;
+			<Self as Tree<_>>::set_verifying_key_for_tree(key_id, tree_id)?;
 			Ok(().into())
 		}
 	}
@@ -472,6 +555,7 @@ pub enum HashFunction {
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Clone, Encode, Decode, PartialEq)]
 pub struct MerkleTree {
+	pub initialized: bool,
 	/// Current number of leaves in the tree
 	pub leaf_count: u32,
 	/// Maximum allowed leaves in the tree
@@ -479,9 +563,9 @@ pub struct MerkleTree {
 	/// Depth of the tree
 	pub depth: u8,
 	/// Current root hash of the tree
-	pub root_hash: ScalarData,
+	pub root_hash: Option<ScalarData>,
 	/// Edge nodes needed for the next insert in the tree
-	pub edge_nodes: Vec<ScalarData>,
+	pub edge_nodes: Option<Vec<ScalarData>>,
 	/// Hash function for the merkle tree
 	pub hasher: HashFunction,
 	/// Decide to store leaves or not
@@ -490,25 +574,20 @@ pub struct MerkleTree {
 
 impl MerkleTree {
 	pub fn new<T: Config>(depth: u8) -> Self {
-		let zero_tree = gen_zero_tree(6, &PoseidonSbox::Exponentiation3);
-		let init_edges: Vec<ScalarData> = zero_tree[0..depth as usize]
-			.iter()
-			.map(|x| ScalarData::from(*x))
-			.collect();
-		let init_root = ScalarData::from(zero_tree[depth as usize]);
 		Self {
-			root_hash: init_root,
+			initialized: false,
 			leaf_count: 0,
 			depth,
 			max_leaves: u32::MAX >> (T::MaxTreeDepth::get() - depth),
-			edge_nodes: init_edges,
+			root_hash: None,
+			edge_nodes: None,
 			hasher: HashFunction::PoseidonDefault,
 			should_store_leaves: true, // the default for now.
 		}
 	}
 }
 
-impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
+impl<T: Config> Tree<T> for Pallet<T> {
 	fn create_tree(
 		sender: T::AccountId,
 		is_manager_required: bool,
@@ -533,6 +612,49 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 
 		Self::deposit_event(Event::NewTree(tree_id, sender, is_manager_required));
 		Ok(tree_id)
+	}
+
+	fn initialize_tree(tree_id: T::TreeId, key_id: T::KeyId) -> Result<(), dispatch::DispatchError> {
+		let mut tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist)?;
+		ensure!(!tree.initialized, Error::<T>::AlreadyInitialized);
+		let hash_params = Self::get_poseidon_hasher(key_id)?;
+		let zero_tree = Self::generate_zero_tree(tree.hasher.clone(), &hash_params);
+		let init_edges: Vec<ScalarData> = zero_tree[0..tree.depth as usize]
+			.iter()
+			.map(|x| ScalarData::from(*x))
+			.collect();
+		let init_root = ScalarData::from(zero_tree[tree.depth as usize]);
+		tree.root_hash = Some(init_root);
+		tree.edge_nodes = Some(init_edges);
+		tree.initialized = true;
+		Trees::<T>::insert(tree_id, Some(tree));
+		<Self as Tree<_>>::set_verifying_key_for_tree(key_id, tree_id)?;
+		Ok(())
+	}
+
+	fn is_initialized(tree_id: T::TreeId) -> Result<bool, dispatch::DispatchError> {
+		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist)?;
+		Ok(tree.initialized)
+	}
+
+	fn add_verifying_key(key: Vec<u8>) -> Result<T::KeyId, dispatch::DispatchError> {
+		let key_id = Self::next_key_id();
+		// Setting the next key id
+		NextKeyId::<T>::mutate(|id| *id += One::one());
+		VerifyingKeys::<T>::insert(key_id, Some(key));
+		Ok(key_id)
+	}
+
+	fn set_verifying_key(key_id: T::KeyId, key: Vec<u8>) -> Result<(), dispatch::DispatchError> {
+		let next_id = Self::next_key_id();
+		ensure!(key_id < next_id, Error::<T>::InvalidVerifierKey);
+		VerifyingKeys::<T>::insert(key_id, Some(key));
+		Ok(())
+	}
+
+	fn set_verifying_key_for_tree(key_id: T::KeyId, tree_id: T::TreeId) -> Result<(), dispatch::DispatchError> {
+		VerifyingKeyForTree::<T>::insert(tree_id, key_id);
+		Ok(())
 	}
 
 	fn set_stopped(sender: T::AccountId, id: T::TreeId, stopped: bool) -> Result<(), dispatch::DispatchError> {
@@ -574,9 +696,11 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		id: T::TreeId,
 		members: Vec<ScalarData>,
 	) -> Result<(), dispatch::DispatchError> {
-		let mut tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
-		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
+		let mut tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
+		ensure!(tree.initialized, Error::<T>::NotInitialized);
+		let hasher = Self::get_poseidon_hasher_for_tree(id)?;
 		// Check if the tree requires extrinsics to be called from a manager
+		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		ensure!(
 			Self::is_manager_required(sender.clone(), &manager_data),
 			Error::<T>::ManagerIsRequired
@@ -588,9 +712,8 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 			Error::<T>::ExceedsMaxLeaves
 		);
 
-		let zero_tree = Self::generate_zero_tree(tree.hasher.clone());
+		let zero_tree = Self::generate_zero_tree(tree.hasher.clone(), &hasher);
 		for data in &members {
-			// first we check if we should store leaves.
 			if tree.should_store_leaves {
 				// if so, we save it.
 				// the index where the leaf should be saved is the count
@@ -599,10 +722,10 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 			}
 			// then we add it to the tree itself.
 			// note that, this method internally increments the leaves count.
-			Self::add_leaf(&mut tree, *data, &zero_tree);
+			Self::add_leaf(&mut tree, *data, &zero_tree, &hasher);
 		}
 		let block_number: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
-		CachedRoots::<T>::append(block_number, id, tree.root_hash);
+		CachedRoots::<T>::append(block_number, id, tree.root_hash.unwrap());
 		Trees::<T>::insert(id, Some(tree));
 
 		// Raising the New Member event for the client to build a tree locally
@@ -637,17 +760,21 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 
 	fn verify(id: T::TreeId, leaf: ScalarData, path: Vec<(bool, ScalarData)>) -> Result<(), dispatch::DispatchError> {
 		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
-
-		ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
+		ensure!(tree.initialized, Error::<T>::NotInitialized);
+		ensure!(
+			tree.edge_nodes.unwrap().len() == path.len(),
+			Error::<T>::InvalidPathLength
+		);
+		let hash_params = Self::get_poseidon_hasher_for_tree(id)?;
 		let mut hash = leaf.0;
 		for (is_right, node) in path {
 			hash = match is_right {
-				true => Poseidon_hash_2(hash, node.0, &POSEIDON_HASHER),
-				false => Poseidon_hash_2(node.0, hash, &POSEIDON_HASHER),
+				true => Poseidon_hash_2(hash, node.0, &hash_params),
+				false => Poseidon_hash_2(node.0, hash, &hash_params),
 			}
 		}
 
-		ensure!(hash == tree.root_hash.0, Error::<T>::InvalidMembershipProof);
+		ensure!(hash == tree.root_hash.unwrap().0, Error::<T>::InvalidMembershipProof);
 		Ok(())
 	}
 
@@ -664,10 +791,12 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		relayer: ScalarData,
 	) -> Result<(), dispatch::DispatchError> {
 		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist).unwrap();
+		ensure!(tree.initialized, Error::<T>::NotInitialized);
 		ensure!(
-			tree.edge_nodes.len() == proof_commitments.len(),
+			tree.edge_nodes.unwrap().len() == proof_commitments.len(),
 			Error::<T>::InvalidPathLength
 		);
+		let hash_params = Self::get_poseidon_hasher_for_tree(tree_id)?;
 		// Ensure that root being checked against is in the cache
 		let old_roots = Self::cached_roots(cached_block, tree_id);
 		ensure!(
@@ -676,7 +805,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		);
 		// TODO: Initialise these generators with the pallet
 		let pc_gens = PedersenGens::default();
-		<Self as Tree<_, _, _>>::verify_zk(
+		<Self as Tree<_>>::verify_zk(
 			pc_gens,
 			cached_root,
 			tree.depth,
@@ -687,6 +816,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 			proof_commitments,
 			recipient,
 			relayer,
+			&hash_params,
 		)
 	}
 
@@ -701,6 +831,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		proof_commitments: Vec<Commitment>,
 		recipient: ScalarData,
 		relayer: ScalarData,
+		hash_params: &Poseidon,
 	) -> Result<(), dispatch::DispatchError> {
 		let label = b"zk_membership_proof";
 		let mut verifier_transcript = Transcript::new(label);
@@ -757,7 +888,7 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 			leaf_index_alloc_scalars,
 			proof_alloc_scalars,
 			statics,
-			&POSEIDON_HASHER,
+			&hash_params,
 		);
 		ensure!(gadget_res.is_ok(), Error::<T>::InvalidZkProof);
 
@@ -765,8 +896,12 @@ impl<T: Config> Tree<T::AccountId, T::BlockNumber, T::TreeId> for Pallet<T> {
 		ensure!(proof.is_ok(), Error::<T>::InvalidZkProof);
 		let proof = proof.unwrap();
 
-		let mut rng = OsRng::default();
-		let verify_res = verifier.verify_with_rng(&proof, &POSEIDON_HASHER.pc_gens, &POSEIDON_HASHER.bp_gens, &mut rng);
+		let random_seed = T::Randomness::random_seed();
+		let random_bytes = random_seed.clone().0.encode();
+		let mut buf = [0u8; 32];
+		buf.copy_from_slice(&random_bytes);
+		let mut rng = ChaChaRng::from_seed(buf);
+		let verify_res = verifier.verify_with_rng(&proof, &hash_params.pc_gens, &hash_params.bp_gens, &mut rng);
 		ensure!(verify_res.is_ok(), Error::<T>::ZkVericationFailed);
 		Ok(())
 	}
@@ -779,7 +914,8 @@ impl<T: Config> Pallet<T> {
 
 	pub fn get_merkle_root(tree_id: T::TreeId) -> Result<ScalarData, dispatch::DispatchError> {
 		let tree = Self::get_tree(tree_id)?;
-		Ok(tree.root_hash)
+		ensure!(tree.initialized, Error::<T>::NotInitialized);
+		Ok(tree.root_hash.unwrap())
 	}
 
 	pub fn add_root_to_cache(tree_id: T::TreeId, block_number: T::BlockNumber) -> Result<(), dispatch::DispatchError> {
@@ -801,37 +937,52 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	pub fn add_leaf(tree: &mut MerkleTree, data: ScalarData, zero_tree: &Vec<[u8; 32]>) {
+	pub fn add_leaf(tree: &mut MerkleTree, data: ScalarData, zero_tree: &Vec<[u8; 32]>, hash_params: &Poseidon) {
 		let mut edge_index = tree.leaf_count;
 		let mut hash = data.0;
+		let mut edge_nodes = tree.edge_nodes.clone().unwrap();
 		// Update the tree
-		for i in 0..tree.edge_nodes.len() {
+		for i in 0..edge_nodes.len() {
 			hash = if edge_index % 2 == 0 {
-				tree.edge_nodes[i] = ScalarData(hash);
+				edge_nodes[i] = ScalarData(hash);
 				let zero_h = Scalar::from_bytes_mod_order(zero_tree[i]);
-				Self::hash(tree.hasher.clone(), hash, zero_h)
+				Self::hash(tree.hasher.clone(), hash, zero_h, hash_params)
 			} else {
-				Self::hash(tree.hasher.clone(), tree.edge_nodes[i].0, hash)
+				Self::hash(tree.hasher.clone(), edge_nodes[i].0, hash, hash_params)
 			};
 
 			edge_index /= 2;
 		}
 
 		tree.leaf_count += 1;
-		tree.root_hash = ScalarData(hash);
+		tree.root_hash = Some(ScalarData(hash));
+		tree.edge_nodes = Some(edge_nodes);
 	}
 
-	pub fn hash(hasher: HashFunction, left: Scalar, right: Scalar) -> Scalar {
+	pub fn hash(hasher: HashFunction, left: Scalar, right: Scalar, hash_params: &Poseidon) -> Scalar {
 		match hasher {
-			HashFunction::PoseidonDefault => Poseidon_hash_2(left, right, &POSEIDON_HASHER),
-			_ => Poseidon_hash_2(left, right, &POSEIDON_HASHER),
+			HashFunction::PoseidonDefault => Poseidon_hash_2(left, right, hash_params),
+			_ => Poseidon_hash_2(left, right, hash_params),
 		}
 	}
 
-	pub fn generate_zero_tree(hasher: HashFunction) -> Vec<[u8; 32]> {
+	pub fn generate_zero_tree(hasher: HashFunction, hash_params: &Poseidon) -> Vec<[u8; 32]> {
 		match hasher {
-			HashFunction::PoseidonDefault => gen_zero_tree(POSEIDON_HASHER.width, &POSEIDON_HASHER.sbox),
-			_ => gen_zero_tree(POSEIDON_HASHER.width, &POSEIDON_HASHER.sbox),
+			HashFunction::PoseidonDefault => gen_zero_tree(hash_params.width, &hash_params.sbox),
+			_ => gen_zero_tree(hash_params.width, &hash_params.sbox),
 		}
+	}
+
+	pub fn get_poseidon_hasher_for_tree(id: T::TreeId) -> Result<Poseidon, dispatch::DispatchError> {
+		let key_id = VerifyingKeyForTree::<T>::get(id);
+		Self::get_poseidon_hasher(key_id)
+	}
+
+	pub fn get_poseidon_hasher(id: T::KeyId) -> Result<Poseidon, dispatch::DispatchError> {
+		let maybe_verifying_key = VerifyingKeys::<T>::get(id);
+		ensure!(maybe_verifying_key.is_some(), Error::<T>::InvalidVerifierKey);
+		let bp_gens = from_bytes_to_bp_gens(&maybe_verifying_key.unwrap());
+		let hasher = default_hasher(bp_gens);
+		Ok(hasher)
 	}
 }

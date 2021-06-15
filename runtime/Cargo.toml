@@ -33,13 +33,6 @@ pallet-balances = { default-features = false, git = "https://github.com/webb-too
 pallet-contracts = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 pallet-contracts-primitives = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 pallet-contracts-rpc-runtime-api = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
-
-pallet-dynamic-fee = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
-pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
-pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
-fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
-pallet-evm-precompile-simple = { git = "https://github.com/webb-tools/frontier", branch = "erup-4", default-features = false }
-
 pallet-grandpa = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 pallet-randomness-collective-flip = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 pallet-sudo = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
@@ -58,12 +51,18 @@ sp-std = { default-features = false, git = "https://github.com/webb-tools/substr
 sp-transaction-pool = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 sp-version = { default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
-merkle = { package = "pallet-merkle", default-features = false, path = "../pallets/merkle" }
-mixer = { package = "pallet-mixer", default-features = false, path = "../pallets/mixer" }
-merkle-rpc = { package = "pallet-merkle-rpc", path = "../pallets/merkle/rpc", optional = true}
-webb-currencies = { default-features = false, path = "../pallets/currencies" }
-webb-traits = { default-features = false, path = "../pallets/traits" }
-webb-tokens = { default-features = false, path = "../pallets/tokens" }
+merkle = { package = "pallet-merkle", path = "../pallets/merkle", default-features = false }
+mixer = { package = "pallet-mixer", path = "../pallets/mixer", default-features = false }
+merkle-rpc = { package = "pallet-merkle-rpc", path = "../pallets/merkle/rpc", optional = true }
+webb-currencies = { path = "../pallets/currencies", default-features = false }
+webb-tokens = { path = "../pallets/tokens", default-features = false }
+webb-traits = { path = "../pallets/traits", default-features = false }
+
+pallet-dynamic-fee = { git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes", default-features = false }
+pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes", default-features = false }
+pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes", default-features = false }
+fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes" }
+pallet-evm-precompile-simple = { git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes", default-features = false }
 
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
@@ -116,6 +115,7 @@ std = [
     "merkle/std",
     "merkle-rpc",
     "mixer/std",
+    "webb-currencies/std",
     "webb-tokens/std",
 
     "fp-rpc/std",
