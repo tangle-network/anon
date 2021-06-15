@@ -63,17 +63,17 @@ substrate-frame-rpc-system = { git = "https://github.com/webb-tools/substrate.gi
 
 pallet-contracts-rpc = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
-fc-consensus = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes" }
-fp-consensus = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes" }
-fc-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes" }
-fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes" }
-fc-rpc-core = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes" }
-fc-db = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes" }
-fc-mapping-sync = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes" }
+fc-consensus = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+fp-consensus = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+fc-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+fc-rpc-core = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+fc-db = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+fc-mapping-sync = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
 
-pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes" }
-pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes" }
-pallet-dynamic-fee = { git = "https://github.com/webb-tools/frontier", branch = "erup-4-minimal-changes" }
+pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
+pallet-dynamic-fee = { git = "https://github.com/webb-tools/frontier", branch = "erup-4" }
 
 merkle = { package = "pallet-merkle", path = "../pallets/merkle" }
 merkle-rpc = { package = "pallet-merkle-rpc", path = "../pallets/merkle/rpc" }
