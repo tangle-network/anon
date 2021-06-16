@@ -26,7 +26,7 @@ use curve25519_dalek::{ristretto::RistrettoPoint, scalar::Scalar};
 use frame_support::{assert_err, assert_ok, traits::UnfilteredDispatchable};
 use frame_system::RawOrigin;
 use merlin::Transcript;
-use rand_core::OsRng;
+use rand_chacha::ChaChaRng;
 use sp_runtime::traits::BadOrigin;
 
 fn key_bytes(x: u8) -> [u8; 32] {
@@ -1501,4 +1501,17 @@ fn should_fail_to_verify_with_invalid_key_arkworks() {
 			Error::<Test>::InvalidVerifierKey
 		);
 	});
+}
+
+#[test]
+fn encode_bulletproof_gens_and_back() {
+	let gens = BulletproofGens::new(16400, 1);
+	let gen_bytes = get_bp_gen_bytes(&gens);
+	let new_gens = from_bytes_to_bp_gens(&gen_bytes);
+	// println!("{:?}, {:?}", gens.gens_capacity, new_gens.gens_capacity);
+	// println!("{:?}, {:?}", gens.party_capacity, new_gens.party_capacity);
+	assert!(gens.gens_capacity == new_gens.gens_capacity);
+	assert!(gens.party_capacity == new_gens.party_capacity);
+	assert!(gens.G_vec == new_gens.G_vec);
+	assert!(gens.H_vec == new_gens.H_vec);
 }

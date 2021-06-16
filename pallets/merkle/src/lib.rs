@@ -126,6 +126,9 @@ pub mod pallet {
 		type MaxTreeDepth: Get<u8>;
 		/// The amount of blocks to cache roots over
 		type CacheBlockLength: Get<Self::BlockNumber>;
+		/// The generator used to supply randomness to contracts through
+		/// `seal_random`.
+		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -699,6 +702,9 @@ impl<T: Config> Tree<T> for Pallet<T> {
 			if tree.should_store_leaves {
 				Leaves::<T>::insert(id, tree.leaf_count, data);
 			}
+			// then we add it to the tree itself.
+			// note that, this method internally increments the leaves count.
+			Self::add_leaf(&mut tree, *data, &zero_tree, &hasher);
 		}
 		let block_number: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
 		CachedRoots::<T>::append(block_number, id, tree.root_hash.clone().unwrap().clone());
@@ -844,5 +850,18 @@ impl<T: Config> Pallet<T> {
 		let maybe_verifying_key = VerifyingKeys::<T>::get(id);
 		ensure!(maybe_verifying_key.is_some(), Error::<T>::InvalidVerifierKey);
 		Ok(maybe_verifying_key.unwrap())
+	}
+
+	pub fn get_poseidon_hasher_for_tree(id: T::TreeId) -> Result<Poseidon, dispatch::DispatchError> {
+		let key_id = VerifyingKeyForTree::<T>::get(id);
+		Self::get_poseidon_hasher(key_id)
+	}
+
+	pub fn get_poseidon_hasher(id: T::KeyId) -> Result<Poseidon, dispatch::DispatchError> {
+		let maybe_verifying_key = VerifyingKeys::<T>::get(id);
+		ensure!(maybe_verifying_key.is_some(), Error::<T>::InvalidVerifierKey);
+		let bp_gens = from_bytes_to_bp_gens(&maybe_verifying_key.unwrap());
+		let hasher = default_hasher(bp_gens);
+		Ok(hasher)
 	}
 }

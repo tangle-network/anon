@@ -36,6 +36,7 @@ construct_runtime!(
 		Mixer: pallet_mixer::{Pallet, Call, Storage, Event<T>},
 		Currencies: webb_currencies::{Pallet, Storage, Event<T>},
 		Tokens: webb_tokens::{Pallet, Storage, Event<T>},
+		Randomness: pallet_randomness_collective_flip::{Pallet, Call, Storage},
 	}
 );
 
@@ -138,7 +139,9 @@ impl webb_currencies::Config for Test {
 impl merkle::Config for Test {
 	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
+	type KeyId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
+	type Randomness = Randomness;
 	type TreeId = u32;
 	type WeightInfo = MerkleWeights<Self>;
 	type KeyId = u32;

@@ -351,7 +351,9 @@ parameter_types! {
 impl merkle::Config for Runtime {
 	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
+	type KeyId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
+	type Randomness = RandomnessCollectiveFlip;
 	type TreeId = u32;
 	type WeightInfo = MerkleWeights<Self>;
 	type KeyId = u32;

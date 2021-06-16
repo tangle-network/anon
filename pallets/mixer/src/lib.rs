@@ -317,7 +317,8 @@ pub mod pallet {
 			);
 			let recipient = withdraw_proof.recipient.unwrap_or(sender.clone());
 			let relayer = withdraw_proof.relayer.unwrap_or(sender.clone());
-			let mixer_info = MixerTrees::<T>::get(withdraw_proof.mixer_id);
+			// get mixer info, should fail if tree isn't initialized
+			let mixer_info = Self::get_mixer(withdraw_proof.mixer_id)?;
 			// check if the nullifier has been used
 			T::Tree::has_used_nullifier(withdraw_proof.mixer_id.into(), withdraw_proof.nullifier_hash.clone())?;
 			// Verify the zero-knowledge proof of membership provided
