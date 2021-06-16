@@ -1,0 +1,43 @@
+[package]
+name = "precompiles"
+version = "0.1.0"
+authors = ["Drew Stone <drew@webb.tools>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
+frame-support = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+frame-system = { version = "3.0.0", default-features = false }
+pallet-evm = { version = "4.0.0", default-features = false }
+evm = { version = "0.27.0", default-features = false, features = ["with-codec"] }
+evm-runtime = { version = "0.27.0", default-features = false }
+pallet-ethereum = { version = "2.0.0" }
+pallet-evm-precompile-simple = { version = "1.0.0", default-features = false }
+fp-rpc = { version = "1.0.0", default-features = false }
+sp-core = { version = "3.0.0" }
+sp-std = { version = "3.0.0" }
+pallet-merkle = { git = "https://github.com/webb-tools/anon", branch = "master" }
+lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
+rand_chacha = { version = "0.2", default-features = false }
+rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
+curve25519-dalek = { version = "3.0.0", default-features = false, features = ["u64_backend", "alloc"] }
+bulletproofs = {version = "2.0.0", package = "webb-bulletproofs", default-features = false, features = ["yoloproofs"]}
+bulletproofs-gadgets = {version = "2.0.0", default-features = false}
+merlin = { version = "2.0.0", default-features = false }
+
+[features]
+std = [
+	"codec/std",
+	"frame-support/std",
+	"fp-rpc/std",
+	"pallet-ethereum/std",
+	"pallet-evm/std",
+	"pallet-evm-precompile-simple/std",
+	"frame-system/std",
+	"sp-std/std",
+	"sp-core/std",
+	"evm/std",
+	"evm-runtime/std"
+]
