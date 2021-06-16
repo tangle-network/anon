@@ -10,6 +10,7 @@ members = [
 	"pallets/traits",
 	"pallets/utilities",
 	"runtime",
+	"precompiles"
 ]
 
 [profile.dev.package]
