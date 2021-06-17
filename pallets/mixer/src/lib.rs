@@ -564,12 +564,14 @@ impl<T: Config> Pallet<T> {
 
 		// Iterating over configured sizes and initializing the mixers
 		for size in sizes.into_iter() {
-			<Self as ExtendedMixer<_>>::create_new(
-				Self::account_id(),
-				T::NativeCurrencyId::get(),
-				setup.clone(),
-				size,
-			)?;
+			// Creating a new merkle group and getting the id back
+			let mixer_id: T::TreeId =
+				T::Tree::create_tree(Self::account_id(), true, default_setup.clone(), depth, true)?;
+			// Creating mixer info data
+			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, T::NativeCurrencyId::get());
+			// Saving the mixer group to storage
+			MixerTrees::<T>::insert(mixer_id, mixer_info);
+			mixer_ids.push(mixer_id);
 		}
 
 		FirstStageInitialized::<T>::set(true);

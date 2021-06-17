@@ -678,24 +678,11 @@ fn should_verify_simple_zk_proof_of_membership() {
 		));
 
 		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
-		let key_id = 0;
-		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
-		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
-		let bp_gens = from_bytes_to_bp_gens(&params);
-		let h = default_hasher(bp_gens);
-		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
-
-		let leaf = ftree.generate_secrets().to_bytes();
-		ftree.tree.add_leaves(vec![leaf], None);
-
 		assert_ok!(MerkleTrees::add_members(
 			Origin::signed(1),
 			tree_id,
 			vec![leaf.to_vec()]
 		));
-
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
@@ -745,19 +732,6 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 			true,
 		));
 		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
-		let key_id = 0;
-		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
-		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
-		let bp_gens = from_bytes_to_bp_gens(&params);
-		let h = default_hasher(bp_gens);
-
-		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
-
-		let leaf = ftree.generate_secrets().to_bytes();
-		ftree.tree.add_leaves(vec![leaf], None);
-
 		assert_ok!(MerkleTrees::add_members(
 			Origin::signed(1),
 			tree_id,
@@ -818,19 +792,6 @@ fn should_not_verify_invalid_private_inputs() {
 		));
 
 		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
-		let key_id = 0;
-		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
-		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
-		let bp_gens = from_bytes_to_bp_gens(&params);
-		let h = default_hasher(bp_gens);
-
-		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
-
-		let leaf = ftree.generate_secrets().to_bytes();
-		ftree.tree.add_leaves(vec![leaf], None);
-
 		assert_ok!(MerkleTrees::add_members(
 			Origin::signed(1),
 			tree_id,
@@ -893,20 +854,6 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 		));
 
 		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
-		let key_id = 0;
-		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
-		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
-		let bp_gens = from_bytes_to_bp_gens(&params);
-		let h = default_hasher(bp_gens);
-		let zero_tree = gen_zero_tree(h.width, &h.sbox);
-
-		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
-
-		let leaf = ftree.generate_secrets().to_bytes();
-		ftree.tree.add_leaves(vec![leaf], None);
-
 		assert_ok!(MerkleTrees::add_members(
 			Origin::signed(1),
 			tree_id,
@@ -969,20 +916,6 @@ fn should_not_verify_invalid_transcript() {
 		));
 
 		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
-		let key_id = 0;
-		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
-		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
-		let bp_gens = from_bytes_to_bp_gens(&params);
-		let h = default_hasher(bp_gens);
-		let zero_tree = gen_zero_tree(h.width, &h.sbox);
-
-		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
-
-		let leaf = ftree.generate_secrets().to_bytes();
-		ftree.tree.add_leaves(vec![leaf], None);
-
 		assert_ok!(MerkleTrees::add_members(
 			Origin::signed(1),
 			tree_id,
@@ -1120,20 +1053,6 @@ fn should_verify_large_zk_proof_of_membership() {
 		));
 
 		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(40960, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
-		let key_id = 0;
-		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
-		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
-		let bp_gens = from_bytes_to_bp_gens(&params);
-		let h = default_hasher(bp_gens);
-		let zero_tree = gen_zero_tree(h.width, &h.sbox);
-
-		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(32).build();
-
-		let leaf = ftree.generate_secrets().to_bytes();
-		ftree.tree.add_leaves(vec![leaf], None);
-
 		assert_ok!(MerkleTrees::add_members(
 			Origin::signed(1),
 			tree_id,
@@ -1188,6 +1107,9 @@ fn should_verify_simple_zk_proof_of_membership_arkworks() {
 			Some(30),
 			true,
 		));
+
+		let vkey_id = 1;
+		let tree_id = 0;
 
 		let (pk, vk) = setup_random_groth16(&mut rng);
 		let mut vk_bytes = Vec::new();

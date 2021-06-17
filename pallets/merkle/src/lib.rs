@@ -455,37 +455,8 @@ pub mod pallet {
 
 		/// Initializes the merkle tree
 		///
-		/// Can only be called by the manager or root.
-		#[pallet::weight(5_000_000)]
-		pub fn initialize_tree(
-			origin: OriginFor<T>,
-			tree_id: T::TreeId,
-			key_id: T::KeyId,
-		) -> DispatchResultWithPostInfo {
-			let manager_data = Managers::<T>::get(tree_id)
-				.ok_or(Error::<T>::ManagerDoesntExist)
-				.unwrap();
-			// Changing manager should always require an extrinsic from the manager or root
-			// even if the tree doesn't explicitly require managers for other calls.
-			ensure_admin(origin, &manager_data.account_id)?;
-			<Self as Tree<_>>::initialize_tree(tree_id, key_id)?;
-			Ok(().into())
-		}
-
-		/// Adds a verifying key to the storage.
-		///
 		/// Can only be called by the root.
-		#[pallet::weight(5_000_000)]
-		pub fn add_verifying_key(origin: OriginFor<T>, key: Vec<u8>) -> DispatchResultWithPostInfo {
-			ensure_signed(origin)?;
-			<Self as Tree<_>>::add_verifying_key(key)?;
-			Ok(().into())
-		}
-
-		/// Adds a verifying key to the storage.
-		///
-		/// Can only be called by the root.
-		#[pallet::weight(5_000_000)]
+		#[pallet::weight(0)]
 		pub fn set_verifying_key(origin: OriginFor<T>, key_id: T::KeyId, key: Vec<u8>) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
