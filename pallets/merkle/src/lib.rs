@@ -92,7 +92,13 @@ mod benchmarking;
 pub mod weights;
 
 use codec::{Decode, Encode};
-use frame_support::{dispatch::DispatchError, ensure, traits::Get, weights::Weight, Parameter};
+use frame_support::{
+	dispatch::DispatchError,
+	ensure,
+	traits::{Get, Randomness},
+	weights::Weight,
+	Parameter,
+};
 use frame_system::ensure_signed;
 use sp_runtime::traits::{AtLeast32Bit, One};
 use sp_std::prelude::*;
@@ -126,6 +132,9 @@ pub mod pallet {
 		type MaxTreeDepth: Get<u8>;
 		/// The amount of blocks to cache roots over
 		type CacheBlockLength: Get<Self::BlockNumber>;
+		/// The generator used to supply randomness to contracts through
+		/// `seal_random`.
+		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -674,14 +683,6 @@ impl<T: Config> Tree<T> for Pallet<T> {
 		let mut tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
 		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		// Check if the tree requires extrinsics to be called from a manager
-		let key_id = VerifyingKeyForTree::<T>::get(id);
-		let verifying_key = VerifyingKeys::<T>::get(key_id);
-		if tree.should_require_vkey {
-			ensure!(
-				tree.setup.can_verify_with(&verifying_key),
-				Error::<T>::InvalidVerifierKey
-			);
-		}
 		ensure!(
 			Self::is_manager_required(sender.clone(), &manager_data),
 			Error::<T>::ManagerIsRequired
@@ -695,10 +696,12 @@ impl<T: Config> Tree<T> for Pallet<T> {
 
 		let params = Self::get_verifying_key_for_tree(id)?;
 		for data in &members {
-			Self::add_leaf(&mut tree, &data, &params)?;
 			if tree.should_store_leaves {
 				Leaves::<T>::insert(id, tree.leaf_count, data);
 			}
+			// then we add it to the tree itself.
+			// note that, this method internally increments the leaves count.
+			Self::add_leaf(&mut tree, data, &params)?;
 		}
 		let block_number: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
 		CachedRoots::<T>::append(block_number, id, tree.root_hash.clone().unwrap().clone());
@@ -733,7 +736,10 @@ impl<T: Config> Tree<T> for Pallet<T> {
 	fn verify(id: T::TreeId, leaf: ScalarBytes, path: Vec<(bool, ScalarBytes)>) -> Result<(), DispatchError> {
 		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
 
-		ensure!(tree.edge_nodes.unwrap().len() == path.len(), Error::<T>::InvalidPathLength);
+		ensure!(
+			tree.edge_nodes.unwrap().len() == path.len(),
+			Error::<T>::InvalidPathLength
+		);
 		let params = Self::get_verifying_key_for_tree(id)?;
 		let mut hash = leaf;
 		for (is_right, node) in path {

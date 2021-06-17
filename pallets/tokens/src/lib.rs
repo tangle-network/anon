@@ -25,29 +25,28 @@ pub use types::*;
 pub mod imbalance;
 pub use imbalance::*;
 
-use sp_std::{
-	convert::{Infallible, TryFrom, TryInto},
-	marker,
-	prelude::*,
-	vec::Vec,
-};
-use sp_runtime::traits::One;
 use codec::{Decode, Encode};
 use frame_support::{
 	dispatch::{DispatchError, DispatchResult},
 	ensure, log,
 	traits::{
 		Currency as PalletCurrency, ExistenceRequirement, Get, Imbalance, LockableCurrency as PalletLockableCurrency,
-		ReservableCurrency as PalletReservableCurrency, SignedImbalance, WithdrawReasons,
+		MaxEncodedLen, ReservableCurrency as PalletReservableCurrency, SignedImbalance, WithdrawReasons,
 	},
 	transactional, PalletId,
 };
 use sp_runtime::{
 	traits::{
 		AccountIdConversion, AtLeast32BitUnsigned, Bounded, CheckedAdd, CheckedSub, MaybeSerializeDeserialize, Member,
-		Saturating, StaticLookup, Zero,
+		One, Saturating, StaticLookup, Zero,
 	},
 	RuntimeDebug,
+};
+use sp_std::{
+	convert::{Infallible, TryFrom, TryInto},
+	marker,
+	prelude::*,
+	vec::Vec,
 };
 
 pub use pallet::*;
@@ -151,7 +150,13 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		/// The balance type
-		type Balance: Parameter + Member + AtLeast32BitUnsigned + Default + Copy + MaybeSerializeDeserialize;
+		type Balance: Parameter
+			+ Member
+			+ AtLeast32BitUnsigned
+			+ Default
+			+ Copy
+			+ MaybeSerializeDeserialize
+			+ MaxEncodedLen;
 
 		/// The amount type, should be signed version of `Balance`
 		type Amount: Signed
@@ -165,7 +170,14 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize;
 
 		/// The currency ID type
-		type CurrencyId: Parameter + Member + Copy + MaybeSerializeDeserialize + Ord + Default + arithmetic::SimpleArithmetic + PartialEq;
+		type CurrencyId: Parameter
+			+ Member
+			+ Copy
+			+ MaybeSerializeDeserialize
+			+ Ord
+			+ Default
+			+ arithmetic::SimpleArithmetic
+			+ PartialEq;
 
 		/// The native currency system
 		type NativeCurrency: BasicCurrencyExtended<Self::AccountId, Balance = Self::Balance, Amount = Self::Amount>

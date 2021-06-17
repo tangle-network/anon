@@ -21,7 +21,6 @@ sp-runtime = { default-features = false, version = "3.0.0", git = "https://githu
 merkle = { package = "pallet-merkle", path = "../merkle", default-features = false }
 webb-tokens = { path = "../tokens", default-features = false }
 
-
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
 merlin = { version = "2.0.0", default-features = false }
 frame-benchmarking = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4", optional = true }
@@ -29,18 +28,14 @@ webb-traits = { default-features = false, path = "../traits" }
 webb-currencies = { default-features = false, path = "../currencies" }
 
 [dependencies.bulletproofs]
-version = "2.0.0"
+version = "2.0.3"
 package = "webb-bulletproofs"
 default-features = false
-git = "https://github.com/webb-tools/bulletproofs"
-branch = "pub-bp-gens"
 features = ["yoloproofs"]
 
 [dependencies.bulletproofs-gadgets]
-version = "2.0.0"
+version = "2.1.1"
 default-features = false
-git = "https://github.com/webb-tools/bulletproof-gadgets"
-branch = "bulletproofs-codec"
 
 [dependencies.curve25519-dalek]
 version = "3.0.0"
@@ -53,6 +48,7 @@ version = "0.1.5"
 [dev-dependencies]
 sp-core = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 sp-io = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+pallet-randomness-collective-flip = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
 [features]
 default = ["std"]
@@ -63,6 +59,8 @@ std = [
     "frame-support/std",
     "frame-system/std",
     "webb-tokens/std",
+    "bulletproofs/std",
+    "bulletproofs-gadgets/std",
     "frame-benchmarking/std",
     "merkle/std",
 ]

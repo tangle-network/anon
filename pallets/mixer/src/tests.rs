@@ -7,7 +7,7 @@ use bulletproofs_gadgets::{
 	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
 	poseidon::{
 		builder::{Poseidon, PoseidonBuilder},
-		PoseidonSbox,
+		sbox::PoseidonSbox,
 	},
 };
 use curve25519_dalek::scalar::Scalar;
@@ -158,6 +158,7 @@ fn should_fail_to_deposit_with_insufficient_balance() {
 		assert_ok!(Mixer::initialize_first_stage());
 		assert_ok!(Mixer::initialize_second_stage());
 		let mut tree = FixedDepositTreeBuilder::new().build();
+
 		for i in 0..4 {
 			let leaf = tree.generate_secrets().to_bytes().to_vec();
 			assert_err!(
@@ -178,6 +179,7 @@ fn should_deposit_into_each_mixer_successfully() {
 		assert_ok!(Mixer::initialize_first_stage());
 		assert_ok!(Mixer::initialize_second_stage());
 		let mut tree = FixedDepositTreeBuilder::new().build();
+
 		for i in 0..4 {
 			let leaf = tree.generate_secrets().to_bytes().to_vec();
 			let balance_before = Balances::free_balance(1);
@@ -209,12 +211,10 @@ fn should_withdraw_from_each_mixer_successfully() {
 		let h = default_hasher(bp_gens);
 
 		for i in 0..4 {
+			let tree_id = i;
 			let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 			let prover = Prover::new(&pc_gens, &mut prover_transcript);
-			let mut ftree = FixedDepositTreeBuilder::new()
-				.hash_params(h.clone())
-				.depth(32)
-				.build();
+			let mut ftree = FixedDepositTreeBuilder::new().hash_params(h.clone()).depth(32).build();
 
 			let leaf = ftree.generate_secrets().to_bytes();
 			ftree.tree.add_leaves(vec![leaf], None);
@@ -369,7 +369,11 @@ fn should_make_mixer_with_non_native_token() {
 
 		let tree_id = 4u32;
 		let key_id = 0;
-		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(Mixer::account_id()), tree_id, key_id));
+		assert_ok!(MerkleTrees::initialize_tree(
+			Origin::signed(Mixer::account_id()),
+			tree_id,
+			key_id
+		));
 
 		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
 		let bp_gens = merkle::utils::keys::from_bytes_to_bp_gens(&params);
@@ -381,10 +385,7 @@ fn should_make_mixer_with_non_native_token() {
 		let recipient: AccountId = 1;
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
-		let mut ftree = FixedDepositTreeBuilder::new()
-			.hash_params(h.clone())
-			.depth(32)
-			.build();
+		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h.clone()).depth(32).build();
 
 		let leaf = ftree.generate_secrets().to_bytes();
 		ftree.tree.add_leaves(vec![leaf], None);
@@ -441,4 +442,29 @@ fn should_make_mixer_with_non_native_token() {
 		let tvl = Mixer::total_value_locked(tree_id);
 		assert_eq!(tvl, 0);
 	});
+}
+
+#[test]
+fn should_initialize_in_two_steps_on_finalize() {
+	new_test_ext().execute_with(|| {
+		System::set_block_number(1);
+		<Mixer as OnFinalize<u64>>::on_finalize(1);
+		assert!(Mixer::first_stage_initialized());
+
+		for i in 0..4 {
+			let tree_id = i;
+			let tree = MerkleTrees::get_tree(tree_id).unwrap();
+			assert!(!tree.initialized);
+		}
+
+		System::set_block_number(2);
+		<Mixer as OnFinalize<u64>>::on_finalize(2);
+		assert!(Mixer::second_stage_initialized());
+
+		for i in 0..4 {
+			let tree_id = i;
+			let tree = MerkleTrees::get_tree(tree_id).unwrap();
+			assert!(tree.initialized);
+		}
+	})
 }

@@ -317,7 +317,8 @@ pub mod pallet {
 			);
 			let recipient = withdraw_proof.recipient.unwrap_or(sender.clone());
 			let relayer = withdraw_proof.relayer.unwrap_or(sender.clone());
-			let mixer_info = MixerTrees::<T>::get(withdraw_proof.mixer_id);
+			// get mixer info, should fail if tree isn't initialized
+			let mixer_info = Self::get_mixer(withdraw_proof.mixer_id)?;
 			// check if the nullifier has been used
 			T::Tree::has_used_nullifier(withdraw_proof.mixer_id.into(), withdraw_proof.nullifier_hash.clone())?;
 			// Verify the zero-knowledge proof of membership provided
@@ -536,7 +537,8 @@ impl<T: Config> Pallet<T> {
 
 	pub fn get_mixer(mixer_id: T::TreeId) -> Result<MixerInfo<T>, dispatch::DispatchError> {
 		let mixer_info = MixerTrees::<T>::get(mixer_id);
-		// ensure mixer_info has a non-zero deposit, otherwise, the mixer doesn't exist for this id
+		// ensure mixer_info has a non-zero deposit, otherwise, the mixer doesn't exist
+		// for this id
 		ensure!(mixer_info.fixed_deposit_size > Zero::zero(), Error::<T>::NoMixerForId);
 		// ensure the mixer's tree is intialized
 		let initialized = T::Tree::is_initialized(mixer_id)?;
@@ -566,7 +568,7 @@ impl<T: Config> Pallet<T> {
 				Self::account_id(),
 				T::NativeCurrencyId::get(),
 				setup.clone(),
-				size
+				size,
 			)?;
 		}
 
