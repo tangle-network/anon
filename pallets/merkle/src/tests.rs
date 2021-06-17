@@ -399,7 +399,7 @@ fn should_have_correct_root_hash_after_insertion() {
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
-		assert_eq!(tree.root_hash, Some(keyh2), "Invalid root hash");
+		assert_eq!(tree.root_hash, keyh2, "Invalid root hash");
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(2), 0, vec![key1.clone()]));
 
@@ -408,7 +408,7 @@ fn should_have_correct_root_hash_after_insertion() {
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
-		assert_eq!(tree.root_hash, Some(keyh2), "Invalid root hash");
+		assert_eq!(tree.root_hash, keyh2, "Invalid root hash");
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(3), 0, vec![key2.clone()]));
 
@@ -418,7 +418,7 @@ fn should_have_correct_root_hash_after_insertion() {
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
-		assert_eq!(tree.root_hash, Some(keyh3), "Invalid root hash");
+		assert_eq!(tree.root_hash, keyh3, "Invalid root hash");
 	});
 }
 
@@ -474,7 +474,7 @@ fn should_have_correct_root_hash() {
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
-		assert_eq!(tree.root_hash, Some(root_hash), "Invalid root hash");
+		assert_eq!(tree.root_hash, root_hash, "Invalid root hash");
 	});
 }
 

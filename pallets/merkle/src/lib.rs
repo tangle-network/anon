@@ -549,11 +549,11 @@ pub struct MerkleTree {
 	/// Depth of the tree
 	pub depth: u8,
 	/// Current root hash of the tree
-	pub root_hash: Option<ScalarBytes>,
+	pub root_hash: ScalarBytes,
 	/// Zero tree
-	pub zero_tree: Option<Vec<ScalarBytes>>,
+	pub zero_tree: Vec<ScalarBytes>,
 	/// Edge nodes needed for the next insert in the tree
-	pub edge_nodes: Option<Vec<ScalarBytes>>,
+	pub edge_nodes: Vec<ScalarBytes>,
 	/// Hash function for the merkle tree
 	/// Backend used
 	pub setup: Setup,
@@ -568,12 +568,12 @@ impl MerkleTree {
 		// let (zero_tree, root_hash) = setup.generate_zero_tree(depth as usize)?;
 		Ok(Self {
 			initialized: false,
-			root_hash: None,
+			root_hash: ScalarBytes::default(),
 			leaf_count: 0,
 			depth,
 			max_leaves: u32::MAX >> (T::MaxTreeDepth::get() - depth),
-			zero_tree: None,
-			edge_nodes: None,
+			zero_tree: vec![],
+			edge_nodes: vec![],
 			setup,
 			should_store_leaves: true, // the default for now.
 			should_require_vkey: vkey_required,
@@ -615,9 +615,9 @@ impl<T: Config> Tree<T> for Pallet<T> {
 		ensure!(!tree.initialized, Error::<T>::AlreadyInitialized);
 		let params = Self::get_verifying_key(key_id)?;
 		let (zero_tree, root_hash) = tree.setup.generate_zero_tree::<T>(tree.depth as usize, &params)?;
-		tree.root_hash = Some(root_hash);
-		tree.edge_nodes = Some(zero_tree.clone());
-		tree.zero_tree = Some(zero_tree);
+		tree.root_hash = root_hash;
+		tree.edge_nodes = zero_tree.clone();
+		tree.zero_tree = zero_tree;
 		tree.initialized = true;
 		Trees::<T>::insert(tree_id, Some(tree));
 		<Self as Tree<_>>::set_verifying_key_for_tree(key_id, tree_id)?;
@@ -704,7 +704,7 @@ impl<T: Config> Tree<T> for Pallet<T> {
 			Self::add_leaf(&mut tree, data, &params)?;
 		}
 		let block_number: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
-		CachedRoots::<T>::append(block_number, id, tree.root_hash.clone().unwrap().clone());
+		CachedRoots::<T>::append(block_number, id, tree.root_hash.clone());
 		Trees::<T>::insert(id, Some(tree));
 
 		// Raising the New Member event for the client to build a tree locally
@@ -737,7 +737,7 @@ impl<T: Config> Tree<T> for Pallet<T> {
 		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
 
 		ensure!(
-			tree.edge_nodes.unwrap().len() == path.len(),
+			tree.edge_nodes.len() == path.len(),
 			Error::<T>::InvalidPathLength
 		);
 		let params = Self::get_verifying_key_for_tree(id)?;
@@ -749,7 +749,7 @@ impl<T: Config> Tree<T> for Pallet<T> {
 			}
 		}
 
-		ensure!(Some(hash) == tree.root_hash, Error::<T>::InvalidMembershipProof);
+		ensure!(hash == tree.root_hash, Error::<T>::InvalidMembershipProof);
 		Ok(())
 	}
 
@@ -795,7 +795,7 @@ impl<T: Config> Pallet<T> {
 	pub fn get_merkle_root(tree_id: T::TreeId) -> Result<ScalarBytes, DispatchError> {
 		let tree = Self::get_tree(tree_id)?;
 		ensure!(tree.initialized, Error::<T>::NotInitialized);
-		Ok(tree.root_hash.unwrap())
+		Ok(tree.root_hash)
 	}
 
 	pub fn add_root_to_cache(tree_id: T::TreeId, block_number: T::BlockNumber) -> Result<(), DispatchError> {
@@ -820,13 +820,12 @@ impl<T: Config> Pallet<T> {
 	pub fn add_leaf(tree: &mut MerkleTree, data: &ScalarBytes, params: &[u8]) -> Result<(), DispatchError> {
 		let mut edge_index = tree.leaf_count;
 		let mut hash = data.clone();
-		let mut edge_nodes = tree.edge_nodes.clone().unwrap();
-		let zero_tree = tree.zero_tree.clone().unwrap();
+		let mut edge_nodes = tree.edge_nodes.clone();
 		// Update the tree
 		for i in 0..edge_nodes.len() {
 			hash = if edge_index % 2 == 0 {
 				edge_nodes[i] = hash.clone();
-				tree.setup.hash::<T>(&hash, &zero_tree[i], params)?
+				tree.setup.hash::<T>(&hash, &tree.zero_tree[i], params)?
 			} else {
 				tree.setup.hash::<T>(&edge_nodes[i], &hash, params)?
 			};
@@ -835,8 +834,8 @@ impl<T: Config> Pallet<T> {
 		}
 
 		tree.leaf_count += 1;
-		tree.root_hash = Some(hash);
-		tree.edge_nodes = Some(edge_nodes);
+		tree.root_hash = hash;
+		tree.edge_nodes = edge_nodes;
 		Ok(())
 	}
 
