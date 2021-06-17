@@ -13,7 +13,6 @@ use sp_runtime::{
 	Perbill,
 };
 
-
 pub(crate) type Balance = u64;
 pub type Amount = i128;
 pub type CurrencyId = u64;
@@ -66,11 +65,11 @@ impl frame_system::Config for Test {
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type OnKilledAccount = ();
 	type OnNewAccount = ();
+	type OnSetCode = ();
 	type Origin = Origin;
 	type PalletInfo = PalletInfo;
 	type SS58Prefix = Prefix;
 	type SystemWeightInfo = ();
-	type OnSetCode = ();
 	type Version = ();
 }
 
@@ -107,21 +106,21 @@ parameter_types! {
 }
 
 impl webb_tokens::Config for Test {
-	type PalletId = TokensPalletId;
-	type Event = Event;
-	type Balance = Balance;
 	type Amount = i128;
-	type CurrencyId = CurrencyId;
-	type NativeCurrency = BasicCurrencyAdapter<Test, Balances, Amount, BlockNumber>;
-	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+	type ApprovalDeposit = ApprovalDeposit;
+	type Balance = Balance;
 	type CurrencyDeposit = CurrencyDeposit;
+	type CurrencyId = CurrencyId;
+	type DustAccount = DustAccount;
+	type Event = Event;
+	type Extra = ();
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
 	type MetadataDepositBase = MetadataDepositBase;
 	type MetadataDepositPerByte = MetadataDepositPerByte;
-	type ApprovalDeposit = ApprovalDeposit;
+	type NativeCurrency = BasicCurrencyAdapter<Test, Balances, Amount, BlockNumber>;
+	type PalletId = TokensPalletId;
 	type StringLimit = StringLimit;
-	type DustAccount = DustAccount;
 	type WeightInfo = ();
-	type Extra = ();
 }
 
 impl webb_currencies::Config for Test {
@@ -149,13 +148,13 @@ parameter_types! {
 }
 
 impl Config for Test {
-	type PalletId = BridgePalletId;
-	type Event = Event;
-	type Currency = Tokens;
 	type ChainId = u32;
-	type ThresholdSignature = [u8; 32];
-	type NativeCurrencyId = NativeCurrencyId;
+	type Currency = Tokens;
 	type DefaultAdmin = DefaultAdmin;
+	type Event = Event;
+	type NativeCurrencyId = NativeCurrencyId;
+	type PalletId = BridgePalletId;
+	type ThresholdSignature = [u8; 32];
 	type Tree = MerkleTrees;
 }
 

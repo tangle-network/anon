@@ -303,25 +303,25 @@ parameter_types! {
 }
 
 impl pallet_contracts::Config for Runtime {
-	type Time = Timestamp;
-	type Randomness = RandomnessCollectiveFlip;
+	type CallStack = [pallet_contracts::Frame<Self>; 31];
+	type ChainExtension = ();
 	type Currency = Balances;
-	type Event = Event;
-	type RentPayment = ();
-	type SignedClaimHandicap = SignedClaimHandicap;
-	type TombstoneDeposit = TombstoneDeposit;
+	type DeletionQueueDepth = DeletionQueueDepth;
+	type DeletionWeightLimit = DeletionWeightLimit;
 	type DepositPerContract = DepositPerContract;
 	type DepositPerStorageByte = DepositPerStorageByte;
 	type DepositPerStorageItem = DepositPerStorageItem;
+	type Event = Event;
+	type Randomness = RandomnessCollectiveFlip;
 	type RentFraction = RentFraction;
-	type SurchargeReward = SurchargeReward;
-	type CallStack = [pallet_contracts::Frame<Self>; 31];
-	type WeightPrice = pallet_transaction_payment::Module<Self>;
-	type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
-	type ChainExtension = ();
-	type DeletionQueueDepth = DeletionQueueDepth;
-	type DeletionWeightLimit = DeletionWeightLimit;
+	type RentPayment = ();
 	type Schedule = Schedule;
+	type SignedClaimHandicap = SignedClaimHandicap;
+	type SurchargeReward = SurchargeReward;
+	type Time = Timestamp;
+	type TombstoneDeposit = TombstoneDeposit;
+	type WeightInfo = pallet_contracts::weights::SubstrateWeight<Self>;
+	type WeightPrice = pallet_transaction_payment::Module<Self>;
 }
 
 parameter_types! {

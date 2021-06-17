@@ -92,7 +92,13 @@ mod benchmarking;
 pub mod weights;
 
 use codec::{Decode, Encode};
-use frame_support::{dispatch::DispatchError, ensure, traits::Get, weights::Weight, Parameter};
+use frame_support::{
+	dispatch::DispatchError,
+	ensure,
+	traits::{Get, Randomness},
+	weights::Weight,
+	Parameter,
+};
 use frame_system::ensure_signed;
 use sp_runtime::traits::{AtLeast32Bit, One};
 use sp_std::prelude::*;
@@ -103,7 +109,6 @@ use utils::{
 	setup::{Curve, Setup},
 };
 use weights::WeightInfo;
-use frame_support::traits::Randomness;
 
 pub use pallet::*;
 
@@ -731,7 +736,10 @@ impl<T: Config> Tree<T> for Pallet<T> {
 	fn verify(id: T::TreeId, leaf: ScalarBytes, path: Vec<(bool, ScalarBytes)>) -> Result<(), DispatchError> {
 		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
 
-		ensure!(tree.edge_nodes.unwrap().len() == path.len(), Error::<T>::InvalidPathLength);
+		ensure!(
+			tree.edge_nodes.unwrap().len() == path.len(),
+			Error::<T>::InvalidPathLength
+		);
 		let params = Self::get_verifying_key_for_tree(id)?;
 		let mut hash = leaf;
 		for (is_right, node) in path {

@@ -1,10 +1,8 @@
-use crate::utils::keys::from_bytes_to_bp_gens;
-use crate::utils::keys::get_bp_gen_bytes;
 use super::*;
 use crate::{
 	mock::*,
 	utils::{
-		keys::slice_to_bytes_32,
+		keys::{from_bytes_to_bp_gens, get_bp_gen_bytes, slice_to_bytes_32},
 		setup::{Backend, HashFunction, Setup, Snark},
 	},
 };
@@ -453,9 +451,7 @@ fn should_have_correct_root_hash() {
 		}
 		let zero_h0 = zero_tree[0].to_vec();
 
-
 		assert_ok!(MerkleTrees::add_members(Origin::signed(0), 0, keys.clone()));
-
 
 		let key1_1 = setup.hash::<Test>(&keys[0], &keys[1], &params).unwrap();
 		let key1_2 = setup.hash::<Test>(&keys[2], &keys[3], &params).unwrap();
@@ -555,7 +551,6 @@ fn should_not_verify_invalid_proof() {
 		let zero_h0 = zero_tree[0].to_vec();
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![
-
 			key0.clone(),
 			key1.clone(),
 			key2.clone()
@@ -617,9 +612,7 @@ fn should_verify_proof_of_membership() {
 		}
 		let zero_h0 = zero_tree[0].to_vec();
 
-
 		assert_ok!(MerkleTrees::add_members(Origin::signed(0), 0, keys.clone()));
-
 
 		let key1_1 = setup.hash::<Test>(&keys[0], &keys[1], &params).unwrap();
 		let key1_2 = setup.hash::<Test>(&keys[2], &keys[3], &params).unwrap();
@@ -673,7 +666,6 @@ fn should_verify_simple_zk_proof_of_membership() {
 		let mut prover_transcript = Transcript::new(label);
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-
 		let hasher = HashFunction::PoseidonDefault;
 		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		let setup = Setup::new(hasher.clone(), backend.clone());
@@ -698,7 +690,11 @@ fn should_verify_simple_zk_proof_of_membership() {
 		let leaf = ftree.generate_secrets().to_bytes();
 		ftree.tree.add_leaves(vec![leaf], None);
 
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf.to_vec()]));
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
@@ -738,7 +734,6 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		let mut prover_transcript = Transcript::new(label);
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-
 		let hasher = HashFunction::PoseidonDefault;
 		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		let setup = Setup::new(hasher.clone(), backend.clone());
@@ -763,9 +758,12 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		let leaf = ftree.generate_secrets().to_bytes();
 		ftree.tree.add_leaves(vec![leaf], None);
 
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf.to_vec()]));
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
-		
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
 			Scalar::from_bytes_mod_order(slice_to_bytes_32(&root)),
@@ -833,7 +831,11 @@ fn should_not_verify_invalid_private_inputs() {
 		let leaf = ftree.generate_secrets().to_bytes();
 		ftree.tree.add_leaves(vec![leaf], None);
 
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf.to_vec()]));
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
@@ -905,7 +907,11 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 		let leaf = ftree.generate_secrets().to_bytes();
 		ftree.tree.add_leaves(vec![leaf], None);
 
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf.to_vec()]));
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
@@ -951,7 +957,6 @@ fn should_not_verify_invalid_transcript() {
 		let mut prover_transcript = Transcript::new(label);
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-
 		let hasher = HashFunction::PoseidonDefault;
 		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		let setup = Setup::new(hasher.clone(), backend.clone());
@@ -978,7 +983,11 @@ fn should_not_verify_invalid_transcript() {
 		let leaf = ftree.generate_secrets().to_bytes();
 		ftree.tree.add_leaves(vec![leaf], None);
 
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf.to_vec()]));
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
@@ -1018,7 +1027,6 @@ fn should_verify_zk_proof_of_membership() {
 
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
-
 
 		let hasher = HashFunction::PoseidonDefault;
 		let backend = Backend::Bulletproofs(Curve::Curve25519);
@@ -1100,7 +1108,6 @@ fn should_verify_large_zk_proof_of_membership() {
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-
 		let hasher = HashFunction::PoseidonDefault;
 		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		let setup = Setup::new(hasher.clone(), backend.clone());
@@ -1127,7 +1134,11 @@ fn should_verify_large_zk_proof_of_membership() {
 		let leaf = ftree.generate_secrets().to_bytes();
 		ftree.tree.add_leaves(vec![leaf], None);
 
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf.to_vec()]));
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(

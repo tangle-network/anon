@@ -2,10 +2,14 @@ use super::*;
 use crate::mock::{
 	new_test_ext, AccountId, Balance, Balances, CurrencyId, MerkleTrees, Mixer, MixerCall, Origin, System, Test, Tokens,
 };
-use bulletproofs_gadgets::poseidon::builder::{Poseidon, PoseidonBuilder};
-use bulletproofs_gadgets::poseidon::sbox::{PoseidonSbox};
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
-use bulletproofs_gadgets::fixed_deposit_tree::builder::FixedDepositTreeBuilder;
+use bulletproofs_gadgets::{
+	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
+	poseidon::{
+		builder::{Poseidon, PoseidonBuilder},
+		sbox::PoseidonSbox,
+	},
+};
 use curve25519_dalek::scalar::Scalar;
 use frame_support::{
 	assert_err, assert_ok,
@@ -210,10 +214,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 			let tree_id = i;
 			let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 			let prover = Prover::new(&pc_gens, &mut prover_transcript);
-			let mut ftree = FixedDepositTreeBuilder::new()
-				.hash_params(h.clone())
-				.depth(32)
-				.build();
+			let mut ftree = FixedDepositTreeBuilder::new().hash_params(h.clone()).depth(32).build();
 
 			let leaf = ftree.generate_secrets().to_bytes();
 			ftree.tree.add_leaves(vec![leaf], None);
@@ -368,7 +369,11 @@ fn should_make_mixer_with_non_native_token() {
 
 		let tree_id = 4u32;
 		let key_id = 0;
-		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(Mixer::account_id()), tree_id, key_id));
+		assert_ok!(MerkleTrees::initialize_tree(
+			Origin::signed(Mixer::account_id()),
+			tree_id,
+			key_id
+		));
 
 		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
 		let bp_gens = merkle::utils::keys::from_bytes_to_bp_gens(&params);
@@ -380,10 +385,7 @@ fn should_make_mixer_with_non_native_token() {
 		let recipient: AccountId = 1;
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
-		let mut ftree = FixedDepositTreeBuilder::new()
-			.hash_params(h.clone())
-			.depth(32)
-			.build();
+		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h.clone()).depth(32).build();
 
 		let leaf = ftree.generate_secrets().to_bytes();
 		ftree.tree.add_leaves(vec![leaf], None);

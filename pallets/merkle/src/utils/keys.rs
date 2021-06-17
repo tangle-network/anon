@@ -1,8 +1,8 @@
 //! Type definitions used in merkle pallet
-use curve25519_dalek::ristretto::CompressedRistretto;
 use bulletproofs::BulletproofGens;
+use codec::Input;
+use curve25519_dalek::ristretto::CompressedRistretto;
 use sp_std::prelude::*;
-use codec::{Input};
 pub type ScalarBytes = Vec<u8>;
 
 pub fn slice_to_bytes_32(vec: &[u8]) -> [u8; 32] {

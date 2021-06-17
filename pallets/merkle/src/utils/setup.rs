@@ -1,10 +1,7 @@
-
-
 use crate::{
-	utils::keys::{slice_to_bytes_32, ScalarBytes},
+	utils::keys::{from_bytes_to_bp_gens, slice_to_bytes_32, ScalarBytes},
 	Config, Error,
 };
-use crate::utils::keys::from_bytes_to_bp_gens;
 use ark_groth16::{Proof, VerifyingKey};
 use ark_serialize::CanonicalDeserialize;
 use arkworks_gadgets::{
@@ -38,12 +35,11 @@ use bulletproofs_gadgets::{
 };
 use codec::{Decode, Encode};
 use curve25519_dalek::{ristretto::CompressedRistretto, scalar::Scalar};
+use frame_support::traits::Randomness;
 use lazy_static::lazy_static;
 use merlin::Transcript;
-use rand_chacha::ChaChaRng;
-use rand_chacha::rand_core::SeedableRng;
+use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
 use sp_std::prelude::*;
-use frame_support::traits::Randomness;
 
 lazy_static! {
 	static ref DEFAULT_ARKWORKS_POSEIDON_PARAMETERS: PoseidonParameters<Bls381> = setup_params_3::<Bls381>();
@@ -114,9 +110,7 @@ impl Setup {
 					let hasher = default_bulletproofs_poseidon_hasher(bp_gens);
 					let sl = Scalar::from_bytes_mod_order(slice_to_bytes_32(xl));
 					let sr = Scalar::from_bytes_mod_order(slice_to_bytes_32(xr));
-					Ok(Poseidon_hash_2(sl, sr, &hasher)
-						.to_bytes()
-						.to_vec())
+					Ok(Poseidon_hash_2(sl, sr, &hasher).to_bytes().to_vec())
 				}
 				_ => Err(Error::<T>::Unimplemented),
 			},
@@ -139,16 +133,17 @@ impl Setup {
 		}
 	}
 
-	pub fn generate_zero_tree<T: Config>(&self, depth: usize, params: &[u8]) -> Result<(Vec<ScalarBytes>, ScalarBytes), Error<T>> {
+	pub fn generate_zero_tree<T: Config>(
+		&self,
+		depth: usize,
+		params: &[u8],
+	) -> Result<(Vec<ScalarBytes>, ScalarBytes), Error<T>> {
 		match self.backend {
 			Backend::Bulletproofs(Curve::Curve25519) => match self.hasher {
 				HashFunction::PoseidonDefault => {
 					let bp_gens = from_bytes_to_bp_gens(params);
 					let hasher = default_bulletproofs_poseidon_hasher(bp_gens);
-					let zero_tree = gen_zero_tree(
-						hasher.width,
-						&hasher.sbox,
-					);
+					let zero_tree = gen_zero_tree(hasher.width, &hasher.sbox);
 					Ok((
 						zero_tree[0..depth].iter().map(|x| x.to_vec()).collect(),
 						zero_tree[depth].to_vec(),
