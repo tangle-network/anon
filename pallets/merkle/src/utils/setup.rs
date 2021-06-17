@@ -1,4 +1,5 @@
 
+
 use crate::{
 	utils::keys::{slice_to_bytes_32, ScalarBytes},
 	Config, Error,
@@ -39,8 +40,10 @@ use codec::{Decode, Encode};
 use curve25519_dalek::{ristretto::CompressedRistretto, scalar::Scalar};
 use lazy_static::lazy_static;
 use merlin::Transcript;
-use rand_core::OsRng;
+use rand_chacha::ChaChaRng;
+use rand_chacha::rand_core::SeedableRng;
 use sp_std::prelude::*;
+use frame_support::traits::Randomness;
 
 lazy_static! {
 	static ref DEFAULT_ARKWORKS_POSEIDON_PARAMETERS: PoseidonParameters<Bls381> = setup_params_3::<Bls381>();
@@ -103,14 +106,7 @@ impl Setup {
 		Self { hasher, backend }
 	}
 
-	pub fn can_verify_with(&self, vk: &Option<Vec<u8>>) -> bool {
-		match self.backend {
-			Backend::Arkworks(..) => vk.is_some(),
-			_ => true,
-		}
-	}
-
-	pub fn hash<C: Config>(&self, xl: &ScalarBytes, xr: &ScalarBytes, params: &[u8]) -> Result<ScalarBytes, Error<C>> {
+	pub fn hash<T: Config>(&self, xl: &ScalarBytes, xr: &ScalarBytes, params: &[u8]) -> Result<ScalarBytes, Error<T>> {
 		match self.backend {
 			Backend::Bulletproofs(Curve::Curve25519) => match self.hasher {
 				HashFunction::PoseidonDefault | HashFunction::Poseidon(6, 3) => {
@@ -122,7 +118,7 @@ impl Setup {
 						.to_bytes()
 						.to_vec())
 				}
-				_ => Err(Error::<C>::Unimplemented),
+				_ => Err(Error::<T>::Unimplemented),
 			},
 			Backend::Arkworks(Curve::Bls381, _) => match self.hasher {
 				HashFunction::PoseidonDefault => {
@@ -133,17 +129,17 @@ impl Setup {
 					let bytes_res = to_bytes![res];
 					let bytes = match bytes_res {
 						Ok(bytes) => bytes,
-						Err(_) => return Err(Error::<C>::HashingFailed),
+						Err(_) => return Err(Error::<T>::HashingFailed),
 					};
 					Ok(bytes)
 				}
-				_ => Err(Error::<C>::Unimplemented),
+				_ => Err(Error::<T>::Unimplemented),
 			},
-			_ => Err(Error::<C>::Unimplemented),
+			_ => Err(Error::<T>::Unimplemented),
 		}
 	}
 
-	pub fn generate_zero_tree<C: Config>(&self, depth: usize, params: &[u8]) -> Result<(Vec<ScalarBytes>, ScalarBytes), Error<C>> {
+	pub fn generate_zero_tree<T: Config>(&self, depth: usize, params: &[u8]) -> Result<(Vec<ScalarBytes>, ScalarBytes), Error<T>> {
 		match self.backend {
 			Backend::Bulletproofs(Curve::Curve25519) => match self.hasher {
 				HashFunction::PoseidonDefault => {
@@ -158,25 +154,25 @@ impl Setup {
 						zero_tree[depth].to_vec(),
 					))
 				}
-				_ => Err(Error::<C>::Unimplemented),
+				_ => Err(Error::<T>::Unimplemented),
 			},
 			Backend::Arkworks(Curve::Bls381, _) => match self.hasher {
 				HashFunction::PoseidonDefault => {
 					let res = gen_empty_hashes::<TreeConfig>(&(), &DEFAULT_ARKWORKS_POSEIDON_PARAMETERS)
-						.map_err(|_| Error::<C>::ZeroTreeGenFailed)?;
+						.map_err(|_| Error::<T>::ZeroTreeGenFailed)?;
 					let zero_tree: Vec<ScalarBytes> = res
 						.iter()
-						.map(|val| to_bytes![val].map_err(|_| Error::<C>::ZeroTreeGenFailed))
+						.map(|val| to_bytes![val].map_err(|_| Error::<T>::ZeroTreeGenFailed))
 						.collect::<Result<Vec<ScalarBytes>, _>>()?;
 					Ok((zero_tree[0..depth].to_vec(), zero_tree[depth].clone()))
 				}
-				_ => Err(Error::<C>::Unimplemented),
+				_ => Err(Error::<T>::Unimplemented),
 			},
-			_ => Err(Error::<C>::Unimplemented),
+			_ => Err(Error::<T>::Unimplemented),
 		}
 	}
 
-	pub fn verify_zk<C: Config>(
+	pub fn verify_zk<T: Config>(
 		&self,
 		depth: usize,
 		root_bytes: ScalarBytes,
@@ -188,11 +184,11 @@ impl Setup {
 		path_nodes_bytes: Vec<ScalarBytes>,
 		recipient_bytes: ScalarBytes,
 		relayer_bytes: ScalarBytes,
-	) -> Result<(), Error<C>> {
+	) -> Result<(), Error<T>> {
 		match self.backend {
 			Backend::Bulletproofs(Curve::Curve25519) => {
 				if verifier_key.is_none() {
-					return Err(Error::<C>::InvalidVerifierKey);
+					return Err(Error::<T>::InvalidVerifierKey);
 				}
 
 				let bp_gens = from_bytes_to_bp_gens(&verifier_key.unwrap());
@@ -228,41 +224,41 @@ impl Setup {
 			}
 			Backend::Arkworks(Curve::Bls381, Snark::Groth16) => {
 				let nullifier_elts =
-					to_field_elements::<Bls381>(&nullifier_hash_bytes).map_err(|_| Error::<C>::InvalidPublicInputs)?;
+					to_field_elements::<Bls381>(&nullifier_hash_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
 				let root_elts =
-					to_field_elements::<Bls381>(&root_bytes).map_err(|_| Error::<C>::InvalidPublicInputs)?;
+					to_field_elements::<Bls381>(&root_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
 				let recipient_elts =
-					to_field_elements::<Bls381>(&recipient_bytes).map_err(|_| Error::<C>::InvalidPublicInputs)?;
+					to_field_elements::<Bls381>(&recipient_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
 				let relayer_elts =
-					to_field_elements::<Bls381>(&relayer_bytes).map_err(|_| Error::<C>::InvalidPublicInputs)?;
+					to_field_elements::<Bls381>(&relayer_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
 
-				let nullifier = nullifier_elts.get(0).ok_or(Error::<C>::InvalidPublicInputs)?;
-				let root = root_elts.get(0).ok_or(Error::<C>::InvalidPublicInputs)?;
-				let recipient = recipient_elts.get(0).ok_or(Error::<C>::InvalidPublicInputs)?;
-				let relayer = relayer_elts.get(0).ok_or(Error::<C>::InvalidPublicInputs)?;
+				let nullifier = nullifier_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
+				let root = root_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
+				let recipient = recipient_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
+				let relayer = relayer_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
 
 				if verifier_key.is_none() {
-					return Err(Error::<C>::InvalidVerifierKey);
+					return Err(Error::<T>::InvalidVerifierKey);
 				}
 
 				let vk = VerifyingKey::<Bls12_381>::deserialize(&verifier_key.unwrap()[..])
-					.map_err(|_| Error::<C>::InvalidVerifierKey)?;
+					.map_err(|_| Error::<T>::InvalidVerifierKey)?;
 				let public_inputs = get_public_inputs(*nullifier, *root, *recipient, *relayer);
 				let proof =
-					Proof::<Bls12_381>::deserialize(&proof_bytes[..]).map_err(|_| Error::<C>::InvalidZkProof)?;
+					Proof::<Bls12_381>::deserialize(&proof_bytes[..]).map_err(|_| Error::<T>::InvalidZkProof)?;
 				let res = verify_groth16(&vk, &public_inputs, &proof);
 				if !res {
-					return Err(Error::<C>::ZkVerificationFailed);
+					return Err(Error::<T>::ZkVerificationFailed);
 				}
 
 				Ok(())
 			}
-			_ => return Err(Error::<C>::Unimplemented),
+			_ => return Err(Error::<T>::Unimplemented),
 		}
 	}
 
 	// TODO: move to bulletproofs-gadgets
-	pub fn verify_bulletproofs_poseidon<C: Config>(
+	pub fn verify_bulletproofs_poseidon<T: Config>(
 		&self,
 		depth: usize,
 		cached_root: Scalar,
@@ -274,14 +270,14 @@ impl Setup {
 		recipient: Scalar,
 		relayer: Scalar,
 		hasher: &Poseidon,
-	) -> Result<(), Error<C>> {
+	) -> Result<(), Error<T>> {
 		let pc_gens = PedersenGens::default();
 		let label = b"zk_membership_proof";
 		let mut verifier_transcript = Transcript::new(label);
 		let mut verifier = Verifier::new(&mut verifier_transcript);
 
 		if comms.len() != 3 {
-			return Err(Error::<C>::InvalidPrivateInputs);
+			return Err(Error::<T>::InvalidPrivateInputs);
 		}
 		let r_val = verifier.commit(comms[0]);
 		let r_alloc = AllocatedScalar {
@@ -336,19 +332,24 @@ impl Setup {
 			&hasher,
 		);
 		if !gadget_res.is_ok() {
-			return Err(Error::<C>::ConstraintSystemUnsatisfied);
+			return Err(Error::<T>::ConstraintSystemUnsatisfied);
 		}
 
 		let proof = R1CSProof::from_bytes(&proof_bytes);
 		if !proof.is_ok() {
-			return Err(Error::<C>::InvalidZkProof);
+			return Err(Error::<T>::InvalidZkProof);
 		}
 		let proof = proof.unwrap();
 
-		let mut rng = OsRng::default();
+		let random_seed = T::Randomness::random_seed();
+		let random_bytes = random_seed.clone().0.encode();
+		let mut buf = [0u8; 32];
+		buf.copy_from_slice(&random_bytes);
+		let mut rng = ChaChaRng::from_seed(buf);
+
 		let verify_res = verifier.verify_with_rng(&proof, &hasher.pc_gens, &hasher.bp_gens, &mut rng);
 		if !verify_res.is_ok() {
-			return Err(Error::<C>::ZkVerificationFailed);
+			return Err(Error::<T>::ZkVerificationFailed);
 		}
 		Ok(())
 	}

@@ -103,6 +103,7 @@ use utils::{
 	setup::{Curve, Setup},
 };
 use weights::WeightInfo;
+use frame_support::traits::Randomness;
 
 pub use pallet::*;
 
@@ -677,14 +678,6 @@ impl<T: Config> Tree<T> for Pallet<T> {
 		let mut tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
 		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		// Check if the tree requires extrinsics to be called from a manager
-		let key_id = VerifyingKeyForTree::<T>::get(id);
-		let verifying_key = VerifyingKeys::<T>::get(key_id);
-		if tree.should_require_vkey {
-			ensure!(
-				tree.setup.can_verify_with(&verifying_key),
-				Error::<T>::InvalidVerifierKey
-			);
-		}
 		ensure!(
 			Self::is_manager_required(sender.clone(), &manager_data),
 			Error::<T>::ManagerIsRequired
@@ -698,13 +691,12 @@ impl<T: Config> Tree<T> for Pallet<T> {
 
 		let params = Self::get_verifying_key_for_tree(id)?;
 		for data in &members {
-			Self::add_leaf(&mut tree, &data, &params)?;
 			if tree.should_store_leaves {
 				Leaves::<T>::insert(id, tree.leaf_count, data);
 			}
 			// then we add it to the tree itself.
 			// note that, this method internally increments the leaves count.
-			Self::add_leaf(&mut tree, *data, &zero_tree, &hasher);
+			Self::add_leaf(&mut tree, data, &params);
 		}
 		let block_number: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
 		CachedRoots::<T>::append(block_number, id, tree.root_hash.clone().unwrap().clone());
@@ -850,18 +842,5 @@ impl<T: Config> Pallet<T> {
 		let maybe_verifying_key = VerifyingKeys::<T>::get(id);
 		ensure!(maybe_verifying_key.is_some(), Error::<T>::InvalidVerifierKey);
 		Ok(maybe_verifying_key.unwrap())
-	}
-
-	pub fn get_poseidon_hasher_for_tree(id: T::TreeId) -> Result<Poseidon, dispatch::DispatchError> {
-		let key_id = VerifyingKeyForTree::<T>::get(id);
-		Self::get_poseidon_hasher(key_id)
-	}
-
-	pub fn get_poseidon_hasher(id: T::KeyId) -> Result<Poseidon, dispatch::DispatchError> {
-		let maybe_verifying_key = VerifyingKeys::<T>::get(id);
-		ensure!(maybe_verifying_key.is_some(), Error::<T>::InvalidVerifierKey);
-		let bp_gens = from_bytes_to_bp_gens(&maybe_verifying_key.unwrap());
-		let hasher = default_hasher(bp_gens);
-		Ok(hasher)
 	}
 }
