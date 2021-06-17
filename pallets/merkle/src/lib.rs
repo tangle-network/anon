@@ -736,10 +736,7 @@ impl<T: Config> Tree<T> for Pallet<T> {
 	fn verify(id: T::TreeId, leaf: ScalarBytes, path: Vec<(bool, ScalarBytes)>) -> Result<(), DispatchError> {
 		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
 
-		ensure!(
-			tree.edge_nodes.len() == path.len(),
-			Error::<T>::InvalidPathLength
-		);
+		ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
 		let params = Self::get_verifying_key_for_tree(id)?;
 		let mut hash = leaf;
 		for (is_right, node) in path {
