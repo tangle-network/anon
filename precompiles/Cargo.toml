@@ -21,7 +21,6 @@ sp-std = { version = "3.0.0" }
 pallet-merkle = { git = "https://github.com/webb-tools/anon", branch = "master" }
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 rand_chacha = { version = "0.2", default-features = false }
-rand_core = { version = "0.5", default-features = false, features = ["alloc", "getrandom"] }
 curve25519-dalek = { version = "3.0.0", default-features = false, features = ["u64_backend", "alloc"] }
 bulletproofs = {version = "2.0.0", package = "webb-bulletproofs", default-features = false, features = ["yoloproofs"]}
 bulletproofs-gadgets = {version = "2.0.0", default-features = false}
