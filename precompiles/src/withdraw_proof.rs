@@ -8,7 +8,7 @@ use bulletproofs_gadgets::{
 use curve25519_dalek::{ristretto::CompressedRistretto, scalar::Scalar};
 use evm_runtime::ExitError;
 use merlin::Transcript;
-use rand_core::{CryptoRng, RngCore};
+use rand_chacha::rand_core::{CryptoRng, RngCore};
 use sp_std::prelude::Vec;
 
 #[derive(Debug)]
@@ -206,7 +206,7 @@ mod test {
 		smt::builder::SparseMerkleTreeBuilder,
 		utils::get_bits,
 	};
-	use rand_core::OsRng;
+	use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
 
 	fn generate_proof_data<T: RngCore + CryptoRng>(
 		test_rng: &mut T,
@@ -343,7 +343,7 @@ mod test {
 
 	#[test]
 	fn should_verify_proof() {
-		let mut test_rng = OsRng::default();
+		let mut test_rng = ChaChaRng::from_seed([1u8; 32]);
 		let (
 			tree_depth,
 			comms,
