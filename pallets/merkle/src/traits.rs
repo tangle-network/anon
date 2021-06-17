@@ -1,6 +1,8 @@
 //! All the traits exposed to be used in other custom pallets
-use crate::Config;
-use crate::utils::{keys::ScalarBytes, setup::Setup};
+use crate::{
+	utils::{keys::ScalarBytes, setup::Setup},
+	Config,
+};
 pub use frame_support::dispatch;
 use sp_std::vec::Vec;
 
@@ -22,7 +24,11 @@ pub trait Tree<T: Config> {
 	) -> Result<(), dispatch::DispatchError>;
 	/// Sets manager account id
 	/// Can only be called by the current manager
-	fn set_manager(sender: T::AccountId, id: T::TreeId, new_manager: T::AccountId) -> Result<(), dispatch::DispatchError>;
+	fn set_manager(
+		sender: T::AccountId,
+		id: T::TreeId,
+		new_manager: T::AccountId,
+	) -> Result<(), dispatch::DispatchError>;
 	/// Creates a new Tree tree, including a manager for that tree
 	fn create_tree(
 		sender: T::AccountId,
@@ -32,10 +38,18 @@ pub trait Tree<T: Config> {
 		is_vkey_required: bool,
 	) -> Result<T::TreeId, dispatch::DispatchError>;
 	/// Adds members/leaves to the tree
-	fn add_members(sender: T::AccountId, id: T::TreeId, members: Vec<ScalarBytes>) -> Result<(), dispatch::DispatchError>;
+	fn add_members(
+		sender: T::AccountId,
+		id: T::TreeId,
+		members: Vec<ScalarBytes>,
+	) -> Result<(), dispatch::DispatchError>;
 	/// Adds a nullifier to the storage
 	/// Can only be called by the manager if the manager is required
-	fn add_nullifier(sender: T::AccountId, id: T::TreeId, nullifier: ScalarBytes) -> Result<(), dispatch::DispatchError>;
+	fn add_nullifier(
+		sender: T::AccountId,
+		id: T::TreeId,
+		nullifier: ScalarBytes,
+	) -> Result<(), dispatch::DispatchError>;
 	/// Verify membership proof
 	fn verify(id: T::TreeId, leaf: ScalarBytes, path: Vec<(bool, ScalarBytes)>) -> Result<(), dispatch::DispatchError>;
 	/// Set verifying key in storage

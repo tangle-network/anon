@@ -616,7 +616,11 @@ fn should_verify_simple_zk_proof_of_membership() {
 			true,
 		));
 		let tree_id = 0;
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf.to_vec()]));
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
@@ -672,7 +676,11 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 			true,
 		));
 		let tree_id = 0;
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf.to_vec()]));
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
@@ -733,7 +741,11 @@ fn should_not_verify_invalid_private_inputs() {
 			true,
 		));
 		let tree_id = 0;
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf.to_vec()]));
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
@@ -796,7 +808,11 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 			true,
 		));
 		let tree_id = 0;
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf.to_vec()]));
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
@@ -859,7 +875,11 @@ fn should_not_verify_invalid_transcript() {
 			true,
 		));
 		let tree_id = 0;
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf.to_vec()]));
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
@@ -984,7 +1004,11 @@ fn should_verify_large_zk_proof_of_membership() {
 			true,
 		));
 		let tree_id = 0;
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf.to_vec()]));
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
@@ -1034,7 +1058,7 @@ fn should_verify_simple_zk_proof_of_membership_arkworks() {
 			Some(30),
 			true,
 		));
-		
+
 		let vkey_id = 1;
 		let tree_id = 0;
 

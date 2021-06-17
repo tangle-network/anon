@@ -444,11 +444,7 @@ pub mod pallet {
 		///
 		/// Can only be called by the root.
 		#[pallet::weight(0)]
-		pub fn set_verifying_key(
-			origin: OriginFor<T>,
-			key_id: T::KeyId,
-			key: Vec<u8>,
-		) -> DispatchResultWithPostInfo {
+		pub fn set_verifying_key(origin: OriginFor<T>, key_id: T::KeyId, key: Vec<u8>) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
 			<Self as Tree<_>>::set_verifying_key(key_id, key)?;
@@ -464,8 +460,7 @@ pub mod pallet {
 			key_id: T::KeyId,
 			tree_id: T::TreeId,
 		) -> DispatchResultWithPostInfo {
-			let manager_data = Managers::<T>::get(tree_id)
-				.ok_or(Error::<T>::ManagerDoesntExist)?;
+			let manager_data = Managers::<T>::get(tree_id).ok_or(Error::<T>::ManagerDoesntExist)?;
 			ensure_admin(origin, &manager_data.account_id)?;
 			<Self as Tree<_>>::set_verifying_key_for_tree(key_id, tree_id)?;
 			Ok(().into())

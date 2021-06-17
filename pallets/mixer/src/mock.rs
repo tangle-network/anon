@@ -138,10 +138,10 @@ impl webb_currencies::Config for Test {
 impl merkle::Config for Test {
 	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
+	type KeyId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
 	type TreeId = u32;
 	type WeightInfo = MerkleWeights<Self>;
-	type KeyId = u32;
 }
 
 parameter_types! {
