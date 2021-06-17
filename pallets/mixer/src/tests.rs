@@ -2,6 +2,8 @@ use super::*;
 use crate::mock::{
 	new_test_ext, AccountId, Balance, Balances, CurrencyId, MerkleTrees, Mixer, MixerCall, Origin, System, Test, Tokens,
 };
+use bulletproofs_gadgets::poseidon::builder::{Poseidon, PoseidonBuilder};
+use bulletproofs_gadgets::poseidon::sbox::{PoseidonSbox};
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use bulletproofs_gadgets::fixed_deposit_tree::builder::FixedDepositTreeBuilder;
 use curve25519_dalek::scalar::Scalar;
@@ -206,7 +208,6 @@ fn should_withdraw_from_each_mixer_successfully() {
 
 		for i in 0..4 {
 			let tree_id = i;
-			let poseidon = MerkleTrees::get_poseidon_hasher_for_tree(tree_id).unwrap();
 			let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 			let prover = Prover::new(&pc_gens, &mut prover_transcript);
 			let mut ftree = FixedDepositTreeBuilder::new()

@@ -144,7 +144,6 @@ impl merkle::Config for Test {
 	type Randomness = Randomness;
 	type TreeId = u32;
 	type WeightInfo = MerkleWeights<Self>;
-	type KeyId = u32;
 }
 
 parameter_types! {

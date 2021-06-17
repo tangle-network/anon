@@ -48,6 +48,7 @@ default-features = false
 [dev-dependencies]
 sp-core = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 rand_core = { version = "0.5", default-features = false }
+pallet-randomness-collective-flip = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
 [features]
 default = ["std"]

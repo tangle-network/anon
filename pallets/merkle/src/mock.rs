@@ -89,7 +89,6 @@ impl Config for Test {
 	type Randomness = Randomness;
 	type TreeId = u32;
 	type WeightInfo = Weights<Self>;
-	type KeyId = u32;
 }
 
 pub type MerkleCall = pallet_merkle::Call<Test>;
