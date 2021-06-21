@@ -13,15 +13,15 @@ use sp_std::prelude::Vec;
 
 #[derive(Debug)]
 pub struct WithdrawProof {
-	depth: u8,
-	private_inputs: Vec<CompressedRistretto>,
-	node_private_inputs: Vec<CompressedRistretto>,
-	index_private_inputs: Vec<CompressedRistretto>,
-	root: Scalar,
-	nullifier_hash: Scalar,
-	recipient: Scalar,
-	relayer: Scalar,
-	proof: R1CSProof,
+	pub depth: u8,
+	pub private_inputs: Vec<CompressedRistretto>,
+	pub node_private_inputs: Vec<CompressedRistretto>,
+	pub index_private_inputs: Vec<CompressedRistretto>,
+	pub root: Scalar,
+	pub nullifier_hash: Scalar,
+	pub recipient: Scalar,
+	pub relayer: Scalar,
+	pub proof: R1CSProof,
 }
 
 impl WithdrawProof {
@@ -197,7 +197,7 @@ impl Encode for WithdrawProof {
 }
 
 #[cfg(test)]
-mod test {
+pub mod test {
 	use super::*;
 	use crate::default_bulletproofs_poseidon_hasher;
 	use bulletproofs::r1cs::Prover;
@@ -208,7 +208,7 @@ mod test {
 	};
 	use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
 
-	fn generate_proof_data<T: RngCore + CryptoRng>(
+	pub fn generate_proof_data<T: RngCore + CryptoRng>(
 		test_rng: &mut T,
 	) -> (
 		u8,
