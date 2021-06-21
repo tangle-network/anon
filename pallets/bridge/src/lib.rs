@@ -1,3 +1,4 @@
+#![allow(warnings, unused)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(test)]

@@ -491,28 +491,9 @@ checksum = "be4dc07131ffa69b8072d35f5007352af944213cde02545e2103680baed38fcd"
 
 [[package]]
 name = "asn1_der"
-version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fce6b6a0ffdafebd82c87e79e3f40e8d2c523e5fea5566ff6b90509bf98d638"
-dependencies = [
- "asn1_der_derive",
-]
-
-[[package]]
-name = "asn1_der"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d6e24d2cce90c53b948c46271bfb053e4bdc2db9b5d3f65e20f8cf28a1b7fc3"
-
-[[package]]
-name = "asn1_der_derive"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d0864d84b8e07b145449be9a8537db86bf9de5ce03b913214694643b4743502"
-dependencies = [
- "quote",
- "syn",
-]
 
 [[package]]
 name = "async-channel"
@@ -1841,10 +1822,11 @@ checksum = "f7531096570974c3a9dcf9e4b8e1cede1ec26cf5046219fb3b9d897503b9be59"
 
 [[package]]
 name = "evm"
-version = "0.25.0"
+version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b4bd1fb06a4962a243c8be285d8a9b2493ffa79acb32633ad07a0bc523b1acd"
+checksum = "f833b0e642bec8286b80f00ad6cc6a95e50210c77949b9cb484637e6a05ed596"
 dependencies = [
+ "environmental",
  "ethereum",
  "evm-core 0.25.1",
  "evm-gasometer 0.25.0",
@@ -1855,37 +1837,6 @@ dependencies = [
  "rlp",
  "serde",
  "sha3 0.8.2",
-]
-
-[[package]]
-name = "evm"
-version = "0.27.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f833b0e642bec8286b80f00ad6cc6a95e50210c77949b9cb484637e6a05ed596"
-dependencies = [
- "environmental",
- "ethereum",
- "evm-core 0.27.1",
- "evm-gasometer 0.27.0",
- "evm-runtime 0.27.0",
- "log",
- "parity-scale-codec 2.1.3",
- "primitive-types",
- "rlp",
- "serde",
- "sha3 0.8.2",
-]
-
-[[package]]
-name = "evm-core"
-version = "0.25.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1e6640dd44ba663316c7121e0c6fee38000d8249127fd9221bfdc331f75cbfe"
-dependencies = [
- "funty",
- "parity-scale-codec 2.1.3",
- "primitive-types",
- "serde",
 ]
 
 [[package]]
@@ -1902,36 +1853,14 @@ dependencies = [
 
 [[package]]
 name = "evm-gasometer"
-version = "0.25.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0a8f04dcc8b0296652eabfa443a08ebed6071a1178e0f42a7f7b63a612bddf0b"
-dependencies = [
- "evm-core 0.25.1",
- "evm-runtime 0.25.0",
- "primitive-types",
-]
-
-[[package]]
-name = "evm-gasometer"
 version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4118f952ce320c11e1b7b8a575e477d70bc86a3b92ea23e427174d979cf1da26"
 dependencies = [
  "environmental",
- "evm-core 0.27.1",
- "evm-runtime 0.27.0",
+ "evm-core",
+ "evm-runtime",
  "primitive-types",
-]
-
-[[package]]
-name = "evm-runtime"
-version = "0.25.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54c302f29ca8bba82a382aa52d427869964179e4f24eae57bde70958ce9b7607"
-dependencies = [
- "evm-core 0.25.1",
- "primitive-types",
- "sha3 0.8.2",
 ]
 
 [[package]]
@@ -1941,7 +1870,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "952296b416c3b334b26933ad1f9cfa9203e251691586fb317e411872886ca31b"
 dependencies = [
  "environmental",
- "evm-core 0.27.1",
+ "evm-core",
  "primitive-types",
  "sha3 0.8.2",
 ]
@@ -2011,16 +1940,16 @@ dependencies = [
  "futures 0.3.15",
  "log",
  "parity-scale-codec 2.1.3",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-timestamp",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -2032,9 +1961,9 @@ dependencies = [
  "kvdb-rocksdb",
  "parity-scale-codec 2.1.3",
  "parking_lot 0.11.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-database 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-database",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -2049,10 +1978,10 @@ dependencies = [
  "futures 0.3.15",
  "futures-timer 3.0.2",
  "log",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sp-api",
+ "sp-blockchain",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -2077,23 +2006,23 @@ dependencies = [
  "jsonrpc-pubsub 15.1.0",
  "libsecp256k1 0.3.5",
  "log",
- "pallet-ethereum 2.0.0-dev",
- "pallet-evm 4.0.0-dev",
+ "pallet-ethereum",
+ "pallet-evm",
  "parity-scale-codec 2.1.3",
  "rand 0.7.3",
  "rlp",
  "rustc-hex",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
  "sc-network",
- "sc-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-rpc",
  "sc-service",
  "sha3 0.8.2",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-storage 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-blockchain",
+ "sp-io",
+ "sp-runtime",
+ "sp-storage",
+ "sp-transaction-pool",
 ]
 
 [[package]]
@@ -2209,9 +2138,9 @@ dependencies = [
  "parity-scale-codec 2.1.3",
  "rlp",
  "sha3 0.8.2",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -2252,8 +2181,8 @@ dependencies = [
  "impl-trait-for-tuples 0.1.3",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -2272,53 +2201,24 @@ dependencies = [
 
 [[package]]
 name = "fp-rpc"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c58fe2c9fe2f296ad363bdd552bad8718ebf675735c02ef857ae2713bdea4822"
-dependencies = [
- "ethereum",
- "ethereum-types",
- "fp-evm 1.0.0",
- "parity-scale-codec 2.1.3",
- "sp-api 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-io 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "fp-rpc"
 version = "2.0.0"
 source = "git+https://github.com/webb-tools/frontier?branch=erup-4#dede92a2f078a85994bef88d6ea4df1ea2fadd51"
 dependencies = [
  "ethereum",
  "ethereum-types",
- "fp-evm 2.0.0 (git+https://github.com/webb-tools/frontier?branch=erup-4)",
+ "fp-evm",
  "parity-scale-codec 2.1.3",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
-name = "fp-rpc"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8364e0f8f0f8e3ccec591600e6ab0269527f4dc5d802f8e482e863da37f508cd"
-dependencies = [
- "ethereum",
- "ethereum-types",
- "fp-evm 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "parity-scale-codec 2.1.3",
- "sp-api 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-io 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
+name = "fp-storage"
+version = "1.0.1"
+source = "git+https://github.com/webb-tools/frontier?branch=erup-4#dede92a2f078a85994bef88d6ea4df1ea2fadd51"
 
 [[package]]
 name = "fp-storage"
@@ -2342,12 +2242,12 @@ dependencies = [
  "log",
  "parity-scale-codec 2.1.3",
  "paste",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-storage 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-io",
+ "sp-runtime",
+ "sp-runtime-interface",
+ "sp-std 3.0.0",
+ "sp-storage",
 ]
 
 [[package]]
@@ -2381,14 +2281,14 @@ dependencies = [
  "parity-scale-codec 2.1.3",
  "sc-cli",
  "sc-client-db",
- "sc-executor 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-executor",
  "sc-service",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-externalities",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-state-machine",
  "structopt",
 ]
 
@@ -2397,14 +2297,14 @@ name = "frame-executive"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "parity-scale-codec 2.1.3",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
+ "sp-tracing",
 ]
 
 [[package]]
@@ -2414,8 +2314,8 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -2445,15 +2345,15 @@ dependencies = [
  "paste",
  "serde",
  "smallvec 1.6.1",
- "sp-arithmetic 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-staking 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-state-machine",
+ "sp-std 3.0.0",
+ "sp-tracing",
 ]
 
 [[package]]
@@ -2546,8 +2446,7 @@ dependencies = [
 [[package]]
 name = "frame-support-procedural-tools-derive"
 version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79285388b120ac96c15a791c56b26b9264f7231324fbe0fd05026acd92bf2e6a"
+source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2564,11 +2463,11 @@ dependencies = [
  "log",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
+ "sp-version",
 ]
 
 [[package]]
@@ -2593,13 +2492,13 @@ name = "frame-system-benchmarking"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-benchmarking 3.1.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
  "parity-scale-codec 2.1.3",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -2608,7 +2507,7 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.3",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
 ]
 
 [[package]]
@@ -3278,22 +3177,6 @@ dependencies = [
 
 [[package]]
 name = "if-watch"
-version = "0.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97b8538953a3f0d0d3868f0a706eb4273535e10d72acb5c82c1c23ae48835c85"
-dependencies = [
- "async-io",
- "futures 0.3.15",
- "futures-lite",
- "if-addrs",
- "ipnet",
- "libc",
- "log",
- "winapi 0.3.9",
-]
-
-[[package]]
-name = "if-watch"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae8ab7f67bad3240049cb24fb9cb0b4c2c6af4c245840917fbbdededeee91179"
@@ -3775,30 +3658,6 @@ checksum = "c7d73b3f436185384286bd8098d17ec07c9a7d2388a6599f824d8502b529702a"
 
 [[package]]
 name = "libp2p"
-version = "0.34.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5133112ce42be9482f6a87be92a605dd6bbc9e93c297aee77d172ff06908f3a"
-dependencies = [
- "atomic",
- "bytes 1.0.1",
- "futures 0.3.15",
- "lazy_static",
- "libp2p-core 0.27.1",
- "libp2p-core-derive",
- "libp2p-dns 0.27.0",
- "libp2p-swarm 0.27.2",
- "libp2p-tcp 0.27.1",
- "libp2p-wasm-ext 0.27.0",
- "libp2p-websocket 0.28.0",
- "parity-multiaddr",
- "parking_lot 0.11.1",
- "pin-project 1.0.7",
- "smallvec 1.6.1",
- "wasm-timer",
-]
-
-[[package]]
-name = "libp2p"
 version = "0.37.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08053fbef67cd777049ef7a95ebaca2ece370b4ed7712c3fa404d69a88cb741b"
@@ -3807,9 +3666,9 @@ dependencies = [
  "bytes 1.0.1",
  "futures 0.3.15",
  "lazy_static",
- "libp2p-core 0.28.3",
+ "libp2p-core",
  "libp2p-deflate",
- "libp2p-dns 0.28.1",
+ "libp2p-dns",
  "libp2p-floodsub",
  "libp2p-gossipsub",
  "libp2p-identify",
@@ -3822,12 +3681,12 @@ dependencies = [
  "libp2p-pnet",
  "libp2p-relay",
  "libp2p-request-response",
- "libp2p-swarm 0.29.0",
+ "libp2p-swarm",
  "libp2p-swarm-derive",
- "libp2p-tcp 0.28.0",
+ "libp2p-tcp",
  "libp2p-uds",
- "libp2p-wasm-ext 0.28.2",
- "libp2p-websocket 0.29.0",
+ "libp2p-wasm-ext",
+ "libp2p-websocket",
  "libp2p-yamux",
  "parity-multiaddr",
  "parking_lot 0.11.1",
@@ -3838,45 +3697,11 @@ dependencies = [
 
 [[package]]
 name = "libp2p-core"
-version = "0.27.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a2d56aadc2c2bf22cd7797f86e56a65b5b3994a0136b65be3106938acae7a26"
-dependencies = [
- "asn1_der 0.6.3",
- "bs58",
- "ed25519-dalek",
- "either",
- "fnv",
- "futures 0.3.15",
- "futures-timer 3.0.2",
- "lazy_static",
- "libsecp256k1 0.3.5",
- "log",
- "multihash",
- "multistream-select",
- "parity-multiaddr",
- "parking_lot 0.11.1",
- "pin-project 1.0.7",
- "prost",
- "prost-build",
- "rand 0.7.3",
- "ring",
- "rw-stream-sink",
- "sha2 0.9.5",
- "smallvec 1.6.1",
- "thiserror",
- "unsigned-varint 0.7.0",
- "void",
- "zeroize",
-]
-
-[[package]]
-name = "libp2p-core"
 version = "0.28.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "554d3e7e9e65f939d66b75fd6a4c67f258fe250da61b91f46c545fc4a89b51d9"
 dependencies = [
- "asn1_der 0.7.4",
+ "asn1_der",
  "bs58",
  "ed25519-dalek",
  "either",
@@ -3902,16 +3727,6 @@ dependencies = [
  "unsigned-varint 0.7.0",
  "void",
  "zeroize",
-]
-
-[[package]]
-name = "libp2p-core-derive"
-version = "0.21.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4bc40943156e42138d22ed3c57ff0e1a147237742715937622a99b10fbe0156"
-dependencies = [
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -3922,18 +3737,7 @@ checksum = "a2181a641cd15f9b6ba71b1335800f309012a0a97a29ffaabbbf40e9d3d58f08"
 dependencies = [
  "flate2",
  "futures 0.3.15",
- "libp2p-core 0.28.3",
-]
-
-[[package]]
-name = "libp2p-dns"
-version = "0.27.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5153b6db68fd4baa3b304e377db744dd8fea8ff4e4504509ee636abcde88d3e3"
-dependencies = [
- "futures 0.3.15",
- "libp2p-core 0.27.1",
- "log",
+ "libp2p-core",
 ]
 
 [[package]]
@@ -3944,7 +3748,7 @@ checksum = "62e63dab8b5ff35e0c101a3e51e843ba782c07bbb1682f5fd827622e0d02b98b"
 dependencies = [
  "async-std-resolver",
  "futures 0.3.15",
- "libp2p-core 0.28.3",
+ "libp2p-core",
  "log",
  "smallvec 1.6.1",
  "trust-dns-resolver",
@@ -3959,8 +3763,8 @@ dependencies = [
  "cuckoofilter",
  "fnv",
  "futures 0.3.15",
- "libp2p-core 0.28.3",
- "libp2p-swarm 0.29.0",
+ "libp2p-core",
+ "libp2p-swarm",
  "log",
  "prost",
  "prost-build",
@@ -3981,8 +3785,8 @@ dependencies = [
  "fnv",
  "futures 0.3.15",
  "hex_fmt",
- "libp2p-core 0.28.3",
- "libp2p-swarm 0.29.0",
+ "libp2p-core",
+ "libp2p-swarm",
  "log",
  "prost",
  "prost-build",
@@ -4001,8 +3805,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f668f00efd9883e8b7bcc582eaf0164615792608f886f6577da18bcbeea0a46"
 dependencies = [
  "futures 0.3.15",
- "libp2p-core 0.28.3",
- "libp2p-swarm 0.29.0",
+ "libp2p-core",
+ "libp2p-swarm",
  "log",
  "prost",
  "prost-build",
@@ -4022,8 +3826,8 @@ dependencies = [
  "either",
  "fnv",
  "futures 0.3.15",
- "libp2p-core 0.28.3",
- "libp2p-swarm 0.29.0",
+ "libp2p-core",
+ "libp2p-swarm",
  "log",
  "prost",
  "prost-build",
@@ -4046,10 +3850,10 @@ dependencies = [
  "data-encoding",
  "dns-parser",
  "futures 0.3.15",
- "if-watch 0.2.2",
+ "if-watch",
  "lazy_static",
- "libp2p-core 0.28.3",
- "libp2p-swarm 0.29.0",
+ "libp2p-core",
+ "libp2p-swarm",
  "log",
  "rand 0.8.4",
  "smallvec 1.6.1",
@@ -4066,7 +3870,7 @@ dependencies = [
  "asynchronous-codec 0.6.0",
  "bytes 1.0.1",
  "futures 0.3.15",
- "libp2p-core 0.28.3",
+ "libp2p-core",
  "log",
  "nohash-hasher",
  "parking_lot 0.11.1",
@@ -4085,7 +3889,7 @@ dependencies = [
  "curve25519-dalek 3.1.0",
  "futures 0.3.15",
  "lazy_static",
- "libp2p-core 0.28.3",
+ "libp2p-core",
  "log",
  "prost",
  "prost-build",
@@ -4104,8 +3908,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf4bfaffac63bf3c7ec11ed9d8879d455966ddea7e78ee14737f0b6dce0d1cd1"
 dependencies = [
  "futures 0.3.15",
- "libp2p-core 0.28.3",
- "libp2p-swarm 0.29.0",
+ "libp2p-core",
+ "libp2p-swarm",
  "log",
  "rand 0.7.3",
  "void",
@@ -4121,7 +3925,7 @@ dependencies = [
  "asynchronous-codec 0.6.0",
  "bytes 1.0.1",
  "futures 0.3.15",
- "libp2p-core 0.28.3",
+ "libp2p-core",
  "log",
  "prost",
  "prost-build",
@@ -4153,8 +3957,8 @@ dependencies = [
  "bytes 1.0.1",
  "futures 0.3.15",
  "futures-timer 3.0.2",
- "libp2p-core 0.28.3",
- "libp2p-swarm 0.29.0",
+ "libp2p-core",
+ "libp2p-swarm",
  "log",
  "pin-project 1.0.7",
  "prost",
@@ -4175,8 +3979,8 @@ dependencies = [
  "async-trait",
  "bytes 1.0.1",
  "futures 0.3.15",
- "libp2p-core 0.28.3",
- "libp2p-swarm 0.29.0",
+ "libp2p-core",
+ "libp2p-swarm",
  "log",
  "lru",
  "minicbor",
@@ -4188,29 +3992,13 @@ dependencies = [
 
 [[package]]
 name = "libp2p-swarm"
-version = "0.27.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7955b973e1fd2bd61ffd43ce261c1223f61f4aacd5bae362a924993f9a25fd98"
-dependencies = [
- "either",
- "futures 0.3.15",
- "libp2p-core 0.27.1",
- "log",
- "rand 0.7.3",
- "smallvec 1.6.1",
- "void",
- "wasm-timer",
-]
-
-[[package]]
-name = "libp2p-swarm"
 version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e04d8e1eef675029ec728ba14e8d0da7975d84b6679b699b4ae91a1de9c3a92"
 dependencies = [
  "either",
  "futures 0.3.15",
- "libp2p-core 0.28.3",
+ "libp2p-core",
  "log",
  "rand 0.7.3",
  "smallvec 1.6.1",
@@ -4230,23 +4018,6 @@ dependencies = [
 
 [[package]]
 name = "libp2p-tcp"
-version = "0.27.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88a5aef80e519a6cb8e2663605142f97baaaea1a252eecbf8756184765f7471b"
-dependencies = [
- "async-io",
- "futures 0.3.15",
- "futures-timer 3.0.2",
- "if-watch 0.1.8",
- "ipnet",
- "libc",
- "libp2p-core 0.27.1",
- "log",
- "socket2 0.3.19",
-]
-
-[[package]]
-name = "libp2p-tcp"
 version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b1a27d21c477951799e99d5c105d78868258502ce092988040a808d5a19bbd9"
@@ -4254,10 +4025,10 @@ dependencies = [
  "async-io",
  "futures 0.3.15",
  "futures-timer 3.0.2",
- "if-watch 0.2.2",
+ "if-watch",
  "ipnet",
  "libc",
- "libp2p-core 0.28.3",
+ "libp2p-core",
  "log",
  "socket2 0.4.0",
 ]
@@ -4270,22 +4041,8 @@ checksum = "ffd6564bb3b7ff203661ccbb69003c2b551e34cef974f2d6c6a28306a12170b5"
 dependencies = [
  "async-std",
  "futures 0.3.15",
- "libp2p-core 0.28.3",
+ "libp2p-core",
  "log",
-]
-
-[[package]]
-name = "libp2p-wasm-ext"
-version = "0.27.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6149c46cb76935c80bc8be6ec6e3ebd5f5e1679765a255fb34331d54610f15dd"
-dependencies = [
- "futures 0.3.15",
- "js-sys",
- "libp2p-core 0.27.1",
- "parity-send-wrapper",
- "wasm-bindgen",
- "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -4296,28 +4053,10 @@ checksum = "e2d413e4cf9b8e5dfbcd2a60d3dc5a3391308bdb463684093d4f67137b7113de"
 dependencies = [
  "futures 0.3.15",
  "js-sys",
- "libp2p-core 0.28.3",
+ "libp2p-core",
  "parity-send-wrapper",
  "wasm-bindgen",
  "wasm-bindgen-futures",
-]
-
-[[package]]
-name = "libp2p-websocket"
-version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3b1c6a3431045da8b925ed83384e4c5163e14b990572307fca9c507435d4d22"
-dependencies = [
- "either",
- "futures 0.3.15",
- "futures-rustls",
- "libp2p-core 0.27.1",
- "log",
- "quicksink",
- "rw-stream-sink",
- "soketto",
- "url 2.2.2",
- "webpki-roots",
 ]
 
 [[package]]
@@ -4329,7 +4068,7 @@ dependencies = [
  "either",
  "futures 0.3.15",
  "futures-rustls",
- "libp2p-core 0.28.3",
+ "libp2p-core",
  "log",
  "quicksink",
  "rw-stream-sink",
@@ -4345,7 +4084,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f35da42cfc6d5cb0dcf3ad6881bc68d146cdf38f98655e09e33fbba4d13eabc4"
 dependencies = [
  "futures 0.3.15",
- "libp2p-core 0.28.3",
+ "libp2p-core",
  "parking_lot 0.11.1",
  "thiserror",
  "yamux",
@@ -5057,12 +4796,12 @@ dependencies = [
  "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
  "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
  "pallet-session",
- "pallet-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-timestamp",
  "parity-scale-codec 2.1.3",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-application-crypto",
  "sp-consensus-aura",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -5075,8 +4814,8 @@ dependencies = [
  "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.1.3",
  "sp-authorship",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -5089,8 +4828,8 @@ dependencies = [
  "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
  "log",
  "parity-scale-codec 2.1.3",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -5123,11 +4862,11 @@ dependencies = [
  "pwasm-utils 0.17.1",
  "serde",
  "smallvec 1.6.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
  "sp-sandbox",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-std 3.0.0",
  "wasmi-validation 0.4.0",
 ]
 
@@ -5139,9 +4878,9 @@ dependencies = [
  "bitflags",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -5166,11 +4905,11 @@ dependencies = [
  "pallet-contracts-rpc-runtime-api",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-rpc",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -5180,9 +4919,9 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "pallet-contracts-primitives",
  "parity-scale-codec 2.1.3",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -5191,15 +4930,15 @@ version = "2.0.0-dev"
 source = "git+https://github.com/webb-tools/frontier?branch=erup-4#dede92a2f078a85994bef88d6ea4df1ea2fadd51"
 dependencies = [
  "async-trait",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "pallet-evm 4.0.0-dev",
+ "frame-support",
+ "frame-system",
+ "pallet-evm",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -5209,25 +4948,25 @@ source = "git+https://github.com/webb-tools/frontier?branch=erup-4#dede92a2f078a
 dependencies = [
  "ethereum",
  "ethereum-types",
- "evm 0.27.0",
- "fp-consensus 1.0.0 (git+https://github.com/webb-tools/frontier?branch=erup-4)",
- "fp-evm 2.0.0 (git+https://github.com/webb-tools/frontier?branch=erup-4)",
- "fp-rpc 2.0.0",
- "fp-storage 1.0.1 (git+https://github.com/webb-tools/frontier?branch=erup-4)",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "libsecp256k1 0.3.5",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "pallet-evm 4.0.0-dev",
- "pallet-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "evm",
+ "fp-consensus",
+ "fp-evm",
+ "fp-rpc",
+ "fp-storage",
+ "frame-support",
+ "frame-system",
+ "libsecp256k1",
+ "pallet-balances",
+ "pallet-evm",
+ "pallet-timestamp",
  "parity-scale-codec 2.1.3",
  "rlp",
  "rustc-hex",
  "serde",
  "sha3 0.8.2",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -5264,24 +5003,24 @@ name = "pallet-evm"
 version = "4.0.0-dev"
 source = "git+https://github.com/webb-tools/frontier?branch=erup-4#dede92a2f078a85994bef88d6ea4df1ea2fadd51"
 dependencies = [
- "evm 0.27.0",
- "evm-gasometer 0.27.0",
- "evm-runtime 0.27.0",
- "fp-evm 2.0.0 (git+https://github.com/webb-tools/frontier?branch=erup-4)",
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "evm",
+ "evm-gasometer",
+ "evm-runtime",
+ "fp-evm",
+ "frame-support",
+ "frame-system",
  "log",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "pallet-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-balances",
+ "pallet-timestamp",
  "parity-scale-codec 2.1.3",
  "primitive-types",
  "rlp",
  "serde",
  "sha3 0.8.2",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -5331,8 +5070,8 @@ dependencies = [
  "evm 0.27.0",
  "fp-evm 2.0.0 (git+https://github.com/webb-tools/frontier?branch=erup-4)",
  "ripemd160",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
 ]
 
 [[package]]
@@ -5347,13 +5086,13 @@ dependencies = [
  "pallet-authorship",
  "pallet-session",
  "parity-scale-codec 2.1.3",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-application-crypto",
+ "sp-core",
  "sp-finality-grandpa",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-session 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-staking 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-runtime",
+ "sp-session",
+ "sp-staking",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -5394,16 +5133,18 @@ dependencies = [
  "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
  "lazy_static",
  "merlin",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-balances",
+ "pallet-randomness-collective-flip",
  "parity-scale-codec 2.1.3",
+ "rand_chacha 0.2.2",
  "rand_core 0.5.1",
  "serde",
  "sha2 0.9.5",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "webb-bulletproofs",
 ]
 
@@ -5414,13 +5155,13 @@ dependencies = [
  "jsonrpc-core 15.1.0",
  "jsonrpc-core-client 15.1.0",
  "jsonrpc-derive 15.1.0",
- "pallet-merkle 3.0.0",
+ "pallet-merkle",
  "parity-scale-codec 2.1.3",
- "sc-rpc 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-rpc",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -5435,14 +5176,15 @@ dependencies = [
  "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
  "log",
  "merlin",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "pallet-merkle 3.0.0",
+ "pallet-balances",
+ "pallet-merkle",
+ "pallet-randomness-collective-flip",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "webb-bulletproofs",
  "webb-currencies",
  "webb-tokens",
@@ -5454,12 +5196,12 @@ name = "pallet-randomness-collective-flip"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "parity-scale-codec 2.1.3",
  "safe-mix",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -5470,15 +5212,15 @@ dependencies = [
  "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
  "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
  "impl-trait-for-tuples 0.2.1",
- "pallet-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-timestamp",
  "parity-scale-codec 2.1.3",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-session 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-staking 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-session",
+ "sp-staking",
+ "sp-std 3.0.0",
+ "sp-trie",
 ]
 
 [[package]]
@@ -5486,12 +5228,12 @@ name = "pallet-sudo"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "parity-scale-codec 2.1.3",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -5505,29 +5247,11 @@ dependencies = [
  "impl-trait-for-tuples 0.2.1",
  "log",
  "parity-scale-codec 2.1.3",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "pallet-timestamp"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b17dd274716a55a2c3e34d9c0ed66aaac3d7e0393ec9fd985e2b8532d697a7f3"
-dependencies = [
- "frame-benchmarking 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "frame-support 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "frame-system 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "impl-trait-for-tuples 0.2.1",
- "parity-scale-codec 2.1.3",
- "serde",
- "sp-inherents 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-timestamp 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-inherents",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
+ "sp-timestamp",
 ]
 
 [[package]]
@@ -5535,15 +5259,15 @@ name = "pallet-transaction-payment"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "frame-support",
+ "frame-system",
  "parity-scale-codec 2.1.3",
  "serde",
  "smallvec 1.6.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -5556,11 +5280,11 @@ dependencies = [
  "jsonrpc-derive 15.1.0",
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec 2.1.3",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-rpc",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -5570,8 +5294,8 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "pallet-transaction-payment",
  "parity-scale-codec 2.1.3",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -5582,11 +5306,11 @@ dependencies = [
  "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
  "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
  "impl-trait-for-tuples 0.2.1",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-balances",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -6811,18 +6535,18 @@ dependencies = [
  "futures-timer 3.0.2",
  "log",
  "parity-scale-codec 2.1.3",
- "sc-block-builder 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-block-builder",
+ "sc-client-api",
  "sc-proposer-metrics",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-telemetry",
+ "sp-api",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-transaction-pool",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -6831,32 +6555,14 @@ version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.3",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-block-builder"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9862161f9d09d870401c7256c89ad1eb3afa56a61f7d7135c2bac76ff7152955"
-dependencies = [
- "parity-scale-codec 2.1.3",
- "sc-client-api 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-api 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-block-builder 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-blockchain 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-consensus 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-inherents 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-state-machine 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sc-client-api",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-state-machine",
 ]
 
 [[package]]
@@ -6871,13 +6577,13 @@ dependencies = [
  "sc-consensus-epochs",
  "sc-finality-grandpa",
  "sc-network",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-telemetry",
  "serde",
  "serde_json",
- "sp-chain-spec 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-chain-spec",
  "sp-consensus-babe",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -6900,29 +6606,29 @@ dependencies = [
  "fdlimit",
  "futures 0.3.15",
  "hex",
- "libp2p 0.37.1",
+ "libp2p",
  "log",
  "names",
  "parity-scale-codec 2.1.3",
  "rand 0.7.3",
  "regex",
  "rpassword",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-keystore 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sc-keystore",
  "sc-network",
  "sc-service",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-telemetry",
+ "sc-tracing",
  "serde",
  "serde_json",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-blockchain",
+ "sp-core",
  "sp-keyring",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-panic-handler 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-keystore",
+ "sp-panic-handler",
+ "sp-runtime",
+ "sp-utils",
+ "sp-version",
  "structopt",
  "thiserror",
  "tiny-bip39",
@@ -6943,59 +6649,24 @@ dependencies = [
  "log",
  "parity-scale-codec 2.1.3",
  "parking_lot 0.11.1",
- "sc-executor 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-database 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-storage 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-client-api"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56d8b2c8dc0cee9ac56e87ad50c980edbdeb35bdd5b5d9da4ae90567423363be"
-dependencies = [
- "derive_more",
- "fnv",
- "futures 0.3.15",
- "hash-db",
- "kvdb",
- "lazy_static",
- "log",
- "parity-scale-codec 2.1.3",
- "parking_lot 0.11.1",
- "sc-executor 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-api 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-blockchain 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-consensus 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-database 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-externalities 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-inherents 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-keystore 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-state-machine 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-storage 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-transaction-pool 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-trie 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-utils 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-version 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "substrate-prometheus-endpoint 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sc-executor",
+ "sp-api",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-database",
+ "sp-externalities",
+ "sp-inherents",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std 3.0.0",
+ "sp-storage",
+ "sp-transaction-pool",
+ "sp-trie",
+ "sp-utils",
+ "sp-version",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -7014,18 +6685,18 @@ dependencies = [
  "parity-scale-codec 2.1.3",
  "parity-util-mem",
  "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-executor 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sc-executor",
  "sc-state-db",
- "sp-arithmetic 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-database 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-arithmetic",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-database",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-trie",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -7034,10 +6705,10 @@ version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -7051,24 +6722,24 @@ dependencies = [
  "futures-timer 3.0.2",
  "log",
  "parity-scale-codec 2.1.3",
- "sc-block-builder 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-block-builder",
+ "sc-client-api",
  "sc-consensus-slots",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-telemetry",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
  "sp-consensus-aura",
  "sp-consensus-slots",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-version",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -7091,30 +6762,30 @@ dependencies = [
  "pdqselect",
  "rand 0.7.3",
  "retain_mut",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
  "sc-consensus-epochs",
  "sc-consensus-slots",
  "sc-consensus-uncles",
- "sc-keystore 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-keystore",
+ "sc-telemetry",
  "schnorrkel",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
  "sp-consensus-babe",
  "sp-consensus-slots",
  "sp-consensus-vrf",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-utils",
+ "sp-version",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -7124,10 +6795,10 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "fork-tree",
  "parity-scale-codec 2.1.3",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
  "sc-consensus",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-blockchain",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -7141,20 +6812,20 @@ dependencies = [
  "impl-trait-for-tuples 0.2.1",
  "log",
  "parity-scale-codec 2.1.3",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-arithmetic 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sc-telemetry",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-arithmetic",
+ "sp-blockchain",
+ "sp-consensus",
  "sp-consensus-slots",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-timestamp",
+ "sp-trie",
  "thiserror",
 ]
 
@@ -7163,9 +6834,9 @@ name = "sc-consensus-uncles"
 version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
  "sp-authorship",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-runtime",
  "thiserror",
 ]
 
@@ -7181,49 +6852,20 @@ dependencies = [
  "parity-scale-codec 2.1.3",
  "parity-wasm 0.41.0",
  "parking_lot 0.11.1",
- "sc-executor-common 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-executor-wasmi 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-executor-common",
+ "sc-executor-wasmi",
  "sc-executor-wasmtime",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-panic-handler 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-serializer 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tasks 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "wasmi",
-]
-
-[[package]]
-name = "sc-executor"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bace6a35999d2da7311d8fb98a29c1e89dbf0d14e50ac14140f2c38089819f46"
-dependencies = [
- "derive_more",
- "lazy_static",
- "libsecp256k1 0.3.5",
- "log",
- "parity-scale-codec 2.1.3",
- "parity-wasm 0.41.0",
- "parking_lot 0.11.1",
- "sc-executor-common 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sc-executor-wasmi 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-api 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-externalities 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-io 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-panic-handler 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime-interface 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-serializer 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-tasks 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-trie 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-version 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-wasm-interface 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-api",
+ "sp-core",
+ "sp-externalities",
+ "sp-io",
+ "sp-panic-handler",
+ "sp-runtime-interface",
+ "sp-serializer",
+ "sp-tasks",
+ "sp-trie",
+ "sp-version",
+ "sp-wasm-interface",
  "wasmi",
 ]
 
@@ -7236,28 +6878,11 @@ dependencies = [
  "parity-scale-codec 2.1.3",
  "parity-wasm 0.41.0",
  "pwasm-utils 0.14.0",
- "sp-allocator 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-allocator",
+ "sp-core",
  "sp-maybe-compressed-blob",
- "sp-serializer 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
- "wasmi",
-]
-
-[[package]]
-name = "sc-executor-common"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87004102a8e95f432f1c624c7fa7fb0edc5995db2e0fcbabbb697f1955e7c1d2"
-dependencies = [
- "derive_more",
- "parity-scale-codec 2.1.3",
- "parity-wasm 0.41.0",
- "sp-allocator 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-serializer 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-wasm-interface 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-serializer",
+ "sp-wasm-interface",
  "thiserror",
  "wasmi",
 ]
@@ -7269,27 +6894,11 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "log",
  "parity-scale-codec 2.1.3",
- "sc-executor-common 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-allocator 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "wasmi",
-]
-
-[[package]]
-name = "sc-executor-wasmi"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d3d7b6db2df5f2c24848883a855a8276363f00cef5b49744974f7e1203bf274"
-dependencies = [
- "log",
- "parity-scale-codec 2.1.3",
- "sc-executor-common 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-allocator 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime-interface 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-wasm-interface 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sc-executor-common",
+ "sp-allocator",
+ "sp-core",
+ "sp-runtime-interface",
+ "sp-wasm-interface",
  "wasmi",
 ]
 
@@ -7302,12 +6911,12 @@ dependencies = [
  "parity-scale-codec 2.1.3",
  "parity-wasm 0.41.0",
  "pwasm-utils 0.14.0",
- "sc-executor-common 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-executor-common",
  "scoped-tls",
- "sp-allocator 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-allocator",
+ "sp-core",
+ "sp-runtime-interface",
+ "sp-wasm-interface",
  "wasmtime",
 ]
 
@@ -7329,26 +6938,26 @@ dependencies = [
  "parking_lot 0.11.1",
  "pin-project 1.0.7",
  "rand 0.7.3",
- "sc-block-builder 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-block-builder",
+ "sc-client-api",
  "sc-consensus",
- "sc-keystore 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-keystore",
  "sc-network",
  "sc-network-gossip",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-telemetry",
  "serde_json",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-arithmetic 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-arithmetic",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
  "sp-finality-grandpa",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-inherents",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-utils",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -7365,14 +6974,14 @@ dependencies = [
  "jsonrpc-pubsub 15.1.0",
  "log",
  "parity-scale-codec 2.1.3",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
  "sc-finality-grandpa",
- "sc-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-rpc",
  "serde",
  "serde_json",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -7384,12 +6993,12 @@ dependencies = [
  "futures 0.3.15",
  "log",
  "parity-util-mem",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
  "sc-network",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-blockchain",
+ "sp-runtime",
+ "sp-transaction-pool",
+ "sp-utils",
  "wasm-timer",
 ]
 
@@ -7407,30 +7016,9 @@ dependencies = [
  "parking_lot 0.11.1",
  "rand 0.7.3",
  "serde_json",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "subtle 2.4.0",
-]
-
-[[package]]
-name = "sc-keystore"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d966ed36c404eced656bd63aad8a30d2c1a14633f07cd1d7d9c11b62f75a7905"
-dependencies = [
- "async-trait",
- "derive_more",
- "futures 0.3.15",
- "futures-util",
- "hex",
- "merlin",
- "parking_lot 0.11.1",
- "rand 0.7.3",
- "serde_json",
- "sp-application-crypto 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-keystore 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-keystore",
  "subtle 2.4.0",
 ]
 
@@ -7443,14 +7031,14 @@ dependencies = [
  "lazy_static",
  "parity-scale-codec 2.1.3",
  "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-executor 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sc-executor",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-externalities",
+ "sp-runtime",
+ "sp-state-machine",
 ]
 
 [[package]]
@@ -7474,7 +7062,7 @@ dependencies = [
  "futures-timer 3.0.2",
  "hex",
  "ip_network",
- "libp2p 0.37.1",
+ "libp2p",
  "linked-hash-map",
  "linked_hash_set",
  "log",
@@ -7486,19 +7074,19 @@ dependencies = [
  "prost",
  "prost-build",
  "rand 0.7.3",
- "sc-block-builder 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-block-builder",
+ "sc-client-api",
  "sc-peerset",
  "serde",
  "serde_json",
  "smallvec 1.6.1",
- "sp-arithmetic 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-arithmetic",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-runtime",
+ "sp-utils",
+ "substrate-prometheus-endpoint",
  "thiserror",
  "unsigned-varint 0.6.0",
  "void",
@@ -7513,12 +7101,12 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "futures 0.3.15",
  "futures-timer 3.0.2",
- "libp2p 0.37.1",
+ "libp2p",
  "log",
  "lru",
  "sc-network",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-runtime",
+ "substrate-prometheus-endpoint",
  "tracing",
  "wasm-timer",
 ]
@@ -7540,14 +7128,14 @@ dependencies = [
  "parity-scale-codec 2.1.3",
  "parking_lot 0.11.1",
  "rand 0.7.3",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-keystore 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sc-keystore",
  "sc-network",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-offchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-core",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-utils",
  "threadpool",
 ]
 
@@ -7557,10 +7145,10 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "futures 0.3.15",
- "libp2p 0.37.1",
+ "libp2p",
  "log",
  "serde_json",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-utils",
  "wasm-timer",
 ]
 
@@ -7570,7 +7158,7 @@ version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "log",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -7585,62 +7173,27 @@ dependencies = [
  "log",
  "parity-scale-codec 2.1.3",
  "parking_lot 0.11.1",
- "sc-block-builder 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-executor 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-keystore 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-rpc-api 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-block-builder",
+ "sc-client-api",
+ "sc-executor",
+ "sc-keystore",
+ "sc-rpc-api",
+ "sc-tracing",
  "serde_json",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-chain-spec 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-offchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-session 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-rpc"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "750397c6aa5a4f922cac99599ad74a4082e3e87553d51ceb4c48abfa056ff32c"
-dependencies = [
- "futures 0.3.15",
- "hash-db",
- "jsonrpc-core 15.1.0",
- "jsonrpc-pubsub 15.1.0",
- "log",
- "parity-scale-codec 2.1.3",
- "parking_lot 0.11.1",
- "sc-block-builder 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sc-client-api 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sc-executor 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sc-keystore 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sc-rpc-api 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sc-tracing 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json",
- "sp-api 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-blockchain 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-chain-spec 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-keystore 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-offchain 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-rpc 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-session 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-state-machine 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-transaction-pool 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-utils 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-version 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-api",
+ "sp-blockchain",
+ "sp-chain-spec",
+ "sp-core",
+ "sp-keystore",
+ "sp-offchain",
+ "sp-rpc",
+ "sp-runtime",
+ "sp-session",
+ "sp-state-machine",
+ "sp-tracing",
+ "sp-transaction-pool",
+ "sp-utils",
+ "sp-version",
 ]
 
 [[package]]
@@ -7659,38 +7212,13 @@ dependencies = [
  "parking_lot 0.11.1",
  "serde",
  "serde_json",
- "sp-chain-spec 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sc-rpc-api"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc8393410297df2885efec20d0629a9833b4fd9e4ad83a92471e1ea0c11a0a54"
-dependencies = [
- "derive_more",
- "futures 0.3.15",
- "jsonrpc-core 15.1.0",
- "jsonrpc-core-client 15.1.0",
- "jsonrpc-derive 15.1.0",
- "jsonrpc-pubsub 15.1.0",
- "log",
- "parity-scale-codec 2.1.3",
- "parking_lot 0.11.1",
- "serde",
- "serde_json",
- "sp-chain-spec 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-rpc 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-transaction-pool 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-version 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-chain-spec",
+ "sp-core",
+ "sp-rpc",
+ "sp-runtime",
+ "sp-tracing",
+ "sp-transaction-pool",
+ "sp-version",
 ]
 
 [[package]]
@@ -7707,8 +7235,8 @@ dependencies = [
  "log",
  "serde",
  "serde_json",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-runtime",
+ "substrate-prometheus-endpoint",
 ]
 
 [[package]]
@@ -7732,42 +7260,42 @@ dependencies = [
  "parking_lot 0.11.1",
  "pin-project 1.0.7",
  "rand 0.7.3",
- "sc-block-builder 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-block-builder",
  "sc-chain-spec",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
  "sc-client-db",
- "sc-executor 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-executor",
  "sc-informant",
- "sc-keystore 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-keystore",
  "sc-light",
  "sc-network",
  "sc-offchain",
- "sc-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-rpc",
  "sc-rpc-server",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-telemetry",
+ "sc-tracing",
  "sc-transaction-pool",
  "serde",
  "serde_json",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-session 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-externalities",
+ "sp-inherents",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-session",
+ "sp-state-machine",
+ "sp-tracing",
+ "sp-transaction-pool",
+ "sp-trie",
+ "sp-utils",
+ "sp-version",
+ "substrate-prometheus-endpoint",
  "tempfile",
  "thiserror",
  "tracing",
@@ -7785,8 +7313,8 @@ dependencies = [
  "parity-util-mem",
  "parity-util-mem-derive",
  "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sp-core",
  "thiserror",
 ]
 
@@ -7797,7 +7325,7 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "chrono",
  "futures 0.3.15",
- "libp2p 0.37.1",
+ "libp2p",
  "log",
  "parking_lot 0.11.1",
  "pin-project 1.0.7",
@@ -7806,29 +7334,6 @@ dependencies = [
  "serde_json",
  "take_mut",
  "thiserror",
- "void",
- "wasm-timer",
-]
-
-[[package]]
-name = "sc-telemetry"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d05040c594b331d90d7341e82c6dc6a3eb7bb2afb4e5dc9c36a79a6754166057"
-dependencies = [
- "chrono",
- "futures 0.3.15",
- "libp2p 0.34.0",
- "log",
- "parking_lot 0.11.1",
- "pin-project 1.0.7",
- "rand 0.7.3",
- "serde",
- "serde_json",
- "sp-utils 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "take_mut",
- "tracing",
- "tracing-subscriber",
  "void",
  "wasm-timer",
 ]
@@ -7847,55 +7352,26 @@ dependencies = [
  "parking_lot 0.11.1",
  "regex",
  "rustc-hash",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
  "sc-rpc-server",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-tracing-proc-macro 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-telemetry",
+ "sc-tracing-proc-macro",
  "serde",
  "serde_json",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-storage 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-core",
+ "sp-rpc",
+ "sp-runtime",
+ "sp-storage",
+ "sp-tracing",
  "thiserror",
  "tracing",
  "tracing-log",
  "tracing-subscriber",
  "wasm-bindgen",
  "wasm-timer",
- "web-sys",
-]
-
-[[package]]
-name = "sc-tracing"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef0a4aa327b8bc89d9c5ae57a2f493d8f54ccd706f6763614ab522559fe481d8"
-dependencies = [
- "ansi_term 0.12.1",
- "atty",
- "erased-serde",
- "lazy_static",
- "log",
- "once_cell",
- "parking_lot 0.11.1",
- "regex",
- "rustc-hash",
- "sc-telemetry 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sc-tracing-proc-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde",
- "serde_json",
- "sp-tracing 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "thiserror",
- "tracing",
- "tracing-core",
- "tracing-log",
- "tracing-subscriber",
- "wasm-bindgen",
  "web-sys",
 ]
 
@@ -7905,18 +7381,6 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "proc-macro-crate 1.0.0",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "sc-tracing-proc-macro"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec18b0506911e6d624d9ea8f8cc5f503e7944a0fe7d37de95ee84033cf160ebc"
-dependencies = [
- "proc-macro-crate 0.1.5",
  "proc-macro2",
  "quote",
  "syn",
@@ -7935,11 +7399,11 @@ dependencies = [
  "parking_lot 0.11.1",
  "retain_mut",
  "serde",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
+ "sp-transaction-pool",
+ "sp-utils",
  "thiserror",
  "wasm-timer",
 ]
@@ -7956,16 +7420,16 @@ dependencies = [
  "parity-scale-codec 2.1.3",
  "parity-util-mem",
  "parking_lot 0.11.1",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
  "sc-transaction-graph",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
+ "sp-tracing",
+ "sp-transaction-pool",
+ "sp-utils",
+ "substrate-prometheus-endpoint",
  "thiserror",
  "wasm-timer",
 ]
@@ -8377,22 +7841,9 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "log",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
-]
-
-[[package]]
-name = "sp-allocator"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec5f988ad0cabdb646318cb515a91e9d89062debc9728f9b634d73acab3f3f39"
-dependencies = [
- "log",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-wasm-interface 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-core",
+ "sp-std 3.0.0",
+ "sp-wasm-interface",
  "thiserror",
 ]
 
@@ -8404,29 +7855,12 @@ dependencies = [
  "hash-db",
  "log",
  "parity-scale-codec 2.1.3",
- "sp-api-proc-macro 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
-]
-
-[[package]]
-name = "sp-api"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e63c3460d5daecf67df542c34c2bbd636214a5a200d4bddcfa2ffb9e72c346af"
-dependencies = [
- "hash-db",
- "parity-scale-codec 2.1.3",
- "sp-api-proc-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-state-machine 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-version 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-api-proc-macro",
+ "sp-core",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std 3.0.0",
+ "sp-version",
  "thiserror",
 ]
 
@@ -8443,41 +7877,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "sp-api-proc-macro"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "289624f4fe0f61e63a5019ed26c3bc732b5145eb52796ac6053cd72656d947a1"
-dependencies = [
- "blake2-rfc",
- "proc-macro-crate 0.1.5",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "sp-application-crypto"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-application-crypto"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c52e2e6d43036b97c4fce1ed87c5262c1ffdc78c655ada4d3024a3f8094bdd2c"
-dependencies = [
- "parity-scale-codec 2.1.3",
- "serde",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-io 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-core",
+ "sp-io",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -8489,23 +7897,9 @@ dependencies = [
  "num-traits",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-debug-derive 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-debug-derive",
+ "sp-std 3.0.0",
  "static_assertions",
-]
-
-[[package]]
-name = "sp-arithmetic"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0f1c69966c192d1dee8521f0b29ece2b14db07b9b44d801a94e295234761645"
-dependencies = [
- "integer-sqrt",
- "num-traits",
- "parity-scale-codec 2.1.3",
- "serde",
- "sp-debug-derive 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -8515,9 +7909,9 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "async-trait",
  "parity-scale-codec 2.1.3",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -8526,23 +7920,10 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.3",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-block-builder"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0adc979dbe619f56d664ebd1293dce13fcad6b8a47bcdd620ed53a454d330d12"
-dependencies = [
- "parity-scale-codec 2.1.3",
- "sp-api 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-inherents 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-api",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -8555,30 +7936,11 @@ dependencies = [
  "lru",
  "parity-scale-codec 2.1.3",
  "parking_lot 0.11.1",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-database 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
-]
-
-[[package]]
-name = "sp-blockchain"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8007c1ad8e9fb6cd8eed4e0fc91504a9ca4b228e1315302a2fbb0ac7f509f1b"
-dependencies = [
- "futures 0.3.15",
- "log",
- "lru",
- "parity-scale-codec 2.1.3",
- "parking_lot 0.11.1",
- "sp-api 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-consensus 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-database 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-state-machine 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-api",
+ "sp-consensus",
+ "sp-database",
+ "sp-runtime",
+ "sp-state-machine",
  "thiserror",
 ]
 
@@ -8586,16 +7948,6 @@ dependencies = [
 name = "sp-chain-spec"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "sp-chain-spec"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a24beb11980d0c755ead0c05f3f966c490e4a3730785c04c03855fada65d697"
 dependencies = [
  "serde",
  "serde_json",
@@ -8609,48 +7961,21 @@ dependencies = [
  "async-trait",
  "futures 0.3.15",
  "futures-timer 3.0.2",
- "libp2p 0.37.1",
+ "libp2p",
  "log",
  "parity-scale-codec 2.1.3",
  "parking_lot 0.11.1",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-utils 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-prometheus-endpoint 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
- "wasm-timer",
-]
-
-[[package]]
-name = "sp-consensus"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "884db6c4b03f0f2fb2993127a2db95fc740fcd3496746dcaa6829c9868e7dc75"
-dependencies = [
- "futures 0.3.15",
- "futures-timer 3.0.2",
- "libp2p 0.34.0",
- "log",
- "parity-scale-codec 2.1.3",
- "parking_lot 0.11.1",
- "serde",
- "sp-api 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-inherents 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-state-machine 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-trie 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-utils 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-version 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "substrate-prometheus-endpoint 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-api",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std 3.0.0",
+ "sp-trie",
+ "sp-utils",
+ "sp-version",
+ "substrate-prometheus-endpoint",
  "thiserror",
  "wasm-timer",
 ]
@@ -8662,14 +7987,14 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "async-trait",
  "parity-scale-codec 2.1.3",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-consensus",
  "sp-consensus-slots",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std 3.0.0",
+ "sp-timestamp",
 ]
 
 [[package]]
@@ -8681,17 +8006,17 @@ dependencies = [
  "merlin",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-consensus",
  "sp-consensus-slots",
  "sp-consensus-vrf",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-inherents",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std 3.0.0",
+ "sp-timestamp",
 ]
 
 [[package]]
@@ -8700,8 +8025,8 @@ version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.3",
- "sp-arithmetic 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-arithmetic",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -8711,9 +8036,9 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "parity-scale-codec 2.1.3",
  "schnorrkel",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -8746,56 +8071,11 @@ dependencies = [
  "secrecy",
  "serde",
  "sha2 0.9.5",
- "sp-debug-derive 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-storage 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "substrate-bip39",
- "thiserror",
- "tiny-bip39",
- "tiny-keccak",
- "twox-hash",
- "wasmi",
- "zeroize",
-]
-
-[[package]]
-name = "sp-core"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "abbc8d4e9b8a7d5819ed26f1374017bb32833ef4890e4ff065e1da30669876bc"
-dependencies = [
- "base58",
- "blake2-rfc",
- "byteorder",
- "dyn-clonable",
- "ed25519-dalek",
- "futures 0.3.15",
- "hash-db",
- "hash256-std-hasher",
- "hex",
- "impl-serde",
- "lazy_static",
- "libsecp256k1 0.3.5",
- "log",
- "merlin",
- "num-traits",
- "parity-scale-codec 2.1.3",
- "parity-util-mem",
- "parking_lot 0.11.1",
- "primitive-types",
- "rand 0.7.3",
- "regex",
- "schnorrkel",
- "secrecy",
- "serde",
- "sha2 0.9.5",
- "sp-debug-derive 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-externalities 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime-interface 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-storage 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-debug-derive",
+ "sp-externalities",
+ "sp-runtime-interface",
+ "sp-std 3.0.0",
+ "sp-storage",
  "substrate-bip39",
  "thiserror",
  "tiny-bip39",
@@ -8815,30 +8095,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "sp-database"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8c3f018913eef191d95c824657c5759c459d28670e654fa34f5d9bd5e6f0492"
-dependencies = [
- "kvdb",
- "parking_lot 0.11.1",
-]
-
-[[package]]
 name = "sp-debug-derive"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "sp-debug-derive"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e80275f23b4e7ba8f54dec5f90f016530e7307d2ee9445f617ab986cbe97f31e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -8852,20 +8111,8 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "environmental",
  "parity-scale-codec 2.1.3",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-storage 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-externalities"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fdc625f8c7b13b9a136d334888b21b5743d2081cb666cb03efca1dc9b8f74d1"
-dependencies = [
- "environmental",
- "parity-scale-codec 2.1.3",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-storage 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-std 3.0.0",
+ "sp-storage",
 ]
 
 [[package]]
@@ -8877,12 +8124,12 @@ dependencies = [
  "log",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -8893,22 +8140,9 @@ dependencies = [
  "async-trait",
  "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.1.3",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
-]
-
-[[package]]
-name = "sp-inherents"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2542380b535c6941502a0a3069a657eb5abb70fd67b11afa164d4a4b038ba73a"
-dependencies = [
- "parity-scale-codec 2.1.3",
- "parking_lot 0.11.1",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-core",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "thiserror",
 ]
 
@@ -8923,41 +8157,16 @@ dependencies = [
  "log",
  "parity-scale-codec 2.1.3",
  "parking_lot 0.11.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-keystore 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-externalities",
+ "sp-keystore",
  "sp-maybe-compressed-blob",
- "sp-runtime-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-state-machine 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "tracing",
- "tracing-core",
-]
-
-[[package]]
-name = "sp-io"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33fd69f0a6e91bedc2fb1c5cc3689c212474b6c918274cb4cb14dbbe3c428c14"
-dependencies = [
- "futures 0.3.15",
- "hash-db",
- "libsecp256k1 0.3.5",
- "log",
- "parity-scale-codec 2.1.3",
- "parking_lot 0.11.1",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-externalities 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-keystore 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime-interface 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-state-machine 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-tracing 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-trie 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-wasm-interface 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-runtime-interface",
+ "sp-state-machine",
+ "sp-std 3.0.0",
+ "sp-tracing",
+ "sp-trie",
+ "sp-wasm-interface",
  "tracing",
  "tracing-core",
 ]
@@ -8968,8 +8177,8 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "lazy_static",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-runtime",
  "strum",
 ]
 
@@ -8986,26 +8195,8 @@ dependencies = [
  "parking_lot 0.11.1",
  "schnorrkel",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-keystore"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db6ccd2baf189112355338e8b224dc513cd239b974dbd717f12b3dc7a7248c3b"
-dependencies = [
- "async-trait",
- "derive_more",
- "futures 0.3.15",
- "merlin",
- "parity-scale-codec 2.1.3",
- "parking_lot 0.11.1",
- "schnorrkel",
- "serde",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-externalities 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-core",
+ "sp-externalities",
 ]
 
 [[package]]
@@ -9022,35 +8213,15 @@ name = "sp-offchain"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-offchain"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bd80eedcedcc8342e77c26d59ad90b6904715a862731fa16616650773570e63"
-dependencies = [
- "sp-api 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-api",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
 name = "sp-panic-handler"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
-dependencies = [
- "backtrace",
-]
-
-[[package]]
-name = "sp-panic-handler"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54702e109f1c8a870dd4065a497d2612d42cec5817126e96cc0658c5ea975784"
 dependencies = [
  "backtrace",
 ]
@@ -9062,21 +8233,11 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "rustc-hash",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
  "tracing-core",
 ]
 
 [[package]]
-name = "sp-rpc"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2e5b1ed655d11449073b914b048895f45241e02b3919d1d0187f315435fee18"
-dependencies = [
- "serde",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "sp-runtime"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
@@ -9090,33 +8251,11 @@ dependencies = [
  "paste",
  "rand 0.7.3",
  "serde",
- "sp-application-crypto 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-arithmetic 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-runtime"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfa4b353b76f04616dbdb8d269d58dcac47acb31c006d3b70e7b64233e68695e"
-dependencies = [
- "either",
- "hash256-std-hasher",
- "impl-trait-for-tuples 0.2.1",
- "log",
- "parity-scale-codec 2.1.3",
- "parity-util-mem",
- "paste",
- "rand 0.7.3",
- "serde",
- "sp-application-crypto 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-arithmetic 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-io 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-application-crypto",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -9127,30 +8266,12 @@ dependencies = [
  "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.1.3",
  "primitive-types",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface-proc-macro 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-storage 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-tracing 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "static_assertions",
-]
-
-[[package]]
-name = "sp-runtime-interface"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2e5c88b4bc8d607e4e2ff767a85db58cf7101f3dd6064f06929342ea67fe8fb"
-dependencies = [
- "impl-trait-for-tuples 0.2.1",
- "parity-scale-codec 2.1.3",
- "primitive-types",
- "sp-externalities 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime-interface-proc-macro 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-storage 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-tracing 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-wasm-interface 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-externalities",
+ "sp-runtime-interface-proc-macro",
+ "sp-std 3.0.0",
+ "sp-storage",
+ "sp-tracing",
+ "sp-wasm-interface",
  "static_assertions",
 ]
 
@@ -9167,28 +8288,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "sp-runtime-interface-proc-macro"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19a6c7c2251512c9e533d15db8a863b06ece1cbee778130dd9adbe44b6b39aa9"
-dependencies = [
- "Inflector",
- "proc-macro-crate 0.1.5",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "sp-sandbox"
 version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.3",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-wasm-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-std 3.0.0",
+ "sp-wasm-interface",
  "wasmi",
 ]
 
@@ -9202,40 +8310,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "sp-serializer"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "982d793f01eb9eea9f30ffc63b821170068b9f0d9edf715d8ba77dc4de9c300f"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "sp-session"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.3",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-staking 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-session"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c7cf161533725a78083b04f3269effe4c3b4b6ce5f655019b3eec3e729ba4d4"
-dependencies = [
- "parity-scale-codec 2.1.3",
- "sp-api 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-staking 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-api",
+ "sp-core",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -9244,19 +8328,8 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "parity-scale-codec 2.1.3",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-staking"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc729eb10f8809c61a1fe439ac118a4413de004aaf863003ee8752ac0b596e73"
-dependencies = [
- "parity-scale-codec 2.1.3",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -9271,36 +8344,13 @@ dependencies = [
  "parking_lot 0.11.1",
  "rand 0.7.3",
  "smallvec 1.6.1",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-panic-handler 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-trie 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-externalities",
+ "sp-panic-handler",
+ "sp-std 3.0.0",
+ "sp-trie",
  "thiserror",
  "tracing",
- "trie-db",
- "trie-root",
-]
-
-[[package]]
-name = "sp-state-machine"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46fa4143e58e9130f726d4e8a9b86f3530a8bd19a2eedcdcf4af205f4b5a6d4f"
-dependencies = [
- "hash-db",
- "log",
- "num-traits",
- "parity-scale-codec 2.1.3",
- "parking_lot 0.11.1",
- "rand 0.7.3",
- "smallvec 1.6.1",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-externalities 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-panic-handler 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-trie 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "thiserror",
  "trie-db",
  "trie-root",
 ]
@@ -9317,12 +8367,6 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 
 [[package]]
-name = "sp-std"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35391ea974fa5ee869cb094d5b437688fbf3d8127d64d1b9fed5822a1ed39b12"
-
-[[package]]
 name = "sp-storage"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
@@ -9331,22 +8375,8 @@ dependencies = [
  "parity-scale-codec 2.1.3",
  "ref-cast",
  "serde",
- "sp-debug-derive 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-storage"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86af458d4a0251c490cdde9dcaaccb88d398f3b97ac6694cdd49ed9337e6b961"
-dependencies = [
- "impl-serde",
- "parity-scale-codec 2.1.3",
- "ref-cast",
- "serde",
- "sp-debug-derive 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-debug-derive",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -9355,25 +8385,11 @@ version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
 dependencies = [
  "log",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-externalities 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime-interface 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
-]
-
-[[package]]
-name = "sp-tasks"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c585340cbee96c53a9b43fd07d81edf6cebeb80e4ca7c0ee79b856c0b1883a0e"
-dependencies = [
- "log",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-externalities 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-io 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime-interface 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-core",
+ "sp-externalities",
+ "sp-io",
+ "sp-runtime-interface",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -9385,10 +8401,10 @@ dependencies = [
  "futures-timer 3.0.2",
  "log",
  "parity-scale-codec 2.1.3",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "thiserror",
  "wasm-timer",
 ]
@@ -9420,21 +8436,7 @@ dependencies = [
  "serde",
  "serde_json",
  "slog",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "tracing",
- "tracing-core",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "sp-tracing"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "567382d8d4e14fb572752863b5cd57a78f9e9a6583332b590b726f061f3ea957"
-dependencies = [
- "log",
- "parity-scale-codec 2.1.3",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-std 3.0.0",
  "tracing",
  "tracing-core",
  "tracing-subscriber",
@@ -9450,26 +8452,9 @@ dependencies = [
  "log",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "thiserror",
-]
-
-[[package]]
-name = "sp-transaction-pool"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3264d3b7ea31483eddffa2cc7f28c4d9c022598e456a985fd1cb5879a4609853"
-dependencies = [
- "derive_more",
- "futures 0.3.15",
- "log",
- "parity-scale-codec 2.1.3",
- "serde",
- "sp-api 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-blockchain 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-api",
+ "sp-blockchain",
+ "sp-runtime",
  "thiserror",
 ]
 
@@ -9481,23 +8466,8 @@ dependencies = [
  "hash-db",
  "memory-db",
  "parity-scale-codec 2.1.3",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "trie-db",
- "trie-root",
-]
-
-[[package]]
-name = "sp-trie"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b85b7f745da41ef825c6f7b93f1fdc897b03df94a4884adfbb70fbcd0aed1298"
-dependencies = [
- "hash-db",
- "memory-db",
- "parity-scale-codec 2.1.3",
- "sp-core 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-core",
+ "sp-std 3.0.0",
  "trie-db",
  "trie-root",
 ]
@@ -9506,19 +8476,6 @@ dependencies = [
 name = "sp-utils"
 version = "3.0.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
-dependencies = [
- "futures 0.3.15",
- "futures-core",
- "futures-timer 3.0.2",
- "lazy_static",
- "prometheus",
-]
-
-[[package]]
-name = "sp-utils"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4ec2a5f924f7affd1e959f8f3c02bd87cdfa0e11c71a4cbc075f955ead8c1a1"
 dependencies = [
  "futures 0.3.15",
  "futures-core",
@@ -9535,22 +8492,9 @@ dependencies = [
  "impl-serde",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "sp-version-proc-macro",
-]
-
-[[package]]
-name = "sp-version"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dbeffa538a13d715d30e01d57a2636ba32845b737a29a3ea32403576588222e7"
-dependencies = [
- "impl-serde",
- "parity-scale-codec 2.1.3",
- "serde",
- "sp-runtime 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -9572,19 +8516,7 @@ source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c2384
 dependencies = [
  "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec 2.1.3",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "wasmi",
-]
-
-[[package]]
-name = "sp-wasm-interface"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b214e125666a6416cf30a70cc6a5dacd34a4e5197f8a3d479f714af7e1dc7a47"
-dependencies = [
- "impl-trait-for-tuples 0.2.1",
- "parity-scale-codec 2.1.3",
- "sp-std 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sp-std 3.0.0",
  "wasmi",
 ]
 
@@ -9723,36 +8655,21 @@ dependencies = [
  "jsonrpc-derive 15.1.0",
  "log",
  "parity-scale-codec 2.1.3",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-rpc-api 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
+ "sc-rpc-api",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
+ "sp-transaction-pool",
 ]
 
 [[package]]
 name = "substrate-prometheus-endpoint"
 version = "0.9.0"
 source = "git+https://github.com/webb-tools/substrate.git?branch=erup-4#0e5c23844faa7a99f0a9e24731827205db7094fb"
-dependencies = [
- "async-std",
- "derive_more",
- "futures-util",
- "hyper 0.13.10",
- "log",
- "prometheus",
- "tokio 0.2.25",
-]
-
-[[package]]
-name = "substrate-prometheus-endpoint"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2eb561c19a121e1c89daa79dbfa67a55080f813caa47fd231833a0669696d508"
 dependencies = [
  "async-std",
  "derive_more",
@@ -11002,14 +9919,15 @@ dependencies = [
  "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
  "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
  "log",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "pallet-merkle 3.0.0",
+ "pallet-balances",
+ "pallet-merkle",
+ "pallet-randomness-collective-flip",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "webb-currencies",
  "webb-tokens",
  "webb-traits",
@@ -11044,13 +9962,13 @@ dependencies = [
  "frame-support 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
  "frame-system 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
  "funty",
- "pallet-balances 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "pallet-balances",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "webb-tokens",
  "webb-traits",
  "webb-utilities",
@@ -11083,30 +10001,30 @@ dependencies = [
  "sc-basic-authorship",
  "sc-chain-spec",
  "sc-cli",
- "sc-client-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-client-api",
  "sc-consensus",
  "sc-consensus-aura",
- "sc-executor 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-executor",
  "sc-finality-grandpa",
  "sc-finality-grandpa-rpc",
- "sc-keystore 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-keystore",
  "sc-network",
- "sc-rpc 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sc-rpc-api 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-rpc",
+ "sc-rpc-api",
  "sc-service",
- "sc-telemetry 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sc-telemetry",
  "sc-transaction-pool",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-blockchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-consensus 0.9.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
  "sp-consensus-aura",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
  "sp-finality-grandpa",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-timestamp 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-timestamp",
+ "sp-transaction-pool",
  "structopt",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
@@ -11145,17 +10063,17 @@ dependencies = [
  "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-api 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-block-builder 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-api",
+ "sp-block-builder",
  "sp-consensus-aura",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-inherents 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-offchain 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-session 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-transaction-pool 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-version 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-inherents",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-std 3.0.0",
+ "sp-transaction-pool",
+ "sp-version",
  "static_assertions",
  "substrate-wasm-builder",
  "webb-currencies",
@@ -11175,10 +10093,10 @@ dependencies = [
  "pallet-treasury",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-core 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "webb-currencies",
  "webb-traits",
 ]
@@ -11193,9 +10111,9 @@ dependencies = [
  "num-traits",
  "parity-scale-codec 2.1.3",
  "serde",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
  "webb-utilities",
 ]
 
@@ -11209,9 +10127,9 @@ dependencies = [
  "parity-scale-codec 2.1.3",
  "serde",
  "serde_json",
- "sp-io 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-runtime 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
- "sp-std 3.0.0 (git+https://github.com/webb-tools/substrate.git?branch=erup-4)",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
 ]
 
 [[package]]

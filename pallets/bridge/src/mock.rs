@@ -31,6 +31,7 @@ construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Randomness: pallet_randomness_collective_flip::{Pallet, Call, Storage},
 		MerkleTrees: pallet_merkle::{Pallet, Call, Storage, Event<T>},
 		Bridge: webb_bridge::{Pallet, Call, Storage, Event<T>},
 		Currencies: webb_currencies::{Pallet, Storage, Event<T>},
@@ -135,6 +136,7 @@ impl pallet_merkle::Config for Test {
 	type Event = Event;
 	type KeyId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
+	type Randomness = Randomness;
 	type TreeId = u32;
 	type WeightInfo = MerkleWeights<Self>;
 }

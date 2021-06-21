@@ -8,7 +8,7 @@ edition = "2018"
 jsonrpc-core = "15"
 jsonrpc-core-client = "15"
 jsonrpc-derive = "15"
-sc-rpc = "3.0.0"
+sc-rpc = { version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
 
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
 sp-core = { version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
