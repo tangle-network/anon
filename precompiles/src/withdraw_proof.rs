@@ -377,4 +377,56 @@ mod test {
 		let verify_res = withdraw_proof.verify(&poseidon, &mut test_rng);
 		assert!(verify_res.is_ok());
 	}
+
+	#[test]
+	fn should_not_verify_invalid_proof() {
+		let mut test_rng = ChaChaRng::from_seed([1u8; 32]);
+		let (tree_depth, comms, leaf_index_comms, proof_comms, _, recipient, relayer, root, proof, poseidon) =
+			generate_proof_data(&mut test_rng);
+		let withdraw_proof = WithdrawProof {
+			depth: tree_depth,
+			private_inputs: comms,
+			index_private_inputs: leaf_index_comms,
+			node_private_inputs: proof_comms,
+			// Invalid nullifier hash
+			nullifier_hash: Scalar::random(&mut test_rng),
+			recipient,
+			relayer,
+			root,
+			proof: proof.clone(),
+		};
+
+		let mut encoded_wp = withdraw_proof.encode();
+
+		let decoded_wp = WithdrawProof::decode(&mut encoded_wp).unwrap();
+		assert_eq!(decoded_wp.depth, tree_depth);
+		assert_eq!(decoded_wp.proof.to_bytes(), proof.to_bytes());
+
+		let verify_res = withdraw_proof.verify(&poseidon, &mut test_rng);
+		assert!(verify_res.is_err());
+	}
+
+	#[test]
+	fn should_not_decode_invalid_proof() {
+		let mut test_rng = ChaChaRng::from_seed([1u8; 32]);
+		let (tree_depth, comms, leaf_index_comms, proof_comms, nullifier_hash, recipient, relayer, root, proof, _) =
+			generate_proof_data(&mut test_rng);
+		let withdraw_proof = WithdrawProof {
+			depth: tree_depth,
+			private_inputs: comms,
+			index_private_inputs: leaf_index_comms,
+			node_private_inputs: proof_comms,
+			nullifier_hash,
+			recipient,
+			relayer,
+			root,
+			proof: proof.clone(),
+		};
+
+		let mut encoded_wp = withdraw_proof.encode();
+		encoded_wp = encoded_wp.drain(encoded_wp.len() - 10..).collect();
+
+		let decoded_wp = WithdrawProof::decode(&mut encoded_wp);
+		assert!(decoded_wp.is_err());
+	}
 }
