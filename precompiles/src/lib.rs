@@ -106,14 +106,6 @@ mod test {
 
 		let encoded_wp = withdraw_proof.encode();
 
-		// let mut encoded_copy = encoded_wp.clone();
-		// let decoded_wp = WithdrawProof::decode(&mut encoded_copy).unwrap();
-		// assert_eq!(decoded_wp.depth, tree_depth);
-		// assert_eq!(decoded_wp.proof.to_bytes(), proof.to_bytes());
-
-		// let verify_res = withdraw_proof.verify(&POSEIDON_HASHER, &mut
-		// test_rng); assert!(verify_res.is_ok());
-
 		let address = H160::from_low_u64_be(2);
 		let ap_val = U256::from(0);
 
@@ -123,6 +115,7 @@ mod test {
 			apparent_value: ap_val,
 		};
 
+		// Calling precompile
 		let res = TestPrecompile::execute(address, &encoded_wp, None, &context);
 
 		assert!(res.is_some());
@@ -154,6 +147,7 @@ mod test {
 		assert_eq!(decoded_wp.depth, tree_depth);
 		assert_eq!(decoded_wp.proof.to_bytes(), proof.to_bytes());
 
+		// Calling verify
 		let verify_res = withdraw_proof.verify(&POSEIDON_HASHER, &mut test_rng);
 		assert!(verify_res.is_ok());
 	}
