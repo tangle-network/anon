@@ -128,7 +128,33 @@ mod test {
 		assert!(res.is_some());
 		let res = res.unwrap();
 		assert!(res.is_ok());
-		// let precompile_out = res.unwrap();
-		// assert_eq!(precompile_out.exit_status, ExitSucceed::Returned);
+	}
+
+	#[test]
+	fn should_verify_with_verify_directly() {
+		let mut test_rng = ChaChaRng::from_seed([1u8; 32]);
+		let (tree_depth, comms, leaf_index_comms, proof_comms, nullifier_hash, recipient, relayer, root, proof, _) =
+			generate_proof_data(&mut test_rng);
+		let withdraw_proof = WithdrawProof {
+			depth: tree_depth,
+			private_inputs: comms,
+			index_private_inputs: leaf_index_comms,
+			node_private_inputs: proof_comms,
+			nullifier_hash,
+			recipient,
+			relayer,
+			root,
+			proof: proof.clone(),
+		};
+
+		let encoded_wp = withdraw_proof.encode();
+
+		let mut encoded_copy = encoded_wp.clone();
+		let decoded_wp = WithdrawProof::decode(&mut encoded_copy).unwrap();
+		assert_eq!(decoded_wp.depth, tree_depth);
+		assert_eq!(decoded_wp.proof.to_bytes(), proof.to_bytes());
+
+		let verify_res = withdraw_proof.verify(&POSEIDON_HASHER, &mut test_rng);
+		assert!(verify_res.is_ok());
 	}
 }
