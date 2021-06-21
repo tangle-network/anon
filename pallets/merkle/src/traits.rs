@@ -1,6 +1,8 @@
 //! All the traits exposed to be used in other custom pallets
-use crate::Config;
-use crate::utils::{keys::ScalarBytes, setup::Setup};
+use crate::{
+	utils::{keys::ScalarBytes, setup::Setup},
+	Config,
+};
 pub use frame_support::dispatch;
 use sp_std::vec::Vec;
 
@@ -22,7 +24,11 @@ pub trait Tree<T: Config> {
 	) -> Result<(), dispatch::DispatchError>;
 	/// Sets manager account id
 	/// Can only be called by the current manager
-	fn set_manager(sender: T::AccountId, id: T::TreeId, new_manager: T::AccountId) -> Result<(), dispatch::DispatchError>;
+	fn set_manager(
+		sender: T::AccountId,
+		id: T::TreeId,
+		new_manager: T::AccountId,
+	) -> Result<(), dispatch::DispatchError>;
 	/// Creates a new Tree tree, including a manager for that tree
 	fn create_tree(
 		sender: T::AccountId,
@@ -31,17 +37,32 @@ pub trait Tree<T: Config> {
 		depth: u8,
 		is_vkey_required: bool,
 	) -> Result<T::TreeId, dispatch::DispatchError>;
-	/// Adds members/leaves to the tree
-	fn add_members(sender: T::AccountId, id: T::TreeId, members: Vec<ScalarBytes>) -> Result<(), dispatch::DispatchError>;
-	/// Adds a nullifier to the storage
-	/// Can only be called by the manager if the manager is required
-	fn add_nullifier(sender: T::AccountId, id: T::TreeId, nullifier: ScalarBytes) -> Result<(), dispatch::DispatchError>;
-	/// Verify membership proof
-	fn verify(id: T::TreeId, leaf: ScalarBytes, path: Vec<(bool, ScalarBytes)>) -> Result<(), dispatch::DispatchError>;
+	/// Initializes the tree with the root hash and edge nodes, must happen
+	/// after keys are set
+	fn initialize_tree(tree_id: T::TreeId, key_id: T::KeyId) -> Result<(), dispatch::DispatchError>;
+	/// Checks if a tree is initialized
+	fn is_initialized(tree_id: T::TreeId) -> Result<bool, dispatch::DispatchError>;
+	/// Add verifying key to storage and increment the next available key id
+	fn add_verifying_key(key: Vec<u8>) -> Result<T::KeyId, dispatch::DispatchError>;
 	/// Set verifying key in storage
 	fn set_verifying_key(key_id: T::KeyId, key: Vec<u8>) -> Result<(), dispatch::DispatchError>;
 	/// Set verifying key for tree
 	fn set_verifying_key_for_tree(key_id: T::KeyId, tree_id: T::TreeId) -> Result<(), dispatch::DispatchError>;
+	/// Adds members/leaves to the tree
+	fn add_members(
+		sender: T::AccountId,
+		id: T::TreeId,
+		members: Vec<ScalarBytes>,
+	) -> Result<(), dispatch::DispatchError>;
+	/// Adds a nullifier to the storage
+	/// Can only be called by the manager if the manager is required
+	fn add_nullifier(
+		sender: T::AccountId,
+		id: T::TreeId,
+		nullifier: ScalarBytes,
+	) -> Result<(), dispatch::DispatchError>;
+	/// Verify membership proof
+	fn verify(id: T::TreeId, leaf: ScalarBytes, path: Vec<(bool, ScalarBytes)>) -> Result<(), dispatch::DispatchError>;
 	/// Verify zero-knowladge membership proof
 	fn verify_zk(
 		tree_id: T::TreeId,

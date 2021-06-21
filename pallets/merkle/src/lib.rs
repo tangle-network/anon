@@ -92,7 +92,13 @@ mod benchmarking;
 pub mod weights;
 
 use codec::{Decode, Encode};
-use frame_support::{dispatch::DispatchError, ensure, traits::Get, weights::Weight, Parameter};
+use frame_support::{
+	dispatch::DispatchError,
+	ensure,
+	traits::{Get, Randomness},
+	weights::Weight,
+	Parameter,
+};
 use frame_system::ensure_signed;
 use sp_runtime::traits::{AtLeast32Bit, One};
 use sp_std::prelude::*;
@@ -126,6 +132,9 @@ pub mod pallet {
 		type MaxTreeDepth: Get<u8>;
 		/// The amount of blocks to cache roots over
 		type CacheBlockLength: Get<Self::BlockNumber>;
+		/// The generator used to supply randomness to contracts through
+		/// `seal_random`.
+		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
 		/// Weight information for extrinsics in this pallet.
 		type WeightInfo: WeightInfo;
 	}
@@ -136,6 +145,10 @@ pub mod pallet {
 		NoneValue,
 		/// Tree is full
 		ExceedsMaxLeaves,
+		/// Tree is already initialized when it shouldn't be
+		AlreadyInitialized,
+		/// Tree isn't initialized
+		NotInitialized,
 		/// Tree doesnt exist
 		TreeDoesntExist,
 		/// Key doesnt exist
@@ -440,15 +453,40 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Initializes the merkle tree
+		///
+		/// Can only be called by the manager or root.
+		#[pallet::weight(5_000_000)]
+		pub fn initialize_tree(
+			origin: OriginFor<T>,
+			tree_id: T::TreeId,
+			key_id: T::KeyId,
+		) -> DispatchResultWithPostInfo {
+			let manager_data = Managers::<T>::get(tree_id)
+				.ok_or(Error::<T>::ManagerDoesntExist)
+				.unwrap();
+			// Changing manager should always require an extrinsic from the manager or root
+			// even if the tree doesn't explicitly require managers for other calls.
+			ensure_admin(origin, &manager_data.account_id)?;
+			<Self as Tree<_>>::initialize_tree(tree_id, key_id)?;
+			Ok(().into())
+		}
+
 		/// Adds a verifying key to the storage.
 		///
 		/// Can only be called by the root.
-		#[pallet::weight(0)]
-		pub fn set_verifying_key(
-			origin: OriginFor<T>,
-			key_id: T::KeyId,
-			key: Vec<u8>,
-		) -> DispatchResultWithPostInfo {
+		#[pallet::weight(5_000_000)]
+		pub fn add_verifying_key(origin: OriginFor<T>, key: Vec<u8>) -> DispatchResultWithPostInfo {
+			ensure_signed(origin)?;
+			<Self as Tree<_>>::add_verifying_key(key)?;
+			Ok(().into())
+		}
+
+		/// Adds a verifying key to the storage.
+		///
+		/// Can only be called by the root.
+		#[pallet::weight(5_000_000)]
+		pub fn set_verifying_key(origin: OriginFor<T>, key_id: T::KeyId, key: Vec<u8>) -> DispatchResultWithPostInfo {
 			ensure_root(origin)?;
 
 			<Self as Tree<_>>::set_verifying_key(key_id, key)?;
@@ -458,14 +496,13 @@ pub mod pallet {
 		/// Sets the verifying key for a tree.
 		///
 		/// Can only be called by the manager if a manager is set.
-		#[pallet::weight(0)]
+		#[pallet::weight(5_000_000)]
 		pub fn set_verifying_key_for_tree(
 			origin: OriginFor<T>,
 			key_id: T::KeyId,
 			tree_id: T::TreeId,
 		) -> DispatchResultWithPostInfo {
-			let manager_data = Managers::<T>::get(tree_id)
-				.ok_or(Error::<T>::ManagerDoesntExist)?;
+			let manager_data = Managers::<T>::get(tree_id).ok_or(Error::<T>::ManagerDoesntExist)?;
 			ensure_admin(origin, &manager_data.account_id)?;
 			<Self as Tree<_>>::set_verifying_key_for_tree(key_id, tree_id)?;
 			Ok(().into())
@@ -504,6 +541,7 @@ impl<T: Config> Manager<T> {
 #[cfg_attr(feature = "std", derive(Debug))]
 #[derive(Clone, Encode, Decode, PartialEq)]
 pub struct MerkleTree {
+	pub initialized: bool,
 	/// Current number of leaves in the tree
 	pub leaf_count: u32,
 	/// Maximum allowed leaves in the tree
@@ -527,14 +565,15 @@ pub struct MerkleTree {
 
 impl MerkleTree {
 	pub fn new<T: Config>(setup: Setup, depth: u8, vkey_required: bool) -> Result<Self, Error<T>> {
-		let (zero_tree, root_hash) = setup.generate_zero_tree(depth as usize)?;
+		// let (zero_tree, root_hash) = setup.generate_zero_tree(depth as usize)?;
 		Ok(Self {
-			root_hash,
+			initialized: false,
+			root_hash: ScalarBytes::default(),
 			leaf_count: 0,
 			depth,
 			max_leaves: u32::MAX >> (T::MaxTreeDepth::get() - depth),
-			zero_tree: zero_tree.clone(),
-			edge_nodes: zero_tree,
+			zero_tree: vec![],
+			edge_nodes: vec![],
 			setup,
 			should_store_leaves: true, // the default for now.
 			should_require_vkey: vkey_required,
@@ -571,6 +610,45 @@ impl<T: Config> Tree<T> for Pallet<T> {
 		Ok(tree_id)
 	}
 
+	fn initialize_tree(tree_id: T::TreeId, key_id: T::KeyId) -> Result<(), DispatchError> {
+		let mut tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist)?;
+		ensure!(!tree.initialized, Error::<T>::AlreadyInitialized);
+		let params = Self::get_verifying_key(key_id)?;
+		let (zero_tree, root_hash) = tree.setup.generate_zero_tree::<T>(tree.depth as usize, &params)?;
+		tree.root_hash = root_hash;
+		tree.edge_nodes = zero_tree.clone();
+		tree.zero_tree = zero_tree;
+		tree.initialized = true;
+		Trees::<T>::insert(tree_id, Some(tree));
+		<Self as Tree<_>>::set_verifying_key_for_tree(key_id, tree_id)?;
+		Ok(())
+	}
+
+	fn is_initialized(tree_id: T::TreeId) -> Result<bool, DispatchError> {
+		let tree = Trees::<T>::get(tree_id).ok_or(Error::<T>::TreeDoesntExist)?;
+		Ok(tree.initialized)
+	}
+
+	fn add_verifying_key(key: Vec<u8>) -> Result<T::KeyId, DispatchError> {
+		let key_id = Self::next_key_id();
+		// Setting the next key id
+		NextKeyId::<T>::mutate(|id| *id += One::one());
+		VerifyingKeys::<T>::insert(key_id, Some(key));
+		Ok(key_id)
+	}
+
+	fn set_verifying_key(key_id: T::KeyId, key: Vec<u8>) -> Result<(), DispatchError> {
+		let next_id = Self::next_key_id();
+		ensure!(key_id < next_id, Error::<T>::InvalidVerifierKey);
+		VerifyingKeys::<T>::insert(key_id, Some(key));
+		Ok(())
+	}
+
+	fn set_verifying_key_for_tree(key_id: T::KeyId, tree_id: T::TreeId) -> Result<(), DispatchError> {
+		VerifyingKeyForTree::<T>::insert(tree_id, key_id);
+		Ok(())
+	}
+
 	fn set_stopped(sender: T::AccountId, id: T::TreeId, stopped: bool) -> Result<(), DispatchError> {
 		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		ensure!(sender == manager_data.account_id, Error::<T>::ManagerIsRequired);
@@ -605,14 +683,6 @@ impl<T: Config> Tree<T> for Pallet<T> {
 		let mut tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
 		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		// Check if the tree requires extrinsics to be called from a manager
-		let key_id = VerifyingKeyForTree::<T>::get(id);
-		let verifying_key = VerifyingKeys::<T>::get(key_id);
-		if tree.should_require_vkey {
-			ensure!(
-				tree.setup.can_verify_with(&verifying_key),
-				Error::<T>::InvalidVerifierKey
-			);
-		}
 		ensure!(
 			Self::is_manager_required(sender.clone(), &manager_data),
 			Error::<T>::ManagerIsRequired
@@ -624,11 +694,14 @@ impl<T: Config> Tree<T> for Pallet<T> {
 			Error::<T>::ExceedsMaxLeaves
 		);
 
+		let params = Self::get_verifying_key_for_tree(id)?;
 		for data in &members {
-			Self::add_leaf(&mut tree, &data)?;
 			if tree.should_store_leaves {
 				Leaves::<T>::insert(id, tree.leaf_count, data);
 			}
+			// then we add it to the tree itself.
+			// note that, this method internally increments the leaves count.
+			Self::add_leaf(&mut tree, data, &params)?;
 		}
 		let block_number: T::BlockNumber = <frame_system::Pallet<T>>::block_number();
 		CachedRoots::<T>::append(block_number, id, tree.root_hash.clone());
@@ -664,26 +737,16 @@ impl<T: Config> Tree<T> for Pallet<T> {
 		let tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
 
 		ensure!(tree.edge_nodes.len() == path.len(), Error::<T>::InvalidPathLength);
+		let params = Self::get_verifying_key_for_tree(id)?;
 		let mut hash = leaf;
 		for (is_right, node) in path {
 			hash = match is_right {
-				true => tree.setup.hash::<T>(&hash, &node)?,
-				false => tree.setup.hash::<T>(&node, &hash)?,
+				true => tree.setup.hash::<T>(&hash, &node, &params)?,
+				false => tree.setup.hash::<T>(&node, &hash, &params)?,
 			}
 		}
 
 		ensure!(hash == tree.root_hash, Error::<T>::InvalidMembershipProof);
-		Ok(())
-	}
-
-	fn set_verifying_key(key_id: T::KeyId, key: Vec<u8>) -> Result<(), DispatchError> {
-		ensure!(key.len() > 0, Error::<T>::InvalidVerifierKey);
-		VerifyingKeys::<T>::insert(key_id, Some(key));
-		Ok(())
-	}
-
-	fn set_verifying_key_for_tree(key_id: T::KeyId, tree_id: T::TreeId) -> Result<(), DispatchError> {
-		VerifyingKeyForTree::<T>::insert(tree_id, key_id);
 		Ok(())
 	}
 
@@ -728,6 +791,7 @@ impl<T: Config> Pallet<T> {
 
 	pub fn get_merkle_root(tree_id: T::TreeId) -> Result<ScalarBytes, DispatchError> {
 		let tree = Self::get_tree(tree_id)?;
+		ensure!(tree.initialized, Error::<T>::NotInitialized);
 		Ok(tree.root_hash)
 	}
 
@@ -750,16 +814,17 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	pub fn add_leaf(tree: &mut MerkleTree, data: &ScalarBytes) -> Result<(), DispatchError> {
+	pub fn add_leaf(tree: &mut MerkleTree, data: &ScalarBytes, params: &[u8]) -> Result<(), DispatchError> {
 		let mut edge_index = tree.leaf_count;
 		let mut hash = data.clone();
+		let mut edge_nodes = tree.edge_nodes.clone();
 		// Update the tree
-		for i in 0..tree.edge_nodes.len() {
+		for i in 0..edge_nodes.len() {
 			hash = if edge_index % 2 == 0 {
-				tree.edge_nodes[i] = hash.clone();
-				tree.setup.hash::<T>(&hash, &tree.zero_tree[i])?
+				edge_nodes[i] = hash.clone();
+				tree.setup.hash::<T>(&hash, &tree.zero_tree[i], params)?
 			} else {
-				tree.setup.hash::<T>(&tree.edge_nodes[i], &hash)?
+				tree.setup.hash::<T>(&edge_nodes[i], &hash, params)?
 			};
 
 			edge_index /= 2;
@@ -767,6 +832,19 @@ impl<T: Config> Pallet<T> {
 
 		tree.leaf_count += 1;
 		tree.root_hash = hash;
+		tree.edge_nodes = edge_nodes;
 		Ok(())
+	}
+
+	pub fn get_verifying_key_for_tree(id: T::TreeId) -> Result<Vec<u8>, DispatchError> {
+		let key_id = VerifyingKeyForTree::<T>::get(id);
+		Self::get_verifying_key(key_id)
+	}
+
+	pub fn get_verifying_key(id: T::KeyId) -> Result<Vec<u8>, DispatchError> {
+		ensure!(id < Self::next_key_id(), Error::<T>::InvalidVerifierKey);
+		let maybe_verifying_key = VerifyingKeys::<T>::get(id);
+		ensure!(maybe_verifying_key.is_some(), Error::<T>::InvalidVerifierKey);
+		Ok(maybe_verifying_key.unwrap())
 	}
 }

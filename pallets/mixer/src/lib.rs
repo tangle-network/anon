@@ -56,6 +56,7 @@ pub mod weights;
 
 pub mod traits;
 
+use bulletproofs::BulletproofGens;
 use codec::{Decode, Encode};
 use frame_support::{dispatch, ensure, traits::Get, weights::Weight, PalletId};
 use frame_system::ensure_signed;
@@ -108,10 +109,15 @@ pub mod pallet {
 		type MixerSizes: Get<Vec<BalanceOf<Self>>>;
 	}
 
-	/// Flag indicating if the mixer is initialized
+	/// Flag indicating if the mixer trees are created
 	#[pallet::storage]
-	#[pallet::getter(fn initialised)]
-	pub type Initialised<T: Config> = StorageValue<_, bool, ValueQuery>;
+	#[pallet::getter(fn first_stage_initialized)]
+	pub type FirstStageInitialized<T: Config> = StorageValue<_, bool, ValueQuery>;
+
+	/// Flag indicating if the mixers are initialized
+	#[pallet::storage]
+	#[pallet::getter(fn second_stage_initialized)]
+	pub type SecondStageInitialized<T: Config> = StorageValue<_, bool, ValueQuery>;
 
 	/// The map of mixer trees to their metadata
 	#[pallet::storage]
@@ -169,9 +175,9 @@ pub mod pallet {
 		/// Mixer not found for specified id
 		NoMixerForId,
 		/// Mixer is not initialized
-		NotInitialised,
+		NotInitialized,
 		/// Mixer is already initialized
-		AlreadyInitialised,
+		AlreadyInitialized,
 		/// User doesn't have enough balance for the deposit
 		InsufficientBalance,
 		/// Caller doesn't have permission to make a call
@@ -189,7 +195,7 @@ pub mod pallet {
 		fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
 			// We make sure that we return the correct weight for the block according to
 			// on_finalize
-			if Self::initialised() {
+			if Self::second_stage_initialized() {
 				// In case mixer is initialized, we expect the weights for merkle cache update
 				<T as Config>::WeightInfo::on_finalize_initialized()
 			} else {
@@ -199,10 +205,30 @@ pub mod pallet {
 		}
 
 		fn on_finalize(_n: BlockNumberFor<T>) {
-			if Self::initialised() {
+			if Self::first_stage_initialized() && !Self::second_stage_initialized() {
+				let mixer_ids = MixerTreeIds::<T>::get();
+				// check if first tree has been initialized, otherwise intialize the parameters
+				for i in 0..mixer_ids.len() {
+					if let Ok(initialized) = T::Tree::is_initialized(mixer_ids[i]) {
+						if !initialized {
+							match Self::initialize_second_stage() {
+								Ok(_) => {}
+								Err(e) => {
+									log::error!("Error initialising trees: {:?}", e);
+								}
+							}
+						}
+					}
+
+					break;
+				}
+			}
+
+			if Self::first_stage_initialized() && Self::second_stage_initialized() {
 				// check if any deposits happened (by checking the size of the collection at
 				// this block) if none happened, carry over previous Merkle roots for the cache.
 				let mixer_ids = MixerTreeIds::<T>::get();
+
 				for i in 0..mixer_ids.len() {
 					let cached_roots = <merkle::Pallet<T>>::cached_roots(_n, mixer_ids[i]);
 					// if there are no cached roots, carry forward the current root
@@ -210,8 +236,10 @@ pub mod pallet {
 						let _ = <merkle::Pallet<T>>::add_root_to_cache(mixer_ids[i], _n);
 					}
 				}
-			} else {
-				match Self::initialize() {
+			}
+
+			if !Self::first_stage_initialized() {
+				match Self::initialize_first_stage() {
 					Ok(_) => {}
 					Err(e) => {
 						log::error!("Error initialising: {:?}", e);
@@ -242,7 +270,6 @@ pub mod pallet {
 			data_points: Vec<ScalarBytes>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
-			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 			ensure!(!<MerklePallet<T>>::stopped(mixer_id), Error::<T>::MixerStopped);
 			// get mixer info, should always exist if the module is initialized
 			let mixer_info = Self::get_mixer(mixer_id)?;
@@ -284,14 +311,14 @@ pub mod pallet {
 		#[pallet::weight(<T as Config>::WeightInfo::withdraw())]
 		pub fn withdraw(origin: OriginFor<T>, withdraw_proof: WithdrawProof<T>) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
-			ensure!(Self::initialised(), Error::<T>::NotInitialised);
 			ensure!(
 				!<MerklePallet<T>>::stopped(withdraw_proof.mixer_id),
 				Error::<T>::MixerStopped
 			);
 			let recipient = withdraw_proof.recipient.unwrap_or(sender.clone());
 			let relayer = withdraw_proof.relayer.unwrap_or(sender.clone());
-			let mixer_info = MixerTrees::<T>::get(withdraw_proof.mixer_id);
+			// get mixer info, should fail if tree isn't initialized
+			let mixer_info = Self::get_mixer(withdraw_proof.mixer_id)?;
 			// check if the nullifier has been used
 			T::Tree::has_used_nullifier(withdraw_proof.mixer_id.into(), withdraw_proof.nullifier_hash.clone())?;
 			// Verify the zero-knowledge proof of membership provided
@@ -343,13 +370,22 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_admin(origin, &Self::admin())?;
 
-			let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
-			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, setup, depth, true)?;
-			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
-			MixerTrees::<T>::insert(mixer_id, mixer_info);
-			let mut ids = MixerTreeIds::<T>::get();
-			ids.push(mixer_id);
-			MixerTreeIds::<T>::set(ids);
+			<Self as ExtendedMixer<_>>::create_new(Self::account_id(), currency_id, setup, size)?;
+			Ok(().into())
+		}
+
+		#[pallet::weight(5_000_000)]
+		pub fn create_new_and_initialize(
+			origin: OriginFor<T>,
+			currency_id: CurrencyIdOf<T>,
+			setup: Setup,
+			size: BalanceOf<T>,
+			key_id: T::KeyId,
+		) -> DispatchResultWithPostInfo {
+			ensure_admin(origin, &Self::admin())?;
+
+			let tree_id = <Self as ExtendedMixer<_>>::create_new(Self::account_id(), currency_id, setup, size)?;
+			T::Tree::initialize_tree(tree_id, key_id)?;
 			Ok(().into())
 		}
 
@@ -501,62 +537,76 @@ impl<T: Config> Pallet<T> {
 
 	pub fn get_mixer(mixer_id: T::TreeId) -> Result<MixerInfo<T>, dispatch::DispatchError> {
 		let mixer_info = MixerTrees::<T>::get(mixer_id);
-		// ensure mixer_info has a non-zero deposit, otherwise, the mixer doesn't
-		//exist for this id
-		ensure!(mixer_info.fixed_deposit_size > Zero::zero(), Error::<T>::NoMixerForId); // return the mixer info
+		// ensure mixer_info has a non-zero deposit, otherwise, the mixer doesn't exist
+		// for this id
+		ensure!(mixer_info.fixed_deposit_size > Zero::zero(), Error::<T>::NoMixerForId);
+		// ensure the mixer's tree is intialized
+		let initialized = T::Tree::is_initialized(mixer_id)?;
+		ensure!(initialized, Error::<T>::NotInitialized);
+		// return the mixer info
 		Ok(mixer_info)
 	}
 
-	pub fn initialize() -> dispatch::DispatchResult {
-		ensure!(!Self::initialised(), Error::<T>::AlreadyInitialised);
+	pub fn initialize_first_stage() -> dispatch::DispatchResult {
+		ensure!(!Self::first_stage_initialized(), Error::<T>::AlreadyInitialized);
 
 		// Get default admin from trait params
 		let default_admin = T::DefaultAdmin::get();
 		// Initialize the admin in storage with default one
 		Admin::<T>::set(default_admin);
-		let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
 
 		// Getting the sizes from the config
 		let sizes = T::MixerSizes::get();
-		let mut mixer_ids = Vec::new();
-		let default_hasher = HashFunction::PoseidonDefault;
-		let default_backend = Backend::Bulletproofs(Curve::Curve25519);
-		let default_setup = Setup::new(default_hasher, default_backend);
+
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
 
 		// Iterating over configured sizes and initializing the mixers
 		for size in sizes.into_iter() {
-			// Creating a new merkle group and getting the id back
-			let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, default_setup.clone(), depth, true)?;
-			// Creating mixer info data
-			let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, T::NativeCurrencyId::get());
-			// Saving the mixer group to storage
-			MixerTrees::<T>::insert(mixer_id, mixer_info);
-			mixer_ids.push(mixer_id);
+			<Self as ExtendedMixer<_>>::create_new(
+				Self::account_id(),
+				T::NativeCurrencyId::get(),
+				setup.clone(),
+				size,
+			)?;
 		}
 
-		// Setting the mixer ids
-		MixerTreeIds::<T>::set(mixer_ids);
+		FirstStageInitialized::<T>::set(true);
+		Ok(())
+	}
 
-		Initialised::<T>::set(true);
+	pub fn initialize_second_stage() -> dispatch::DispatchResult {
+		ensure!(Self::first_stage_initialized(), Error::<T>::AlreadyInitialized);
+
+		let key_data = merkle::utils::keys::get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
+		let key_id = T::Tree::add_verifying_key(key_data)?;
+		let mixer_ids = MixerTreeIds::<T>::get();
+		for i in 0..mixer_ids.len() {
+			let tree_id = mixer_ids[i];
+			T::Tree::initialize_tree(tree_id, key_id)?;
+		}
+
+		SecondStageInitialized::<T>::set(true);
 		Ok(())
 	}
 }
 
-impl<T: Config> ExtendedMixer<T::AccountId, CurrencyIdOf<T>, BalanceOf<T>> for Pallet<T> {
+impl<T: Config> ExtendedMixer<T> for Pallet<T> {
 	fn create_new(
 		account_id: T::AccountId,
 		currency_id: CurrencyIdOf<T>,
 		setup: Setup,
 		size: BalanceOf<T>,
-	) -> Result<(), dispatch::DispatchError> {
+	) -> Result<T::TreeId, dispatch::DispatchError> {
 		let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
-		let mixer_id: T::TreeId = T::Tree::create_tree(Self::account_id(), true, setup, depth, true)?;
+		let mixer_id: T::TreeId = T::Tree::create_tree(account_id, true, setup, depth, true)?;
 		let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 		MixerTrees::<T>::insert(mixer_id, mixer_info);
 		// Add new id to list
 		let mut ids = MixerTreeIds::<T>::get();
 		ids.push(mixer_id);
 		MixerTreeIds::<T>::set(ids);
-		Ok(())
+		Ok(mixer_id)
 	}
 }
