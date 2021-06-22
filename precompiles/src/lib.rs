@@ -1,21 +1,62 @@
+// SPDX-License-Identifier: Apache-2.0
+// This file is part of Frontier.
+//
+// Copyright (c) 2020 Parity Technologies (UK) Ltd.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#![cfg_attr(not(feature = "std"), no_std)]
+
+extern crate alloc;
+
+use rand_chacha::rand_core::SeedableRng;
+use crate::encoding::Decode;
+use rand_chacha::ChaChaRng;
+use crate::types::WithdrawProof;
 use bulletproofs::BulletproofGens;
 use bulletproofs_gadgets::poseidon::{
 	builder::{Poseidon, PoseidonBuilder},
 	PoseidonSbox,
 };
-use evm::executor::PrecompileOutput;
-use evm_runtime::{Context, ExitError, ExitSucceed};
+use sp_std::marker::PhantomData;
+use sp_std::fmt::Debug;
+use alloc::vec::Vec;
 use frame_support::traits::Randomness;
+use fp_evm::Precompile;
+use evm::{ExitSucceed, ExitError, Context, executor::PrecompileOutput};
+use sp_runtime::{
+	traits::{
+		CheckEqual,
+		SimpleBitOps, Member, MaybeDisplay,
+		MaybeSerializeDeserialize, MaybeMallocSizeOf, Bounded, AtLeast32BitUnsigned,
+	},
+};
+use frame_support::{
+	Parameter,
+	traits::{
+		MaxEncodedLen,
+	},
+};
 use lazy_static::lazy_static;
-use pallet_evm::PrecompileSet;
-use sp_core::{hash::H160, Encode};
-use sp_std::{fmt::Debug, marker::PhantomData};
+
+pub struct BulletproofMerkleTreeMembershipPrecompile<O, B, R: Randomness<O, B>>(
+	PhantomData<O>,
+	PhantomData<B>,
+	PhantomData<R>,
+);
+
 mod encoding;
-use encoding::Decode;
-use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
-mod withdraw_proof;
-use sp_std::prelude::Vec;
-use withdraw_proof::WithdrawProof;
+mod types;
 
 lazy_static! {
 	static ref POSEIDON_HASHER: Poseidon = default_bulletproofs_poseidon_hasher();
@@ -31,21 +72,25 @@ pub fn default_bulletproofs_poseidon_hasher() -> Poseidon {
 		.build()
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct BulletproofsPrecompiles<R>(PhantomData<R>);
+impl<O, B, R: Randomness<O, B>> Precompile for BulletproofMerkleTreeMembershipPrecompile<O, B, R>
+	where
+		O: Parameter + Member + MaybeSerializeDeserialize + Debug + MaybeDisplay + SimpleBitOps + Ord
+			+ Default + Copy + CheckEqual + sp_std::hash::Hash + AsRef<[u8]> + AsMut<[u8]>
+			+ MaybeMallocSizeOf + MaxEncodedLen,
+		B: Parameter + Member + MaybeSerializeDeserialize + Debug + MaybeDisplay +
+			AtLeast32BitUnsigned + Default + Bounded + Copy + sp_std::hash::Hash +
+			sp_std::str::FromStr + MaybeMallocSizeOf + MaxEncodedLen
 
-impl<R: Randomness<u64, u64>> PrecompileSet for BulletproofsPrecompiles<R> {
+{
 	fn execute(
-		_address: H160,
 		input: &[u8],
 		_target_gas: Option<u64>,
 		_context: &Context,
-	) -> Option<Result<PrecompileOutput, ExitError>> {
-		let mut inp = input.to_vec();
-		let withdraw_proof_res = WithdrawProof::decode(&mut inp);
+	) -> core::result::Result<PrecompileOutput, ExitError> {
+		let withdraw_proof_res = WithdrawProof::decode(&mut input.to_vec());
 		let withdraw_proof = match withdraw_proof_res {
 			Ok(wp) => wp,
-			Err(_) => return Some(Err(ExitError::Other("Failed to decode withdraw proof".into()))),
+			Err(_) => return Err(ExitError::Other("Failed to decode withdraw proof".into())),
 		};
 		let random_seed = R::random_seed();
 		let random_bytes = random_seed.0.encode();
@@ -53,39 +98,43 @@ impl<R: Randomness<u64, u64>> PrecompileSet for BulletproofsPrecompiles<R> {
 		for (buff_element, data) in buf.iter_mut().zip(random_bytes.iter()) {
 			*buff_element = *data
 		}
+		println!("{:?}", buf);
 		let mut rng = ChaChaRng::from_seed(buf);
 		let verify_res = withdraw_proof.verify(&POSEIDON_HASHER, &mut rng);
+		println!("{:?}", verify_res);
 		if verify_res.is_err() {
-			return Some(Err(verify_res.err().unwrap()));
+			return Err(verify_res.err().unwrap());
 		}
-		Some(Ok(PrecompileOutput {
+
+		Ok(PrecompileOutput {
 			exit_status: ExitSucceed::Returned,
 			cost: 0,
 			output: Vec::new(),
 			logs: Vec::new(),
-		}))
+		})
 	}
 }
 
 #[cfg(test)]
 mod test {
 	use super::*;
+	use sp_core::H256;
+	use sp_core::H160;
 	use crate::{
 		encoding::Encode,
-		withdraw_proof::{test::generate_proof_data, WithdrawProof},
+		types::{test::generate_proof_data, WithdrawProof},
 	};
 	use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
 	use sp_core::uint::U256;
 
 	struct Rng;
-
-	impl Randomness<u64, u64> for Rng {
-		fn random(_: &[u8]) -> (u64, u64) {
-			(1, 12)
+	impl Randomness<H256, u64> for Rng {
+		fn random(_: &[u8]) -> (H256, u64) {
+			(H256::from([1u8; 32]), 12)
 		}
 	}
 
-	type TestPrecompile = BulletproofsPrecompiles<Rng>;
+	type TestPrecompile = BulletproofMerkleTreeMembershipPrecompile<H256, u64, Rng>;
 
 	#[test]
 	fn should_verify_with_precompile() {
@@ -106,21 +155,18 @@ mod test {
 
 		let encoded_wp = withdraw_proof.encode();
 
-		let address = H160::from_low_u64_be(2);
-		let ap_val = U256::from(0);
-
-		let context = Context {
-			address: address.clone(),
-			caller: address.clone(),
-			apparent_value: ap_val,
+		let context: Context = Context {
+			address: Default::default(),
+			caller: Default::default(),
+			apparent_value: From::from(0),
 		};
-
 		// Calling precompile
-		let res = TestPrecompile::execute(address, &encoded_wp, None, &context);
-
-		assert!(res.is_some());
-		let res = res.unwrap();
-		assert!(res.is_ok());
+		match TestPrecompile::execute(&encoded_wp, None, &context) {
+			Ok(_) => {},
+			Err(_) => {
+				panic!("BulletproofMerkleTreeMembershipPrecompile::execute() returned error");
+			}
+		}
 	}
 
 	#[test]

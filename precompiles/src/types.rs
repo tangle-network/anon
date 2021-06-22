@@ -1,3 +1,4 @@
+use super::*;
 use super::encoding::{Decode, Encode};
 use bulletproofs::r1cs::{R1CSProof, Verifier};
 use bulletproofs_gadgets::{
@@ -6,10 +7,10 @@ use bulletproofs_gadgets::{
 	utils::AllocatedScalar,
 };
 use curve25519_dalek::{ristretto::CompressedRistretto, scalar::Scalar};
-use evm_runtime::ExitError;
 use merlin::Transcript;
 use rand_chacha::rand_core::{CryptoRng, RngCore};
 use sp_std::prelude::Vec;
+use evm::{ExitError};
 
 #[derive(Debug)]
 pub struct WithdrawProof {
@@ -90,6 +91,7 @@ impl WithdrawProof {
 		}
 
 		let verify_res = verifier.verify_with_rng(&self.proof, &hasher.pc_gens, &hasher.bp_gens, rng);
+		println!("{:?}", verify_res);
 		if !verify_res.is_ok() {
 			return Err(ExitError::Other("ZkVerificationFailed".into()));
 		}

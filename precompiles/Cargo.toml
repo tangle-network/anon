@@ -1,27 +1,23 @@
 [package]
-name = "precompiles"
-version = "0.1.0"
-authors = ["Drew Stone <drew@webb.tools>"]
+name = "pallet-evm-precompile-bp-merkle-tree"
+version = "2.0.0"
+authors = ["Webb Developers"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "Apache-2.0"
+homepage = "https://substrate.dev"
+repository = "https://github.com/paritytech/frontier/"
+description = "ED25519 precompiles for EVM pallet."
 
 [dependencies]
-codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
-frame-support = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
-balances = { version = "3.0.0", default-features = false, package = "pallet-balances", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
-frame-system = { version = "3.0.0", default-features = false }
-pallet-evm = { version = "4.0.0", default-features = false }
+frame-support = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+sp-std = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+sp-core = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+sp-io = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+sp-runtime = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+fp-evm = { git = "https://github.com/webb-tools/frontier.git", branch = "polkadot-v0.9.6", default-features = false }
 evm = { version = "0.27.0", default-features = false, features = ["with-codec"] }
-evm-runtime = { version = "0.27.0", default-features = false }
-pallet-ethereum = { version = "2.0.0" }
-pallet-evm-precompile-simple = { version = "1.0.0", default-features = false }
-fp-rpc = { version = "1.0.0", default-features = false }
-sp-core = { version = "3.0.0" }
-sp-std = { version = "3.0.0" }
-sp-runtime = "3.0.0"
-pallet-merkle = { git = "https://github.com/webb-tools/anon", branch = "master" }
-lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
+
+lazy_static = { version = "1.4.0", features = ["spin_no_std"], optional = true }
 rand_chacha = { version = "0.2", default-features = false }
 curve25519-dalek = { version = "3.0.0", default-features = false, features = ["u64_backend", "alloc"] }
 bulletproofs = {version = "2.0.0", package = "webb-bulletproofs", default-features = false, features = ["yoloproofs"]}
@@ -29,16 +25,19 @@ bulletproofs-gadgets = {version = "2.0.0", default-features = false}
 merlin = { version = "2.0.0", default-features = false }
 
 [features]
+default = ["std"]
 std = [
-	"codec/std",
 	"frame-support/std",
-	"fp-rpc/std",
-	"pallet-ethereum/std",
-	"pallet-evm/std",
-	"pallet-evm-precompile-simple/std",
-	"frame-system/std",
-	"sp-std/std",
 	"sp-core/std",
+	"sp-io/std",
+	"sp-runtime/std",
+	"sp-std/std",
+	"fp-evm/std",
 	"evm/std",
-	"evm-runtime/std"
+
+	"bulletproofs/std",
+	"bulletproofs-gadgets/std",
+	"curve25519-dalek/std",
+	"merlin/std",
+	"lazy_static",
 ]
