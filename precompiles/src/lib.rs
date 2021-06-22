@@ -55,6 +55,8 @@ pub struct BulletproofMerkleTreeMembershipPrecompile<O, B, R: Randomness<O, B>>(
 	PhantomData<R>,
 );
 
+use codec::Input;
+
 mod encoding;
 mod types;
 
@@ -87,7 +89,10 @@ impl<O, B, R: Randomness<O, B>> Precompile for BulletproofMerkleTreeMembershipPr
 		_target_gas: Option<u64>,
 		_context: &Context,
 	) -> core::result::Result<PrecompileOutput, ExitError> {
-		let withdraw_proof_res = WithdrawProof::decode(&mut input.to_vec());
+		let mut seed = [0u8; 32];
+		seed.copy_from_slice(&input[0..32]);
+
+		let withdraw_proof_res = WithdrawProof::decode(&mut input[32..].to_vec());
 		let withdraw_proof = match withdraw_proof_res {
 			Ok(wp) => wp,
 			Err(_) => return Err(ExitError::Other("Failed to decode withdraw proof".into())),
@@ -138,7 +143,8 @@ mod test {
 
 	#[test]
 	fn should_verify_with_precompile() {
-		let mut test_rng = ChaChaRng::from_seed([1u8; 32]);
+		let seed = [1u8; 32];
+		let mut test_rng = ChaChaRng::from_seed(seed);
 		let (tree_depth, comms, leaf_index_comms, proof_comms, nullifier_hash, recipient, relayer, root, proof, _) =
 			generate_proof_data(&mut test_rng);
 		let withdraw_proof = WithdrawProof {
@@ -154,14 +160,18 @@ mod test {
 		};
 
 		let encoded_wp = withdraw_proof.encode();
+		let mut buf = vec![];
+		buf.extend_from_slice(&seed);
+		buf.extend_from_slice(&encoded_wp);
 
 		let context: Context = Context {
 			address: Default::default(),
 			caller: Default::default(),
 			apparent_value: From::from(0),
 		};
+		println!("{:?}", buf);
 		// Calling precompile
-		match TestPrecompile::execute(&encoded_wp, None, &context) {
+		match TestPrecompile::execute(&buf, None, &context) {
 			Ok(_) => {},
 			Err(_) => {
 				panic!("BulletproofMerkleTreeMembershipPrecompile::execute() returned error");
@@ -194,6 +204,7 @@ mod test {
 		assert_eq!(decoded_wp.proof.to_bytes(), proof.to_bytes());
 
 		// Calling verify
+		let mut test_rng = ChaChaRng::from_seed([2u8; 32]);
 		let verify_res = withdraw_proof.verify(&POSEIDON_HASHER, &mut test_rng);
 		assert!(verify_res.is_ok());
 	}
