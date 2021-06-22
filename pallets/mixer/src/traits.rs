@@ -1,11 +1,12 @@
+use super::*;
 use frame_support::dispatch;
 use merkle::utils::setup::Setup;
 
-pub trait ExtendedMixer<AccountId, CurrencyId, Balance> {
+pub trait ExtendedMixer<T: Config> {
 	fn create_new(
-		account_id: AccountId,
-		currency_id: CurrencyId,
+		account_id: T::AccountId,
+		currency_id: CurrencyIdOf<T>,
 		setup: Setup,
-		size: Balance,
-	) -> Result<(), dispatch::DispatchError>;
+		size: BalanceOf<T>,
+	) -> Result<T::TreeId, dispatch::DispatchError>;
 }

@@ -116,6 +116,7 @@ std = [
     "merkle/std",
     "merkle-rpc",
     "mixer/std",
+    "webb-currencies/std",
     "webb-tokens/std",
 
     "fp-rpc/std",

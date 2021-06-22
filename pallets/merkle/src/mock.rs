@@ -24,6 +24,7 @@ construct_runtime!(
 	{
 		System: system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Randomness: pallet_randomness_collective_flip::{Pallet, Call, Storage},
 		MerkleTrees: pallet_merkle::{Pallet, Call, Storage, Event<T>},
 	}
 );
@@ -85,6 +86,7 @@ impl Config for Test {
 	type Event = Event;
 	type KeyId = u32;
 	type MaxTreeDepth = MaxTreeDepth;
+	type Randomness = Randomness;
 	type TreeId = u32;
 	type WeightInfo = Weights<Self>;
 }
