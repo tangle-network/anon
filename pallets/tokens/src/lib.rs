@@ -31,7 +31,7 @@ use frame_support::{
 	ensure, log,
 	traits::{
 		Currency as PalletCurrency, ExistenceRequirement, Get, Imbalance, LockableCurrency as PalletLockableCurrency,
-		ReservableCurrency as PalletReservableCurrency, SignedImbalance, WithdrawReasons,
+		ReservableCurrency as PalletReservableCurrency, SignedImbalance, WithdrawReasons, MaxEncodedLen,
 	},
 	transactional, PalletId,
 };
@@ -150,7 +150,7 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		/// The balance type
-		type Balance: Parameter + Member + AtLeast32BitUnsigned + Default + Copy + MaybeSerializeDeserialize;
+		type Balance: Parameter + Member + AtLeast32BitUnsigned + Default + Copy + MaybeSerializeDeserialize + MaxEncodedLen;
 
 		/// The amount type, should be signed version of `Balance`
 		type Amount: Signed
@@ -421,7 +421,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(5_000_000)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn create(
+		pub fn create(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			admin: <T::Lookup as StaticLookup>::Source,
@@ -468,7 +468,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn force_create(
+		pub fn force_create(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			owner: <T::Lookup as StaticLookup>::Source,
@@ -512,7 +512,7 @@ pub mod pallet {
 		/// - `s = witness.sufficients`
 		/// - `a = witness.approvals`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn destroy(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
+		pub fn destroy(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
 			let maybe_check_owner = match T::ForceOrigin::try_origin(origin) {
 				Ok(_) => None,
 				Err(origin) => Some(ensure_signed(origin)?),
@@ -555,7 +555,7 @@ pub mod pallet {
 		/// Modes: Pre-existing balance of `beneficiary`; Account pre-existence
 		/// of `beneficiary`.
 		#[pallet::weight(5_000_000)]
-		pub(super) fn mint(
+		pub fn mint(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			beneficiary: <T::Lookup as StaticLookup>::Source,
@@ -594,7 +594,7 @@ pub mod pallet {
 		/// Weight: `O(1)`
 		/// Modes: Post-existence of `who`; Pre & post Zombie-status of `who`.
 		#[pallet::weight(5_000_000)]
-		pub(super) fn burn(
+		pub fn burn(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			who: <T::Lookup as StaticLookup>::Source,
@@ -621,7 +621,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn freeze(
+		pub fn freeze(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			who: <T::Lookup as StaticLookup>::Source,
@@ -651,7 +651,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn thaw(
+		pub fn thaw(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			who: <T::Lookup as StaticLookup>::Source,
@@ -680,7 +680,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn freeze_asset(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
+		pub fn freeze_asset(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
 			Token::<T>::try_mutate(id, |maybe_details| {
@@ -705,7 +705,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn thaw_asset(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
+		pub fn thaw_asset(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
 			Token::<T>::try_mutate(id, |maybe_details| {
@@ -731,7 +731,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn transfer_ownership(
+		pub fn transfer_ownership(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			owner: <T::Lookup as StaticLookup>::Source,
@@ -773,7 +773,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn set_team(
+		pub fn set_team(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			issuer: <T::Lookup as StaticLookup>::Source,
@@ -819,7 +819,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn set_metadata(
+		pub fn set_metadata(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			name: Vec<u8>,
@@ -877,7 +877,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn clear_metadata(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
+		pub fn clear_metadata(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
 			let origin = ensure_signed(origin)?;
 
 			let d = Token::<T>::get(id).ok_or(Error::<T>::Unknown)?;
@@ -910,7 +910,7 @@ pub mod pallet {
 		/// Weight: `O(N + S)` where N and S are the length of the name and
 		/// symbol respectively.
 		#[pallet::weight(5_000_000)]
-		pub(super) fn force_set_metadata(
+		pub fn force_set_metadata(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			name: Vec<u8>,
@@ -951,7 +951,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn force_clear_metadata(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
+		pub fn force_clear_metadata(origin: OriginFor<T>, id: T::CurrencyId) -> DispatchResult {
 			T::ForceOrigin::ensure_origin(origin)?;
 
 			let d = Token::<T>::get(id).ok_or(Error::<T>::Unknown)?;
@@ -984,7 +984,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn force_asset_status(
+		pub fn force_asset_status(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			owner: <T::Lookup as StaticLookup>::Source,
@@ -1035,7 +1035,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn approve_transfer(
+		pub fn approve_transfer(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			delegate: <T::Lookup as StaticLookup>::Source,
@@ -1077,7 +1077,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn cancel_approval(
+		pub fn cancel_approval(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			delegate: <T::Lookup as StaticLookup>::Source,
@@ -1108,7 +1108,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn force_cancel_approval(
+		pub fn force_cancel_approval(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			owner: <T::Lookup as StaticLookup>::Source,
@@ -1155,7 +1155,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn transfer_approved(
+		pub fn transfer_approved(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			owner: <T::Lookup as StaticLookup>::Source,
@@ -1253,7 +1253,7 @@ pub mod pallet {
 		/// Modes: Pre-existence of `target`; Post-existence of sender; Prior &
 		/// post zombie-status of sender; Account pre-existence of `target`.
 		#[pallet::weight(5_000_000)]
-		pub(super) fn transfer_keep_alive(
+		pub fn transfer_keep_alive(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			target: <T::Lookup as StaticLookup>::Source,
@@ -1297,7 +1297,7 @@ pub mod pallet {
 		/// Modes: Pre-existence of `dest`; Post-existence of `source`; Prior &
 		/// post zombie-status of `source`; Account pre-existence of `dest`.
 		#[pallet::weight(T::WeightInfo::force_transfer())]
-		pub(super) fn force_transfer(
+		pub fn force_transfer(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			source: <T::Lookup as StaticLookup>::Source,
@@ -1335,7 +1335,7 @@ pub mod pallet {
 		///
 		/// Weight: `O(1)`
 		#[pallet::weight(5_000_000)]
-		pub(super) fn set_dust_type(
+		pub fn set_dust_type(
 			origin: OriginFor<T>,
 			id: T::CurrencyId,
 			dust_type: DustHandlerType<T::AccountId>,
@@ -1356,11 +1356,11 @@ pub mod pallet {
 
 impl<T: Config> Pallet<T> {
 	/// Check whether account_id is a module account
-	pub(crate) fn is_module_account_id(account_id: &T::AccountId) -> bool {
+	pub fn is_module_account_id(account_id: &T::AccountId) -> bool {
 		PalletId::try_from_account(account_id).is_some()
 	}
 
-	pub(crate) fn try_mutate_account<R, E>(
+	pub fn try_mutate_account<R, E>(
 		who: &T::AccountId,
 		currency_id: T::CurrencyId,
 		f: impl FnOnce(&mut AccountData<T::Balance>, bool) -> sp_std::result::Result<R, E>,
@@ -1417,7 +1417,7 @@ impl<T: Config> Pallet<T> {
 		})
 	}
 
-	pub(crate) fn mutate_account<R>(
+	pub fn mutate_account<R>(
 		who: &T::AccountId,
 		currency_id: T::CurrencyId,
 		f: impl FnOnce(&mut AccountData<T::Balance>, bool) -> R,
@@ -1432,7 +1432,7 @@ impl<T: Config> Pallet<T> {
 	///
 	/// Note this will not maintain total issuance, and the caller is
 	/// expected to do it.
-	pub(crate) fn set_free_balance(currency_id: T::CurrencyId, who: &T::AccountId, amount: T::Balance) {
+	pub fn set_free_balance(currency_id: T::CurrencyId, who: &T::AccountId, amount: T::Balance) {
 		Self::mutate_account(who, currency_id, |account, _| {
 			account.free = amount;
 		});
@@ -1442,7 +1442,7 @@ impl<T: Config> Pallet<T> {
 	///
 	/// Note this will not maintain total issuance, and the caller is
 	/// expected to do it.
-	pub(crate) fn set_reserved_balance(currency_id: T::CurrencyId, who: &T::AccountId, amount: T::Balance) {
+	pub fn set_reserved_balance(currency_id: T::CurrencyId, who: &T::AccountId, amount: T::Balance) {
 		Self::mutate_account(who, currency_id, |account, _| {
 			account.reserved = amount;
 		});
@@ -1450,7 +1450,7 @@ impl<T: Config> Pallet<T> {
 
 	/// Update the account entry for `who` under `currency_id`, given the
 	/// locks.
-	pub(crate) fn update_locks(currency_id: T::CurrencyId, who: &T::AccountId, locks: &[BalanceLock<T::Balance>]) {
+	pub fn update_locks(currency_id: T::CurrencyId, who: &T::AccountId, locks: &[BalanceLock<T::Balance>]) {
 		// update account data
 		Self::mutate_account(who, currency_id, |account, _| {
 			account.frozen = Zero::zero();
@@ -1484,7 +1484,7 @@ impl<T: Config> Pallet<T> {
 		}
 	}
 
-	pub(crate) fn dead_account(id: T::CurrencyId, who: &T::AccountId) {
+	pub fn dead_account(id: T::CurrencyId, who: &T::AccountId) {
 		frame_system::Pallet::<T>::dec_consumers(who);
 		AccountCurrencies::<T>::remove(who, id)
 	}
