@@ -16,7 +16,7 @@ fn setup_tree<T: Config>(caller: T::AccountId, depth: u32) {
 	let hasher = HashFunction::PoseidonDefault;
 	let backend = Backend::Bulletproofs(Curve::Curve25519);
 	let setup = Setup::new(hasher, backend);
-	<Merkle<T> as Tree<T::AccountId, T::BlockNumber, T::TreeId>>::create_tree(
+	<Merkle<T> as Tree<T>>::create_tree(
 		caller,
 		manager_required,
 		setup,

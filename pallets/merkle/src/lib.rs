@@ -328,14 +328,13 @@ pub mod pallet {
 			mgr_required: bool,
 			setup: Setup,
 			depth: Option<u8>,
-			vkey_required: bool,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
 			let depth = match depth {
 				Some(d) => d,
 				None => T::MaxTreeDepth::get(),
 			};
-			let _ = <Self as Tree<_>>::create_tree(sender, mgr_required, setup, depth, vkey_required)?;
+			let _ = <Self as Tree<_>>::create_tree(sender, mgr_required, setup, depth)?;
 			Ok(().into())
 		}
 
@@ -559,12 +558,10 @@ pub struct MerkleTree {
 	pub setup: Setup,
 	/// Decide to store leaves or not
 	pub should_store_leaves: bool,
-	/// Whether verifying keys are required to modify the tree
-	pub should_require_vkey: bool,
 }
 
 impl MerkleTree {
-	pub fn new<T: Config>(setup: Setup, depth: u8, vkey_required: bool) -> Result<Self, Error<T>> {
+	pub fn new<T: Config>(setup: Setup, depth: u8) -> Result<Self, Error<T>> {
 		// let (zero_tree, root_hash) = setup.generate_zero_tree(depth as usize)?;
 		Ok(Self {
 			initialized: false,
@@ -576,7 +573,6 @@ impl MerkleTree {
 			edge_nodes: vec![],
 			setup,
 			should_store_leaves: true, // the default for now.
-			should_require_vkey: vkey_required,
 		})
 	}
 }
@@ -587,7 +583,6 @@ impl<T: Config> Tree<T> for Pallet<T> {
 		is_manager_required: bool,
 		setup: Setup,
 		depth: u8,
-		is_vkey_required: bool,
 	) -> Result<T::TreeId, DispatchError> {
 		ensure!(
 			depth <= T::MaxTreeDepth::get() && depth > 0,
@@ -599,7 +594,7 @@ impl<T: Config> Tree<T> for Pallet<T> {
 		NextTreeId::<T>::mutate(|id| *id += One::one());
 
 		// Setting up the tree
-		let mtree = MerkleTree::new::<T>(setup, depth, is_vkey_required).map_err(|_| Error::<T>::Unimplemented)?;
+		let mtree = MerkleTree::new::<T>(setup, depth).map_err(|_| Error::<T>::Unimplemented)?;
 		Trees::<T>::insert(tree_id, Some(mtree));
 
 		// Setting up the manager

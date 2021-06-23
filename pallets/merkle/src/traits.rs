@@ -35,7 +35,6 @@ pub trait Tree<T: Config> {
 		is_manager_required: bool,
 		setup: Setup,
 		depth: u8,
-		is_vkey_required: bool,
 	) -> Result<T::TreeId, dispatch::DispatchError>;
 	/// Initializes the tree with the root hash and edge nodes, must happen
 	/// after keys are set
