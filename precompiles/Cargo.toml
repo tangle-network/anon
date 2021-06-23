@@ -4,9 +4,7 @@ version = "2.0.0"
 authors = ["Webb Developers"]
 edition = "2018"
 license = "Apache-2.0"
-homepage = "https://substrate.dev"
-repository = "https://github.com/paritytech/frontier/"
-description = "ED25519 precompiles for EVM pallet."
+description = "Bulletproof precompiles for EVM pallet."
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false }
@@ -36,7 +34,6 @@ std = [
 	"sp-std/std",
 	"fp-evm/std",
 	"evm/std",
-
 	"bulletproofs/std",
 	"bulletproofs-gadgets/std",
 	"curve25519-dalek/std",

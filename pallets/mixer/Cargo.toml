@@ -46,9 +46,9 @@ features = ["u64_backend", "alloc"]
 version = "0.1.5"
 
 [dev-dependencies]
-sp-core = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
-sp-io = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
-pallet-randomness-collective-flip = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4" }
+sp-core = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+sp-io = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+pallet-randomness-collective-flip = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
 
 [features]
 default = ["std"]

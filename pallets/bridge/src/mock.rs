@@ -76,6 +76,7 @@ impl frame_system::Config for Test {
 parameter_types! {
 	pub const ExistentialDeposit: Balance = 0;
 	pub const MaxLocks: u32 = 50;
+	pub const MaxReserves: u32 = 50;
 	pub const MaxTreeDepth: u8 = 32;
 	pub const CacheBlockLength: u64 = 5;
 	// Minimum deposit length is 1 month w/ 6 second blocks
@@ -83,12 +84,14 @@ parameter_types! {
 }
 
 impl pallet_balances::Config for Test {
-	type AccountStore = System;
-	type Balance = Balance;
-	type DustRemoval = ();
-	type Event = Event;
-	type ExistentialDeposit = ExistentialDeposit;
 	type MaxLocks = MaxLocks;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
+	type Balance = Balance;
+	type Event = Event;
+	type DustRemoval = ();
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = System;
 	type WeightInfo = ();
 }
 
@@ -157,6 +160,8 @@ impl Config for Test {
 	type ThresholdSignature = [u8; 32];
 	type Tree = MerkleTrees;
 }
+
+impl pallet_randomness_collective_flip::Config for Test {}
 
 pub type TokenPallet = webb_tokens::Pallet<Test>;
 
