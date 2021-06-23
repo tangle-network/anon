@@ -1,5 +1,7 @@
-use super::*;
-use super::encoding::{Decode, Encode};
+use super::{
+	encoding::{Decode, Encode},
+	*,
+};
 use bulletproofs::r1cs::{R1CSProof, Verifier};
 use bulletproofs_gadgets::{
 	fixed_deposit_tree::mixer_verif_gadget,
@@ -7,10 +9,10 @@ use bulletproofs_gadgets::{
 	utils::AllocatedScalar,
 };
 use curve25519_dalek::{ristretto::CompressedRistretto, scalar::Scalar};
+use evm::ExitError;
 use merlin::Transcript;
 use rand_chacha::rand_core::{CryptoRng, RngCore};
 use sp_std::prelude::Vec;
-use evm::{ExitError};
 
 #[derive(Debug)]
 pub struct WithdrawProof {

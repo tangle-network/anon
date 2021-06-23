@@ -19,35 +19,26 @@
 
 extern crate alloc;
 
-use rand_chacha::rand_core::SeedableRng;
-use crate::encoding::Decode;
-use rand_chacha::ChaChaRng;
-use crate::types::WithdrawProof;
+use crate::{encoding::Decode, types::WithdrawProof};
+use alloc::vec::Vec;
 use bulletproofs::BulletproofGens;
 use bulletproofs_gadgets::poseidon::{
 	builder::{Poseidon, PoseidonBuilder},
 	PoseidonSbox,
 };
-use sp_std::marker::PhantomData;
-use sp_std::fmt::Debug;
-use alloc::vec::Vec;
-use frame_support::traits::Randomness;
+use evm::{executor::PrecompileOutput, Context, ExitError, ExitSucceed};
 use fp_evm::Precompile;
-use evm::{ExitSucceed, ExitError, Context, executor::PrecompileOutput};
-use sp_runtime::{
-	traits::{
-		CheckEqual,
-		SimpleBitOps, Member, MaybeDisplay,
-		MaybeSerializeDeserialize, MaybeMallocSizeOf, Bounded, AtLeast32BitUnsigned,
-	},
-};
 use frame_support::{
+	traits::{MaxEncodedLen, Randomness},
 	Parameter,
-	traits::{
-		MaxEncodedLen,
-	},
 };
 use lazy_static::lazy_static;
+use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
+use sp_runtime::traits::{
+	AtLeast32BitUnsigned, Bounded, CheckEqual, MaybeDisplay, MaybeMallocSizeOf, MaybeSerializeDeserialize, Member,
+	SimpleBitOps,
+};
+use sp_std::{fmt::Debug, marker::PhantomData};
 
 pub struct BulletproofMerkleTreeMembershipPrecompile<O, B, R: Randomness<O, B>>(
 	PhantomData<O>,
@@ -75,14 +66,35 @@ pub fn default_bulletproofs_poseidon_hasher() -> Poseidon {
 }
 
 impl<O, B, R: Randomness<O, B>> Precompile for BulletproofMerkleTreeMembershipPrecompile<O, B, R>
-	where
-		O: Parameter + Member + MaybeSerializeDeserialize + Debug + MaybeDisplay + SimpleBitOps + Ord
-			+ Default + Copy + CheckEqual + sp_std::hash::Hash + AsRef<[u8]> + AsMut<[u8]>
-			+ MaybeMallocSizeOf + MaxEncodedLen,
-		B: Parameter + Member + MaybeSerializeDeserialize + Debug + MaybeDisplay +
-			AtLeast32BitUnsigned + Default + Bounded + Copy + sp_std::hash::Hash +
-			sp_std::str::FromStr + MaybeMallocSizeOf + MaxEncodedLen
-
+where
+	O: Parameter
+		+ Member
+		+ MaybeSerializeDeserialize
+		+ Debug
+		+ MaybeDisplay
+		+ SimpleBitOps
+		+ Ord
+		+ Default
+		+ Copy
+		+ CheckEqual
+		+ sp_std::hash::Hash
+		+ AsRef<[u8]>
+		+ AsMut<[u8]>
+		+ MaybeMallocSizeOf
+		+ MaxEncodedLen,
+	B: Parameter
+		+ Member
+		+ MaybeSerializeDeserialize
+		+ Debug
+		+ MaybeDisplay
+		+ AtLeast32BitUnsigned
+		+ Default
+		+ Bounded
+		+ Copy
+		+ sp_std::hash::Hash
+		+ sp_std::str::FromStr
+		+ MaybeMallocSizeOf
+		+ MaxEncodedLen,
 {
 	fn execute(
 		input: &[u8],
@@ -123,14 +135,12 @@ impl<O, B, R: Randomness<O, B>> Precompile for BulletproofMerkleTreeMembershipPr
 #[cfg(test)]
 mod test {
 	use super::*;
-	use sp_core::H256;
-	use sp_core::H160;
 	use crate::{
 		encoding::Encode,
 		types::{test::generate_proof_data, WithdrawProof},
 	};
 	use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
-	use sp_core::uint::U256;
+	use sp_core::{uint::U256, H160, H256};
 
 	struct Rng;
 	impl Randomness<H256, u64> for Rng {
@@ -146,8 +156,8 @@ mod test {
 	// fn should_verify_with_precompile() {
 	// 	let seed = [1u8; 32];
 	// 	let mut test_rng = ChaChaRng::from_seed(seed);
-	// 	let (tree_depth, comms, leaf_index_comms, proof_comms, nullifier_hash, recipient, relayer, root, proof, _) =
-	// 		generate_proof_data(&mut test_rng);
+	// 	let (tree_depth, comms, leaf_index_comms, proof_comms, nullifier_hash,
+	// recipient, relayer, root, proof, _) = 		generate_proof_data(&mut test_rng);
 	// 	let withdraw_proof = WithdrawProof {
 	// 		depth: tree_depth,
 	// 		private_inputs: comms,
@@ -175,8 +185,8 @@ mod test {
 	// 	match TestPrecompile::execute(&buf, None, &context) {
 	// 		Ok(_) => {},
 	// 		Err(_) => {
-	// 			panic!("BulletproofMerkleTreeMembershipPrecompile::execute() returned error");
-	// 		}
+	// 			panic!("BulletproofMerkleTreeMembershipPrecompile::execute() returned
+	// error"); 		}
 	// 	}
 	// }
 
