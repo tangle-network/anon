@@ -9,6 +9,7 @@ use merkle::utils::{
 	keys::{slice_to_bytes_32, ScalarBytes},
 	setup::default_bulletproofs_poseidon_hasher,
 };
+use merkle::utils::keys::from_bytes_to_bp_gens;
 use merlin::Transcript;
 use webb_traits::MultiCurrency;
 
@@ -24,7 +25,8 @@ benchmarks! {
 		let d in 1 .. NUM_DEPOSITS;
 		let caller = whitelisted_caller();
 
-		Mixer::<T>::initialize().unwrap();
+		Mixer::<T>::initialize_first_stage().unwrap();
+		Mixer::<T>::initialize_second_stage().unwrap();
 		let mixer_id: T::TreeId = 0u32.into();
 		let currency_id: CurrencyIdOf<T> = T::NativeCurrencyId::get();
 
@@ -37,67 +39,70 @@ benchmarks! {
 		// assert_eq!(mixer_info.leaves.len(), d as usize);
 	}
 
-	withdraw {
-		let caller: T::AccountId = whitelisted_caller();
-		Mixer::<T>::initialize().unwrap();
+	// withdraw {
+	// 	let caller: T::AccountId = whitelisted_caller();
+	// 	Mixer::<T>::initialize_first_stage().unwrap();
+	// 	Mixer::<T>::initialize_second_stage().unwrap();
 
-		let mixer_id: T::TreeId = 0u32.into();
-		let balance: BalanceOf<T> = 1_000_000_000u32.into();
+	// 	let mixer_id: T::TreeId = 0u32.into();
+	// 	let balance: BalanceOf<T> = 1_000_000_000u32.into();
 
-		let pc_gens = PedersenGens::default();
-		let poseidon = default_bulletproofs_poseidon_hasher();
+	// 	let pc_gens = PedersenGens::default();
+	// 	let params = Merkle::<T>::get_verifying_key(0u32.into()).unwrap();
+	// 	let poseidon = default_bulletproofs_poseidon_hasher(from_bytes_to_bp_gens(&params));
 
-		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
-		let prover = Prover::new(&pc_gens, &mut prover_transcript);
-		let mut ftree = FixedDepositTreeBuilder::new()
-			.hash_params(poseidon.clone())
-			.depth(<T as MerkleConfig>::MaxTreeDepth::get().into())
-			.build();
+	// 	let mut prover_transcript = Transcript::new(b"zk_membership_proof");
+	// 	let prover = Prover::new(&pc_gens, &mut prover_transcript);
+	// 	let mut ftree = FixedDepositTreeBuilder::new()
+	// 		.hash_params(poseidon.clone())
+	// 		.depth(<T as MerkleConfig>::MaxTreeDepth::get().into())
+	// 		.build();
 
-		let leaf = ftree.generate_secrets().to_bytes();
-		ftree.tree.add_leaves(vec![leaf], None);
+	// 	let leaf = ftree.generate_secrets().to_bytes();
+	// 	ftree.tree.add_leaves(vec![leaf], None);
 
-		Mixer::<T>::deposit(RawOrigin::Signed(caller.clone()).into(), mixer_id, vec![leaf.to_vec()]).unwrap();
+	// 	Mixer::<T>::deposit(RawOrigin::Signed(caller.clone()).into(), mixer_id, vec![leaf.to_vec()]).unwrap();
 
-		let root = Merkle::<T>::get_merkle_root(mixer_id).unwrap();
-		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
-			Scalar::from_bytes_mod_order(slice_to_bytes_32(&root)),
-			Scalar::from_bytes_mod_order(slice_to_bytes_32(&leaf)),
-			Scalar::from_bytes_mod_order(slice_to_bytes_32(&caller.encode())),
-			Scalar::from_bytes_mod_order(slice_to_bytes_32(&caller.encode())),
-			&ftree.hash_params.bp_gens, prover
-		);
+	// 	let root = Merkle::<T>::get_merkle_root(mixer_id).unwrap();
+	// 	let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
+	// 		Scalar::from_bytes_mod_order(slice_to_bytes_32(&root)),
+	// 		Scalar::from_bytes_mod_order(slice_to_bytes_32(&leaf)),
+	// 		Scalar::from_bytes_mod_order(slice_to_bytes_32(&caller.encode())),
+	// 		Scalar::from_bytes_mod_order(slice_to_bytes_32(&caller.encode())),
+	// 		&ftree.hash_params.bp_gens, prover
+	// 	);
 
-		let comms: Vec<ScalarBytes> = comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
-		let leaf_index_comms: Vec<ScalarBytes> = leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
-		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+	// 	let comms: Vec<ScalarBytes> = comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+	// 	let leaf_index_comms: Vec<ScalarBytes> = leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+	// 	let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 
-		let block_number: T::BlockNumber = 0u32.into();
+	// 	let block_number: T::BlockNumber = 0u32.into();
 
-		let withdraw_proof = WithdrawProof::<T>::new(
-			mixer_id,
-			block_number,
-			root,
-			comms,
-			nullifier_hash.to_bytes().to_vec(),
-			proof.to_bytes(),
-			leaf_index_comms,
-			proof_comms,
-			None,
-			None
-		);
-	}: _(
-		RawOrigin::Signed(caller.clone()),
-		withdraw_proof
-	)
-	verify {
-		let currency_id: CurrencyIdOf<T> = T::NativeCurrencyId::get();
-		let balance_after: BalanceOf<T> = T::Currency::free_balance(currency_id, &caller);
-		assert_eq!(balance_after, balance);
-	}
+	// 	let withdraw_proof = WithdrawProof::<T>::new(
+	// 		mixer_id,
+	// 		block_number,
+	// 		root,
+	// 		comms,
+	// 		nullifier_hash.to_bytes().to_vec(),
+	// 		proof.to_bytes(),
+	// 		leaf_index_comms,
+	// 		proof_comms,
+	// 		None,
+	// 		None
+	// 	);
+	// }: _(
+	// 	RawOrigin::Signed(caller.clone()),
+	// 	withdraw_proof
+	// )
+	// verify {
+	// 	let currency_id: CurrencyIdOf<T> = T::NativeCurrencyId::get();
+	// 	let balance_after: BalanceOf<T> = T::Currency::free_balance(currency_id, &caller);
+	// 	assert_eq!(balance_after, balance);
+	// }
 
 	set_stopped {
-		Mixer::<T>::initialize().unwrap();
+		Mixer::<T>::initialize_first_stage().unwrap();
+		Mixer::<T>::initialize_second_stage().unwrap();
 	}:
 	// Calling the function with the root origin
 	_(RawOrigin::Root, true)
@@ -111,7 +116,8 @@ benchmarks! {
 	}
 
 	transfer_admin {
-		Mixer::<T>::initialize().unwrap();
+		Mixer::<T>::initialize_first_stage().unwrap();
+		Mixer::<T>::initialize_second_stage().unwrap();
 		// This account will be a new admin
 		let new_admin: T::AccountId = account("new_admin", 0, 0);
 	}:
@@ -124,12 +130,16 @@ benchmarks! {
 
 	on_finalize_uninitialized {
 		let first_block: T::BlockNumber = 0u32.into();
+		let second_block: T::BlockNumber = 1u32.into();
 	}: {
 		Mixer::<T>::on_finalize(first_block);
+		Mixer::<T>::on_finalize(second_block);
 	}
 	verify {
-		let initialized = Mixer::<T>::initialised();
-		assert!(initialized);
+		let first_stage_initialized = Mixer::<T>::first_stage_initialized();
+		let second_stage_initialized = Mixer::<T>::second_stage_initialized();
+		assert!(first_stage_initialized);
+		assert!(second_stage_initialized);
 	}
 
 	on_finalize_initialized {
