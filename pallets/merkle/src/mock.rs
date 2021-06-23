@@ -23,7 +23,7 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: system::{Pallet, Call, Config, Storage, Event<T>},
-		Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		Randomness: pallet_randomness_collective_flip::{Pallet, Call, Storage},
 		MerkleTrees: pallet_merkle::{Pallet, Call, Storage, Event<T>},
 	}
@@ -37,7 +37,7 @@ parameter_types! {
 }
 
 impl frame_system::Config for Test {
-	type AccountData = balances::AccountData<u64>;
+	type AccountData = pallet_balances::AccountData<u64>;
 	type AccountId = u64;
 	type BaseCallFilter = ();
 	type BlockHashCount = BlockHashCount;
@@ -67,17 +67,20 @@ parameter_types! {
 	pub const ExistentialDeposit: Balance = 0;
 	pub const MaxLocks: u32 = 50;
 	pub const MaxTreeDepth: u8 = 32;
+	pub const MaxReserves: u32 = 50;
 	pub const CacheBlockLength: u64 = 5;
 	pub const MinimumDepositLength: u64 = 10;
 }
 
-impl balances::Config for Test {
+impl pallet_balances::Config for Test {
 	type AccountStore = System;
 	type Balance = Balance;
 	type DustRemoval = ();
 	type Event = Event;
 	type ExistentialDeposit = ExistentialDeposit;
 	type MaxLocks = MaxLocks;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
 	type WeightInfo = ();
 }
 
@@ -90,6 +93,8 @@ impl Config for Test {
 	type TreeId = u32;
 	type WeightInfo = Weights<Self>;
 }
+
+impl pallet_randomness_collective_flip::Config for Test {}
 
 pub type MerkleCall = pallet_merkle::Call<Test>;
 
