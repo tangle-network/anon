@@ -6,10 +6,9 @@ use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::OnFinalize;
 use frame_system::RawOrigin;
 use merkle::utils::{
-	keys::{slice_to_bytes_32, ScalarBytes},
+	keys::{from_bytes_to_bp_gens, slice_to_bytes_32, ScalarBytes},
 	setup::default_bulletproofs_poseidon_hasher,
 };
-use merkle::utils::keys::from_bytes_to_bp_gens;
 use merlin::Transcript;
 use webb_traits::MultiCurrency;
 

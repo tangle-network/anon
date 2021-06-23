@@ -1,12 +1,11 @@
 use super::*;
+use crate::{utils::keys::get_bp_gen_bytes, Pallet as Merkle};
+use bulletproofs::BulletproofGens;
 use curve25519_dalek::scalar::Scalar;
-use bulletproofs::{BulletproofGens};
 use frame_benchmarking::{account, benchmarks, whitelisted_caller};
 use frame_support::traits::OnFinalize;
 use frame_system::{Pallet as System, RawOrigin};
 use utils::setup::{Backend, HashFunction};
-use crate::utils::keys::get_bp_gen_bytes;
-use crate::Pallet as Merkle;
 
 const MAX_DEPTH: u8 = 32;
 const NUM_LEAVES: u32 = 10;
@@ -17,13 +16,7 @@ fn setup_tree<T: Config>(caller: T::AccountId, depth: u32) {
 	let hasher = HashFunction::PoseidonDefault;
 	let backend = Backend::Bulletproofs(Curve::Curve25519);
 	let setup = Setup::new(hasher, backend);
-	<Merkle<T> as Tree<T>>::create_tree(
-		caller,
-		manager_required,
-		setup,
-		depth as u8,
-	)
-	.unwrap();
+	<Merkle<T> as Tree<T>>::create_tree(caller, manager_required, setup, depth as u8).unwrap();
 
 	let key_data = get_bp_gen_bytes(&BulletproofGens::new(4096, 1));
 	<Merkle<T> as Tree<T>>::add_verifying_key(key_data).unwrap();
