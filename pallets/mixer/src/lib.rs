@@ -600,7 +600,7 @@ impl<T: Config> ExtendedMixer<T> for Pallet<T> {
 		size: BalanceOf<T>,
 	) -> Result<T::TreeId, dispatch::DispatchError> {
 		let depth: u8 = <T as merkle::Config>::MaxTreeDepth::get();
-		let mixer_id: T::TreeId = T::Tree::create_tree(account_id, true, setup, depth, true)?;
+		let mixer_id: T::TreeId = T::Tree::create_tree(account_id, true, setup, depth)?;
 		let mixer_info = MixerInfo::<T>::new(T::DepositLength::get(), size, currency_id);
 		MixerTrees::<T>::insert(mixer_id, mixer_info);
 		// Add new id to list

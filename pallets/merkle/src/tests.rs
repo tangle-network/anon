@@ -51,7 +51,6 @@ fn can_create_tree() {
 			false,
 			setup.clone(),
 			Some(3),
-			true,
 		));
 	});
 }
@@ -67,7 +66,6 @@ fn can_update_manager_when_required() {
 			true,
 			setup.clone(),
 			Some(3),
-			true,
 		));
 
 		assert_ok!(MerkleTrees::set_manager(Origin::signed(1), 0, 2,));
@@ -88,7 +86,6 @@ fn can_update_manager_when_not_required() {
 			false,
 			setup.clone(),
 			Some(3),
-			true,
 		));
 
 		assert_ok!(MerkleTrees::set_manager(Origin::signed(1), 0, 2,));
@@ -109,7 +106,6 @@ fn cannot_update_manager_as_not_manager() {
 			false,
 			setup.clone(),
 			Some(3),
-			true,
 		));
 
 		assert_err!(MerkleTrees::set_manager(Origin::signed(2), 0, 2,), BadOrigin);
@@ -127,7 +123,6 @@ fn can_update_manager_required_manager() {
 			false,
 			setup.clone(),
 			Some(3),
-			true,
 		));
 
 		assert_ok!(MerkleTrees::set_manager_required(Origin::signed(1), 0, true,));
@@ -148,7 +143,6 @@ fn cannot_update_manager_required_as_not_manager() {
 			false,
 			setup.clone(),
 			Some(3),
-			true,
 		));
 
 		assert_err!(
@@ -171,7 +165,6 @@ fn can_add_member() {
 			false,
 			setup.clone(),
 			Some(3),
-			true,
 		));
 
 		let tree_id = 0;
@@ -197,7 +190,6 @@ fn can_add_member_as_manager() {
 			true,
 			setup.clone(),
 			Some(3),
-			true,
 		));
 
 		let tree_id = 0;
@@ -223,7 +215,6 @@ fn cannot_add_member_as_not_manager() {
 			true,
 			setup.clone(),
 			Some(3),
-			true,
 		));
 
 		let tree_id = 0;
@@ -250,7 +241,6 @@ fn should_be_able_to_set_stopped_merkle() {
 			true,
 			setup.clone(),
 			Some(1),
-			true,
 		));
 		assert_ok!(MerkleTrees::set_stopped(Origin::signed(1), 0, true));
 
@@ -277,7 +267,6 @@ fn should_be_able_to_change_manager_with_root() {
 			true,
 			setup.clone(),
 			Some(3),
-			true,
 		));
 		let call = Box::new(MerkleCall::set_manager(0, 2));
 		let res = call.dispatch_bypass_filter(RawOrigin::Root.into());
@@ -298,7 +287,7 @@ fn should_not_have_0_depth() {
 		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		let setup = Setup::new(hasher.clone(), backend.clone());
 		assert_err!(
-			MerkleTrees::create_tree(Origin::signed(1), false, setup.clone(), Some(0), true),
+			MerkleTrees::create_tree(Origin::signed(1), false, setup.clone(), Some(0)),
 			Error::<Test>::InvalidTreeDepth,
 		);
 	});
@@ -316,7 +305,6 @@ fn should_have_min_depth() {
 			false,
 			setup.clone(),
 			Some(1),
-			true,
 		));
 
 		let tree_id = 0;
@@ -344,7 +332,6 @@ fn should_have_max_depth() {
 			false,
 			setup.clone(),
 			Some(32),
-			true,
 		));
 	});
 }
@@ -356,7 +343,7 @@ fn should_not_have_more_than_max_depth() {
 		let backend = Backend::Bulletproofs(Curve::Curve25519);
 		let setup = Setup::new(hasher.clone(), backend.clone());
 		assert_err!(
-			MerkleTrees::create_tree(Origin::signed(1), false, setup.clone(), Some(33), true),
+			MerkleTrees::create_tree(Origin::signed(1), false, setup.clone(), Some(33)),
 			Error::<Test>::InvalidTreeDepth,
 		);
 	});
@@ -373,7 +360,6 @@ fn should_have_correct_root_hash_after_insertion() {
 			false,
 			setup.clone(),
 			Some(2),
-			true,
 		));
 
 		let tree_id = 0;
@@ -433,7 +419,6 @@ fn should_have_correct_root_hash() {
 			false,
 			setup.clone(),
 			Some(4),
-			true,
 		));
 
 		let tree_id = 0;
@@ -492,7 +477,6 @@ fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 			false,
 			setup.clone(),
 			Some(2),
-			true,
 		));
 
 		let tree_id = 0;
@@ -533,7 +517,6 @@ fn should_not_verify_invalid_proof() {
 			false,
 			setup.clone(),
 			Some(2),
-			true,
 		));
 
 		let tree_id = 0;
@@ -594,7 +577,6 @@ fn should_verify_proof_of_membership() {
 			false,
 			setup.clone(),
 			Some(4),
-			true,
 		));
 
 		let tree_id = 0;
@@ -674,7 +656,6 @@ fn should_verify_simple_zk_proof_of_membership() {
 			false,
 			setup.clone(),
 			Some(1),
-			true,
 		));
 
 		let tree_id = 0;
@@ -742,7 +723,6 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 			false,
 			setup.clone(),
 			Some(1),
-			true,
 		));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
@@ -814,7 +794,6 @@ fn should_not_verify_invalid_private_inputs() {
 			false,
 			setup.clone(),
 			Some(1),
-			true,
 		));
 
 		let tree_id = 0;
@@ -889,7 +868,6 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 			false,
 			setup.clone(),
 			Some(1),
-			true,
 		));
 
 		let tree_id = 0;
@@ -965,7 +943,6 @@ fn should_not_verify_invalid_transcript() {
 			false,
 			setup.clone(),
 			Some(1),
-			true,
 		));
 
 		let tree_id = 0;
@@ -1036,7 +1013,6 @@ fn should_verify_zk_proof_of_membership() {
 			false,
 			setup.clone(),
 			Some(3),
-			true,
 		));
 
 		let tree_id = 0;
@@ -1116,7 +1092,6 @@ fn should_verify_large_zk_proof_of_membership() {
 			false,
 			setup.clone(),
 			Some(32),
-			true,
 		));
 
 		let tree_id = 0;
@@ -1186,7 +1161,6 @@ fn should_verify_simple_zk_proof_of_membership_arkworks() {
 			false,
 			setup.clone(),
 			Some(30),
-			true,
 		));
 
 		let (pk, vk) = setup_random_groth16(&mut rng);
@@ -1244,7 +1218,6 @@ fn should_fail_to_verify_empty_public_inputs_arkworks() {
 			false,
 			setup.clone(),
 			Some(30),
-			true,
 		));
 
 		let (pk, vk) = setup_random_groth16(&mut rng);
@@ -1340,7 +1313,6 @@ fn should_fail_to_verify_invalid_public_inputs_arkworks() {
 			false,
 			setup.clone(),
 			Some(30),
-			true,
 		));
 
 		let (pk, vk) = setup_random_groth16(&mut rng);
@@ -1442,7 +1414,6 @@ fn should_fail_to_add_leaf_without_a_key_arkworks() {
 			false,
 			setup.clone(),
 			Some(30),
-			true,
 		));
 
 		assert_err!(
@@ -1470,7 +1441,6 @@ fn should_fail_to_verify_with_invalid_key_arkworks() {
 			false,
 			setup.clone(),
 			Some(30),
-			true,
 		));
 
 		let (pk, vk) = setup_random_groth16(&mut rng);

@@ -80,3 +80,6 @@ merkle-rpc = { package = "pallet-merkle-rpc", path = "../pallets/merkle/rpc" }
 
 [features]
 default = []
+runtime-benchmarks = [
+	"merkle/runtime-benchmarks",
+]
