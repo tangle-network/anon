@@ -302,7 +302,7 @@ pub mod pallet {
 			// update and prune database if pruning length has been hit
 			if HighestCachedBlock::<T>::get() > T::CacheBlockLength::get() {
 				if HighestCachedBlock::<T>::get() - T::CacheBlockLength::get() >= LowestCachedBlock::<T>::get() {
-					CachedRoots::<T>::remove_prefix(LowestCachedBlock::<T>::get());
+					CachedRoots::<T>::remove_prefix(LowestCachedBlock::<T>::get(), None);
 					LowestCachedBlock::<T>::set(LowestCachedBlock::<T>::get() + One::one());
 				}
 			}

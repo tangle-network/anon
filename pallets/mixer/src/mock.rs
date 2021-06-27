@@ -36,7 +36,7 @@ construct_runtime!(
 		Mixer: pallet_mixer::{Pallet, Call, Storage, Event<T>},
 		Currencies: webb_currencies::{Pallet, Storage, Event<T>},
 		Tokens: webb_tokens::{Pallet, Storage, Event<T>},
-		Randomness: pallet_randomness_collective_flip::{Pallet, Call, Storage},
+		Randomness: pallet_randomness_collective_flip::{Pallet, Storage},
 	}
 );
 

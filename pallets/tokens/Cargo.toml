@@ -9,22 +9,22 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
-pallet-balances = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-pallet-treasury = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-frame-support = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-frame-system = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sp-std = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sp-runtime = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+pallet-balances = { version = "3.0.0", default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+pallet-treasury = { version = "3.0.0", default-features = false, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+frame-support = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+frame-system = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sp-std = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sp-runtime = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
-frame-benchmarking = { default-features = false, version = "3.0.0", optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+frame-benchmarking = { default-features = false, version = "3.0.0", optional = true, git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
 webb-traits = { default-features = false, path = "../traits" }
 
 [dependencies.bencher]
 version = "0.1.5"
 
 [dev-dependencies]
-sp-core = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sp-io = { default-features = false, version = "3.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+sp-core = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sp-io = { default-features = false, version = "3.0.0", git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
 webb-currencies = { default-features = false, path = "../currencies" }
 
 [features]

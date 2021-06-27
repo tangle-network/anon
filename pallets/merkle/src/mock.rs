@@ -24,7 +24,7 @@ construct_runtime!(
 	{
 		System: system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		Randomness: pallet_randomness_collective_flip::{Pallet, Call, Storage},
+		Randomness: pallet_randomness_collective_flip::{Pallet, Storage},
 		MerkleTrees: pallet_merkle::{Pallet, Call, Storage, Event<T>},
 	}
 );

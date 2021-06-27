@@ -29,51 +29,51 @@ jsonrpc-pubsub = "15.0.0"
 webb-runtime = { path = "../runtime", features = ["std"] }
 
 # Substrate dependencies
-frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-pallet-transaction-payment-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-basic-authorship = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-cli = { features = ["wasmtime"], git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-client-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-chain-spec = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-consensus = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-consensus-aura = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-executor = { features = ["wasmtime"], git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-finality-grandpa = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-finality-grandpa-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-network = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-keystore = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-telemetry = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-rpc-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-service = { features = ["wasmtime"], git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sc-transaction-pool = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sp-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sp-block-builder = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sp-blockchain = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sp-consensus = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sp-consensus-aura = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sp-finality-grandpa = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sp-inherents = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sp-timestamp = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-sp-transaction-pool = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
-substrate-frame-rpc-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+frame-benchmarking = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+frame-benchmarking-cli = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+pallet-transaction-payment-rpc = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-basic-authorship = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-cli = { features = ["wasmtime"], git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-client-api = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-chain-spec = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-consensus = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-consensus-aura = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-executor = { features = ["wasmtime"], git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-finality-grandpa = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-finality-grandpa-rpc = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-network = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-keystore = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-telemetry = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-rpc = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-rpc-api = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-service = { features = ["wasmtime"], git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sc-transaction-pool = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sp-api = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sp-block-builder = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sp-blockchain = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sp-consensus = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sp-consensus-aura = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sp-core = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sp-finality-grandpa = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sp-inherents = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sp-runtime = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sp-timestamp = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+sp-transaction-pool = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
+substrate-frame-rpc-system = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
 
-pallet-contracts-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+pallet-contracts-rpc = { git = "https://github.com/webb-tools/substrate.git", branch = "erup-4-up-substrate-master" }
 
-fc-consensus = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.6" }
-fp-consensus = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.6" }
-fc-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.6" }
-fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.6" }
-fc-rpc-core = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.6" }
-fc-db = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.6" }
-fc-mapping-sync = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.6" }
+fc-consensus = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-up-substrate-master" }
+fp-consensus = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-up-substrate-master" }
+fc-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-up-substrate-master" }
+fp-rpc = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-up-substrate-master" }
+fc-rpc-core = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-up-substrate-master" }
+fc-db = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-up-substrate-master" }
+fc-mapping-sync = { default-features = false, git = "https://github.com/webb-tools/frontier", branch = "erup-4-up-substrate-master" }
 
-pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.6" }
-pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.6" }
-pallet-dynamic-fee = { git = "https://github.com/webb-tools/frontier", branch = "polkadot-v0.9.6" }
+pallet-evm = { git = "https://github.com/webb-tools/frontier", branch = "erup-4-up-substrate-master" }
+pallet-ethereum = { git = "https://github.com/webb-tools/frontier", branch = "erup-4-up-substrate-master" }
+pallet-dynamic-fee = { git = "https://github.com/webb-tools/frontier", branch = "erup-4-up-substrate-master" }
 
 merkle = { package = "pallet-merkle", path = "../pallets/merkle" }
 merkle-rpc = { package = "pallet-merkle-rpc", path = "../pallets/merkle/rpc" }

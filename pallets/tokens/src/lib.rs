@@ -537,7 +537,7 @@ pub mod pallet {
 				let metadata = Metadata::<T>::take(&id);
 				T::NativeCurrency::unreserve(&details.owner, details.deposit.saturating_add(metadata.deposit));
 
-				Approvals::<T>::remove_prefix(&id);
+				Approvals::<T>::remove_prefix(&id, None);
 				Self::deposit_event(Event::Destroyed(id));
 
 				// NOTE: could use postinfo to reflect the actual number of
