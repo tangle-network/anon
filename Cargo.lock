@@ -4620,6 +4620,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-assets"
+version = "3.0.0"
+source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.6#9c572625f6557dfdb19f47474369a0327d51dfbc"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "max-encoded-len",
+ "parity-scale-codec 2.1.3",
+ "sp-runtime",
+ "sp-std 3.0.0",
+]
+
+[[package]]
+name = "pallet-assets-mixer"
+version = "3.0.0"
+dependencies = [
+ "bencher",
+ "bulletproofs-gadgets",
+ "curve25519-dalek 3.1.0",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "merlin",
+ "pallet-assets",
+ "pallet-balances",
+ "pallet-merkle",
+ "pallet-randomness-collective-flip",
+ "parity-scale-codec 2.1.3",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std 3.0.0",
+ "webb-bulletproofs",
+]
+
+[[package]]
 name = "pallet-aura"
 version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.6#9c572625f6557dfdb19f47474369a0327d51dfbc"
