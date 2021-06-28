@@ -1,10 +1,12 @@
 use super::*;
 
 use crate as pallet_mixer;
-use frame_system::EnsureRoot;
 use frame_benchmarking::whitelisted_caller;
 use frame_support::{construct_runtime, parameter_types, weights::Weight, PalletId};
-use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
+use frame_system::{
+	mocking::{MockBlock, MockUncheckedExtrinsic},
+	EnsureRoot,
+};
 use merkle::weights::Weights as MerkleWeights;
 
 use sp_core::H256;
@@ -105,18 +107,18 @@ parameter_types! {
 }
 
 impl pallet_assets::Config for Test {
-	type Event = Event;
-	type Balance = u64;
-	type AssetId = AssetId;
-	type Currency = Balances;
-	type ForceOrigin = EnsureRoot<AccountId>;
+	type ApprovalDeposit = ApprovalDeposit;
 	type AssetDeposit = AssetDeposit;
+	type AssetId = AssetId;
+	type Balance = u64;
+	type Currency = Balances;
+	type Event = Event;
+	type Extra = ();
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Freezer = ();
 	type MetadataDepositBase = MetadataDepositBase;
 	type MetadataDepositPerByte = MetadataDepositPerByte;
-	type ApprovalDeposit = ApprovalDeposit;
 	type StringLimit = StringLimit;
-	type Freezer = ();
-	type Extra = ();
 	type WeightInfo = ();
 }
 
@@ -141,13 +143,13 @@ impl Config for Test {
 	type AssetSystem = Assets;
 	type Currency = Balances;
 	type DefaultAdmin = DefaultAdmin;
+	type DefaultCurrencyId = DefaultCurrencyId;
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
 	type MixerSizes = MixerSizes;
 	type PalletId = MixerPalletId;
 	type Tree = MerkleTrees;
 	type WeightInfo = Weights<Self>;
-	type DefaultCurrencyId = DefaultCurrencyId;
 }
 
 impl pallet_randomness_collective_flip::Config for Test {}

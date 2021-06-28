@@ -50,19 +50,19 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
-pub mod weights;
-
 pub mod traits;
+pub mod weights;
 
 use bulletproofs::BulletproofGens;
 use codec::{Decode, Encode};
-use frame_support::{dispatch, ensure, traits::Get, weights::Weight, PalletId};
-use frame_support::traits::tokens::{fungibles};
-use fungibles::{Inspect, Transfer};
-use sp_runtime::traits::Saturating;
+use frame_support::{
+	dispatch, ensure,
+	traits::{tokens::fungibles, Get, ReservableCurrency},
+	weights::Weight,
+	PalletId,
+};
 use frame_system::ensure_signed;
+use fungibles::{Inspect, Transfer};
 use merkle::{
 	utils::{
 		keys::ScalarBytes,
@@ -71,10 +71,9 @@ use merkle::{
 	},
 	Pallet as MerklePallet, Tree as TreeTrait,
 };
-use sp_runtime::traits::{AccountIdConversion, Zero};
+use sp_runtime::traits::{AccountIdConversion, Saturating, Zero};
 use sp_std::prelude::*;
 use traits::ExtendedMixer;
-use frame_support::traits::ReservableCurrency;
 use weights::WeightInfo;
 
 pub use pallet::*;
@@ -293,7 +292,13 @@ pub mod pallet {
 			ensure!(balance >= deposit, Error::<T>::InsufficientBalance);
 			// transfer the deposit to the module and keep the account
 			let keep_alive = false;
-			T::AssetSystem::transfer(mixer_info.currency_id, &sender, &Self::account_id(), deposit, keep_alive)?;
+			T::AssetSystem::transfer(
+				mixer_info.currency_id,
+				&sender,
+				&Self::account_id(),
+				deposit,
+				keep_alive,
+			)?;
 			// update the total value locked
 			let tvl = Self::total_value_locked(mixer_id);
 			<TotalValueLocked<T>>::insert(mixer_id, tvl.saturating_add(deposit));
@@ -354,7 +359,10 @@ pub mod pallet {
 			)?;
 			// update the total value locked
 			let tvl = Self::total_value_locked(withdraw_proof.mixer_id);
-			<TotalValueLocked<T>>::insert(withdraw_proof.mixer_id, tvl.saturating_sub(mixer_info.fixed_deposit_size));
+			<TotalValueLocked<T>>::insert(
+				withdraw_proof.mixer_id,
+				tvl.saturating_sub(mixer_info.fixed_deposit_size),
+			);
 			// Add the nullifier on behalf of the module
 			T::Tree::add_nullifier(
 				Self::account_id(),
@@ -502,11 +510,11 @@ impl<T: Config> std::fmt::Debug for WithdrawProof<T> {
 }
 
 /// Type alias for the webb_traits::MultiCurrency::Balance type
-pub type BalanceOf<T> = <<T as Config>::AssetSystem as fungibles::Inspect<<T as frame_system::Config>::AccountId>>::Balance;
+pub type BalanceOf<T> =
+	<<T as Config>::AssetSystem as fungibles::Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 /// Type alias for the webb_traits::MultiCurrency::CurrencyId type
 pub type CurrencyIdOf<T> =
 	<<T as pallet::Config>::AssetSystem as fungibles::Inspect<<T as frame_system::Config>::AccountId>>::AssetId;
-
 
 /// Info about the mixer and it's leaf data
 #[derive(Encode, Decode, PartialEq)]

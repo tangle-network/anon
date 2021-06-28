@@ -1,6 +1,6 @@
 use super::*;
 use crate::mock::{
-	new_test_ext, AccountId, Balance, Balances, AssetId, MerkleTrees, Mixer, MixerCall, Origin, System, Test, Assets,
+	new_test_ext, AccountId, AssetId, Assets, Balance, Balances, MerkleTrees, Mixer, MixerCall, Origin, System, Test,
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use bulletproofs_gadgets::{
