@@ -6,6 +6,7 @@ members = [
 	"pallets/merkle",
 	"pallets/merkle/rpc",
 	"pallets/mixer",
+	"pallets/assets-mixer",
 	"pallets/tokens",
 	"pallets/traits",
 	"pallets/utilities",
