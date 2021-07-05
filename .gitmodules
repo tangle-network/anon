@@ -1,0 +1,4 @@
+
+[submodule "contracts/evm/anchor"]
+	path = contracts/evm/anchor
+	url = https://github.com/webb-tools/tornado-core.git

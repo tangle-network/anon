@@ -1,4 +1,3 @@
-
 <h1 align="center">Webb Anon</h1>
 <br />
 <p align="center">
@@ -61,6 +60,11 @@ Build Wasm and native code:
 
 ```bash
 ./scripts/build.sh
+```
+
+To import the submodules, run:
+```bash
+git submodule update --init --recursive
 ```
 
 ## Run 🚀

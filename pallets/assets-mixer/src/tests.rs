@@ -1,6 +1,6 @@
 use super::*;
 use crate::mock::{
-	new_test_ext, AccountId, Balance, Balances, CurrencyId, MerkleTrees, Mixer, MixerCall, Origin, System, Test, Tokens,
+	new_test_ext, AccountId, AssetId, Assets, Balance, Balances, MerkleTrees, Mixer, MixerCall, Origin, System, Test,
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use bulletproofs_gadgets::{
@@ -22,7 +22,6 @@ use merkle::{
 };
 use merlin::Transcript;
 use sp_runtime::{traits::BadOrigin, DispatchError};
-use webb_tokens::ExtendedTokenSystem;
 
 fn default_hasher(bp_gens: BulletproofGens) -> Poseidon {
 	let width = 6;
@@ -115,6 +114,11 @@ fn should_be_able_to_change_admin() {
 fn should_stop_and_start_mixer() {
 	new_test_ext().execute_with(|| {
 		let default_admin = 4;
+		let currency_id = 0;
+		assert_ok!(Assets::force_create(Origin::root(), currency_id, 1, true, 1));
+		assert_ok!(Assets::mint(Origin::signed(1), currency_id, 1, 10000000));
+		assert_ok!(Assets::mint(Origin::signed(1), currency_id, 0, 10000000));
+
 		assert_ok!(Mixer::initialize_first_stage());
 		assert_ok!(Mixer::initialize_second_stage());
 		let mut tree = FixedDepositTreeBuilder::new().build();
@@ -176,15 +180,19 @@ fn should_fail_to_deposit_with_insufficient_balance() {
 #[test]
 fn should_deposit_into_each_mixer_successfully() {
 	new_test_ext().execute_with(|| {
+		let currency_id = 0;
+		assert_ok!(Assets::force_create(Origin::root(), currency_id, 1, true, 1));
+		assert_ok!(Assets::mint(Origin::signed(1), currency_id, 1, 10000000));
+
 		assert_ok!(Mixer::initialize_first_stage());
 		assert_ok!(Mixer::initialize_second_stage());
 		let mut tree = FixedDepositTreeBuilder::new().build();
 
 		for i in 0..4 {
 			let leaf = tree.generate_secrets().to_bytes().to_vec();
-			let balance_before = Balances::free_balance(1);
+			let balance_before = Assets::balance(currency_id, 1);
 			assert_ok!(Mixer::deposit(Origin::signed(1), i, vec![leaf]));
-			let balance_after = Balances::free_balance(1);
+			let balance_after = Assets::balance(currency_id, 1);
 
 			// ensure state updates
 			let g = MerkleTrees::get_tree(i).unwrap();
@@ -200,18 +208,20 @@ fn should_deposit_into_each_mixer_successfully() {
 #[test]
 fn should_withdraw_from_each_mixer_successfully() {
 	new_test_ext().execute_with(|| {
+		let currency_id = 0;
+		assert_ok!(Assets::force_create(Origin::root(), currency_id, 1, true, 1));
+		assert_ok!(Assets::mint(Origin::signed(1), currency_id, 1, 10000000));
+
 		assert_ok!(Mixer::initialize_first_stage());
 		assert_ok!(Mixer::initialize_second_stage());
 		let pc_gens = PedersenGens::default();
 
-		let tree_id = 0;
 		let key_id = 0;
 		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
 		let bp_gens = merkle::utils::keys::from_bytes_to_bp_gens(&params);
 		let h = default_hasher(bp_gens);
 
 		for i in 0..4 {
-			let tree_id = i;
 			let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 			let prover = Prover::new(&pc_gens, &mut prover_transcript);
 			let mut ftree = FixedDepositTreeBuilder::new().hash_params(h.clone()).depth(32).build();
@@ -237,7 +247,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 			let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 
 			let m = Mixer::get_mixer(i).unwrap();
-			let balance_before = Balances::free_balance(2);
+			let balance_before = Assets::balance(currency_id, 2);
 			// check TVL after depositing
 			let tvl = Mixer::total_value_locked(i);
 			assert_eq!(tvl, m.fixed_deposit_size);
@@ -257,7 +267,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 					Some(0),
 				)
 			));
-			let balance_after = Balances::free_balance(2);
+			let balance_after = Assets::balance(currency_id, 2);
 			assert_eq!(balance_before + m.fixed_deposit_size, balance_after);
 			// ensure TVL is 0 after withdrawing
 			let tvl = Mixer::total_value_locked(i);
@@ -270,6 +280,10 @@ fn should_withdraw_from_each_mixer_successfully() {
 fn should_cache_roots_if_no_new_deposits_show() {
 	new_test_ext().execute_with(|| {
 		System::set_block_number(1);
+		let currency_id = 0;
+		assert_ok!(Assets::force_create(Origin::root(), currency_id, 1, true, 1));
+		assert_ok!(Assets::mint(Origin::signed(1), currency_id, 1, 10000000));
+
 		assert_ok!(Mixer::initialize_first_stage());
 		assert_ok!(Mixer::initialize_second_stage());
 		let mut tree = FixedDepositTreeBuilder::new().build();
@@ -305,6 +319,10 @@ fn should_cache_roots_if_no_new_deposits_show() {
 fn should_not_have_cache_once_cache_length_exceeded() {
 	new_test_ext().execute_with(|| {
 		System::set_block_number(1);
+		let currency_id = 0;
+		assert_ok!(Assets::force_create(Origin::root(), currency_id, 1, true, 1));
+		assert_ok!(Assets::mint(Origin::signed(1), currency_id, 1, 10000000));
+
 		assert_ok!(Mixer::initialize_first_stage());
 		assert_ok!(Mixer::initialize_second_stage());
 		let mut tree = FixedDepositTreeBuilder::new().build();
@@ -347,16 +365,9 @@ fn should_not_have_cache_once_cache_length_exceeded() {
 fn should_make_mixer_with_non_native_token() {
 	new_test_ext().execute_with(|| {
 		let currency_id = 1;
-		assert_ok!(<Tokens as ExtendedTokenSystem<AccountId, CurrencyId, Balance>>::create(
-			currency_id,
-			1, // owner
-			1, // admin
-			1  // min_balance
-		));
+		assert_ok!(Assets::force_create(Origin::root(), currency_id, 1, true, 1));
+		assert_ok!(Assets::mint(Origin::signed(1), currency_id, 1, 10000000));
 
-		assert_ok!(<Tokens as ExtendedTokenSystem<AccountId, CurrencyId, Balance>>::mint(
-			1, 0, 10000000
-		));
 		assert_ok!(Mixer::initialize_first_stage());
 		assert_ok!(Mixer::initialize_second_stage());
 		let setup = Setup::new(HashFunction::PoseidonDefault, Backend::Bulletproofs(Curve::Curve25519));
@@ -381,7 +392,7 @@ fn should_make_mixer_with_non_native_token() {
 
 		let pc_gens = PedersenGens::default();
 
-		let sender: AccountId = 0;
+		let sender: AccountId = 1;
 		let recipient: AccountId = 1;
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
@@ -412,7 +423,7 @@ fn should_make_mixer_with_non_native_token() {
 		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 
 		let m = Mixer::get_mixer(tree_id).unwrap();
-		let balance_before = Tokens::free_balance(currency_id, &recipient);
+		let balance_before = Assets::balance(currency_id, &recipient);
 		let native_balance_before = Balances::free_balance(&sender);
 		// check TVL after depositing
 		let tvl = Mixer::total_value_locked(tree_id);
@@ -433,7 +444,7 @@ fn should_make_mixer_with_non_native_token() {
 				Some(0),
 			)
 		));
-		let balance_after = Tokens::free_balance(currency_id, &recipient);
+		let balance_after = Assets::balance(currency_id, &recipient);
 		assert_eq!(balance_before + m.fixed_deposit_size, balance_after);
 		// Native balance after withdraw, to make sure its not changed
 		let native_balance_after = Balances::free_balance(&sender);

@@ -49,7 +49,7 @@ pub use pallet_timestamp::Call as TimestampCall;
 use sp_consensus_aura::SlotDuration;
 
 use frame_support::traits::FindAuthor;
-use merkle::utils::keys::ScalarData;
+use merkle::utils::keys::ScalarBytes;
 use webb_currencies::BasicCurrencyAdapter;
 
 use pallet_ethereum::TransactionStatus;
@@ -264,6 +264,7 @@ impl pallet_timestamp::Config for Runtime {
 parameter_types! {
 	pub const ExistentialDeposit: u128 = 500;
 	pub const MaxLocks: u32 = 50;
+	pub const MaxReserves: u32 = 50;
 }
 
 impl pallet_balances::Config for Runtime {
@@ -275,6 +276,8 @@ impl pallet_balances::Config for Runtime {
 	type Event = Event;
 	type ExistentialDeposit = ExistentialDeposit;
 	type MaxLocks = MaxLocks;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8; 8];
 	type WeightInfo = ();
 }
 
@@ -495,6 +498,8 @@ impl pallet_dynamic_fee::Config for Runtime {
 	type Event = Event;
 	type MinGasPriceBoundDivisor = BoundDivision;
 }
+
+impl pallet_randomness_collective_flip::Config for Runtime {}
 
 // Create the runtime by composing the FRAME pallets that were previously
 // configured.
@@ -850,9 +855,9 @@ impl_runtime_apis! {
 	}
 
 	impl merkle::MerkleApi<Block> for Runtime {
-		fn get_leaf(tree_id: u32, index: u32) -> Option<ScalarData> {
+		fn get_leaf(tree_id: u32, index: u32) -> Option<ScalarBytes> {
 			let v = Merkle::leaves(tree_id, index);
-			if v == ScalarData::default() {
+			if v == ScalarBytes::default() {
 				None
 			} else {
 				Some(v)

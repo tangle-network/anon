@@ -1,14 +1,22 @@
 use super::*;
 use crate::{
 	mock::*,
-	utils::keys::{from_bytes_to_bp_gens, get_bp_gen_bytes, Commitment, ScalarData},
+	utils::{
+		keys::{from_bytes_to_bp_gens, get_bp_gen_bytes, slice_to_bytes_32},
+		setup::{Backend, HashFunction, Setup, Snark},
+	},
+};
+use ark_serialize::CanonicalSerialize;
+use arkworks_gadgets::{
+	prelude::{ark_bls12_381::Fr as Bls381, ark_ff::to_bytes},
+	setup::mixer::{prove_groth16, setup_circuit, setup_random_groth16},
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use bulletproofs_gadgets::{
 	fixed_deposit_tree::builder::FixedDepositTreeBuilder,
 	poseidon::{
 		builder::{Poseidon, PoseidonBuilder},
-		PoseidonSbox, Poseidon_hash_2,
+		PoseidonSbox,
 	},
 	smt::gen_zero_tree,
 };
@@ -17,6 +25,7 @@ use frame_support::{assert_err, assert_ok, traits::UnfilteredDispatchable};
 use frame_system::RawOrigin;
 use merlin::Transcript;
 use rand_chacha::ChaChaRng;
+use rand_core::OsRng;
 use sp_runtime::traits::BadOrigin;
 
 fn key_bytes(x: u8) -> [u8; 32] {
@@ -25,25 +34,40 @@ fn key_bytes(x: u8) -> [u8; 32] {
 	]
 }
 
-fn default_hasher(num_gens: usize) -> Poseidon {
-	let width = 6;
-	PoseidonBuilder::new(width)
-		.bulletproof_gens(BulletproofGens::new(num_gens, 1))
-		.sbox(PoseidonSbox::Exponentiation17)
+fn default_hasher(bp_gens: BulletproofGens) -> Poseidon {
+	PoseidonBuilder::new(6)
+		.bulletproof_gens(bp_gens)
+		.sbox(PoseidonSbox::Exponentiation3)
 		.build()
 }
 
 #[test]
 fn can_create_tree() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3)));
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(3),
+		));
 	});
 }
 
 #[test]
 fn can_update_manager_when_required() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(3)));
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			true,
+			setup.clone(),
+			Some(3),
+		));
 
 		assert_ok!(MerkleTrees::set_manager(Origin::signed(1), 0, 2,));
 
@@ -55,7 +79,15 @@ fn can_update_manager_when_required() {
 #[test]
 fn can_update_manager_when_not_required() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3)));
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(3),
+		));
 
 		assert_ok!(MerkleTrees::set_manager(Origin::signed(1), 0, 2,));
 
@@ -67,7 +99,15 @@ fn can_update_manager_when_not_required() {
 #[test]
 fn cannot_update_manager_as_not_manager() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3)));
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(3),
+		));
 
 		assert_err!(MerkleTrees::set_manager(Origin::signed(2), 0, 2,), BadOrigin);
 	});
@@ -76,7 +116,15 @@ fn cannot_update_manager_as_not_manager() {
 #[test]
 fn can_update_manager_required_manager() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3)));
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(3),
+		));
 
 		assert_ok!(MerkleTrees::set_manager_required(Origin::signed(1), 0, true,));
 
@@ -88,7 +136,15 @@ fn can_update_manager_required_manager() {
 #[test]
 fn cannot_update_manager_required_as_not_manager() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3)));
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(3),
+		));
 
 		assert_err!(
 			MerkleTrees::set_manager_required(Origin::signed(2), 0, true,),
@@ -100,13 +156,24 @@ fn cannot_update_manager_required_as_not_manager() {
 #[test]
 fn can_add_member() {
 	new_test_ext().execute_with(|| {
-		let key = ScalarData::from(key_bytes(1));
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3)));
+		let key = key_bytes(1).to_vec();
+
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(3),
+		));
+
 		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
+		let key_data = get_bp_gen_bytes(&BulletproofGens::new(4096, 1));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![key.clone()]));
 	});
 }
@@ -114,14 +181,24 @@ fn can_add_member() {
 #[test]
 fn can_add_member_as_manager() {
 	new_test_ext().execute_with(|| {
-		let key = ScalarData::from(key_bytes(1));
+		let key = key_bytes(1).to_vec();
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(3)));
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			true,
+			setup.clone(),
+			Some(3),
+		));
+
 		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
+		let key_data = get_bp_gen_bytes(&BulletproofGens::new(4096, 1));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![key.clone()]));
 	});
 }
@@ -129,14 +206,24 @@ fn can_add_member_as_manager() {
 #[test]
 fn cannot_add_member_as_not_manager() {
 	new_test_ext().execute_with(|| {
-		let key = ScalarData::from(key_bytes(1));
+		let key = key_bytes(1).to_vec();
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(3)));
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			true,
+			setup.clone(),
+			Some(3),
+		));
+
 		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
+		let key_data = get_bp_gen_bytes(&BulletproofGens::new(4096, 1));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+
 		assert_err!(
 			MerkleTrees::add_members(Origin::signed(2), 0, vec![key.clone()]),
 			Error::<Test>::ManagerIsRequired
@@ -147,7 +234,15 @@ fn cannot_add_member_as_not_manager() {
 #[test]
 fn should_be_able_to_set_stopped_merkle() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(1)));
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			true,
+			setup.clone(),
+			Some(1),
+		));
 		assert_ok!(MerkleTrees::set_stopped(Origin::signed(1), 0, true));
 
 		// stopping merkle, stopped == true
@@ -165,7 +260,15 @@ fn should_be_able_to_set_stopped_merkle() {
 #[test]
 fn should_be_able_to_change_manager_with_root() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), true, Some(3)));
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			true,
+			setup.clone(),
+			Some(3),
+		));
 		let call = Box::new(MerkleCall::set_manager(0, 2));
 		let res = call.dispatch_bypass_filter(RawOrigin::Root.into());
 		assert_ok!(res);
@@ -181,8 +284,11 @@ fn should_be_able_to_change_manager_with_root() {
 #[test]
 fn should_not_have_0_depth() {
 	new_test_ext().execute_with(|| {
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
 		assert_err!(
-			MerkleTrees::create_tree(Origin::signed(1), false, Some(0)),
+			MerkleTrees::create_tree(Origin::signed(1), false, setup.clone(), Some(0)),
 			Error::<Test>::InvalidTreeDepth,
 		);
 	});
@@ -191,13 +297,23 @@ fn should_not_have_0_depth() {
 #[test]
 fn should_have_min_depth() {
 	new_test_ext().execute_with(|| {
-		let key = ScalarData::from(key_bytes(1));
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1)));
+		let key = key_bytes(1).to_vec();
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(1),
+		));
+
 		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
+		let key_data = get_bp_gen_bytes(&BulletproofGens::new(4096, 1));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![key.clone()]));
 		assert_err!(
 			MerkleTrees::add_members(Origin::signed(1), 0, vec![key.clone()]),
@@ -209,15 +325,26 @@ fn should_have_min_depth() {
 #[test]
 fn should_have_max_depth() {
 	new_test_ext().execute_with(|| {
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(32)));
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(32),
+		));
 	});
 }
 
 #[test]
 fn should_not_have_more_than_max_depth() {
 	new_test_ext().execute_with(|| {
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
 		assert_err!(
-			MerkleTrees::create_tree(Origin::signed(1), false, Some(33)),
+			MerkleTrees::create_tree(Origin::signed(1), false, setup.clone(), Some(33)),
 			Error::<Test>::InvalidTreeDepth,
 		);
 	});
@@ -226,108 +353,139 @@ fn should_not_have_more_than_max_depth() {
 #[test]
 fn should_have_correct_root_hash_after_insertion() {
 	new_test_ext().execute_with(|| {
-		let h = default_hasher(4096);
-		let zero_tree = gen_zero_tree(h.width, &h.sbox);
-		let key0 = ScalarData::from(key_bytes(0));
-		let key1 = ScalarData::from(key_bytes(1));
-		let key2 = ScalarData::from(key_bytes(2));
-		let zero_h0 = ScalarData::from(zero_tree[0]);
-		let zero_h1 = ScalarData::from(zero_tree[1]);
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(2),
+		));
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(2)));
 		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
+		let key_data = get_bp_gen_bytes(&BulletproofGens::new(4096, 1));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
+		let bp_gens = from_bytes_to_bp_gens(&params);
+		let h = default_hasher(bp_gens);
+
+		let zero_tree = gen_zero_tree(h.width, &h.sbox);
+		let key0 = key_bytes(0).to_vec();
+		let key1 = key_bytes(1).to_vec();
+		let key2 = key_bytes(2).to_vec();
+		let zero_h0 = zero_tree[0].to_vec();
+		let zero_h1 = zero_tree[1].to_vec();
+
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![key0.clone()]));
 
-		let keyh1 = Poseidon_hash_2(key0.0, zero_h0.0, &h);
-		let keyh2 = Poseidon_hash_2(keyh1, zero_h1.0, &h);
+		let keyh1 = setup.hash::<Test>(&key0, &zero_h0, &params).unwrap();
+		let keyh2 = setup.hash::<Test>(&keyh1, &zero_h1, &params).unwrap();
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
-		assert_eq!(tree.root_hash.unwrap().0, keyh2, "Invalid root hash");
+		assert_eq!(tree.root_hash, keyh2, "Invalid root hash");
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(2), 0, vec![key1.clone()]));
 
-		let keyh1 = Poseidon_hash_2(key0.0, key1.0, &h);
-		let keyh2 = Poseidon_hash_2(keyh1, zero_h1.0, &h);
+		let keyh1 = setup.hash::<Test>(&key0, &key1, &params).unwrap();
+		let keyh2 = setup.hash::<Test>(&keyh1, &zero_h1, &params).unwrap();
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
-		assert_eq!(tree.root_hash.unwrap().0, keyh2, "Invalid root hash");
+		assert_eq!(tree.root_hash, keyh2, "Invalid root hash");
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(3), 0, vec![key2.clone()]));
 
-		let keyh1 = Poseidon_hash_2(key0.0, key1.0, &h);
-		let keyh2 = Poseidon_hash_2(key2.0, zero_h0.0, &h);
-		let keyh3 = Poseidon_hash_2(keyh1, keyh2, &h);
+		let keyh1 = setup.hash::<Test>(&key0, &key1, &params).unwrap();
+		let keyh2 = setup.hash::<Test>(&key2, &zero_h0, &params).unwrap();
+		let keyh3 = setup.hash::<Test>(&keyh1, &keyh2, &params).unwrap();
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
-		assert_eq!(tree.root_hash.unwrap().0, keyh3, "Invalid root hash");
+		assert_eq!(tree.root_hash, keyh3, "Invalid root hash");
 	});
 }
 
 #[test]
 fn should_have_correct_root_hash() {
 	new_test_ext().execute_with(|| {
-		let h = default_hasher(4096);
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(4),
+		));
+
+		let tree_id = 0;
+		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
+		let key_id = 0;
+		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
+		let bp_gens = from_bytes_to_bp_gens(&params);
+		let h = default_hasher(bp_gens);
 		let zero_tree = gen_zero_tree(h.width, &h.sbox);
 		let mut keys = Vec::new();
 		for i in 0..15 {
-			keys.push(Scalar::from_bytes_mod_order(key_bytes(i as u8)))
+			keys.push(key_bytes(i as u8).to_vec());
 		}
-		let zero_h0 = ScalarData::from(zero_tree[0]);
+		let zero_h0 = zero_tree[0].to_vec();
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(4)));
-		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
-		let key_id = 0;
-		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		assert_ok!(MerkleTrees::add_members(Origin::signed(0), 0, keys.clone()));
 
-		let keys_data: Vec<ScalarData> = keys.iter().map(|x| ScalarData(*x)).collect();
-		assert_ok!(MerkleTrees::add_members(Origin::signed(0), 0, keys_data.clone()));
+		let key1_1 = setup.hash::<Test>(&keys[0], &keys[1], &params).unwrap();
+		let key1_2 = setup.hash::<Test>(&keys[2], &keys[3], &params).unwrap();
+		let key1_3 = setup.hash::<Test>(&keys[4], &keys[5], &params).unwrap();
+		let key1_4 = setup.hash::<Test>(&keys[6], &keys[7], &params).unwrap();
+		let key1_5 = setup.hash::<Test>(&keys[8], &keys[9], &params).unwrap();
+		let key1_6 = setup.hash::<Test>(&keys[10], &keys[11], &params).unwrap();
+		let key1_7 = setup.hash::<Test>(&keys[12], &keys[13], &params).unwrap();
+		let key1_8 = setup.hash::<Test>(&keys[14], &zero_h0, &params).unwrap();
 
-		let key1_1 = Poseidon_hash_2(keys[0], keys[1], &h);
-		let key1_2 = Poseidon_hash_2(keys[2], keys[3], &h);
-		let key1_3 = Poseidon_hash_2(keys[4], keys[5], &h);
-		let key1_4 = Poseidon_hash_2(keys[6], keys[7], &h);
-		let key1_5 = Poseidon_hash_2(keys[8], keys[9], &h);
-		let key1_6 = Poseidon_hash_2(keys[10], keys[11], &h);
-		let key1_7 = Poseidon_hash_2(keys[12], keys[13], &h);
-		let key1_8 = Poseidon_hash_2(keys[14], zero_h0.0, &h);
+		let key2_1 = setup.hash::<Test>(&key1_1, &key1_2, &params).unwrap();
+		let key2_2 = setup.hash::<Test>(&key1_3, &key1_4, &params).unwrap();
+		let key2_3 = setup.hash::<Test>(&key1_5, &key1_6, &params).unwrap();
+		let key2_4 = setup.hash::<Test>(&key1_7, &key1_8, &params).unwrap();
 
-		let key2_1 = Poseidon_hash_2(key1_1, key1_2, &h);
-		let key2_2 = Poseidon_hash_2(key1_3, key1_4, &h);
-		let key2_3 = Poseidon_hash_2(key1_5, key1_6, &h);
-		let key2_4 = Poseidon_hash_2(key1_7, key1_8, &h);
+		let key3_1 = setup.hash::<Test>(&key2_1, &key2_2, &params).unwrap();
+		let key3_2 = setup.hash::<Test>(&key2_3, &key2_4, &params).unwrap();
 
-		let key3_1 = Poseidon_hash_2(key2_1, key2_2, &h);
-		let key3_2 = Poseidon_hash_2(key2_3, key2_4, &h);
-
-		let root_hash = Poseidon_hash_2(key3_1, key3_2, &h);
+		let root_hash = setup.hash::<Test>(&key3_1, &key3_2, &params).unwrap();
 
 		let tree = MerkleTrees::trees(0).unwrap();
 
-		assert_eq!(tree.root_hash.unwrap().0, root_hash, "Invalid root hash");
+		assert_eq!(tree.root_hash, root_hash, "Invalid root hash");
 	});
 }
 
 #[test]
 fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 	new_test_ext().execute_with(|| {
-		let key0 = ScalarData::from(key_bytes(0));
-		let key1 = ScalarData::from(key_bytes(1));
-		let key2 = ScalarData::from(key_bytes(2));
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(2)));
+		let key0 = key_bytes(0).to_vec();
+		let key1 = key_bytes(1).to_vec();
+		let key2 = key_bytes(2).to_vec();
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(2),
+		));
+
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(0), 0, vec![
 			key0.clone(),
@@ -335,13 +493,13 @@ fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 			key2.clone()
 		]));
 
-		let path = vec![(true, key0)];
+		let path = vec![(true, key0.clone())];
 		assert_err!(
-			MerkleTrees::verify(Origin::signed(2), 0, key0, path),
+			MerkleTrees::verify(Origin::signed(2), 0, key0.clone(), path),
 			Error::<Test>::InvalidPathLength,
 		);
 
-		let path = vec![(true, key0), (false, key1), (true, key2)];
+		let path = vec![(true, key0.clone()), (false, key1), (true, key2)];
 		assert_err!(
 			MerkleTrees::verify(Origin::signed(2), 0, key0, path),
 			Error::<Test>::InvalidPathLength,
@@ -352,19 +510,29 @@ fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 #[test]
 fn should_not_verify_invalid_proof() {
 	new_test_ext().execute_with(|| {
-		let h = default_hasher(4096);
-		let zero_tree = gen_zero_tree(h.width, &h.sbox);
-		let key0 = ScalarData::from(key_bytes(9));
-		let key1 = ScalarData::from(key_bytes(3));
-		let key2 = ScalarData::from(key_bytes(5));
-		let zero_h0 = ScalarData::from(zero_tree[0]);
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(2),
+		));
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(2)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
+		let bp_gens = from_bytes_to_bp_gens(&params);
+		let h = default_hasher(bp_gens);
+		let zero_tree = gen_zero_tree(h.width, &h.sbox);
+		let key0 = key_bytes(0).to_vec();
+		let key1 = key_bytes(1).to_vec();
+		let key2 = key_bytes(2).to_vec();
+		let zero_h0 = zero_tree[0].to_vec();
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![
 			key0.clone(),
@@ -372,25 +540,25 @@ fn should_not_verify_invalid_proof() {
 			key2.clone()
 		]));
 
-		let keyh1 = Poseidon_hash_2(key0.0, key1.0, &h);
-		let keyh2 = Poseidon_hash_2(key2.0, zero_h0.0, &h);
-		let _root_hash = Poseidon_hash_2(keyh1, keyh2, &h);
+		let keyh1 = setup.hash::<Test>(&key0, &key1, &params).unwrap();
+		let keyh2 = setup.hash::<Test>(&key2, &zero_h0, &params).unwrap();
+		let _root_hash = setup.hash::<Test>(&keyh1, &keyh2, &params).unwrap();
 
-		let path = vec![(false, key1), (true, ScalarData(keyh2))];
+		let path = vec![(false, key1.clone()), (true, keyh2.clone())];
 
 		assert_err!(
-			MerkleTrees::verify(Origin::signed(2), 0, key0, path),
+			MerkleTrees::verify(Origin::signed(2), 0, key0.clone(), path),
 			Error::<Test>::InvalidMembershipProof,
 		);
 
-		let path = vec![(true, key1), (false, ScalarData(keyh2))];
+		let path = vec![(true, key1), (false, keyh2)];
 
 		assert_err!(
-			MerkleTrees::verify(Origin::signed(2), 0, key0, path),
+			MerkleTrees::verify(Origin::signed(2), 0, key0.clone(), path),
 			Error::<Test>::InvalidMembershipProof,
 		);
 
-		let path = vec![(true, key2), (true, ScalarData(keyh1))];
+		let path = vec![(true, key2), (true, keyh1)];
 
 		assert_err!(
 			MerkleTrees::verify(Origin::signed(2), 0, key0, path),
@@ -402,78 +570,73 @@ fn should_not_verify_invalid_proof() {
 #[test]
 fn should_verify_proof_of_membership() {
 	new_test_ext().execute_with(|| {
-		let h = default_hasher(4096);
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(4),
+		));
+
+		let tree_id = 0;
+		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
+		let key_id = 0;
+		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
+		let bp_gens = from_bytes_to_bp_gens(&params);
+		let h = default_hasher(bp_gens);
 		let zero_tree = gen_zero_tree(h.width, &h.sbox);
 		let mut keys = Vec::new();
 		for i in 0..15 {
-			keys.push(Scalar::from_bytes_mod_order(key_bytes(i as u8)))
+			keys.push(key_bytes(i as u8).to_vec());
 		}
-		let zero_h0 = ScalarData::from(zero_tree[0]);
+		let zero_h0 = zero_tree[0].to_vec();
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(4)));
-		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
-		let key_id = 0;
-		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		assert_ok!(MerkleTrees::add_members(Origin::signed(0), 0, keys.clone()));
 
-		let keys_data: Vec<ScalarData> = keys.iter().map(|x| ScalarData(*x)).collect();
-		assert_ok!(MerkleTrees::add_members(Origin::signed(0), 0, keys_data.clone()));
+		let key1_1 = setup.hash::<Test>(&keys[0], &keys[1], &params).unwrap();
+		let key1_2 = setup.hash::<Test>(&keys[2], &keys[3], &params).unwrap();
+		let key1_3 = setup.hash::<Test>(&keys[4], &keys[5], &params).unwrap();
+		let key1_4 = setup.hash::<Test>(&keys[6], &keys[7], &params).unwrap();
+		let key1_5 = setup.hash::<Test>(&keys[8], &keys[9], &params).unwrap();
+		let key1_6 = setup.hash::<Test>(&keys[10], &keys[11], &params).unwrap();
+		let key1_7 = setup.hash::<Test>(&keys[12], &keys[13], &params).unwrap();
+		let key1_8 = setup.hash::<Test>(&keys[14], &zero_h0, &params).unwrap();
 
-		let key1_1 = Poseidon_hash_2(keys[0], keys[1], &h);
-		let key1_2 = Poseidon_hash_2(keys[2], keys[3], &h);
-		let key1_3 = Poseidon_hash_2(keys[4], keys[5], &h);
-		let key1_4 = Poseidon_hash_2(keys[6], keys[7], &h);
-		let key1_5 = Poseidon_hash_2(keys[8], keys[9], &h);
-		let key1_6 = Poseidon_hash_2(keys[10], keys[11], &h);
-		let key1_7 = Poseidon_hash_2(keys[12], keys[13], &h);
-		let key1_8 = Poseidon_hash_2(keys[14], zero_h0.0, &h);
+		let key2_1 = setup.hash::<Test>(&key1_1, &key1_2, &params).unwrap();
+		let key2_2 = setup.hash::<Test>(&key1_3, &key1_4, &params).unwrap();
+		let key2_3 = setup.hash::<Test>(&key1_5, &key1_6, &params).unwrap();
+		let key2_4 = setup.hash::<Test>(&key1_7, &key1_8, &params).unwrap();
 
-		let key2_1 = Poseidon_hash_2(key1_1, key1_2, &h);
-		let key2_2 = Poseidon_hash_2(key1_3, key1_4, &h);
-		let key2_3 = Poseidon_hash_2(key1_5, key1_6, &h);
-		let key2_4 = Poseidon_hash_2(key1_7, key1_8, &h);
+		let key3_1 = setup.hash::<Test>(&key2_1, &key2_2, &params).unwrap();
+		let key3_2 = setup.hash::<Test>(&key2_3, &key2_4, &params).unwrap();
 
-		let key3_1 = Poseidon_hash_2(key2_1, key2_2, &h);
-		let key3_2 = Poseidon_hash_2(key2_3, key2_4, &h);
-
-		let _root_hash = Poseidon_hash_2(key3_1, key3_2, &h);
+		let _root_hash = setup.hash::<Test>(&key3_1, &key3_2, &params).unwrap();
 
 		let path = vec![
-			(true, keys_data[1]),
-			(true, ScalarData(key1_2)),
-			(true, ScalarData(key2_2)),
-			(true, ScalarData(key3_2)),
+			(true, keys[1].clone()),
+			(true, key1_2),
+			(true, key2_2),
+			(true, key3_2.clone()),
 		];
+		assert_ok!(MerkleTrees::verify(Origin::signed(2), 0, keys[0].clone(), path));
 
-		assert_ok!(MerkleTrees::verify(Origin::signed(2), 0, keys_data[0], path));
+		let path = vec![(true, keys[5].clone()), (true, key1_4), (false, key2_1), (true, key3_2)];
+		assert_ok!(MerkleTrees::verify(Origin::signed(2), 0, keys[4].clone(), path));
 
 		let path = vec![
-			(true, keys_data[5]),
-			(true, ScalarData(key1_4)),
-			(false, ScalarData(key2_1)),
-			(true, ScalarData(key3_2)),
+			(true, keys[11].clone()),
+			(false, key1_5),
+			(true, key2_4),
+			(false, key3_1.clone()),
 		];
+		assert_ok!(MerkleTrees::verify(Origin::signed(2), 0, keys[10].clone(), path));
 
-		assert_ok!(MerkleTrees::verify(Origin::signed(2), 0, keys_data[4], path));
-
-		let path = vec![
-			(true, keys_data[11]),
-			(false, ScalarData(key1_5)),
-			(true, ScalarData(key2_4)),
-			(false, ScalarData(key3_1)),
-		];
-
-		assert_ok!(MerkleTrees::verify(Origin::signed(2), 0, keys_data[10], path));
-
-		let path = vec![
-			(true, zero_h0),
-			(false, ScalarData(key1_7)),
-			(false, ScalarData(key2_3)),
-			(false, ScalarData(key3_1)),
-		];
-
-		assert_ok!(MerkleTrees::verify(Origin::signed(2), 0, keys_data[14], path));
+		let path = vec![(true, zero_h0), (false, key1_7), (false, key2_3), (false, key3_1)];
+		assert_ok!(MerkleTrees::verify(Origin::signed(2), 0, keys[14].clone(), path));
 	});
 }
 
@@ -486,46 +649,60 @@ fn should_verify_simple_zk_proof_of_membership() {
 		let mut prover_transcript = Transcript::new(label);
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-		let h = default_hasher(4096);
-		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(1),
+		));
 
-		let leaf = ftree.generate_secrets();
-		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
-
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
+		let bp_gens = from_bytes_to_bp_gens(&params);
+		let h = default_hasher(bp_gens);
+		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
 
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![ScalarData(leaf)]));
+		let leaf = ftree.generate_secrets().to_bytes();
+		ftree.tree.add_leaves(vec![leaf], None);
+
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
+
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
-			root.0,
-			leaf,
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&root)),
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&leaf)),
 			Scalar::zero(),
 			Scalar::zero(),
 			&ftree.hash_params.bp_gens,
 			prover,
 		);
 
-		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-
-		assert_ok!(MerkleTrees::verify_zk_membership_proof(
+		let comms: Vec<ScalarBytes> = comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let leaf_index_comms: Vec<ScalarBytes> = leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		assert_ok!(MerkleTrees::verify_zk(
 			0,
 			0,
 			root,
 			comms,
-			ScalarData(nullifier_hash),
+			nullifier_hash.to_bytes().to_vec(),
 			proof.to_bytes(),
 			leaf_index_comms,
 			proof_comms,
-			ScalarData::zero(),
-			ScalarData::zero(),
+			key_bytes(0).to_vec(),
+			key_bytes(0).to_vec(),
 		));
 	});
 }
@@ -539,51 +716,64 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		let mut prover_transcript = Transcript::new(label);
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-		let h = default_hasher(4096);
-		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
-
-		let leaf = ftree.generate_secrets();
-		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
-
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1)));
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(1),
+		));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
+		let bp_gens = from_bytes_to_bp_gens(&params);
+		let h = default_hasher(bp_gens);
 
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![ScalarData(leaf)]));
+		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
+
+		let leaf = ftree.generate_secrets().to_bytes();
+		ftree.tree.add_leaves(vec![leaf], None);
+
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
-			root.0,
-			leaf,
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&root)),
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&leaf)),
 			Scalar::zero(),
 			Scalar::zero(),
 			&ftree.hash_params.bp_gens,
 			prover,
 		);
 
-		let mut comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let mut rng = ChaChaRng::from_seed([1u8; 32]);
-		comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
-		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-
+		let mut comms: Vec<ScalarBytes> = comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let mut rng = OsRng::default();
+		comms[0] = RistrettoPoint::random(&mut rng).compress().to_bytes().to_vec();
+		let leaf_index_comms: Vec<ScalarBytes> = leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		assert_err!(
-			MerkleTrees::verify_zk_membership_proof(
+			MerkleTrees::verify_zk(
 				0,
 				0,
 				root,
 				comms,
-				ScalarData(nullifier_hash),
+				nullifier_hash.to_bytes().to_vec(),
 				proof.to_bytes(),
 				leaf_index_comms,
 				proof_comms,
-				ScalarData::zero(),
-				ScalarData::zero(),
+				key_bytes(0).to_vec(),
+				key_bytes(0).to_vec(),
 			),
-			Error::<Test>::ZkVericationFailed
+			Error::<Test>::ZkVerificationFailed
 		);
 	});
 }
@@ -597,50 +787,65 @@ fn should_not_verify_invalid_private_inputs() {
 		let mut prover_transcript = Transcript::new(label);
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-		let h = default_hasher(4096);
-		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(1),
+		));
 
-		let leaf = ftree.generate_secrets();
-		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
-
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
+		let bp_gens = from_bytes_to_bp_gens(&params);
+		let h = default_hasher(bp_gens);
 
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![ScalarData(leaf)]));
+		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
+
+		let leaf = ftree.generate_secrets().to_bytes();
+		ftree.tree.add_leaves(vec![leaf], None);
+
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
-			root.0,
-			leaf,
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&root)),
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&leaf)),
 			Scalar::zero(),
 			Scalar::zero(),
 			&ftree.hash_params.bp_gens,
 			prover,
 		);
 
-		let mut comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
+		let mut comms: Vec<ScalarBytes> = comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let leaf_index_comms: Vec<ScalarBytes> = leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 
-		let mut rng = ChaChaRng::from_seed([1u8; 32]);
-		comms.push(Commitment(RistrettoPoint::random(&mut rng).compress()));
+		let mut rng = OsRng::default();
+		comms.push(RistrettoPoint::random(&mut rng).compress().to_bytes().to_vec());
 
 		assert_err!(
-			MerkleTrees::verify_zk_membership_proof(
+			MerkleTrees::verify_zk(
 				0,
 				0,
 				root,
 				comms,
-				ScalarData(nullifier_hash),
+				nullifier_hash.to_bytes().to_vec(),
 				proof.to_bytes(),
 				leaf_index_comms,
 				proof_comms,
-				ScalarData::zero(),
-				ScalarData::zero(),
+				key_bytes(0).to_vec(),
+				key_bytes(0).to_vec(),
 			),
 			Error::<Test>::InvalidPrivateInputs
 		);
@@ -656,52 +861,68 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 		let mut prover_transcript = Transcript::new(label);
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-		let h = default_hasher(4096);
-		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(1),
+		));
 
-		let leaf = ftree.generate_secrets();
-		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
-
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
+		let bp_gens = from_bytes_to_bp_gens(&params);
+		let h = default_hasher(bp_gens);
+		let zero_tree = gen_zero_tree(h.width, &h.sbox);
 
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![ScalarData(leaf)]));
+		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
+
+		let leaf = ftree.generate_secrets().to_bytes();
+		ftree.tree.add_leaves(vec![leaf], None);
+
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
-			root.0,
-			leaf,
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&root)),
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&leaf)),
 			Scalar::zero(),
 			Scalar::zero(),
 			&ftree.hash_params.bp_gens,
 			prover,
 		);
 
-		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let mut leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let mut proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let mut rng = ChaChaRng::from_seed([1u8; 32]);
-		leaf_index_comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
-		proof_comms[0] = Commitment(RistrettoPoint::random(&mut rng).compress());
-
+		let comms: Vec<ScalarBytes> = comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let mut leaf_index_comms: Vec<ScalarBytes> =
+			leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let mut proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let mut rng = OsRng::default();
+		leaf_index_comms[0] = RistrettoPoint::random(&mut rng).compress().to_bytes().to_vec();
+		proof_comms[0] = RistrettoPoint::random(&mut rng).compress().to_bytes().to_vec();
 		assert_err!(
-			MerkleTrees::verify_zk_membership_proof(
+			MerkleTrees::verify_zk(
 				0,
 				0,
 				root,
 				comms,
-				ScalarData(nullifier_hash),
+				nullifier_hash.to_bytes().to_vec(),
 				proof.to_bytes(),
 				leaf_index_comms,
 				proof_comms,
-				ScalarData::zero(),
-				ScalarData::zero(),
+				key_bytes(0).to_vec(),
+				key_bytes(0).to_vec(),
 			),
-			Error::<Test>::ZkVericationFailed
+			Error::<Test>::ZkVerificationFailed
 		);
 	});
 }
@@ -715,49 +936,64 @@ fn should_not_verify_invalid_transcript() {
 		let mut prover_transcript = Transcript::new(label);
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
 
-		let h = default_hasher(4096);
-		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(1),
+		));
 
-		let leaf = ftree.generate_secrets();
-		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
-
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(1)));
 		let tree_id = 0;
 		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
+		let bp_gens = from_bytes_to_bp_gens(&params);
+		let h = default_hasher(bp_gens);
+		let zero_tree = gen_zero_tree(h.width, &h.sbox);
 
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![ScalarData(leaf)]));
+		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(1).build();
+
+		let leaf = ftree.generate_secrets().to_bytes();
+		ftree.tree.add_leaves(vec![leaf], None);
+
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
-			root.0,
-			leaf,
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&root)),
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&leaf)),
 			Scalar::zero(),
 			Scalar::zero(),
 			&ftree.hash_params.bp_gens,
 			prover,
 		);
 
-		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-
+		let comms: Vec<ScalarBytes> = comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let leaf_index_comms: Vec<ScalarBytes> = leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		assert_err!(
-			MerkleTrees::verify_zk_membership_proof(
+			MerkleTrees::verify_zk(
 				0,
 				0,
 				root,
 				comms,
-				ScalarData(nullifier_hash),
+				nullifier_hash.to_bytes().to_vec(),
 				proof.to_bytes(),
 				leaf_index_comms,
 				proof_comms,
-				ScalarData::zero(),
-				ScalarData::zero(),
+				key_bytes(0).to_vec(),
+				key_bytes(0).to_vec(),
 			),
-			Error::<Test>::ZkVericationFailed
+			Error::<Test>::ZkVerificationFailed
 		);
 	});
 }
@@ -769,7 +1005,27 @@ fn should_verify_zk_proof_of_membership() {
 
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
-		let h = default_hasher(4096);
+
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(3),
+		));
+
+		let tree_id = 0;
+		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
+		let key_id = 0;
+		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
+		let bp_gens = from_bytes_to_bp_gens(&params);
+		let h = default_hasher(bp_gens);
+		let zero_tree = gen_zero_tree(h.width, &h.sbox);
+
 		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(3).build();
 
 		let leaf0 = ftree.generate_secrets();
@@ -790,22 +1046,12 @@ fn should_verify_zk_proof_of_membership() {
 		];
 		ftree.tree.add_leaves(keys.clone(), None);
 
-		let keys_data: Vec<ScalarData> = keys
-			.iter()
-			.map(|x| ScalarData(Scalar::from_bytes_mod_order(*x)))
-			.collect();
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(3)));
-		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
-		let key_id = 0;
-		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
-
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, keys_data));
+		let keys_vec = keys.iter().map(|x| x.to_vec()).collect();
+		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, keys_vec));
 
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
-			root.0,
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&root)),
 			leaf5,
 			Scalar::zero(),
 			Scalar::zero(),
@@ -813,21 +1059,20 @@ fn should_verify_zk_proof_of_membership() {
 			prover,
 		);
 
-		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-
-		assert_ok!(MerkleTrees::verify_zk_membership_proof(
+		let comms: Vec<ScalarBytes> = comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let leaf_index_comms: Vec<ScalarBytes> = leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		assert_ok!(MerkleTrees::verify_zk(
 			0,
 			0,
 			root,
 			comms,
-			ScalarData(nullifier_hash),
+			nullifier_hash.to_bytes().to_vec(),
 			proof.to_bytes(),
 			leaf_index_comms,
 			proof_comms,
-			ScalarData::zero(),
-			ScalarData::zero(),
+			key_bytes(0).to_vec(),
+			key_bytes(0).to_vec(),
 		));
 	});
 }
@@ -839,47 +1084,404 @@ fn should_verify_large_zk_proof_of_membership() {
 
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
 		let prover = Prover::new(&pc_gens, &mut prover_transcript);
-		let poseidon = default_hasher(40960);
-		let mut ftree = FixedDepositTreeBuilder::new().hash_params(poseidon).depth(32).build();
 
-		let leaf = ftree.generate_secrets();
-		ftree.tree.add_leaves(vec![leaf.to_bytes()], None);
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Bulletproofs(Curve::Curve25519);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(32),
+		));
 
-		assert_ok!(MerkleTrees::create_tree(Origin::signed(1), false, Some(32)));
 		let tree_id = 0;
-		let key_data = get_bp_gen_bytes(&BulletproofGens::new(16400, 1));
-		assert_ok!(MerkleTrees::add_verifying_key(Origin::root(), key_data));
+		let key_data = get_bp_gen_bytes(&BulletproofGens::new(40960, 1));
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
+		let bp_gens = from_bytes_to_bp_gens(&params);
+		let h = default_hasher(bp_gens);
+		let zero_tree = gen_zero_tree(h.width, &h.sbox);
 
-		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![ScalarData(leaf)]));
+		let mut ftree = FixedDepositTreeBuilder::new().hash_params(h).depth(32).build();
+
+		let leaf = ftree.generate_secrets().to_bytes();
+		ftree.tree.add_leaves(vec![leaf], None);
+
+		assert_ok!(MerkleTrees::add_members(
+			Origin::signed(1),
+			tree_id,
+			vec![leaf.to_vec()]
+		));
 
 		let root = MerkleTrees::get_merkle_root(0).unwrap();
 		let (proof, (comms_cr, nullifier_hash, leaf_index_comms_cr, proof_comms_cr)) = ftree.prove_zk(
-			root.0,
-			leaf,
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&root)),
+			Scalar::from_bytes_mod_order(slice_to_bytes_32(&leaf)),
 			Scalar::zero(),
 			Scalar::zero(),
 			&ftree.hash_params.bp_gens,
 			prover,
 		);
 
-		let comms: Vec<Commitment> = comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let leaf_index_comms: Vec<Commitment> = leaf_index_comms_cr.iter().map(|x| Commitment(*x)).collect();
-		let proof_comms: Vec<Commitment> = proof_comms_cr.iter().map(|x| Commitment(*x)).collect();
-
-		assert_ok!(MerkleTrees::verify_zk_membership_proof(
+		let comms: Vec<ScalarBytes> = comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let leaf_index_comms: Vec<ScalarBytes> = leaf_index_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
+		assert_ok!(MerkleTrees::verify_zk(
 			0,
 			0,
 			root,
 			comms,
-			ScalarData(nullifier_hash),
+			nullifier_hash.to_bytes().to_vec(),
 			proof.to_bytes(),
 			leaf_index_comms,
 			proof_comms,
-			ScalarData::zero(),
-			ScalarData::zero(),
+			key_bytes(0).to_vec(),
+			key_bytes(0).to_vec(),
 		));
+	});
+}
+
+#[test]
+fn should_verify_simple_zk_proof_of_membership_arkworks() {
+	new_test_ext().execute_with(|| {
+		let mut rng = OsRng::default();
+		let recipient = Bls381::from(0u8);
+		let relayer = Bls381::from(0u8);
+		let leaves = Vec::new();
+		let (circuit, leaf, nullifier, root, _) = setup_circuit(&leaves, 0, recipient, relayer, &mut rng);
+
+		let leaf_bytes = to_bytes![leaf].unwrap();
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Arkworks(Curve::Bls381, Snark::Groth16);
+		let setup = Setup::new(hasher, backend);
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(30),
+		));
+
+		let (pk, vk) = setup_random_groth16(&mut rng);
+		let mut vk_bytes = Vec::new();
+		vk.serialize(&mut vk_bytes).unwrap();
+
+		let tree_id = 0;
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), vk_bytes));
+		let key_id = 0;
+		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+
+		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf_bytes]));
+
+		let other_root = to_bytes![root].unwrap();
+		let root_bytes = MerkleTrees::get_merkle_root(0).unwrap();
+		assert_eq!(other_root, root_bytes);
+		let recipient_bytes = to_bytes![recipient].unwrap();
+		let relayer_bytes = to_bytes![relayer].unwrap();
+		let nullifier_bytes = to_bytes![nullifier].unwrap();
+
+		let proof = prove_groth16(&pk, circuit.clone(), &mut rng);
+		let mut proof_bytes = vec![0u8; proof.serialized_size()];
+		proof.serialize(&mut proof_bytes[..]).unwrap();
+
+		assert_ok!(MerkleTrees::verify_zk(
+			0,
+			0,
+			root_bytes,
+			Vec::new(),
+			nullifier_bytes,
+			proof_bytes,
+			Vec::new(),
+			Vec::new(),
+			recipient_bytes,
+			relayer_bytes,
+		));
+	});
+}
+
+#[test]
+fn should_fail_to_verify_empty_public_inputs_arkworks() {
+	new_test_ext().execute_with(|| {
+		let mut rng = OsRng::default();
+		let recipient = Bls381::from(0u8);
+		let relayer = Bls381::from(0u8);
+		let leaves = Vec::new();
+		let (circuit, leaf, nullifier, root, _) = setup_circuit(&leaves, 0, recipient, relayer, &mut rng);
+
+		let leaf_bytes = to_bytes![leaf].unwrap();
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Arkworks(Curve::Bls381, Snark::Groth16);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(30),
+		));
+
+		let (pk, vk) = setup_random_groth16(&mut rng);
+		let mut vk_bytes = Vec::new();
+		vk.serialize(&mut vk_bytes).unwrap();
+
+		let tree_id = 0;
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), vk_bytes));
+		let key_id = 0;
+		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+
+		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![leaf_bytes]));
+
+		let other_root = to_bytes![root].unwrap();
+		let root_bytes = MerkleTrees::get_merkle_root(0).unwrap();
+		assert_eq!(other_root, root_bytes);
+		let recipient_bytes = to_bytes![recipient].unwrap();
+		let relayer_bytes = to_bytes![relayer].unwrap();
+		let nullifier_bytes = to_bytes![nullifier].unwrap();
+
+		let proof = prove_groth16(&pk, circuit.clone(), &mut rng);
+		let mut proof_bytes = vec![0u8; proof.serialized_size()];
+		proof.serialize(&mut proof_bytes[..]).unwrap();
+
+		assert_err!(
+			MerkleTrees::verify_zk(
+				0,
+				0,
+				root_bytes.clone(),
+				Vec::new(),
+				// Nullifier bytes
+				Vec::new(),
+				proof_bytes.clone(),
+				Vec::new(),
+				Vec::new(),
+				recipient_bytes.clone(),
+				relayer_bytes.clone(),
+			),
+			Error::<Test>::InvalidPublicInputs
+		);
+
+		assert_err!(
+			MerkleTrees::verify_zk(
+				0,
+				0,
+				root_bytes.clone(),
+				Vec::new(),
+				nullifier_bytes.clone(),
+				proof_bytes.clone(),
+				Vec::new(),
+				Vec::new(),
+				// Invalid recipient bytes
+				Vec::new(),
+				relayer_bytes.clone(),
+			),
+			Error::<Test>::InvalidPublicInputs
+		);
+
+		assert_err!(
+			MerkleTrees::verify_zk(
+				0,
+				0,
+				root_bytes.clone(),
+				Vec::new(),
+				nullifier_bytes.clone(),
+				proof_bytes.clone(),
+				Vec::new(),
+				Vec::new(),
+				recipient_bytes,
+				// Invalid replayer bytes
+				Vec::new(),
+			),
+			Error::<Test>::InvalidPublicInputs
+		);
+	});
+}
+
+#[test]
+fn should_fail_to_verify_invalid_public_inputs_arkworks() {
+	new_test_ext().execute_with(|| {
+		let mut rng = OsRng::default();
+		let recipient = Bls381::from(0u8);
+		let relayer = Bls381::from(0u8);
+		let leaves = Vec::new();
+		let (circuit, leaf, nullifier, root, _) = setup_circuit(&leaves, 0, recipient, relayer, &mut rng);
+
+		let leaf_bytes = to_bytes![leaf].unwrap();
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Arkworks(Curve::Bls381, Snark::Groth16);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(30),
+		));
+
+		let (pk, vk) = setup_random_groth16(&mut rng);
+		let mut vk_bytes = Vec::new();
+		vk.serialize(&mut vk_bytes).unwrap();
+
+		let tree_id = 0;
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), vk_bytes));
+		let key_id = 0;
+		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+
+		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![leaf_bytes]));
+
+		let other_root = to_bytes![root].unwrap();
+		let root_bytes = MerkleTrees::get_merkle_root(0).unwrap();
+		assert_eq!(other_root, root_bytes);
+		let recipient_bytes = to_bytes![recipient].unwrap();
+		let relayer_bytes = to_bytes![relayer].unwrap();
+		let nullifier_bytes = to_bytes![nullifier].unwrap();
+
+		let proof = prove_groth16(&pk, circuit.clone(), &mut rng);
+		let mut proof_bytes = vec![0u8; proof.serialized_size()];
+		proof.serialize(&mut proof_bytes[..]).unwrap();
+
+		let mut invalid_nullifier = nullifier_bytes.clone();
+		invalid_nullifier.push(0u8);
+		assert_err!(
+			MerkleTrees::verify_zk(
+				0,
+				0,
+				root_bytes.clone(),
+				Vec::new(),
+				// Nullifier bytes
+				invalid_nullifier,
+				proof_bytes.clone(),
+				Vec::new(),
+				Vec::new(),
+				recipient_bytes.clone(),
+				relayer_bytes.clone(),
+			),
+			Error::<Test>::InvalidPublicInputs
+		);
+
+		let mut invalid_recipient = recipient_bytes.clone();
+		invalid_recipient.push(0u8);
+		assert_err!(
+			MerkleTrees::verify_zk(
+				0,
+				0,
+				root_bytes.clone(),
+				Vec::new(),
+				nullifier_bytes.clone(),
+				proof_bytes.clone(),
+				Vec::new(),
+				Vec::new(),
+				// Invalid recipient bytes
+				invalid_recipient,
+				relayer_bytes.clone(),
+			),
+			Error::<Test>::InvalidPublicInputs
+		);
+
+		let mut invalid_relayer = recipient_bytes.clone();
+		invalid_relayer.push(0u8);
+		assert_err!(
+			MerkleTrees::verify_zk(
+				0,
+				0,
+				root_bytes.clone(),
+				Vec::new(),
+				nullifier_bytes.clone(),
+				proof_bytes.clone(),
+				Vec::new(),
+				Vec::new(),
+				recipient_bytes,
+				// Invalid replayer bytes
+				invalid_relayer,
+			),
+			Error::<Test>::InvalidPublicInputs
+		);
+	});
+}
+
+#[test]
+fn should_fail_to_add_leaf_without_a_key_arkworks() {
+	new_test_ext().execute_with(|| {
+		let mut rng = OsRng::default();
+		let recipient = Bls381::from(0u8);
+		let relayer = Bls381::from(0u8);
+		let leaves = Vec::new();
+		let (_, leaf, ..) = setup_circuit(&leaves, 0, recipient, relayer, &mut rng);
+
+		let leaf_bytes = to_bytes![leaf].unwrap();
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Arkworks(Curve::Bls381, Snark::Groth16);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(30),
+		));
+
+		assert_err!(
+			MerkleTrees::add_members(Origin::signed(1), 0, vec![leaf_bytes]),
+			Error::<Test>::InvalidVerifierKey
+		);
+	});
+}
+
+#[test]
+fn should_fail_to_verify_with_invalid_key_arkworks() {
+	new_test_ext().execute_with(|| {
+		let mut rng = OsRng::default();
+		let recipient = Bls381::from(0u8);
+		let relayer = Bls381::from(0u8);
+		let leaves = Vec::new();
+		let (circuit, leaf, nullifier, root, _) = setup_circuit(&leaves, 0, recipient, relayer, &mut rng);
+
+		let leaf_bytes = to_bytes![leaf].unwrap();
+		let hasher = HashFunction::PoseidonDefault;
+		let backend = Backend::Arkworks(Curve::Bls381, Snark::Groth16);
+		let setup = Setup::new(hasher.clone(), backend.clone());
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(30),
+		));
+
+		let (pk, vk) = setup_random_groth16(&mut rng);
+		let mut vk_bytes = Vec::new();
+		vk.serialize(&mut vk_bytes).unwrap();
+		// pushing invalid byte
+		vk_bytes[0] = 1u8;
+		let tree_id = 0;
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), vk_bytes));
+		let key_id = 0;
+		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+
+		assert_ok!(MerkleTrees::add_members(Origin::signed(1), 0, vec![leaf_bytes]));
+
+		let other_root = to_bytes![root].unwrap();
+		let root_bytes = MerkleTrees::get_merkle_root(0).unwrap();
+		assert_eq!(other_root, root_bytes);
+		let recipient_bytes = to_bytes![recipient].unwrap();
+		let relayer_bytes = to_bytes![relayer].unwrap();
+		let nullifier_bytes = to_bytes![nullifier].unwrap();
+
+		let proof = prove_groth16(&pk, circuit.clone(), &mut rng);
+		let mut proof_bytes = vec![0u8; proof.serialized_size()];
+		proof.serialize(&mut proof_bytes[..]).unwrap();
+
+		assert_err!(
+			MerkleTrees::verify_zk(
+				0,
+				0,
+				root_bytes.clone(),
+				Vec::new(),
+				nullifier_bytes,
+				proof_bytes,
+				Vec::new(),
+				Vec::new(),
+				recipient_bytes,
+				relayer_bytes,
+			),
+			Error::<Test>::InvalidVerifierKey
+		);
 	});
 }
 

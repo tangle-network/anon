@@ -1,10 +1,13 @@
 use super::*;
+
 use crate as pallet_mixer;
 use frame_benchmarking::whitelisted_caller;
 use frame_support::{construct_runtime, parameter_types, weights::Weight, PalletId};
-use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
+use frame_system::{
+	mocking::{MockBlock, MockUncheckedExtrinsic},
+	EnsureRoot,
+};
 use merkle::weights::Weights as MerkleWeights;
-use webb_currencies::BasicCurrencyAdapter;
 
 use sp_core::H256;
 use sp_runtime::{
@@ -16,7 +19,7 @@ use weights::Weights;
 
 pub(crate) type Balance = u64;
 pub type Amount = i128;
-pub type CurrencyId = u64;
+pub type AssetId = u64;
 pub type AccountId = u64;
 pub type BlockNumber = u64;
 
@@ -34,8 +37,7 @@ construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		MerkleTrees: merkle::{Pallet, Call, Storage, Event<T>},
 		Mixer: pallet_mixer::{Pallet, Call, Storage, Event<T>},
-		Currencies: webb_currencies::{Pallet, Storage, Event<T>},
-		Tokens: webb_tokens::{Pallet, Storage, Event<T>},
+		Assets: pallet_assets::{Pallet, Storage, Event<T>},
 		Randomness: pallet_randomness_collective_flip::{Pallet, Call, Storage},
 	}
 );
@@ -97,45 +99,26 @@ impl pallet_balances::Config for Test {
 }
 
 parameter_types! {
-	pub const NativeCurrencyId: CurrencyId = 0;
-}
-
-parameter_types! {
-	pub const TokensPalletId: PalletId = PalletId(*b"py/token");
-	pub const CurrencyDeposit: u64 = 0;
-	pub const ApprovalDeposit: u64 = 1;
+	pub const AssetDeposit: Balance = 0;
+	pub const ApprovalDeposit: Balance = 0;
 	pub const StringLimit: u32 = 50;
-	pub const MetadataDepositBase: u64 = 1;
-	pub const MetadataDepositPerByte: u64 = 1;
+	pub const MetadataDepositBase: Balance = 0;
+	pub const MetadataDepositPerByte: Balance = 0;
 }
 
-parameter_types! {
-	pub DustAccount: AccountId = PalletId(*b"webb/dst").into_account();
-}
-
-impl webb_tokens::Config for Test {
-	type Amount = i128;
+impl pallet_assets::Config for Test {
 	type ApprovalDeposit = ApprovalDeposit;
-	type Balance = Balance;
-	type CurrencyDeposit = CurrencyDeposit;
-	type CurrencyId = CurrencyId;
-	type DustAccount = DustAccount;
+	type AssetDeposit = AssetDeposit;
+	type AssetId = AssetId;
+	type Balance = u64;
+	type Currency = Balances;
 	type Event = Event;
 	type Extra = ();
-	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type Freezer = ();
 	type MetadataDepositBase = MetadataDepositBase;
 	type MetadataDepositPerByte = MetadataDepositPerByte;
-	type NativeCurrency = BasicCurrencyAdapter<Test, Balances, Amount, BlockNumber>;
-	type PalletId = TokensPalletId;
 	type StringLimit = StringLimit;
-	type WeightInfo = ();
-}
-
-impl webb_currencies::Config for Test {
-	type Event = Event;
-	type GetNativeCurrencyId = NativeCurrencyId;
-	type MultiCurrency = Tokens;
-	type NativeCurrency = BasicCurrencyAdapter<Test, Balances, Amount, BlockNumber>;
 	type WeightInfo = ();
 }
 
@@ -153,15 +136,17 @@ parameter_types! {
 	pub const MixerPalletId: PalletId = PalletId(*b"py/mixer");
 	pub const DefaultAdmin: u64 = 4;
 	pub MixerSizes: Vec<Balance> = [1_000, 10_000, 100_000, 1_000_000].to_vec();
+	pub const DefaultCurrencyId: AssetId = 0;
 }
 
 impl Config for Test {
-	type Currency = Currencies;
+	type AssetSystem = Assets;
+	type Currency = Balances;
 	type DefaultAdmin = DefaultAdmin;
+	type DefaultCurrencyId = DefaultCurrencyId;
 	type DepositLength = MinimumDepositLength;
 	type Event = Event;
 	type MixerSizes = MixerSizes;
-	type NativeCurrencyId = NativeCurrencyId;
 	type PalletId = MixerPalletId;
 	type Tree = MerkleTrees;
 	type WeightInfo = Weights<Self>;
@@ -169,7 +154,6 @@ impl Config for Test {
 
 impl pallet_randomness_collective_flip::Config for Test {}
 
-pub type TokenPallet = webb_tokens::Pallet<Test>;
 pub type MixerCall = pallet_mixer::Call<Test>;
 
 // Build genesis storage according to the mock runtime.
@@ -189,13 +173,6 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();
-
-	let _token_currency_id: CurrencyId = 1;
-	// TokensConfig::<Test> {
-	// 	endowed_accounts: vec![(0, token_currency_id, 1_000_000_000)],
-	// }
-	// .assimilate_storage(&mut t)
-	// .unwrap();
 
 	t.into()
 }

@@ -1,1 +1,1 @@
-cargo build --release --features runtime-benchmarks --manifest-path node/Cargo.toml 
+cargo build --release --features runtime-benchmarks

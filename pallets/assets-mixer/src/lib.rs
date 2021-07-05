@@ -50,16 +50,19 @@ pub mod mock;
 #[cfg(test)]
 pub mod tests;
 
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
-pub mod weights;
-
 pub mod traits;
+pub mod weights;
 
 use bulletproofs::BulletproofGens;
 use codec::{Decode, Encode};
-use frame_support::{dispatch, ensure, traits::Get, weights::Weight, PalletId};
+use frame_support::{
+	dispatch, ensure,
+	traits::{tokens::fungibles, Get, ReservableCurrency},
+	weights::Weight,
+	PalletId,
+};
 use frame_system::ensure_signed;
+use fungibles::{Inspect, Transfer};
 use merkle::{
 	utils::{
 		keys::ScalarBytes,
@@ -68,10 +71,9 @@ use merkle::{
 	},
 	Pallet as MerklePallet, Tree as TreeTrait,
 };
-use sp_runtime::traits::{AccountIdConversion, Zero};
+use sp_runtime::traits::{AccountIdConversion, Saturating, Zero};
 use sp_std::prelude::*;
 use traits::ExtendedMixer;
-use webb_traits::MultiCurrency;
 use weights::WeightInfo;
 
 pub use pallet::*;
@@ -85,16 +87,20 @@ pub mod pallet {
 
 	/// The pallet's configuration trait.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + merkle::Config + webb_currencies::Config {
+	pub trait Config: frame_system::Config + merkle::Config + pallet_assets::Config {
 		#[pallet::constant]
 		type PalletId: Get<PalletId>;
 		/// The overarching event type.
 		type Event: IsType<<Self as frame_system::Config>::Event> + From<Event<Self>>;
-		/// Currency type for taking deposits
-		type Currency: MultiCurrency<Self::AccountId>;
 		/// Native currency id
 		#[pallet::constant]
-		type NativeCurrencyId: Get<CurrencyIdOf<Self>>;
+		type DefaultCurrencyId: Get<CurrencyIdOf<Self>>;
+		/// The Asset system
+		type AssetSystem: fungibles::Inspect<Self::AccountId>
+			+ fungibles::Mutate<Self::AccountId>
+			+ fungibles::Transfer<Self::AccountId>;
+		/// Currency type for taking deposits
+		type Currency: ReservableCurrency<Self::AccountId>;
 		/// The overarching merkle tree trait
 		type Tree: TreeTrait<Self>;
 		/// The small deposit length
@@ -274,7 +280,7 @@ pub mod pallet {
 			// get mixer info, should always exist if the module is initialized
 			let mixer_info = Self::get_mixer(mixer_id)?;
 			// ensure the sender has enough balance to cover deposit
-			let balance = T::Currency::free_balance(mixer_info.currency_id, &sender);
+			let balance = T::AssetSystem::balance(mixer_info.currency_id, &sender);
 			// TODO: Multiplication by usize should be possible
 			// using this hack for now, though we should optimise with regular
 			// multiplication `data_points.len() * mixer_info.fixed_deposit_size`
@@ -282,12 +288,20 @@ pub mod pallet {
 				.iter()
 				.map(|_| mixer_info.fixed_deposit_size)
 				.fold(Zero::zero(), |acc, elt| acc + elt);
+			println!("{:?}", deposit);
 			ensure!(balance >= deposit, Error::<T>::InsufficientBalance);
-			// transfer the deposit to the module
-			T::Currency::transfer(mixer_info.currency_id, &sender, &Self::account_id(), deposit)?;
+			// transfer the deposit to the module and keep the account
+			let keep_alive = false;
+			T::AssetSystem::transfer(
+				mixer_info.currency_id,
+				&sender,
+				&Self::account_id(),
+				deposit,
+				keep_alive,
+			)?;
 			// update the total value locked
 			let tvl = Self::total_value_locked(mixer_id);
-			<TotalValueLocked<T>>::insert(mixer_id, tvl + deposit);
+			<TotalValueLocked<T>>::insert(mixer_id, tvl.saturating_add(deposit));
 			// add elements to the mixer group's merkle tree and save the leaves
 			T::Tree::add_members(Self::account_id(), mixer_id.into(), data_points.clone())?;
 
@@ -335,15 +349,20 @@ pub mod pallet {
 				relayer.encode().to_vec(),
 			)?;
 			// transfer the fixed deposit size to the sender
-			T::Currency::transfer(
+			let keep_alive = false;
+			T::AssetSystem::transfer(
 				mixer_info.currency_id,
 				&Self::account_id(),
 				&recipient,
 				mixer_info.fixed_deposit_size,
+				keep_alive,
 			)?;
 			// update the total value locked
 			let tvl = Self::total_value_locked(withdraw_proof.mixer_id);
-			<TotalValueLocked<T>>::insert(withdraw_proof.mixer_id, tvl - mixer_info.fixed_deposit_size);
+			<TotalValueLocked<T>>::insert(
+				withdraw_proof.mixer_id,
+				tvl.saturating_sub(mixer_info.fixed_deposit_size),
+			);
 			// Add the nullifier on behalf of the module
 			T::Tree::add_nullifier(
 				Self::account_id(),
@@ -491,10 +510,11 @@ impl<T: Config> std::fmt::Debug for WithdrawProof<T> {
 }
 
 /// Type alias for the webb_traits::MultiCurrency::Balance type
-pub type BalanceOf<T> = <<T as Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::Balance;
+pub type BalanceOf<T> =
+	<<T as Config>::AssetSystem as fungibles::Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 /// Type alias for the webb_traits::MultiCurrency::CurrencyId type
 pub type CurrencyIdOf<T> =
-	<<T as pallet::Config>::Currency as MultiCurrency<<T as frame_system::Config>::AccountId>>::CurrencyId;
+	<<T as pallet::Config>::AssetSystem as fungibles::Inspect<<T as frame_system::Config>::AccountId>>::AssetId;
 
 /// Info about the mixer and it's leaf data
 #[derive(Encode, Decode, PartialEq)]
@@ -515,7 +535,7 @@ impl<T: Config> core::default::Default for MixerInfo<T> {
 		Self {
 			minimum_deposit_length_for_reward: Zero::zero(),
 			fixed_deposit_size: Zero::zero(),
-			currency_id: T::NativeCurrencyId::get(),
+			currency_id: T::DefaultCurrencyId::get(),
 		}
 	}
 }
@@ -566,7 +586,7 @@ impl<T: Config> Pallet<T> {
 		for size in sizes.into_iter() {
 			<Self as ExtendedMixer<_>>::create_new(
 				Self::account_id(),
-				T::NativeCurrencyId::get(),
+				T::DefaultCurrencyId::get(),
 				setup.clone(),
 				size,
 			)?;

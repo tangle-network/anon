@@ -1,0 +1,42 @@
+[package]
+name = "pallet-evm-precompile-bp-merkle-tree"
+version = "2.0.0"
+authors = ["Webb Developers"]
+edition = "2018"
+license = "Apache-2.0"
+description = "Bulletproof precompiles for EVM pallet."
+
+[dependencies]
+codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false }
+frame-support = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+sp-std = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+sp-core = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+sp-io = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+sp-runtime = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
+fp-evm = { git = "https://github.com/webb-tools/frontier.git", branch = "polkadot-v0.9.6", default-features = false }
+evm = { version = "0.27.0", default-features = false, features = ["with-codec"] }
+
+lazy_static = { version = "1.4.0", features = ["spin_no_std"], optional = true }
+rand_chacha = { version = "0.2", default-features = false }
+curve25519-dalek = { version = "3.0.0", default-features = false, features = ["u64_backend", "alloc"] }
+bulletproofs = {version = "2.0.0", package = "webb-bulletproofs", default-features = false, features = ["yoloproofs"]}
+bulletproofs-gadgets = {version = "2.0.0", default-features = false}
+merlin = { version = "2.0.0", default-features = false }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"frame-support/std",
+	"sp-core/std",
+	"sp-io/std",
+	"sp-runtime/std",
+	"sp-std/std",
+	"fp-evm/std",
+	"evm/std",
+	"bulletproofs/std",
+	"bulletproofs-gadgets/std",
+	"curve25519-dalek/std",
+	"merlin/std",
+	"lazy_static",
+]

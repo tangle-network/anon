@@ -1,9 +1,9 @@
 use super::*;
-use crate as pallet_mixer;
+use crate as webb_bridge;
 use frame_benchmarking::whitelisted_caller;
 use frame_support::{construct_runtime, parameter_types, weights::Weight, PalletId};
 use frame_system::mocking::{MockBlock, MockUncheckedExtrinsic};
-use merkle::weights::Weights as MerkleWeights;
+use pallet_merkle::weights::Weights as MerkleWeights;
 use webb_currencies::BasicCurrencyAdapter;
 
 use sp_core::H256;
@@ -12,7 +12,6 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentityLookup},
 	Perbill,
 };
-use weights::Weights;
 
 pub(crate) type Balance = u64;
 pub type Amount = i128;
@@ -32,11 +31,11 @@ construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-		MerkleTrees: merkle::{Pallet, Call, Storage, Event<T>},
-		Mixer: pallet_mixer::{Pallet, Call, Storage, Event<T>},
+		Randomness: pallet_randomness_collective_flip::{Pallet, Call, Storage},
+		MerkleTrees: pallet_merkle::{Pallet, Call, Storage, Event<T>},
+		Bridge: webb_bridge::{Pallet, Call, Storage, Event<T>},
 		Currencies: webb_currencies::{Pallet, Storage, Event<T>},
 		Tokens: webb_tokens::{Pallet, Storage, Event<T>},
-		Randomness: pallet_randomness_collective_flip::{Pallet, Call, Storage},
 	}
 );
 
@@ -97,10 +96,6 @@ impl pallet_balances::Config for Test {
 }
 
 parameter_types! {
-	pub const NativeCurrencyId: CurrencyId = 0;
-}
-
-parameter_types! {
 	pub const TokensPalletId: PalletId = PalletId(*b"py/token");
 	pub const CurrencyDeposit: u64 = 0;
 	pub const ApprovalDeposit: u64 = 1;
@@ -139,7 +134,7 @@ impl webb_currencies::Config for Test {
 	type WeightInfo = ();
 }
 
-impl merkle::Config for Test {
+impl pallet_merkle::Config for Test {
 	type CacheBlockLength = CacheBlockLength;
 	type Event = Event;
 	type KeyId = u32;
@@ -150,27 +145,25 @@ impl merkle::Config for Test {
 }
 
 parameter_types! {
-	pub const MixerPalletId: PalletId = PalletId(*b"py/mixer");
+	pub const BridgePalletId: PalletId = PalletId(*b"py/brdge");
 	pub const DefaultAdmin: u64 = 4;
-	pub MixerSizes: Vec<Balance> = [1_000, 10_000, 100_000, 1_000_000].to_vec();
+	pub const NativeCurrencyId: CurrencyId = 0;
 }
 
 impl Config for Test {
-	type Currency = Currencies;
+	type ChainId = u32;
+	type Currency = Tokens;
 	type DefaultAdmin = DefaultAdmin;
-	type DepositLength = MinimumDepositLength;
 	type Event = Event;
-	type MixerSizes = MixerSizes;
 	type NativeCurrencyId = NativeCurrencyId;
-	type PalletId = MixerPalletId;
+	type PalletId = BridgePalletId;
+	type ThresholdSignature = [u8; 32];
 	type Tree = MerkleTrees;
-	type WeightInfo = Weights<Self>;
 }
 
 impl pallet_randomness_collective_flip::Config for Test {}
 
 pub type TokenPallet = webb_tokens::Pallet<Test>;
-pub type MixerCall = pallet_mixer::Call<Test>;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
@@ -189,13 +182,6 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 	}
 	.assimilate_storage(&mut t)
 	.unwrap();
-
-	let _token_currency_id: CurrencyId = 1;
-	// TokensConfig::<Test> {
-	// 	endowed_accounts: vec![(0, token_currency_id, 1_000_000_000)],
-	// }
-	// .assimilate_storage(&mut t)
-	// .unwrap();
 
 	t.into()
 }
