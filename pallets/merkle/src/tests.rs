@@ -24,6 +24,7 @@ use curve25519_dalek::{ristretto::RistrettoPoint, scalar::Scalar};
 use frame_support::{assert_err, assert_ok, traits::UnfilteredDispatchable};
 use frame_system::RawOrigin;
 use merlin::Transcript;
+use rand_chacha::ChaChaRng;
 use rand_core::OsRng;
 use sp_runtime::traits::BadOrigin;
 

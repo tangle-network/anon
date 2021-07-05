@@ -678,6 +678,7 @@ impl<T: Config> Tree<T> for Pallet<T> {
 		let mut tree = Trees::<T>::get(id).ok_or(Error::<T>::TreeDoesntExist)?;
 		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist)?;
 		// Check if the tree requires extrinsics to be called from a manager
+		let manager_data = Managers::<T>::get(id).ok_or(Error::<T>::ManagerDoesntExist).unwrap();
 		ensure!(
 			Self::is_manager_required(sender.clone(), &manager_data),
 			Error::<T>::ManagerIsRequired
