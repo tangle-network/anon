@@ -14,7 +14,10 @@ use arkworks_gadgets::{
 		ark_ff::to_bytes,
 	},
 	setup::{
-		common::{setup_params_3, verify_groth16, Curve as CurveEnum, PoseidonCRH3, TreeConfig},
+		common::{
+			setup_params_x17_3, setup_params_x5_3, verify_groth16, Curve as CurveEnum, PoseidonCRH_x17_3,
+			PoseidonCRH_x5_3, TreeConfig_x17, TreeConfig_x5,
+		},
 		mixer::get_public_inputs,
 	},
 	utils::to_field_elements,
@@ -43,9 +46,13 @@ use sp_std::prelude::*;
 
 lazy_static! {
 	static ref DEFAULT_BLS381_ARKWORKS_POSEIDON_PARAMETERS: PoseidonParameters<Bls381> =
-		setup_params_3::<Bls381>(CurveEnum::Bls381);
+		setup_params_x5_3::<Bls381>(CurveEnum::Bls381);
 	static ref DEFAULT_BN254_ARKWORKS_POSEIDON_PARAMETERS: PoseidonParameters<Bn254Fr> =
-		setup_params_3::<Bn254Fr>(CurveEnum::Bn254);
+		setup_params_x5_3::<Bn254Fr>(CurveEnum::Bn254);
+	static ref BLS381_X17_ARKWORKS_POSEIDON_PARAMETERS: PoseidonParameters<Bls381> =
+		setup_params_x17_3::<Bls381>(CurveEnum::Bls381);
+	static ref BN254_X17_ARKWORKS_POSEIDON_PARAMETERS: PoseidonParameters<Bn254Fr> =
+		setup_params_x17_3::<Bn254Fr>(CurveEnum::Bn254);
 }
 
 /// Default hasher instance used to construct the tree
@@ -118,12 +125,26 @@ impl Setup {
 				_ => Err(Error::<T>::Unimplemented),
 			},
 			Backend::Arkworks(Curve::Bls381, _) => match self.hasher {
-				HashFunction::PoseidonDefault => {
+				HashFunction::PoseidonDefault | HashFunction::Poseidon(3, 5) => {
 					let mut bytes = Vec::new();
 					bytes.extend(xl);
 					bytes.extend(xr);
 					let res =
-						PoseidonCRH3::<Bls381>::evaluate(&DEFAULT_BLS381_ARKWORKS_POSEIDON_PARAMETERS, &bytes).unwrap();
+						PoseidonCRH_x5_3::<Bls381>::evaluate(&DEFAULT_BLS381_ARKWORKS_POSEIDON_PARAMETERS, &bytes)
+							.unwrap();
+					let bytes_res = to_bytes![res];
+					let bytes = match bytes_res {
+						Ok(bytes) => bytes,
+						Err(_) => return Err(Error::<T>::HashingFailed),
+					};
+					Ok(bytes)
+				}
+				HashFunction::Poseidon(3, 17) => {
+					let mut bytes = Vec::new();
+					bytes.extend(xl);
+					bytes.extend(xr);
+					let res = PoseidonCRH_x17_3::<Bls381>::evaluate(&BLS381_X17_ARKWORKS_POSEIDON_PARAMETERS, &bytes)
+						.unwrap();
 					let bytes_res = to_bytes![res];
 					let bytes = match bytes_res {
 						Ok(bytes) => bytes,
@@ -134,12 +155,26 @@ impl Setup {
 				_ => Err(Error::<T>::Unimplemented),
 			},
 			Backend::Arkworks(Curve::Bn254, _) => match self.hasher {
-				HashFunction::PoseidonDefault => {
+				HashFunction::PoseidonDefault | HashFunction::Poseidon(3, 5) => {
 					let mut bytes = Vec::new();
 					bytes.extend(xl);
 					bytes.extend(xr);
 					let res =
-						PoseidonCRH3::<Bn254Fr>::evaluate(&DEFAULT_BN254_ARKWORKS_POSEIDON_PARAMETERS, &bytes).unwrap();
+						PoseidonCRH_x5_3::<Bn254Fr>::evaluate(&DEFAULT_BN254_ARKWORKS_POSEIDON_PARAMETERS, &bytes)
+							.unwrap();
+					let bytes_res = to_bytes![res];
+					let bytes = match bytes_res {
+						Ok(bytes) => bytes,
+						Err(_) => return Err(Error::<T>::HashingFailed),
+					};
+					Ok(bytes)
+				}
+				HashFunction::Poseidon(3, 17) => {
+					let mut bytes = Vec::new();
+					bytes.extend(xl);
+					bytes.extend(xr);
+					let res = PoseidonCRH_x17_3::<Bn254Fr>::evaluate(&BN254_X17_ARKWORKS_POSEIDON_PARAMETERS, &bytes)
+						.unwrap();
 					let bytes_res = to_bytes![res];
 					let bytes = match bytes_res {
 						Ok(bytes) => bytes,
@@ -173,7 +208,17 @@ impl Setup {
 			},
 			Backend::Arkworks(Curve::Bls381, _) => match self.hasher {
 				HashFunction::PoseidonDefault => {
-					let res = gen_empty_hashes::<TreeConfig<Bls381>>(&(), &DEFAULT_BLS381_ARKWORKS_POSEIDON_PARAMETERS)
+					let res =
+						gen_empty_hashes::<TreeConfig_x5<Bls381>>(&(), &DEFAULT_BLS381_ARKWORKS_POSEIDON_PARAMETERS)
+							.map_err(|_| Error::<T>::ZeroTreeGenFailed)?;
+					let zero_tree: Vec<ScalarBytes> = res
+						.iter()
+						.map(|val| to_bytes![val].map_err(|_| Error::<T>::ZeroTreeGenFailed))
+						.collect::<Result<Vec<ScalarBytes>, _>>()?;
+					Ok((zero_tree[0..depth].to_vec(), zero_tree[depth].clone()))
+				}
+				HashFunction::Poseidon(3, 17) => {
+					let res = gen_empty_hashes::<TreeConfig_x17<Bls381>>(&(), &BLS381_X17_ARKWORKS_POSEIDON_PARAMETERS)
 						.map_err(|_| Error::<T>::ZeroTreeGenFailed)?;
 					let zero_tree: Vec<ScalarBytes> = res
 						.iter()
@@ -185,7 +230,17 @@ impl Setup {
 			},
 			Backend::Arkworks(Curve::Bn254, _) => match self.hasher {
 				HashFunction::PoseidonDefault => {
-					let res = gen_empty_hashes::<TreeConfig<Bn254Fr>>(&(), &DEFAULT_BN254_ARKWORKS_POSEIDON_PARAMETERS)
+					let res =
+						gen_empty_hashes::<TreeConfig_x5<Bn254Fr>>(&(), &DEFAULT_BN254_ARKWORKS_POSEIDON_PARAMETERS)
+							.map_err(|_| Error::<T>::ZeroTreeGenFailed)?;
+					let zero_tree: Vec<ScalarBytes> = res
+						.iter()
+						.map(|val| to_bytes![val].map_err(|_| Error::<T>::ZeroTreeGenFailed))
+						.collect::<Result<Vec<ScalarBytes>, _>>()?;
+					Ok((zero_tree[0..depth].to_vec(), zero_tree[depth].clone()))
+				}
+				HashFunction::Poseidon(3, 17) => {
+					let res = gen_empty_hashes::<TreeConfig_x17<Bn254Fr>>(&(), &BN254_X17_ARKWORKS_POSEIDON_PARAMETERS)
 						.map_err(|_| Error::<T>::ZeroTreeGenFailed)?;
 					let zero_tree: Vec<ScalarBytes> = res
 						.iter()
