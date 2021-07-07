@@ -488,6 +488,7 @@ fn should_be_unable_to_pass_proof_path_with_invalid_length() {
 		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), key_data));
 		let key_id = 0;
 		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+		let params = MerkleTrees::get_verifying_key(key_id).unwrap();
 
 		assert_ok!(MerkleTrees::add_members(Origin::signed(0), 0, vec![
 			key0.clone(),
