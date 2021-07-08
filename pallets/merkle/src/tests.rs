@@ -8,8 +8,12 @@ use crate::{
 };
 use ark_serialize::CanonicalSerialize;
 use arkworks_gadgets::{
-	prelude::{ark_bls12_381::Fr as Bls381, ark_ff::to_bytes},
-	setup::mixer::{prove_groth16, setup_circuit, setup_random_groth16},
+	ark_std::test_rng,
+	prelude::{
+		ark_bls12_381::{Bls12_381, Fr as Bls381},
+		ark_ff::to_bytes,
+	},
+	setup::mixer::{prove_groth16_x5, setup_circuit_x5, setup_random_groth16_x5},
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use bulletproofs_gadgets::{
@@ -24,8 +28,7 @@ use curve25519_dalek::{ristretto::RistrettoPoint, scalar::Scalar};
 use frame_support::{assert_err, assert_ok, traits::UnfilteredDispatchable};
 use frame_system::RawOrigin;
 use merlin::Transcript;
-use rand_chacha::ChaChaRng;
-use rand_core::OsRng;
+use rand_chacha::rand_core::OsRng;
 use sp_runtime::traits::BadOrigin;
 
 fn key_bytes(x: u8) -> [u8; 32] {
@@ -1147,11 +1150,12 @@ fn should_verify_large_zk_proof_of_membership() {
 #[test]
 fn should_verify_simple_zk_proof_of_membership_arkworks() {
 	new_test_ext().execute_with(|| {
-		let mut rng = OsRng::default();
+		let mut rng = test_rng();
+		let curve = arkworks_gadgets::setup::common::Curve::Bls381;
 		let recipient = Bls381::from(0u8);
 		let relayer = Bls381::from(0u8);
 		let leaves = Vec::new();
-		let (circuit, leaf, nullifier, root, _) = setup_circuit(&leaves, 0, recipient, relayer, &mut rng);
+		let (circuit, leaf, nullifier, root, _) = setup_circuit_x5(&leaves, 0, recipient, relayer, &mut rng, curve);
 
 		let leaf_bytes = to_bytes![leaf].unwrap();
 		let hasher = HashFunction::PoseidonDefault;
@@ -1164,7 +1168,7 @@ fn should_verify_simple_zk_proof_of_membership_arkworks() {
 			Some(30),
 		));
 
-		let (pk, vk) = setup_random_groth16(&mut rng);
+		let (pk, vk) = setup_random_groth16_x5::<_, Bls12_381>(&mut rng, curve);
 		let mut vk_bytes = Vec::new();
 		vk.serialize(&mut vk_bytes).unwrap();
 
@@ -1182,7 +1186,7 @@ fn should_verify_simple_zk_proof_of_membership_arkworks() {
 		let relayer_bytes = to_bytes![relayer].unwrap();
 		let nullifier_bytes = to_bytes![nullifier].unwrap();
 
-		let proof = prove_groth16(&pk, circuit.clone(), &mut rng);
+		let proof = prove_groth16_x5(&pk, circuit.clone(), &mut rng);
 		let mut proof_bytes = vec![0u8; proof.serialized_size()];
 		proof.serialize(&mut proof_bytes[..]).unwrap();
 
@@ -1204,11 +1208,12 @@ fn should_verify_simple_zk_proof_of_membership_arkworks() {
 #[test]
 fn should_fail_to_verify_empty_public_inputs_arkworks() {
 	new_test_ext().execute_with(|| {
-		let mut rng = OsRng::default();
+		let mut rng = test_rng();
+		let curve = arkworks_gadgets::setup::common::Curve::Bls381;
 		let recipient = Bls381::from(0u8);
 		let relayer = Bls381::from(0u8);
 		let leaves = Vec::new();
-		let (circuit, leaf, nullifier, root, _) = setup_circuit(&leaves, 0, recipient, relayer, &mut rng);
+		let (circuit, leaf, nullifier, root, _) = setup_circuit_x5(&leaves, 0, recipient, relayer, &mut rng, curve);
 
 		let leaf_bytes = to_bytes![leaf].unwrap();
 		let hasher = HashFunction::PoseidonDefault;
@@ -1221,7 +1226,7 @@ fn should_fail_to_verify_empty_public_inputs_arkworks() {
 			Some(30),
 		));
 
-		let (pk, vk) = setup_random_groth16(&mut rng);
+		let (pk, vk) = setup_random_groth16_x5::<_, Bls12_381>(&mut rng, curve);
 		let mut vk_bytes = Vec::new();
 		vk.serialize(&mut vk_bytes).unwrap();
 
@@ -1239,7 +1244,7 @@ fn should_fail_to_verify_empty_public_inputs_arkworks() {
 		let relayer_bytes = to_bytes![relayer].unwrap();
 		let nullifier_bytes = to_bytes![nullifier].unwrap();
 
-		let proof = prove_groth16(&pk, circuit.clone(), &mut rng);
+		let proof = prove_groth16_x5(&pk, circuit.clone(), &mut rng);
 		let mut proof_bytes = vec![0u8; proof.serialized_size()];
 		proof.serialize(&mut proof_bytes[..]).unwrap();
 
@@ -1297,13 +1302,14 @@ fn should_fail_to_verify_empty_public_inputs_arkworks() {
 }
 
 #[test]
-fn should_fail_to_verify_invalid_public_inputs_arkworks() {
+fn should_fail_to_verify_arkworks() {
 	new_test_ext().execute_with(|| {
-		let mut rng = OsRng::default();
+		let mut rng = test_rng();
+		let curve = arkworks_gadgets::setup::common::Curve::Bls381;
 		let recipient = Bls381::from(0u8);
 		let relayer = Bls381::from(0u8);
 		let leaves = Vec::new();
-		let (circuit, leaf, nullifier, root, _) = setup_circuit(&leaves, 0, recipient, relayer, &mut rng);
+		let (circuit, leaf, nullifier, root, _) = setup_circuit_x5(&leaves, 0, recipient, relayer, &mut rng, curve);
 
 		let leaf_bytes = to_bytes![leaf].unwrap();
 		let hasher = HashFunction::PoseidonDefault;
@@ -1316,7 +1322,7 @@ fn should_fail_to_verify_invalid_public_inputs_arkworks() {
 			Some(30),
 		));
 
-		let (pk, vk) = setup_random_groth16(&mut rng);
+		let (pk, vk) = setup_random_groth16_x5::<_, Bls12_381>(&mut rng, curve);
 		let mut vk_bytes = Vec::new();
 		vk.serialize(&mut vk_bytes).unwrap();
 
@@ -1334,12 +1340,13 @@ fn should_fail_to_verify_invalid_public_inputs_arkworks() {
 		let relayer_bytes = to_bytes![relayer].unwrap();
 		let nullifier_bytes = to_bytes![nullifier].unwrap();
 
-		let proof = prove_groth16(&pk, circuit.clone(), &mut rng);
+		let proof = prove_groth16_x5(&pk, circuit.clone(), &mut rng);
 		let mut proof_bytes = vec![0u8; proof.serialized_size()];
 		proof.serialize(&mut proof_bytes[..]).unwrap();
 
 		let mut invalid_nullifier = nullifier_bytes.clone();
-		invalid_nullifier.push(0u8);
+		invalid_nullifier[0] = 1u8;
+		invalid_nullifier.push(1u8);
 		assert_err!(
 			MerkleTrees::verify_zk(
 				0,
@@ -1354,11 +1361,12 @@ fn should_fail_to_verify_invalid_public_inputs_arkworks() {
 				recipient_bytes.clone(),
 				relayer_bytes.clone(),
 			),
-			Error::<Test>::InvalidPublicInputs
+			Error::<Test>::ZkVerificationFailed
 		);
 
 		let mut invalid_recipient = recipient_bytes.clone();
-		invalid_recipient.push(0u8);
+		invalid_recipient[0] = (1u8);
+		invalid_recipient.push(1u8);
 		assert_err!(
 			MerkleTrees::verify_zk(
 				0,
@@ -1373,11 +1381,12 @@ fn should_fail_to_verify_invalid_public_inputs_arkworks() {
 				invalid_recipient,
 				relayer_bytes.clone(),
 			),
-			Error::<Test>::InvalidPublicInputs
+			Error::<Test>::ZkVerificationFailed
 		);
 
 		let mut invalid_relayer = recipient_bytes.clone();
-		invalid_relayer.push(0u8);
+		invalid_relayer[0] = 1u8;
+		invalid_relayer.push(1u8);
 		assert_err!(
 			MerkleTrees::verify_zk(
 				0,
@@ -1392,7 +1401,7 @@ fn should_fail_to_verify_invalid_public_inputs_arkworks() {
 				// Invalid replayer bytes
 				invalid_relayer,
 			),
-			Error::<Test>::InvalidPublicInputs
+			Error::<Test>::ZkVerificationFailed
 		);
 	});
 }
@@ -1400,11 +1409,12 @@ fn should_fail_to_verify_invalid_public_inputs_arkworks() {
 #[test]
 fn should_fail_to_add_leaf_without_a_key_arkworks() {
 	new_test_ext().execute_with(|| {
-		let mut rng = OsRng::default();
+		let mut rng = test_rng();
+		let curve = arkworks_gadgets::setup::common::Curve::Bls381;
 		let recipient = Bls381::from(0u8);
 		let relayer = Bls381::from(0u8);
 		let leaves = Vec::new();
-		let (_, leaf, ..) = setup_circuit(&leaves, 0, recipient, relayer, &mut rng);
+		let (_, leaf, ..) = setup_circuit_x5(&leaves, 0, recipient, relayer, &mut rng, curve);
 
 		let leaf_bytes = to_bytes![leaf].unwrap();
 		let hasher = HashFunction::PoseidonDefault;
@@ -1427,11 +1437,12 @@ fn should_fail_to_add_leaf_without_a_key_arkworks() {
 #[test]
 fn should_fail_to_verify_with_invalid_key_arkworks() {
 	new_test_ext().execute_with(|| {
-		let mut rng = OsRng::default();
+		let mut rng = test_rng();
+		let curve = arkworks_gadgets::setup::common::Curve::Bls381;
 		let recipient = Bls381::from(0u8);
 		let relayer = Bls381::from(0u8);
 		let leaves = Vec::new();
-		let (circuit, leaf, nullifier, root, _) = setup_circuit(&leaves, 0, recipient, relayer, &mut rng);
+		let (circuit, leaf, nullifier, root, _) = setup_circuit_x5(&leaves, 0, recipient, relayer, &mut rng, curve);
 
 		let leaf_bytes = to_bytes![leaf].unwrap();
 		let hasher = HashFunction::PoseidonDefault;
@@ -1444,7 +1455,7 @@ fn should_fail_to_verify_with_invalid_key_arkworks() {
 			Some(30),
 		));
 
-		let (pk, vk) = setup_random_groth16(&mut rng);
+		let (pk, vk) = setup_random_groth16_x5::<_, Bls12_381>(&mut rng, curve);
 		let mut vk_bytes = Vec::new();
 		vk.serialize(&mut vk_bytes).unwrap();
 		// pushing invalid byte
@@ -1463,7 +1474,7 @@ fn should_fail_to_verify_with_invalid_key_arkworks() {
 		let relayer_bytes = to_bytes![relayer].unwrap();
 		let nullifier_bytes = to_bytes![nullifier].unwrap();
 
-		let proof = prove_groth16(&pk, circuit.clone(), &mut rng);
+		let proof = prove_groth16_x5(&pk, circuit.clone(), &mut rng);
 		let mut proof_bytes = vec![0u8; proof.serialized_size()];
 		proof.serialize(&mut proof_bytes[..]).unwrap();
 
