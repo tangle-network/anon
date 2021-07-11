@@ -28,15 +28,18 @@ frame-benchmarking = { default-features = false, version = "3.0.0", optional = t
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 
 ark-crypto-primitives = { version = "^0.3.0", features = ["r1cs"], default-features = false }
+ark-ff = {version = "^0.3.0", default-features = false }
+ark-ec = {version = "^0.3.0", default-features = false }
 ark-groth16 = {version = "^0.3.0", default-features = false }
 ark-serialize = {version = "^0.3.0", default-features = false }
 
 [dependencies.arkworks-gadgets]
-version = "0.2.5"
+version = "0.3.0"
 default-features = false
 features = [
     "r1cs",
     "default_poseidon",
+    "default_mimc",
 ]
 
 [dependencies.curve25519-dalek]

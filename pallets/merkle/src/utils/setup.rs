@@ -1,3 +1,4 @@
+use arkworks_gadgets::mimc::MiMCParameters;
 use crate::{
 	utils::keys::{from_bytes_to_bp_gens, slice_to_bytes_32, ScalarBytes},
 	Config, Error,
@@ -15,8 +16,8 @@ use arkworks_gadgets::{
 	},
 	setup::{
 		common::{
-			setup_params_x17_3, setup_params_x5_3, verify_groth16, Curve as CurveEnum, PoseidonCRH_x17_3,
-			PoseidonCRH_x5_3, TreeConfig_x17, TreeConfig_x5,
+			setup_params_x17_3, setup_params_x5_3, setup_mimc_220, verify_groth16, Curve as CurveEnum, PoseidonCRH_x17_3,
+			PoseidonCRH_x5_3, TreeConfig_x17, TreeConfig_x5, MiMCCRH_220, MiMCTreeConfig_220,
 		},
 		mixer::get_public_inputs,
 	},
@@ -43,16 +44,20 @@ use lazy_static::lazy_static;
 use merlin::Transcript;
 use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
 use sp_std::prelude::*;
+use ark_ff::PrimeField;
+use ark_ec::PairingEngine;
 
 lazy_static! {
-	static ref DEFAULT_BLS381_ARKWORKS_POSEIDON_PARAMETERS: PoseidonParameters<Bls381> =
+	static ref BLS381_X5_POSEIDON: PoseidonParameters<Bls381> =
 		setup_params_x5_3::<Bls381>(CurveEnum::Bls381);
-	static ref DEFAULT_BN254_ARKWORKS_POSEIDON_PARAMETERS: PoseidonParameters<Bn254Fr> =
+	static ref BN254_X5_POSEIDON: PoseidonParameters<Bn254Fr> =
 		setup_params_x5_3::<Bn254Fr>(CurveEnum::Bn254);
-	static ref BLS381_X17_ARKWORKS_POSEIDON_PARAMETERS: PoseidonParameters<Bls381> =
+	static ref BLS381_X17_POSEIDON: PoseidonParameters<Bls381> =
 		setup_params_x17_3::<Bls381>(CurveEnum::Bls381);
-	static ref BN254_X17_ARKWORKS_POSEIDON_PARAMETERS: PoseidonParameters<Bn254Fr> =
+	static ref BN254_X17_POSEIDON: PoseidonParameters<Bn254Fr> =
 		setup_params_x17_3::<Bn254Fr>(CurveEnum::Bn254);
+	static ref BN254_MIMC_220: MiMCParameters<Bn254Fr> =
+		setup_mimc_220::<Bn254Fr>(CurveEnum::Bn254);
 }
 
 /// Default hasher instance used to construct the tree
@@ -113,7 +118,7 @@ impl Setup {
 	}
 
 	pub fn hash<T: Config>(&self, xl: &ScalarBytes, xr: &ScalarBytes, params: &[u8]) -> Result<ScalarBytes, Error<T>> {
-		match self.backend {
+		match &self.backend {
 			Backend::Bulletproofs(Curve::Curve25519) => match self.hasher {
 				HashFunction::PoseidonDefault | HashFunction::Poseidon(6, 3) => {
 					let bp_gens = from_bytes_to_bp_gens(params);
@@ -124,66 +129,75 @@ impl Setup {
 				}
 				_ => Err(Error::<T>::Unimplemented),
 			},
-			Backend::Arkworks(Curve::Bls381, _) => match self.hasher {
-				HashFunction::PoseidonDefault | HashFunction::Poseidon(3, 5) => {
-					let mut bytes = Vec::new();
-					bytes.extend(xl);
-					bytes.extend(xr);
-					let res =
-						PoseidonCRH_x5_3::<Bls381>::evaluate(&DEFAULT_BLS381_ARKWORKS_POSEIDON_PARAMETERS, &bytes)
-							.unwrap();
-					let bytes_res = to_bytes![res];
-					let bytes = match bytes_res {
-						Ok(bytes) => bytes,
-						Err(_) => return Err(Error::<T>::HashingFailed),
-					};
-					Ok(bytes)
+			Backend::Arkworks(curve, _) => {
+				let mut bytes = Vec::new();
+				bytes.extend(xl);
+				bytes.extend(xr);
+
+				match self.hasher {
+					HashFunction::PoseidonDefault | HashFunction::Poseidon(3, 5) => {
+						match curve {
+							Curve::Bls381 => {
+								let res = PoseidonCRH_x5_3::<Bls381>::evaluate(&BLS381_X5_POSEIDON, &bytes).unwrap();
+								let bytes_res = to_bytes![res];
+								let bytes = match bytes_res {
+									Ok(bytes) => bytes,
+									Err(_) => return Err(Error::<T>::HashingFailed),
+								};
+								Ok(bytes)
+							}
+							Curve::Bn254 => {
+								let res = PoseidonCRH_x5_3::<Bn254Fr>::evaluate(&BN254_X5_POSEIDON, &bytes).unwrap();
+								let bytes_res = to_bytes![res];
+								let bytes = match bytes_res {
+									Ok(bytes) => bytes,
+									Err(_) => return Err(Error::<T>::HashingFailed),
+								};
+								Ok(bytes)
+							}
+							_ => Err(Error::<T>::Unimplemented),
+						}
+					}
+					HashFunction::Poseidon(3, 17) => {
+						match curve {
+							Curve::Bls381 => {
+								let res = PoseidonCRH_x17_3::<Bls381>::evaluate(&BLS381_X17_POSEIDON, &bytes).unwrap();
+								let bytes_res = to_bytes![res];
+								let bytes = match bytes_res {
+									Ok(bytes) => bytes,
+									Err(_) => return Err(Error::<T>::HashingFailed),
+								};
+								Ok(bytes)
+							}
+							Curve::Bn254 => {
+								let res = PoseidonCRH_x17_3::<Bn254Fr>::evaluate(&BN254_X17_POSEIDON, &bytes).unwrap();
+								let bytes_res = to_bytes![res];
+								let bytes = match bytes_res {
+									Ok(bytes) => bytes,
+									Err(_) => return Err(Error::<T>::HashingFailed),
+								};
+								Ok(bytes)
+							}
+							_ => Err(Error::<T>::Unimplemented),
+						}
+					}
+					HashFunction::MiMC => {
+						match curve {
+							Curve::Bn254 => {
+								let res = MiMCCRH_220::<Bn254Fr>::evaluate(&BN254_MIMC_220, &bytes).unwrap();
+								let bytes_res = to_bytes![res];
+								let bytes = match bytes_res {
+									Ok(bytes) => bytes,
+									Err(_) => return Err(Error::<T>::HashingFailed),
+								};
+								Ok(bytes)
+							}
+							_ => Err(Error::<T>::Unimplemented),
+						}
+					}
+					_ => Err(Error::<T>::Unimplemented),
 				}
-				HashFunction::Poseidon(3, 17) => {
-					let mut bytes = Vec::new();
-					bytes.extend(xl);
-					bytes.extend(xr);
-					let res = PoseidonCRH_x17_3::<Bls381>::evaluate(&BLS381_X17_ARKWORKS_POSEIDON_PARAMETERS, &bytes)
-						.unwrap();
-					let bytes_res = to_bytes![res];
-					let bytes = match bytes_res {
-						Ok(bytes) => bytes,
-						Err(_) => return Err(Error::<T>::HashingFailed),
-					};
-					Ok(bytes)
-				}
-				_ => Err(Error::<T>::Unimplemented),
-			},
-			Backend::Arkworks(Curve::Bn254, _) => match self.hasher {
-				HashFunction::PoseidonDefault | HashFunction::Poseidon(3, 5) => {
-					let mut bytes = Vec::new();
-					bytes.extend(xl);
-					bytes.extend(xr);
-					let res =
-						PoseidonCRH_x5_3::<Bn254Fr>::evaluate(&DEFAULT_BN254_ARKWORKS_POSEIDON_PARAMETERS, &bytes)
-							.unwrap();
-					let bytes_res = to_bytes![res];
-					let bytes = match bytes_res {
-						Ok(bytes) => bytes,
-						Err(_) => return Err(Error::<T>::HashingFailed),
-					};
-					Ok(bytes)
-				}
-				HashFunction::Poseidon(3, 17) => {
-					let mut bytes = Vec::new();
-					bytes.extend(xl);
-					bytes.extend(xr);
-					let res = PoseidonCRH_x17_3::<Bn254Fr>::evaluate(&BN254_X17_ARKWORKS_POSEIDON_PARAMETERS, &bytes)
-						.unwrap();
-					let bytes_res = to_bytes![res];
-					let bytes = match bytes_res {
-						Ok(bytes) => bytes,
-						Err(_) => return Err(Error::<T>::HashingFailed),
-					};
-					Ok(bytes)
-				}
-				_ => Err(Error::<T>::Unimplemented),
-			},
+			}
 			_ => Err(Error::<T>::Unimplemented),
 		}
 	}
@@ -209,7 +223,7 @@ impl Setup {
 			Backend::Arkworks(Curve::Bls381, _) => match self.hasher {
 				HashFunction::PoseidonDefault => {
 					let res =
-						gen_empty_hashes::<TreeConfig_x5<Bls381>>(&(), &DEFAULT_BLS381_ARKWORKS_POSEIDON_PARAMETERS)
+						gen_empty_hashes::<TreeConfig_x5<Bls381>>(&(), &BLS381_X5_POSEIDON)
 							.map_err(|_| Error::<T>::ZeroTreeGenFailed)?;
 					let zero_tree: Vec<ScalarBytes> = res
 						.iter()
@@ -218,7 +232,7 @@ impl Setup {
 					Ok((zero_tree[0..depth].to_vec(), zero_tree[depth].clone()))
 				}
 				HashFunction::Poseidon(3, 17) => {
-					let res = gen_empty_hashes::<TreeConfig_x17<Bls381>>(&(), &BLS381_X17_ARKWORKS_POSEIDON_PARAMETERS)
+					let res = gen_empty_hashes::<TreeConfig_x17<Bls381>>(&(), &BLS381_X17_POSEIDON)
 						.map_err(|_| Error::<T>::ZeroTreeGenFailed)?;
 					let zero_tree: Vec<ScalarBytes> = res
 						.iter()
@@ -231,7 +245,7 @@ impl Setup {
 			Backend::Arkworks(Curve::Bn254, _) => match self.hasher {
 				HashFunction::PoseidonDefault => {
 					let res =
-						gen_empty_hashes::<TreeConfig_x5<Bn254Fr>>(&(), &DEFAULT_BN254_ARKWORKS_POSEIDON_PARAMETERS)
+						gen_empty_hashes::<TreeConfig_x5<Bn254Fr>>(&(), &BN254_X5_POSEIDON)
 							.map_err(|_| Error::<T>::ZeroTreeGenFailed)?;
 					let zero_tree: Vec<ScalarBytes> = res
 						.iter()
@@ -240,7 +254,16 @@ impl Setup {
 					Ok((zero_tree[0..depth].to_vec(), zero_tree[depth].clone()))
 				}
 				HashFunction::Poseidon(3, 17) => {
-					let res = gen_empty_hashes::<TreeConfig_x17<Bn254Fr>>(&(), &BN254_X17_ARKWORKS_POSEIDON_PARAMETERS)
+					let res = gen_empty_hashes::<TreeConfig_x17<Bn254Fr>>(&(), &BN254_X17_POSEIDON)
+						.map_err(|_| Error::<T>::ZeroTreeGenFailed)?;
+					let zero_tree: Vec<ScalarBytes> = res
+						.iter()
+						.map(|val| to_bytes![val].map_err(|_| Error::<T>::ZeroTreeGenFailed))
+						.collect::<Result<Vec<ScalarBytes>, _>>()?;
+					Ok((zero_tree[0..depth].to_vec(), zero_tree[depth].clone()))
+				}
+				HashFunction::MiMC => {
+					let res = gen_empty_hashes::<MiMCTreeConfig_220<Bn254Fr>>(&(), &BN254_MIMC_220)
 						.map_err(|_| Error::<T>::ZeroTreeGenFailed)?;
 					let zero_tree: Vec<ScalarBytes> = res
 						.iter()
@@ -305,68 +328,66 @@ impl Setup {
 				)
 			}
 			Backend::Arkworks(Curve::Bls381, Snark::Groth16) => {
-				let nullifier_elts =
-					to_field_elements::<Bls381>(&nullifier_hash_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
-				let root_elts =
-					to_field_elements::<Bls381>(&root_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
-				let recipient_elts =
-					to_field_elements::<Bls381>(&recipient_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
-				let relayer_elts =
-					to_field_elements::<Bls381>(&relayer_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
-
-				let nullifier = nullifier_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
-				let root = root_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
-				let recipient = recipient_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
-				let relayer = relayer_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
-
-				if verifier_key.is_none() {
-					return Err(Error::<T>::InvalidVerifierKey);
-				}
-
-				let vk = VerifyingKey::<Bls12_381>::deserialize(&verifier_key.unwrap()[..])
-					.map_err(|_| Error::<T>::InvalidVerifierKey)?;
-				let public_inputs = get_public_inputs::<Bls381>(*nullifier, *root, *recipient, *relayer);
-				let proof =
-					Proof::<Bls12_381>::deserialize(&proof_bytes[..]).map_err(|_| Error::<T>::InvalidZkProof)?;
-				let res = verify_groth16::<Bls12_381>(&vk, &public_inputs, &proof);
-				if !res {
-					return Err(Error::<T>::ZkVerificationFailed);
-				}
-
-				Ok(())
+				self.groth_verify_helper::<_, Bls12_381>(
+					root_bytes,
+					nullifier_hash_bytes,
+					proof_bytes,
+					verifier_key,
+					recipient_bytes,
+					relayer_bytes
+				)
 			}
 			Backend::Arkworks(Curve::Bn254, Snark::Groth16) => {
-				let nullifier_elts =
-					to_field_elements::<Bn254Fr>(&nullifier_hash_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
-				let root_elts =
-					to_field_elements::<Bn254Fr>(&root_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
-				let recipient_elts =
-					to_field_elements::<Bn254Fr>(&recipient_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
-				let relayer_elts =
-					to_field_elements::<Bn254Fr>(&relayer_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
-
-				let nullifier = nullifier_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
-				let root = root_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
-				let recipient = recipient_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
-				let relayer = relayer_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
-
-				if verifier_key.is_none() {
-					return Err(Error::<T>::InvalidVerifierKey);
-				}
-
-				let vk = VerifyingKey::<Bn254>::deserialize(&verifier_key.unwrap()[..])
-					.map_err(|_| Error::<T>::InvalidVerifierKey)?;
-				let public_inputs = get_public_inputs::<Bn254Fr>(*nullifier, *root, *recipient, *relayer);
-				let proof = Proof::<Bn254>::deserialize(&proof_bytes[..]).map_err(|_| Error::<T>::InvalidZkProof)?;
-				let res = verify_groth16::<Bn254>(&vk, &public_inputs, &proof);
-				if !res {
-					return Err(Error::<T>::ZkVerificationFailed);
-				}
-
-				Ok(())
+				self.groth_verify_helper::<_, Bn254>(
+					root_bytes,
+					nullifier_hash_bytes,
+					proof_bytes,
+					verifier_key,
+					recipient_bytes,
+					relayer_bytes
+				)
 			}
 			_ => return Err(Error::<T>::Unimplemented),
 		}
+	}
+
+	pub fn groth_verify_helper<T: Config, E: PairingEngine>(
+		&self,
+		root_bytes: ScalarBytes,
+		nullifier_hash_bytes: ScalarBytes,
+		proof_bytes: Vec<u8>,
+		verifier_key: Option<Vec<u8>>,
+		recipient_bytes: ScalarBytes,
+		relayer_bytes: ScalarBytes,
+	) -> Result<(), Error<T>> {
+		let nullifier_elts =
+			to_field_elements::<E::Fr>(&nullifier_hash_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
+		let root_elts =
+			to_field_elements::<E::Fr>(&root_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
+		let recipient_elts =
+			to_field_elements::<E::Fr>(&recipient_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
+		let relayer_elts =
+			to_field_elements::<E::Fr>(&relayer_bytes).map_err(|_| Error::<T>::InvalidPublicInputs)?;
+
+		let nullifier = nullifier_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
+		let root = root_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
+		let recipient = recipient_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
+		let relayer = relayer_elts.get(0).ok_or(Error::<T>::InvalidPublicInputs)?;
+
+		if verifier_key.is_none() {
+			return Err(Error::<T>::InvalidVerifierKey);
+		}
+
+		let vk = VerifyingKey::<E>::deserialize(&verifier_key.unwrap()[..])
+			.map_err(|_| Error::<T>::InvalidVerifierKey)?;
+		let public_inputs = get_public_inputs::<E::Fr>(*nullifier, *root, *recipient, *relayer);
+		let proof = Proof::<E>::deserialize(&proof_bytes[..]).map_err(|_| Error::<T>::InvalidZkProof)?;
+		let res = verify_groth16::<E>(&vk, &public_inputs, &proof);
+		if !res {
+			return Err(Error::<T>::ZkVerificationFailed);
+		}
+
+		Ok(())
 	}
 
 	// TODO: move to bulletproofs-gadgets

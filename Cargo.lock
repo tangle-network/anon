@@ -413,9 +413,9 @@ dependencies = [
 
 [[package]]
 name = "arkworks-gadgets"
-version = "0.2.5"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29eb1c5dfacecbbb1580f37c1bc4541e5256b5552d7c54ee3c39ddd9af74f98c"
+checksum = "a4676d5f21bae35f712148218924e46b84bcba4ef20778a6e5689df9cae45024"
 dependencies = [
  "ark-bls12-381",
  "ark-bn254",
@@ -4857,6 +4857,8 @@ name = "pallet-merkle"
 version = "3.0.0"
 dependencies = [
  "ark-crypto-primitives",
+ "ark-ec",
+ "ark-ff",
  "ark-groth16",
  "ark-serialize",
  "arkworks-gadgets",

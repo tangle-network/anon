@@ -11,9 +11,13 @@ use arkworks_gadgets::{
 	ark_std::test_rng,
 	prelude::{
 		ark_bls12_381::{Bls12_381, Fr as Bls381},
+		ark_bn254::{Fr as Bn254Fr, Bn254},
 		ark_ff::to_bytes,
 	},
-	setup::mixer::{prove_groth16_x5, setup_circuit_x5, setup_random_groth16_x5},
+	setup::mixer::{
+		prove_groth16_x5, setup_circuit_x5, setup_random_groth16_x5,
+		prove_groth16_mimc220, setup_circuit_mimc_220, setup_random_groth16_mimc_220,
+	},
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
 use bulletproofs_gadgets::{
@@ -1187,6 +1191,64 @@ fn should_verify_simple_zk_proof_of_membership_arkworks() {
 		let nullifier_bytes = to_bytes![nullifier].unwrap();
 
 		let proof = prove_groth16_x5(&pk, circuit.clone(), &mut rng);
+		let mut proof_bytes = vec![0u8; proof.serialized_size()];
+		proof.serialize(&mut proof_bytes[..]).unwrap();
+
+		assert_ok!(MerkleTrees::verify_zk(
+			0,
+			0,
+			root_bytes,
+			Vec::new(),
+			nullifier_bytes,
+			proof_bytes,
+			Vec::new(),
+			Vec::new(),
+			recipient_bytes,
+			relayer_bytes,
+		));
+	});
+}
+
+#[test]
+fn should_verify_simple_zk_proof_of_membership_arkworks_mimc() {
+	new_test_ext().execute_with(|| {
+		let mut rng = test_rng();
+		let curve = arkworks_gadgets::setup::common::Curve::Bn254;
+		let recipient = Bn254Fr::from(0u8);
+		let relayer = Bn254Fr::from(0u8);
+		let leaves = Vec::new();
+		let (circuit, leaf, nullifier, root, _) = setup_circuit_mimc_220(&leaves, 0, recipient, relayer, &mut rng, curve);
+
+		let leaf_bytes = to_bytes![leaf].unwrap();
+		let hasher = HashFunction::MiMC;
+		let backend = Backend::Arkworks(Curve::Bn254, Snark::Groth16);
+		let setup = Setup::new(hasher, backend);
+		assert_ok!(MerkleTrees::create_tree(
+			Origin::signed(1),
+			false,
+			setup.clone(),
+			Some(30),
+		));
+
+		let (pk, vk) = setup_random_groth16_mimc_220::<_, Bn254>(&mut rng, curve);
+		let mut vk_bytes = Vec::new();
+		vk.serialize(&mut vk_bytes).unwrap();
+
+		let tree_id = 0;
+		assert_ok!(MerkleTrees::add_verifying_key(Origin::signed(1), vk_bytes));
+		let key_id = 0;
+		assert_ok!(MerkleTrees::initialize_tree(Origin::signed(1), tree_id, key_id));
+
+		assert_ok!(MerkleTrees::add_members(Origin::signed(1), tree_id, vec![leaf_bytes]));
+
+		let other_root = to_bytes![root].unwrap();
+		let root_bytes = MerkleTrees::get_merkle_root(0).unwrap();
+		assert_eq!(other_root, root_bytes);
+		let recipient_bytes = to_bytes![recipient].unwrap();
+		let relayer_bytes = to_bytes![relayer].unwrap();
+		let nullifier_bytes = to_bytes![nullifier].unwrap();
+
+		let proof = prove_groth16_mimc220(&pk, circuit.clone(), &mut rng);
 		let mut proof_bytes = vec![0u8; proof.serialized_size()];
 		proof.serialize(&mut proof_bytes[..]).unwrap();
 
