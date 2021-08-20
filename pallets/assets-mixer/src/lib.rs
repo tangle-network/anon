@@ -225,8 +225,6 @@ pub mod pallet {
 							}
 						}
 					}
-
-					break;
 				}
 			}
 
