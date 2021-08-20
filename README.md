@@ -8,11 +8,11 @@
 
 <br />
 
-✨ Substrate based Mixer w/ Relayable transactions using bulletproofs and Curve25519 ✨.
+✨ Substrate based Mixer w/ Relayable transactions using bulletproofs & arkworks compatible zk-(S)NARKs ✨.
 
 ## Overview 📜
 
-At the highest-level, this is a cryptocurrency mixing pallet that uses non-trusted 👤 setup [zero-knowledge proofs](https://en.wikipedia.org/wiki/Zero-knowledge_proof) to facilitate mixing operations. It uses the bulletproofs library built from [dalek-cryptography](https://github.com/dalek-cryptography). The repo contains pallets that allow for creation of merkle trees with elements in Curve25519's scalar field and a mixer that utilises these merkle trees to built an on-chain application or protocol.
+At the highest-level, this is a cryptocurrency mixing pallet that uses both trusted and non-trusted 👤 setup [zero-knowledge proofs](https://en.wikipedia.org/wiki/Zero-knowledge_proof) to facilitate mixing operations. It uses the bulletproofs library built from [dalek-cryptography](https://github.com/dalek-cryptography) to handle non-trusted zkNARKs and [arkworks](https://arkworks.rs) libraries to handle trusted-setup Groth16 proofs. The repo contains pallets that allow for creation of merkle trees with elements in Curve25519, Bn254, and BLS381's scalar field and a mixer that utilises these merkle trees to build an on-chain application or protocol.
 
 ### Pallet documentation 💎
 - Mixer Pallet: [Docs](https://docs.rs/pallet-mixer)
@@ -23,6 +23,7 @@ At the highest-level, this is a cryptocurrency mixing pallet that uses non-trust
 The library utilises a variety of zero-knowledge primitives, gadgets, circuits, etc. that are all implemented using bulletproofs R1CS api with Curve25519. You can find more about the components below and descriptions following thereafter:
 
 - 🔐 [Bulletproof zero-knowledge gadgets](https://github.com/webb-tools/bulletproof-gadgets)
+- 🔐 [Arkworks zero-knowledge gadgets](https://github.com/webb-tools/arkworks-gadgets)
 - 🧑‍✈️ [Transaction Relayer](https://github.com/webb-tools/relayer)
 - 🧰 [Mixer CLI](https://github.com/webb-tools/cli)
 - 🖥️ [Mixer dApp](https://github.com/webb-tools/webb-dapp)
@@ -62,9 +63,11 @@ Build Wasm and native code:
 ./scripts/build.sh
 ```
 
-To import the submodules, run:
+## Test 🦀
+Testing zero-knowledge functionality should all be handled in `--release` mode. This is due to optimisations on cryptographic operations that ensure your tests complete in a timely manner.
+
 ```bash
-git submodule update --init --recursive
+./scripts/test.sh
 ```
 
 ## Run 🚀
@@ -105,7 +108,6 @@ $ docker pull docker.pkg.github.com/webb-tools/anon/node:edge # change edge to l
 $ docker run --rm -it docker.pkg.github.com/webb-tools/anon/node:edge webb-node --dev
 ```
 This will run the node in dev mode, **without** saving any state, that is easy for testing and development.
-
 
 ## Safety ⚡
 
