@@ -127,13 +127,13 @@ Want to join us? take a look at some of these issues:
 ## License
 
 <sup>
-Licensed under <a href="LICENSE">The Unlicense</a>.
+Licensed under <a href="LICENSE">Apache 2.0</a>.
 </sup>
 
 <br/>
 
 <sub>
 Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in this crate by you, as defined in the `The Unlicense` license, shall
+for inclusion in this crate by you, as defined in the `Apache 2.0` license, shall
 be licensed as above, without any additional terms or conditions.
 </sub>
