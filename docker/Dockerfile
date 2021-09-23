@@ -1,4 +1,4 @@
-FROM debian:buster-slim
+FROM debian:buster-slim as builder
 LABEL AUTHOR="Webb Developers <dev@webb.tools>"
 ENV RUST_BACKTRACE=full
 
@@ -27,9 +27,18 @@ RUN $HOME/.cargo/bin/rustup target add wasm32-unknown-unknown --toolchain ${RUST
 RUN git clone ${GIT_REPO} source
 RUN cd source && $HOME/.cargo/bin/cargo build -p ${PACKAGE_NAME} --${PROFILE}
 
-EXPOSE 9615
-EXPOSE 9944
-EXPOSE 9933
-EXPOSE 30333
+# ===== SECOND STAGE ======
 
-CMD ["./source/webb-node/target/release --dev"]
+FROM debian:buster-slim
+LABEL description="This is the 2nd stage: a very small image where we copy the edgeware binary."
+ARG PROFILE=release
+
+RUN useradd -m -u 1000 -U -s /bin/sh -d /webb webb
+
+COPY --from=builder /source/target/$PROFILE/webb-node /usr/local/bin
+
+USER webb
+EXPOSE 30333 9933 9944 9615
+VOLUME ["/data"]
+
+CMD ["/usr/local/bin/webb-node"]
