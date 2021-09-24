@@ -11,6 +11,8 @@ on:
     # Publish `v1.2.3` tags as releases.
     tags:
       - v*
+env:
+  IMAGE_NAME: anon
 
 jobs:
   push:
@@ -20,58 +22,24 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install nightly toolchain
-        uses: actions-rs/toolchain@v1
-        id: rust_toolchain
-        with:
-          profile: minimal
-          toolchain: nightly
-          override: false
-          components: rustfmt
-
-      - name: Cache Cargo
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.cargo/bin
-            target
-          key: ${{ runner.os }}-cargo-${{ steps.rust_toolchain.outputs.rustc_hash }}-release
-
-      - name: Build node
-        run: ./scripts/build.sh
-
-      - name: Copy binaries
-        run: mkdir -p build && cp target/release/webb-node build/webb-node
-
       - name: Build Image
-        run: docker build . --tag image
+        run: docker build . -f docker/Dockerfile --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
 
       - name: Log into registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Push image
         run: |
-          IMAGE_ID=docker.pkg.github.com/webb-tools/anon/node
-
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
           # Change all uppercase to lowercase
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-
           # Strip git ref prefix from version
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-
           # Strip "v" prefix from tag name
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-
-          # Use Docker `latest` tag convention
-          [ "$VERSION" == "master" ] && VERSION=latest
-          # Use Docker `edge` tag
-          [ "$VERSION" == "develop" ] && VERSION=edge
-
+          # Use Docker `edge` tag convention
+          [ "$VERSION" == "master" ] && VERSION=edge
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
-
-          docker tag image $IMAGE_ID:$VERSION
+          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
-
