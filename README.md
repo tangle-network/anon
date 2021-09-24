@@ -99,13 +99,13 @@ We have a 3 pipelines right now, one for the main/master branch and this should 
 1. Pull the Docker Image
 
 ```bash
-$ docker pull docker.pkg.github.com/webb-tools/anon/node:edge # change edge to latest for the master branch
+$ docker pull ghcr.io/webb-tools/anon:edge # change edge to latest for the master branch
 ```
 
 2. Run the node using docker
 
 ```bash
-$ docker run --rm -it docker.pkg.github.com/webb-tools/anon/node:edge webb-node --dev
+$ docker run --rm -it ghcr.io/webb-tools/anon:edge webb-node --dev
 ```
 This will run the node in dev mode, **without** saving any state, that is easy for testing and development.
 
