@@ -10,6 +10,8 @@
 
 ✨ Substrate based Mixer w/ Relayable transactions using bulletproofs & arkworks compatible zk-(S)NARKs ✨.
 
+**For an updated architecture of this project, check out [darkwebb-substrate](https://github.com/webb-tools/darkwebb-substrate)**.
+
 ## Overview 📜
 
 At the highest-level, this is a cryptocurrency mixing pallet that uses both trusted and non-trusted 👤 setup [zero-knowledge proofs](https://en.wikipedia.org/wiki/Zero-knowledge_proof) to facilitate mixing operations. It uses the bulletproofs library built from [dalek-cryptography](https://github.com/dalek-cryptography) to handle non-trusted zkNARKs and [arkworks](https://arkworks.rs) libraries to handle trusted-setup Groth16 proofs. The repo contains pallets that allow for creation of merkle trees with elements in Curve25519, Bn254, and BLS381's scalar field and a mixer that utilises these merkle trees to build an on-chain application or protocol.
