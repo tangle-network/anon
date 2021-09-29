@@ -15,8 +15,16 @@
 At the highest-level, this is a cryptocurrency mixing pallet that uses both trusted and non-trusted 👤 setup [zero-knowledge proofs](https://en.wikipedia.org/wiki/Zero-knowledge_proof) to facilitate mixing operations. It uses the bulletproofs library built from [dalek-cryptography](https://github.com/dalek-cryptography) to handle non-trusted zkNARKs and [arkworks](https://arkworks.rs) libraries to handle trusted-setup Groth16 proofs. The repo contains pallets that allow for creation of merkle trees with elements in Curve25519, Bn254, and BLS381's scalar field and a mixer that utilises these merkle trees to build an on-chain application or protocol.
 
 ### Pallet documentation 💎
-- Mixer Pallet: [Docs](https://docs.rs/pallet-mixer)
-- Merkle Pallet: [Docs](https://docs.rs/pallet-merkle)
+To generate the docs for the entire repo, run:
+```
+cargo doc --open
+```
+To generate the docs for individual pallets and present it, run:
+```
+cd pallets/pallet-<name>
+cargo doc --open
+```
+These commands will both generate the rustdocs site and open it in your default browser. The compiled docs will be located at `/target/doc/`
 
 ### Dependencies 🧱
 
