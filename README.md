@@ -115,7 +115,7 @@ $ docker pull ghcr.io/webb-tools/anon:edge # change edge to latest for the maste
 2. Run the node using docker
 
 ```bash
-$ docker run --rm -it ghcr.io/webb-tools/anon:edge webb-node --dev
+$ docker run --rm -it --network host ghcr.io/webb-tools/anon:edge webb-node --dev
 ```
 This will run the node in dev mode, **without** saving any state, that is easy for testing and development.
 
