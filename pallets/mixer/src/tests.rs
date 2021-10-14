@@ -200,6 +200,8 @@ fn should_deposit_into_each_mixer_successfully() {
 #[test]
 fn should_withdraw_from_each_mixer_successfully() {
 	new_test_ext().execute_with(|| {
+		// set the system block number so randomness could work.
+		System::set_block_number(1);
 		assert_ok!(Mixer::initialize_first_stage());
 		assert_ok!(Mixer::initialize_second_stage());
 		let pc_gens = PedersenGens::default();
@@ -246,7 +248,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 				Origin::signed(2),
 				WithdrawProof::new(
 					i,
-					0,
+					System::block_number(),
 					root,
 					comms,
 					nullifier_hash.to_bytes().to_vec(),
@@ -346,6 +348,8 @@ fn should_not_have_cache_once_cache_length_exceeded() {
 #[test]
 fn should_make_mixer_with_non_native_token() {
 	new_test_ext().execute_with(|| {
+		// set the system block number so randomness could work.
+		System::set_block_number(1);
 		let currency_id = 1;
 		assert_ok!(<Tokens as ExtendedTokenSystem<AccountId, CurrencyId, Balance>>::create(
 			currency_id,
@@ -422,7 +426,7 @@ fn should_make_mixer_with_non_native_token() {
 			Origin::signed(recipient),
 			WithdrawProof::new(
 				tree_id,
-				0,
+				System::block_number(),
 				root,
 				comms,
 				nullifier_hash.to_bytes().to_vec(),

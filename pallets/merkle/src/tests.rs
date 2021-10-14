@@ -11,12 +11,12 @@ use arkworks_gadgets::{
 	ark_std::test_rng,
 	prelude::{
 		ark_bls12_381::{Bls12_381, Fr as Bls381},
-		ark_bn254::{Fr as Bn254Fr, Bn254},
+		ark_bn254::{Bn254, Fr as Bn254Fr},
 		ark_ff::to_bytes,
 	},
 	setup::mixer::{
-		prove_groth16_x5, setup_circuit_x5, setup_random_groth16_x5,
-		prove_groth16_mimc220, setup_circuit_mimc_220, setup_random_groth16_mimc_220,
+		prove_groth16_mimc220, prove_groth16_x5, setup_circuit_mimc_220, setup_circuit_x5,
+		setup_random_groth16_mimc_220, setup_random_groth16_x5,
 	},
 };
 use bulletproofs::{r1cs::Prover, BulletproofGens, PedersenGens};
@@ -650,6 +650,9 @@ fn should_verify_proof_of_membership() {
 #[test]
 fn should_verify_simple_zk_proof_of_membership() {
 	new_test_ext().execute_with(|| {
+		// set the system block number so randomness could work.
+		System::set_block_number(1);
+
 		let pc_gens = PedersenGens::default();
 
 		let label = b"zk_membership_proof";
@@ -701,7 +704,7 @@ fn should_verify_simple_zk_proof_of_membership() {
 		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		assert_ok!(MerkleTrees::verify_zk(
 			0,
-			0,
+			System::block_number(),
 			root,
 			comms,
 			nullifier_hash.to_bytes().to_vec(),
@@ -717,6 +720,9 @@ fn should_verify_simple_zk_proof_of_membership() {
 #[test]
 fn should_not_verify_invalid_commitments_for_leaf_creation() {
 	new_test_ext().execute_with(|| {
+		// set the system block number so randomness could work.
+		System::set_block_number(1);
+
 		let pc_gens = PedersenGens::default();
 
 		let label = b"zk_membership_proof";
@@ -770,7 +776,7 @@ fn should_not_verify_invalid_commitments_for_leaf_creation() {
 		assert_err!(
 			MerkleTrees::verify_zk(
 				0,
-				0,
+				System::block_number(),
 				root,
 				comms,
 				nullifier_hash.to_bytes().to_vec(),
@@ -862,6 +868,8 @@ fn should_not_verify_invalid_private_inputs() {
 #[test]
 fn should_not_verify_invalid_path_commitments_for_membership() {
 	new_test_ext().execute_with(|| {
+		// set the system block number so randomness could work.
+		System::set_block_number(1);
 		let pc_gens = PedersenGens::default();
 
 		let label = b"zk_membership_proof";
@@ -919,7 +927,7 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 		assert_err!(
 			MerkleTrees::verify_zk(
 				0,
-				0,
+				System::block_number(),
 				root,
 				comms,
 				nullifier_hash.to_bytes().to_vec(),
@@ -937,6 +945,8 @@ fn should_not_verify_invalid_path_commitments_for_membership() {
 #[test]
 fn should_not_verify_invalid_transcript() {
 	new_test_ext().execute_with(|| {
+		// set the system block number so randomness could work.
+		System::set_block_number(1);
 		let pc_gens = PedersenGens::default();
 
 		let label = b"zk_membership_proof_invalid";
@@ -990,7 +1000,7 @@ fn should_not_verify_invalid_transcript() {
 		assert_err!(
 			MerkleTrees::verify_zk(
 				0,
-				0,
+				System::block_number(),
 				root,
 				comms,
 				nullifier_hash.to_bytes().to_vec(),
@@ -1008,6 +1018,8 @@ fn should_not_verify_invalid_transcript() {
 #[test]
 fn should_verify_zk_proof_of_membership() {
 	new_test_ext().execute_with(|| {
+		// set the system block number so randomness could work.
+		System::set_block_number(1);
 		let pc_gens = PedersenGens::default();
 
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
@@ -1071,7 +1083,7 @@ fn should_verify_zk_proof_of_membership() {
 		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		assert_ok!(MerkleTrees::verify_zk(
 			0,
-			0,
+			System::block_number(),
 			root,
 			comms,
 			nullifier_hash.to_bytes().to_vec(),
@@ -1087,6 +1099,8 @@ fn should_verify_zk_proof_of_membership() {
 #[test]
 fn should_verify_large_zk_proof_of_membership() {
 	new_test_ext().execute_with(|| {
+		// set the system block number so randomness could work.
+		System::set_block_number(1);
 		let pc_gens = PedersenGens::default();
 
 		let mut prover_transcript = Transcript::new(b"zk_membership_proof");
@@ -1138,7 +1152,7 @@ fn should_verify_large_zk_proof_of_membership() {
 		let proof_comms: Vec<ScalarBytes> = proof_comms_cr.iter().map(|x| x.to_bytes().to_vec()).collect();
 		assert_ok!(MerkleTrees::verify_zk(
 			0,
-			0,
+			System::block_number(),
 			root,
 			comms,
 			nullifier_hash.to_bytes().to_vec(),
@@ -1154,6 +1168,8 @@ fn should_verify_large_zk_proof_of_membership() {
 #[test]
 fn should_verify_simple_zk_proof_of_membership_arkworks() {
 	new_test_ext().execute_with(|| {
+		// set the system block number so randomness could work.
+		System::set_block_number(1);
 		let mut rng = test_rng();
 		let curve = arkworks_gadgets::setup::common::Curve::Bls381;
 		let recipient = Bls381::from(0u8);
@@ -1196,7 +1212,7 @@ fn should_verify_simple_zk_proof_of_membership_arkworks() {
 
 		assert_ok!(MerkleTrees::verify_zk(
 			0,
-			0,
+			System::block_number(),
 			root_bytes,
 			Vec::new(),
 			nullifier_bytes,
@@ -1212,12 +1228,15 @@ fn should_verify_simple_zk_proof_of_membership_arkworks() {
 #[test]
 fn should_verify_simple_zk_proof_of_membership_arkworks_mimc() {
 	new_test_ext().execute_with(|| {
+		// set the system block number so randomness could work.
+		System::set_block_number(1);
 		let mut rng = test_rng();
 		let curve = arkworks_gadgets::setup::common::Curve::Bn254;
 		let recipient = Bn254Fr::from(0u8);
 		let relayer = Bn254Fr::from(0u8);
 		let leaves = Vec::new();
-		let (circuit, leaf, nullifier, root, _) = setup_circuit_mimc_220(&leaves, 0, recipient, relayer, &mut rng, curve);
+		let (circuit, leaf, nullifier, root, _) =
+			setup_circuit_mimc_220(&leaves, 0, recipient, relayer, &mut rng, curve);
 
 		let leaf_bytes = to_bytes![leaf].unwrap();
 		let hasher = HashFunction::MiMC;
@@ -1254,7 +1273,7 @@ fn should_verify_simple_zk_proof_of_membership_arkworks_mimc() {
 
 		assert_ok!(MerkleTrees::verify_zk(
 			0,
-			0,
+			System::block_number(),
 			root_bytes,
 			Vec::new(),
 			nullifier_bytes,

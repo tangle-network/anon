@@ -208,6 +208,8 @@ fn should_deposit_into_each_mixer_successfully() {
 #[test]
 fn should_withdraw_from_each_mixer_successfully() {
 	new_test_ext().execute_with(|| {
+		// set the system block number so randomness could work.
+		System::set_block_number(1);
 		let currency_id = 0;
 		assert_ok!(Assets::force_create(Origin::root(), currency_id, 1, true, 1));
 		assert_ok!(Assets::mint(Origin::signed(1), currency_id, 1, 10000000));
@@ -256,7 +258,7 @@ fn should_withdraw_from_each_mixer_successfully() {
 				Origin::signed(2),
 				WithdrawProof::new(
 					i,
-					0,
+					System::block_number(),
 					root,
 					comms,
 					nullifier_hash.to_bytes().to_vec(),
@@ -364,6 +366,8 @@ fn should_not_have_cache_once_cache_length_exceeded() {
 #[test]
 fn should_make_mixer_with_non_native_token() {
 	new_test_ext().execute_with(|| {
+		// set the system block number so randomness could work.
+		System::set_block_number(1);
 		let currency_id = 1;
 		assert_ok!(Assets::force_create(Origin::root(), currency_id, 1, true, 1));
 		assert_ok!(Assets::mint(Origin::signed(1), currency_id, 1, 10000000));
@@ -433,7 +437,7 @@ fn should_make_mixer_with_non_native_token() {
 			Origin::signed(recipient),
 			WithdrawProof::new(
 				tree_id,
-				0,
+				System::block_number(),
 				root,
 				comms,
 				nullifier_hash.to_bytes().to_vec(),
