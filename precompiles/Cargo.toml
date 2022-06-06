@@ -14,7 +14,7 @@ sp-core = { version = "3.0.0", default-features = false, git = "https://github.c
 sp-io = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
 sp-runtime = { version = "3.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.6" }
 fp-evm = { git = "https://github.com/webb-tools/frontier.git", branch = "polkadot-v0.9.6", default-features = false }
-evm = { version = "0.27.0", default-features = false, features = ["with-codec"] }
+evm = { version = "0.31.0", default-features = false, features = ["with-codec"] }
 
 lazy_static = { version = "1.4.0", features = ["spin_no_std"], optional = true }
 rand_chacha = { version = "0.2", default-features = false }
